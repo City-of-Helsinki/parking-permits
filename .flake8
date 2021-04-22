@@ -1,0 +1,13 @@
+[flake8]
+# flake8 configs must be compliant with Black
+# https://github.com/psf/black/blob/master/docs/compatible_configs.md#flake8
+
+# 88 is Black's default value, so flake's must be >=88
+max-line-length = 120
+
+# E203 is required by Black
+extend-ignore = E203
+
+exclude =
+    venv,
+    */migrations/*
