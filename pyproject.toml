@@ -1,0 +1,3 @@
+[tool.black]
+line-length    = 88        # Black's default value
+target-version = ['py38']  # TODO: change to ['py39'] when Black releases a version above 20.8b1
