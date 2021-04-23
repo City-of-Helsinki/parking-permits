@@ -23,10 +23,11 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       - APPLY_MIGRATIONS=true
+      - DATABASE_URL=postgres://my_postgres_user:my_postgres_password@database:5432/my_postgres_db
       - DEBUG=true
       - DEV_SERVER=true
-      - DATABASE_URL=postgres://my_postgres_user:my_postgres_password@database:5432/my_postgres_db
       - DJANGO_SECRET_KEY=NotImportantHere
+      - INSTALL_PRECOMMIT=true
       - WAIT_FOR_IT_ADDRESS=database:5432
 
 volumes:

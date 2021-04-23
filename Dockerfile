@@ -28,6 +28,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 FROM base_stage AS development_stage
 # ==============================
 
+# git is needed for 'pre-commit install' to work
+RUN apt-get update && apt-get install --yes --no-install-recommends git
+
 COPY requirements-dev.txt /app/
 RUN pip install --no-cache-dir -r /app/requirements-dev.txt
 
