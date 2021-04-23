@@ -1,3 +1,14 @@
 [tool.black]
 line-length    = 88        # Black's default value
 target-version = ['py38']  # TODO: change to ['py39'] when Black releases a version above 20.8b1
+
+[tool.isort]
+# Compliance with Black is supported simply by using 'black' profile
+# https://pycqa.github.io/isort/docs/configuration/black_compatibility
+# https://pycqa.github.io/isort/docs/configuration/profiles/
+profile = 'black'
+
+# Configs not included in 'black' profile
+py_version        = 39
+atomic            = true
+extend_skip_glob  = '*migrations*'
