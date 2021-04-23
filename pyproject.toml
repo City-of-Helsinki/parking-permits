@@ -12,3 +12,8 @@ profile = 'black'
 py_version        = 39
 atomic            = true
 extend_skip_glob  = '*migrations*'
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = 'project.settings'
+python_files           = ['tests.py', 'test_*.py', '*_tests.py']
+addopts                = ['--verbose', '--reuse-db']
