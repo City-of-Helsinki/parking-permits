@@ -1,0 +1,18 @@
+minimum_pre_commit_version: 2.12.1 # You MUST keep this version in sync with the version in requirements-dev.in
+default_language_version:
+  python: python3.9
+repos:
+  - repo: https://github.com/psf/black
+    rev: 20.8b1 # You MUST keep this version in sync with the version in requirements-dev.in
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pycqa/flake8
+    rev: 3.9.1 # You MUST keep this version in sync with the version in requirements-dev.in
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.8.0 # You MUST keep this version in sync with the version in requirements-dev.in
+    hooks:
+      - id: isort
