@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "ariadne.contrib.django",
     "parking_permits_app",
     "users_app",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [
