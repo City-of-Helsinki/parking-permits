@@ -11,11 +11,11 @@ In order to create placeholder for your own environment variables file, copy and
 You'll need a redhat developer account to gain access to RedHat subscriptions
 needed to run the docker image.
 
-Register at https://developers.redhat.com/register and confirm your email address. 
+Register at https://developers.redhat.com/register and confirm your email address.
 
 Set following environment variables in .env file:
 - BUILD_MODE=local
-- REDHAT_USERNAME=your redhat account username 
+- REDHAT_USERNAME=your redhat account username
 - REDHAT_PASSWORD=your redhat account password
 
 Then you can run docker image with:
@@ -24,7 +24,7 @@ Then you can run docker image with:
   docker-compose up
   ```
 
-- Access development server on [localhost:8000](http://localhost:8000)
+- Access development server on [localhost:8888](http://localhost:8888)
 
 - Login to admin interface with `admin` and 🥥
 

@@ -19,7 +19,7 @@ if [[ "$CREATE_SUPERUSER" = "True" ]]; then
 fi
 
 if [[ "$DEV_SERVER" = "True" ]]; then
-    python /app/manage.py runserver 0.0.0.0:8000
+    python /app/manage.py runserver 0.0.0.0:8888
 else
     gunicorn
 fi

@@ -50,7 +50,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY docker-entrypoint.sh /app/
 ENTRYPOINT ["/tini", "--", "/app/docker-entrypoint.sh"]
 
-EXPOSE 8000
+EXPOSE 8888
 
 # ==============================
 FROM appbase as development_stage
