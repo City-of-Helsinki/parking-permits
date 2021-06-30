@@ -8,6 +8,10 @@ ariadne==0.13.0
     # via -r requirements.in
 asgiref==3.3.4
     # via django
+certifi==2021.5.30
+    # via requests
+chardet==4.0.0
+    # via requests
 dj-database-url==0.5.0
     # via -r requirements.in
 django-environ==0.4.5
@@ -25,16 +29,22 @@ graphql-core==3.1.5
     # via ariadne
 gunicorn==20.1.0
     # via -r requirements.in
+idna==2.10
+    # via requests
 psycopg2-binary==2.8.6
     # via -r requirements.in
 pytz==2021.1
     # via django
+requests==2.25.1
+    # via -r requirements.in
 sqlparse==0.4.1
     # via django
 starlette==0.14.2
     # via ariadne
 typing-extensions==3.10.0.0
     # via ariadne
+urllib3==1.26.6
+    # via requests
 whitenoise==5.2.0
     # via -r requirements.in
 
