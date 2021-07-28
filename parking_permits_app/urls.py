@@ -12,7 +12,7 @@ app_name = "parking_permits_app"
 urlpatterns = [
     path("graphql/", graphql.view, name="graphql"),
     path(
-        "api/talpa/resolve-availability/",
+        "api/talpa/resolve-availability/<product_id>/",
         views.TalpaResolveAvailability.as_view(),
         name="talpa-availability",
     ),

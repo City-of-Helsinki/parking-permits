@@ -11,11 +11,9 @@ from .services import talpa
 
 
 class TalpaResolveAvailability(APIView):
-    def post(self, request, format=None):
-        shared_product_id = request.data.get("productId")
-
+    def get(self, request, product_id, format=None):
         response = talpa.resolve_availability_response(
-            product_id=shared_product_id, availability=True
+            product_id=product_id, availability=True
         )
 
         return Response(response)
