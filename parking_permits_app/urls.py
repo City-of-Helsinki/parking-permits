@@ -22,7 +22,7 @@ urlpatterns = [
         name="talpa-price",
     ),
     path(
-        "api/talpa/resolve-right-of-purchase/",
+        "api/talpa/resolve-right-of-purchase/<product_id>/",
         views.TalpaResolveRightOfPurchase.as_view(),
         name="talpa-right-of-purchase",
     ),

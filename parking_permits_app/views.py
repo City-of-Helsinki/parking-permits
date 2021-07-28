@@ -60,16 +60,15 @@ class TalpaResolvePrice(APIView):
 
 
 class TalpaResolveRightOfPurchase(APIView):
-    def post(self, request, format=None):
-        shared_product_id = request.data.get("productId")
-        profile_id = talpa.get_meta_value(request.data.get("meta"), "profileId")
-        vehicle_id = talpa.get_meta_value(request.data.get("meta"), "vehicleId")
+    def get(self, request, product_id, format=None):
+        profile_id = request.query_params.get("profileId", None)
+        vehicle_id = request.query_params.get("vehicleId", None)
 
         try:
             customer = Customer.objects.get(pk=profile_id)
             vehicle = Vehicle.objects.get(pk=vehicle_id)
         except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": str(e)}, status=status.HTTP_404_NOT_FOUND)
 
         right_of_purchase = (
             customer.has_valid_address_within_zone()
@@ -79,7 +78,7 @@ class TalpaResolveRightOfPurchase(APIView):
         )
 
         response = talpa.resolve_right_of_purchase_response(
-            product_id=shared_product_id,
+            product_id=product_id,
             right_of_purchase=right_of_purchase,
         )
 
