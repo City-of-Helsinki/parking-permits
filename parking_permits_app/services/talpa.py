@@ -1,3 +1,5 @@
+import uuid
+
 from parking_permits_app.constants import VAT_PERCENTAGE
 from parking_permits_app.pricing.value_added_tax import calculate_price_without_vat
 
@@ -42,3 +44,11 @@ def resolve_right_of_purchase_response(product_id=None, right_of_purchase=None):
         "productId": product_id,
         "value": right_of_purchase,
     }
+
+
+def is_valid_uuid(uuid_value):
+    try:
+        uuid.UUID(uuid_value)
+        return True
+    except ValueError:
+        return False
