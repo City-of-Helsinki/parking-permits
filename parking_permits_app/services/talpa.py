@@ -14,12 +14,19 @@ def get_meta_value(meta_pair_list, meta_pair_key):
 
 
 def resolve_price_response(product_id=None, total_price=None):
+    net_value = calculate_price_without_vat(total_price)
+    vat_value = total_price - net_value
+
     return {
         "productId": product_id,
-        "netValue": calculate_price_without_vat(total_price),
-        "vatPercentage": VAT_PERCENTAGE,
-        "grossValue": total_price,
-        "vatValue": total_price - calculate_price_without_vat(total_price),
+        "original": {
+            "price": {
+                "netValue": str(net_value),
+                "vatPercentage": str(VAT_PERCENTAGE),
+                "grossValue": str(total_price),
+                "vatValue": str(vat_value),
+            }
+        },
     }
 
 
