@@ -17,7 +17,7 @@ urlpatterns = [
         name="talpa-availability",
     ),
     path(
-        "api/talpa/resolve-price/",
+        "api/talpa/resolve-price/<product_id>/",
         views.TalpaResolvePrice.as_view(),
         name="talpa-price",
     ),

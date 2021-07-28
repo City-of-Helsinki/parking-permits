@@ -22,24 +22,30 @@ class TalpaResolveAvailability(APIView):
 
 
 class TalpaResolvePrice(APIView):
-    def post(self, request, format=None):
-        shared_product_id = request.data.get("productId")
-        item_quantity = request.data.get("quantity")
-        vehicle_id = talpa.get_meta_value(request.data.get("meta"), "vehicleId")
-
-        if vehicle_id is None:
-            return Response(
-                {
-                    "message": "No vehicleId key available in meta list of key-value pairs"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+    def get(self, request, product_id, format=None):
+        item_quantity = int(request.query_params.get("quantity", 0))
+        vehicle_id = request.query_params.get("vehicleId", None)
 
         try:
             vehicle = Vehicle.objects.get(pk=vehicle_id)
-            product = Product.objects.get(shared_product_id=shared_product_id)
         except Exception as e:
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"message": f"{vehicle_id} vehicleId: {str(e)}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not talpa.is_valid_uuid(product_id):
+            return Response(
+                {"message": "Invalid request"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            product = Product.objects.get(shared_product_id=product_id)
+        except Exception:
+            return Response(
+                {"message": f"Price data for product {product_id} not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         total_price = calculate_cart_item_total_price(
             item_price=product.get_current_price(),
@@ -49,7 +55,7 @@ class TalpaResolvePrice(APIView):
         )
 
         response = talpa.resolve_price_response(
-            product_id=shared_product_id, total_price=total_price
+            product_id=product_id, total_price=total_price
         )
 
         return Response(response)
