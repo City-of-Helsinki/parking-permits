@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "ariadne.contrib.django",
     "django_extensions",
+    "corsheaders",
     "parking_permits_app",
     "users_app",
     "rest_framework",
@@ -53,6 +54,7 @@ MIDDLEWARE = [
     # WhiteNoiseMiddleware should be above all and just below SecurityMiddleware
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -118,3 +120,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # FOR TALPA
 NAMESPACE = "parkingPermits"
 TALPA_PRODUCT_EXPERIENCE_API = env("TALPA_PRODUCT_EXPERIENCE_API")
+
+CORS_ORIGIN_ALLOW_ALL = True
