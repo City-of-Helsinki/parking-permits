@@ -1,22 +1,23 @@
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 
 
-# TODO: Some of these fields should come directly from Helsinki profile User-model.
-#  Check how to combine this model with Helsinki profile User-model.
-class Customer(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Customer(TimestampedModelMixin):
+    id = models.TextField(primary_key=True, unique=True, editable=False)
     first_name = models.CharField(_("First name"), max_length=32)
     last_name = models.CharField(_("Last name"), max_length=32)
     national_id_number = models.CharField(
-        _("National identification number"), max_length=16
+        _("National identification number"), max_length=16, blank=True, null=True
     )
     primary_address = models.ForeignKey(
         "Address",
         verbose_name=_("Primary address"),
         on_delete=models.PROTECT,
         related_name="customers_primary_address",
+        null=True,
+        blank=True,
     )
     other_address = models.ForeignKey(
         "Address",
