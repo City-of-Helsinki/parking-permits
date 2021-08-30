@@ -13,6 +13,7 @@ env = environ.Env(
         str,
         "https://talpa-verkkokauppa-product-experience-api-dev.agw.arodevtest.hel.fi",
     ),
+    OPEN_CITY_PROFILE_GRAPHQL_API=(str, "https://profile-api.test.hel.ninja/graphql/"),
     KMO_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
 )
 
@@ -28,6 +29,7 @@ AUTH_USER_MODEL = "users_app.CustomUser"
 
 SRID = 4326
 KMO_URL = env("KMO_URL")
+OPEN_CITY_PROFILE_GRAPHQL_API = env("OPEN_CITY_PROFILE_GRAPHQL_API")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
