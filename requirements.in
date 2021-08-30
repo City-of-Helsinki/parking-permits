@@ -8,5 +8,6 @@ djangorestframework==3.12.4                   # creating rest APIs
 gunicorn==20.1.0                              # application server
 psycopg2-binary==2.8.6                        # postgres database adapter
 requests
+django-cors-headers
 whitenoise==5.2.0                             # enabling Django to serve its own static files
 xmltodict==0.12.0                             # parsing xml to dictionary

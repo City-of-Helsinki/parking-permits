@@ -16,6 +16,8 @@ chardet==4.0.0
     # via requests
 dj-database-url==0.5.0
     # via -r requirements.in
+django-cors-headers==3.8.0
+    # via -r requirements.in
 django-environ==0.4.5
     # via -r requirements.in
 django-extensions==3.1.3
@@ -23,6 +25,7 @@ django-extensions==3.1.3
 django==3.2
     # via
     #   -r requirements.in
+    #   django-cors-headers
     #   django-extensions
     #   djangorestframework
 djangorestframework==3.12.4
@@ -48,7 +51,10 @@ sqlparse==0.4.1
 starlette==0.14.2
     # via ariadne
 typing-extensions==3.10.0.0
-    # via ariadne
+    # via
+    #   ariadne
+    #   arrow
+    #   asgiref
 urllib3==1.26.6
     # via requests
 whitenoise==5.2.0
