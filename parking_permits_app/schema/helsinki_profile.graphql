@@ -1,0 +1,24 @@
+query MyProfileQuery {
+  myProfile {
+    id
+    firstName
+    lastName
+    language
+    primaryPhone {
+      phone
+    }
+    primaryEmail {
+      email
+    }
+    addresses {
+      edges {
+        node {
+          id
+          city
+          address
+          primary
+        }
+      }
+    }
+  }
+}

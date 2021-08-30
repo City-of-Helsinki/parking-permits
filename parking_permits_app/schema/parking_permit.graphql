@@ -1,0 +1,74 @@
+type ZoneNode  {
+  id: ID!
+  name: String
+  description: String
+  location: [[[[Float]]]]
+}
+
+type AddressNode  {
+  id: ID!
+  streetName: String
+  streetNumber: Int
+  streetNameSv: String
+  location: [Float]
+  zone: ZoneNode
+}
+
+enum Language {
+  FINNISH
+  ENGLISH
+  SWEDISH
+}
+
+type CustomerNode {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  language: Language
+  email: String
+  phoneNumber: String
+  primaryAddress: AddressNode
+  otherAddress: AddressNode
+}
+
+type Query {
+  profile: CustomerNode!
+}
+
+type Mutation {
+  createParkingPermit(input: ParkingPermitInput!): ParkingPermitPayload!
+  updateParkingPermit(
+    parkingPermit: ID!
+    input: ParkingPermitInput!
+  ): ParkingPermitPayload!
+}
+
+enum ParkingPermitStatus {
+  DRAFT
+  PAID
+  CANCELLED
+  EXPIRED
+}
+
+enum ParkingPermitContractType {
+  FIXED_PERIOD
+  OPEN_ENDED
+}
+
+type ParkingPermit {
+  identifier: Int!
+  status: ParkingPermitStatus!
+  contractType: ParkingPermitContractType!
+}
+
+input ParkingPermitInput {
+  vehicleRegistrationNumber: ID!
+  status: ParkingPermitStatus!
+  contractType: ParkingPermitContractType!
+}
+
+type ParkingPermitPayload {
+  error: Boolean
+  errorMessage: String
+  parkingPermit: ParkingPermit
+}
