@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from importlib import import_module
 
@@ -6,6 +7,8 @@ from django.db import transaction
 
 from parking_permits_app.constants import EmissionType
 from parking_permits_app.models import LowEmissionCriteria, VehicleType
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -33,6 +36,6 @@ class Command(BaseCommand):
             )
 
             if created:
-                print(f"{obj.vehicle_type.type} emission criteria created")
+                logger.info(f"{obj.vehicle_type.type} emission criteria created")
             else:
-                print(f"{obj.vehicle_type.type} emission criteria already exists")
+                logger.info(f"{obj.vehicle_type.type} emission criteria already exists")

@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from importlib import import_module
 
@@ -5,6 +6,8 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from parking_permits_app.models import ParkingZone, Price
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -27,6 +30,6 @@ class Command(BaseCommand):
             )
 
             if created:
-                print(f"{obj.zone.name} price created")
+                logger.info(f"{obj.zone.name} price created")
             else:
-                print(f"{obj.zone.name} price already exists")
+                logger.info(f"{obj.zone.name} price already exists")

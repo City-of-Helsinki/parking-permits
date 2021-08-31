@@ -1,8 +1,12 @@
+import logging
+
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from parking_permits_app import constants
 from parking_permits_app.models import VehicleType
+
+logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
@@ -14,6 +18,6 @@ class Command(BaseCommand):
             vehicle_type, created = VehicleType.objects.get_or_create(type=item.value)
 
             if created:
-                print(f"{vehicle_type.type} vehicle type created")
+                logger.info(f"{vehicle_type.type} vehicle type created")
             else:
-                print(f"{vehicle_type.type} vehicle type already exists")
+                logger.info(f"{vehicle_type.type} vehicle type already exists")
