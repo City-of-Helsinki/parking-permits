@@ -20,6 +20,9 @@ class Address(TimestampedModelMixin):
         _("Street number"), max_length=128, blank=False, null=False
     )
     city = models.CharField(_("City"), max_length=128, blank=False, null=False)
+    postal_code = models.CharField(
+        _("Postal code"), max_length=5, blank=True, null=True, default=None
+    )
     location = models.PointField(
         _("Location (2D)"), srid=settings.SRID, blank=True, null=True
     )
