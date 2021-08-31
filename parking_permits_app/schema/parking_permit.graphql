@@ -11,6 +11,7 @@ type AddressNode  {
   streetNumber: Int
   streetNameSv: String
   city: String
+  citySv: String
   postalCode: String
   location: [Float]
   zone: ZoneNode

@@ -20,6 +20,7 @@ class Address(TimestampedModelMixin):
         _("Street number"), max_length=128, blank=False, null=False
     )
     city = models.CharField(_("City"), max_length=128, blank=False, null=False)
+    city_sv = models.CharField(_("City sv"), max_length=128, blank=True, null=True)
     postal_code = models.CharField(
         _("Postal code"), max_length=5, blank=True, null=True, default=None
     )
@@ -60,8 +61,13 @@ class Address(TimestampedModelMixin):
             address_property = address_feature.get("properties")
             location = self.convert_to_geosgeometry(address_feature.get("geometry"))
             zone = ParkingZone.objects.filter(location__intersects=location).first()
-            return address_property.get("gatan"), location, zone
-        return self.street_name_sv, self.location, self.zone
+            return (
+                address_property.get("gatan"),
+                address_property.get("staden"),
+                location,
+                zone,
+            )
+        return self.street_name_sv, self.city_sv, self.location, self.zone
 
     def save(self, update_fields=None, *args, **kwargs):
         if (
@@ -69,8 +75,9 @@ class Address(TimestampedModelMixin):
             or "street_name" in update_fields
             or "street_number" in update_fields
         ):
-            street_name_sv, location, zone = self.get_kmo_features()
+            street_name_sv, city_sv, location, zone = self.get_kmo_features()
             self.street_name_sv = street_name_sv
+            self.city_sv = city_sv
             self.location = location
             self.zone = zone
 
