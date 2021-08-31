@@ -40,7 +40,7 @@ def resolve_user_profile(_, info, *args):
     )
 
     other_obj, _ = Address.objects.update_or_create(
-        id=primary_address.get("id"), defaults=other_address
+        id=other_address.get("id"), defaults=other_address
     )
 
     customer_obj, _ = Customer.objects.update_or_create(
@@ -59,8 +59,8 @@ def resolve_user_profile(_, info, *args):
             **model_to_dict(primary_obj),
             "id": primary_obj.pk,
             "zone": {
-                **model_to_dict(other_obj.zone),
-                "id": other_obj.zone.pk,
+                **model_to_dict(primary_obj.zone),
+                "id": primary_obj.zone.pk,
             },
         },
         "other_address": {
