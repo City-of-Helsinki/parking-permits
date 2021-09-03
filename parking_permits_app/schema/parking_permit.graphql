@@ -1,5 +1,6 @@
 type ZoneNode  {
   id: ID!
+  sharedProductId: String
   name: String
   description: String
   location: [[[[Float]]]]
