@@ -60,6 +60,7 @@ def resolve_user_profile(_, info, *args):
             "id": primary_obj.pk,
             "zone": {
                 **model_to_dict(primary_obj.zone),
+                "shared_product_id": primary_obj.zone.shared_product_id,
                 "id": primary_obj.zone.pk,
             },
         },
@@ -68,6 +69,7 @@ def resolve_user_profile(_, info, *args):
             "id": other_obj.pk,
             "zone": {
                 **model_to_dict(other_obj.zone),
+                "shared_product_id": primary_obj.zone.shared_product_id,
                 "id": other_obj.zone.pk,
             },
         },
