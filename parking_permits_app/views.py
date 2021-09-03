@@ -73,8 +73,7 @@ class TalpaResolveRightOfPurchase(APIView):
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         right_of_purchase = (
-            customer.has_valid_address_within_zone()
-            and customer.is_owner_or_holder_of_vehicle(vehicle)
+            customer.is_owner_or_holder_of_vehicle(vehicle)
             and customer.driving_licence.is_valid_for_vehicle(vehicle)
             and not vehicle.is_due_for_inspection()
         )
