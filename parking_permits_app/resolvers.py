@@ -9,7 +9,8 @@ from django.forms.models import model_to_dict
 
 from project.settings import BASE_DIR
 
-from .models import Address, Customer
+from .models import Address, Customer, ParkingPermit
+from .pricing.engine import calculate_cart_item_total_price
 from .services.hel_profile import HelsinkiProfile
 
 helsinki_profile_query = load_schema_from_path(
@@ -27,6 +28,49 @@ schema_bindables = [
     mutation,
     address_node,
 ]
+
+
+@query.field("getPermits")
+@convert_kwargs_to_snake_case
+def resolve_customer_permits(obj, info, customer_id):
+    try:
+        permits = ParkingPermit.objects.filter(customer__pk=customer_id)
+        payload = {
+            "success": True,
+            "permits": [serialize_permit(permit) for permit in permits],
+        }
+    except AttributeError:  # todo not found
+        payload = {"success": False, "errors": ["Permits item matching {id} not found"]}
+    return payload
+
+
+def serialize_permit(permit):
+    price = permit.parking_zone.get_current_price()
+    vehicle = permit.vehicle
+    offer = calculate_cart_item_total_price(
+        item_price=price,
+        item_quantity=1,
+        vehicle_is_secondary=permit.primary_vehicle is False,
+        vehicle_is_low_emission=vehicle.is_low_emission(),
+    )
+    contract_type = permit.contract_type
+    return snake_to_camel_dict(
+        {
+            "id": permit.pk,
+            **model_to_dict(permit),
+            "price": {
+                "original": price,
+                "offer": offer,
+                "currency": "€",
+            },
+            "vehicle": {
+                "id": vehicle.pk,
+                "vehicle_type": {"id": vehicle.type.id, **model_to_dict(vehicle.type)},
+                **model_to_dict(vehicle),
+            },
+            "contract": {"id": contract_type.pk, **model_to_dict(contract_type)},
+        }
+    )
 
 
 @query.field("profile")
