@@ -22,11 +22,8 @@ class DrivingLicence(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     def is_valid_for_vehicle(self, vehicle):
         is_not_expired = self.valid_end > arrow.utcnow()
         is_not_suspended = self.active
-        includes_vehicle_category = self.driving_classes.filter(
-            identifier=vehicle.category
-        ).exists()
 
-        return is_not_expired and is_not_suspended and includes_vehicle_category
+        return is_not_expired and is_not_suspended
 
     class Meta:
         db_table = "driving_licence"
