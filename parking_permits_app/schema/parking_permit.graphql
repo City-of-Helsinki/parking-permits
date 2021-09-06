@@ -35,8 +35,56 @@ type CustomerNode {
   otherAddress: AddressNode
 }
 
+type VehicleTypeNode {
+  id: ID!
+  type: String
+}
+
+type VehicleNode {
+  id: ID!
+  vehicleType: VehicleTypeNode!
+  manufacturer: String
+  model: String
+  productionYear: Int
+  registrationNumber: String
+  emission: Int
+}
+
+type PriceNode {
+  id: ID!
+  original: Int!
+  offer: Int
+  currency: String
+}
+
+type ContractNode {
+  id: ID!
+  contractType: String
+  monthCount: Int
+}
+
+type PermitNode {
+  id: ID!
+  zone: ID!
+  vehicle: VehicleNode!
+  price: PriceNode!
+  contract: ContractNode
+  startTime: String
+  endTime: String
+  status: String
+  consentLowEmissionAccepted: Boolean
+  primaryVehicle: Boolean
+}
+
+type PermitResult {
+  success: Boolean!
+  errors: [String]
+  permits: [PermitNode]
+}
+
 type Query {
   profile: CustomerNode!
+  getPermits(customerId: ID!): PermitResult
 }
 
 type Mutation {
