@@ -88,8 +88,14 @@ type Query {
   getPermits(customerId: ID!): PermitResult
 }
 
+type CreatePermitResult {
+  success: Boolean!
+  errors: [String]
+  permit: PermitNode
+}
+
 type Mutation {
-  createParkingPermit(input: ParkingPermitInput!): ParkingPermitPayload!
+  createParkingPermit(customerId: ID!, zoneId: ID!, registration: String!): CreatePermitResult!
   updateParkingPermit(
     parkingPermit: ID!
     input: ParkingPermitInput!
