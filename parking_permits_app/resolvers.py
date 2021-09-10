@@ -128,6 +128,19 @@ def resolve_user_profile(_, info, *args):
     return snake_to_camel_dict(customer_dict)
 
 
+@mutation.field("deleteParkingPermit")
+@convert_kwargs_to_snake_case
+def resolve_delete_parking_permit(obj, info, permit_id):
+    try:
+        ParkingPermit.objects.get(id=permit_id).delete()
+        return {"success": True}
+    except ObjectDoesNotExist:
+        return {
+            "success": False,
+            "errors": [f"Permit item matching {permit_id} not found"],
+        }
+
+
 @mutation.field("createParkingPermit")
 @convert_kwargs_to_snake_case
 def resolve_create_parking_permit(obj, info, customer_id, zone_id, registration):
