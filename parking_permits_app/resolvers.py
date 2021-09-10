@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from ariadne import (
     MutationType,
     QueryType,
@@ -5,11 +7,15 @@ from ariadne import (
     load_schema_from_path,
 )
 from ariadne.contrib.federation import FederatedObjectType
+from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.forms.models import model_to_dict
 
 from project.settings import BASE_DIR
 
-from .models import Address, Customer, ParkingPermit
+from .constants import ParkingPermitStatus
+from .mock_vehicle import get_mock_vehicle
+from .models import Address, ContractType, Customer, ParkingPermit, ParkingZone, Vehicle
 from .pricing.engine import calculate_cart_item_total_price
 from .services.hel_profile import HelsinkiProfile
 
@@ -123,13 +129,33 @@ def resolve_user_profile(_, info, *args):
 
 
 @mutation.field("createParkingPermit")
-def resolve_create_parking_permit(obj, info, input):
+@convert_kwargs_to_snake_case
+def resolve_create_parking_permit(obj, info, customer_id, zone_id, registration):
+    customer = Customer.objects.get(id=customer_id)
+    contract_type = ContractType.objects.first()
+
+    try:
+        permit = ParkingPermit.objects.get(
+            Q(vehicle__registration_number__iexact=registration),
+            Q(vehicle__owner=customer) | Q(vehicle__holder=customer),
+        )
+    except ObjectDoesNotExist:
+        customer_vehicles = Vehicle.objects.filter(
+            Q(registration_number__iexact=registration),
+            Q(owner=customer) | Q(holder=customer),
+        )
+        permit = ParkingPermit.objects.create(
+            customer=customer,
+            parking_zone=ParkingZone.objects.get(id=zone_id),
+            status=ParkingPermitStatus.DRAFT.value,
+            contract_type=contract_type,
+            start_time=datetime.utcnow(),
+            primary_vehicle=len(customer_vehicles) == 0,
+            vehicle=get_mock_vehicle(customer, registration),
+        )
     return {
-        "parkingPermit": {
-            "identifier": 8000000,
-            "status": input.get("status"),
-            "contractType": "FIXED_PERIOD",
-        }
+        "success": True,
+        "permit": serialize_permit(permit),
     }
 
 
