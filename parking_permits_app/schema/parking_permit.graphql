@@ -94,8 +94,14 @@ type CreatePermitResult {
   permit: PermitNode
 }
 
+type DeletePermitResult {
+  success: Boolean!
+  errors: [String]
+}
+
 type Mutation {
   createParkingPermit(customerId: ID!, zoneId: ID!, registration: String!): CreatePermitResult!
+  deleteParkingPermit(permitId: ID!): DeletePermitResult!
   updateParkingPermit(
     parkingPermit: ID!
     input: ParkingPermitInput!
