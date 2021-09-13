@@ -173,13 +173,24 @@ def resolve_create_parking_permit(obj, info, customer_id, zone_id, registration)
 
 @mutation.field("updateParkingPermit")
 @convert_kwargs_to_snake_case
-def resolve_update_parking_permit(obj, info, parking_permit, input):
+def resolve_update_parking_permit(obj, info, permit_id, input):
+    permit, _ = ParkingPermit.objects.update_or_create(id=permit_id, defaults=input)
+    if "primary_vehicle" in input.keys():
+        other_permit = (
+            ParkingPermit.objects.filter(
+                customer=permit.customer,
+                status=constants.ParkingPermitStatus.DRAFT.value,
+            )
+            .exclude(id=permit_id)
+            .first()
+        )
+        if other_permit:
+            other_permit.primary_vehicle = not input.get("primary_vehicle")
+            other_permit.save(update_fields=["primary_vehicle"])
+
     return {
-        "parkingPermit": {
-            "identifier": 8000000,
-            "status": input.get("status"),
-            "contractType": "FIXED_PERIOD",
-        }
+        "success": True,
+        "permit": serialize_permit(permit),
     }
 
 
