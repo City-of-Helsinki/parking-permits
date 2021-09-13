@@ -40,8 +40,7 @@ class ParkingPermit(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     status = models.CharField(
         _("Status"),
         max_length=32,
-        blank=False,
-        null=True,
+        default=constants.ParkingPermitStatus.DRAFT.value,
         choices=[(tag.value, tag.value) for tag in constants.ParkingPermitStatus],
     )
     identifier = models.IntegerField(
