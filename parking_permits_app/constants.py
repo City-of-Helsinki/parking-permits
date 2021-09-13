@@ -33,8 +33,8 @@ class VehicleCategory(Enum):
 
 
 class ContractType(Enum):
-    FIXED_PERIOD = _("Fixed period")
-    OPEN_ENDED = _("Open ended")
+    FIXED_PERIOD = _("FIXED_PERIOD")
+    OPEN_ENDED = _("OPEN_ENDED")
 
 
 class VehicleType(Enum):
