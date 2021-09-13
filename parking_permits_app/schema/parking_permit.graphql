@@ -58,18 +58,13 @@ type PriceNode {
   currency: String
 }
 
-type ContractNode {
-  id: ID!
-  contractType: String
-  monthCount: Int
-}
-
 type PermitNode {
   id: ID!
   zone: ID!
   vehicle: VehicleNode!
   price: PriceNode!
-  contract: ContractNode
+  contractType: String
+  monthCount: Int
   startTime: String
   endTime: String
   status: String

@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from ariadne import (
     MutationType,
     QueryType,
@@ -12,11 +10,9 @@ from django.db.models import Q
 from django.forms.models import model_to_dict
 
 from project.settings import BASE_DIR
-
 from . import constants
-from .constants import ParkingPermitStatus
 from .mock_vehicle import get_mock_vehicle
-from .models import Address, ContractType, Customer, ParkingPermit, ParkingZone, Vehicle
+from .models import Address, Customer, ParkingPermit, ParkingZone, Vehicle
 from .pricing.engine import calculate_cart_item_total_price
 from .services.hel_profile import HelsinkiProfile
 
@@ -60,7 +56,6 @@ def serialize_permit(permit):
         vehicle_is_secondary=permit.primary_vehicle is False,
         vehicle_is_low_emission=vehicle.is_low_emission(),
     )
-    contract_type = permit.contract_type
     return snake_to_camel_dict(
         {
             "id": permit.pk,
@@ -75,7 +70,6 @@ def serialize_permit(permit):
                 "vehicle_type": {"id": vehicle.type.id, **model_to_dict(vehicle.type)},
                 **model_to_dict(vehicle),
             },
-            "contract": {"id": contract_type.pk, **model_to_dict(contract_type)},
         }
     )
 
@@ -154,7 +148,6 @@ def resolve_delete_parking_permit(obj, info, permit_id):
 @convert_kwargs_to_snake_case
 def resolve_create_parking_permit(obj, info, customer_id, zone_id, registration):
     customer = Customer.objects.get(id=customer_id)
-    contract_type = ContractType.objects.first()
 
     try:
         permit = ParkingPermit.objects.get(
@@ -169,9 +162,6 @@ def resolve_create_parking_permit(obj, info, customer_id, zone_id, registration)
         permit = ParkingPermit.objects.create(
             customer=customer,
             parking_zone=ParkingZone.objects.get(id=zone_id),
-            status=ParkingPermitStatus.DRAFT.value,
-            contract_type=contract_type,
-            start_time=datetime.utcnow(),
             primary_vehicle=len(customer_vehicles) == 0,
             vehicle=get_mock_vehicle(customer, registration),
         )
