@@ -108,34 +108,10 @@ type Mutation {
   ): CreateOrUpdatePermitResult!
 }
 
-enum ParkingPermitStatus {
-  DRAFT
-  PAID
-  CANCELLED
-  EXPIRED
-}
-
-enum ParkingPermitContractType {
-  FIXED_PERIOD
-  OPEN_ENDED
-}
-
-type ParkingPermit {
-  identifier: Int!
-  status: ParkingPermitStatus!
-  contractType: ParkingPermitContractType!
-}
-
 input ParkingPermitInput {
   primaryVehicle: Boolean
   startTime: String
   endTime: String
   contractType: String
   monthCount: Int
-}
-
-type ParkingPermitPayload {
-  error: Boolean
-  errorMessage: String
-  parkingPermit: ParkingPermit
 }
