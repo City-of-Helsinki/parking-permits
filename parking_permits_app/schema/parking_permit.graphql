@@ -88,7 +88,7 @@ type Query {
   getPermits(customerId: ID!): PermitResult
 }
 
-type CreatePermitResult {
+type CreateOrUpdatePermitResult {
   success: Boolean!
   errors: [String]
   permit: PermitNode
@@ -100,12 +100,12 @@ type DeletePermitResult {
 }
 
 type Mutation {
-  createParkingPermit(customerId: ID!, zoneId: ID!, registration: String!): CreatePermitResult!
+  createParkingPermit(customerId: ID!, zoneId: ID!, registration: String!): CreateOrUpdatePermitResult!
   deleteParkingPermit(permitId: ID!): DeletePermitResult!
   updateParkingPermit(
-    parkingPermit: ID!
+    permitId: ID!
     input: ParkingPermitInput!
-  ): ParkingPermitPayload!
+  ): CreateOrUpdatePermitResult!
 }
 
 enum ParkingPermitStatus {
@@ -127,9 +127,11 @@ type ParkingPermit {
 }
 
 input ParkingPermitInput {
-  vehicleRegistrationNumber: ID!
-  status: ParkingPermitStatus!
-  contractType: ParkingPermitContractType!
+  primaryVehicle: Boolean
+  startTime: String
+  endTime: String
+  contractType: String
+  monthCount: Int
 }
 
 type ParkingPermitPayload {
