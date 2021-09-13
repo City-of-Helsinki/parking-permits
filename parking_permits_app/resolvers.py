@@ -13,6 +13,7 @@ from django.forms.models import model_to_dict
 
 from project.settings import BASE_DIR
 
+from . import constants
 from .constants import ParkingPermitStatus
 from .mock_vehicle import get_mock_vehicle
 from .models import Address, ContractType, Customer, ParkingPermit, ParkingZone, Vehicle
@@ -132,7 +133,15 @@ def resolve_user_profile(_, info, *args):
 @convert_kwargs_to_snake_case
 def resolve_delete_parking_permit(obj, info, permit_id):
     try:
-        ParkingPermit.objects.get(id=permit_id).delete()
+        permit = ParkingPermit.objects.get(id=permit_id)
+        if permit.primary_vehicle:
+            other_permit = ParkingPermit.objects.filter(
+                customer=permit.customer,
+                status=constants.ParkingPermitStatus.DRAFT.value,
+            )
+            other_permit.primary_vehicle = True
+            other_permit.save(update_fields=["primary_vehicle"])
+        permit.delete()
         return {"success": True}
     except ObjectDoesNotExist:
         return {
