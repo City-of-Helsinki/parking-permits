@@ -1,3 +1,4 @@
+import reversion
 from ariadne import (
     MutationType,
     QueryType,
@@ -17,6 +18,7 @@ from .decorators import is_authenticated
 from .exceptions import PermitLimitExceeded
 from .mock_vehicle import get_mock_vehicle
 from .models import Address, Customer, ParkingPermit, ParkingZone, Vehicle
+from .reversion import EventType, get_reversion_comment
 from .services.hel_profile import HelsinkiProfile
 from .services.talpa import resolve_price_response
 
@@ -93,8 +95,12 @@ def resolve_delete_parking_permit(obj, info, permit_id):
                 .first()
             )
             if other_permit:
-                other_permit.primary_vehicle = True
-                other_permit.save(update_fields=["primary_vehicle"])
+                with reversion.create_revision():
+                    other_permit.primary_vehicle = True
+                    other_permit.save(update_fields=["primary_vehicle"])
+                    reversion.set_user(request.user)
+                    comment = get_reversion_comment(EventType.CHANGED, other_permit)
+                    reversion.set_comment(comment)
         permit.delete()
         return {"success": True}
     except ObjectDoesNotExist:
@@ -128,13 +134,17 @@ def resolve_create_parking_permit(obj, info, zone_id):
         contract_type = primary_permit.contract_type
         primary_vehicle = not primary_permit.primary_vehicle
 
-    ParkingPermit.objects.create(
-        customer=customer,
-        parking_zone=ParkingZone.objects.get(id=zone_id),
-        primary_vehicle=primary_vehicle,
-        contract_type=contract_type,
-        vehicle=get_mock_vehicle(customer, registration),
-    )
+    with reversion.create_revision():
+        permit = ParkingPermit.objects.create(
+            customer=customer,
+            parking_zone=ParkingZone.objects.get(id=zone_id),
+            primary_vehicle=primary_vehicle,
+            contract_type=contract_type,
+            vehicle=get_mock_vehicle(customer, registration),
+        )
+        reversion.set_user(request.user)
+        comment = get_reversion_comment(EventType.CREATED, permit)
+        reversion.set_comment(comment)
 
     return get_customer_permits(request.user.customer.id)
 
@@ -145,9 +155,14 @@ def resolve_create_parking_permit(obj, info, zone_id):
 def resolve_update_parking_permit(obj, info, permit_ids, input):
     request = info.context["request"]
     for permit_id in permit_ids:
-        permit, _ = ParkingPermit.objects.update_or_create(
-            id=permit_id, customer_id=request.user.customer.id, defaults=input
-        )
+        with reversion.create_revision():
+            permit, created = ParkingPermit.objects.update_or_create(
+                id=permit_id, customer_id=request.user.customer.id, defaults=input
+            )
+            reversion.set_user(request.user)
+            event_type = EventType.CREATED if created else EventType.CHANGED
+            comment = get_reversion_comment(event_type, permit)
+            reversion.set_comment(comment)
     permits_query = ParkingPermit.objects.filter(
         customer__id=request.user.customer.id,
         status=constants.ParkingPermitStatus.DRAFT.value,
@@ -156,7 +171,11 @@ def resolve_update_parking_permit(obj, info, permit_ids, input):
         other_permit = permits_query.exclude(id__in=permit_ids).first()
         if other_permit:
             other_permit.primary_vehicle = not input.get("primary_vehicle")
-            other_permit.save(update_fields=["primary_vehicle"])
+            with reversion.create_revision():
+                other_permit.save(update_fields=["primary_vehicle"])
+                reversion.set_user(request.user)
+                comment = get_reversion_comment(EventType.CHANGED, other_permit)
+                reversion.set_comment(comment)
 
     return get_customer_permits(request.user.customer.id)
 
