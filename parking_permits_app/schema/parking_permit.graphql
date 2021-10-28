@@ -108,8 +108,8 @@ type Mutation {
   createParkingPermit(zoneId: ID!): PermitResult!
   deleteParkingPermit(permitId: ID!): DeletePermitResult!
   updateParkingPermit(
-    permitIds: [ID]!
     input: ParkingPermitInput!
+    permitId: ID
   ): PermitResult!
   updateVehicle(
     vehicleId: ID!
