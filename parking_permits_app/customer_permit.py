@@ -58,6 +58,16 @@ class CustomerPermit:
             )
             return permit
 
+    def delete(self, permit_id):
+        self.customer_permit_query.get(id=permit_id).delete()
+
+        if self.customer_permit_query.count():
+            other_permit = self.customer_permit_query.first()
+            other_permit.primary_vehicle = True
+            other_permit.save(update_fields=["primary_vehicle"])
+
+        return True
+
     def _resolve_prices(self, permit):
         total_price, monthly_price = permit.get_prices()
         permit.prices = resolve_price_response(total_price, monthly_price)

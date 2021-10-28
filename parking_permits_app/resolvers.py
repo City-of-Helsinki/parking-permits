@@ -6,7 +6,6 @@ from ariadne import (
     snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
-from django.core.exceptions import ObjectDoesNotExist
 
 from project.settings import BASE_DIR
 
@@ -75,30 +74,8 @@ def resolve_user_profile(_, info, *args):
 @is_authenticated
 @convert_kwargs_to_snake_case
 def resolve_delete_parking_permit(obj, info, permit_id):
-    try:
-        request = info.context["request"]
-        permit = ParkingPermit.objects.get(
-            id=permit_id, customer__id=request.user.customer.id
-        )
-        if permit.primary_vehicle:
-            other_permit = (
-                ParkingPermit.objects.filter(
-                    customer=permit.customer,
-                    status=constants.ParkingPermitStatus.DRAFT.value,
-                )
-                .exclude(id=permit.id)
-                .first()
-            )
-            if other_permit:
-                other_permit.primary_vehicle = True
-                other_permit.save(update_fields=["primary_vehicle"])
-        permit.delete()
-        return {"success": True}
-    except ObjectDoesNotExist:
-        return {
-            "success": False,
-            "errors": [f"Permit item matching {permit_id} not found"],
-        }
+    request = info.context["request"]
+    return {"success": CustomerPermit(request.user.customer.id).delete(permit_id)}
 
 
 @mutation.field("createParkingPermit")
