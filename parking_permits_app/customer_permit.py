@@ -68,6 +68,12 @@ class CustomerPermit:
 
         return True
 
+    def update(self, data, permit_id=None):
+        return self._update_fields_to_all_draft(data)
+
+    def _update_fields_to_all_draft(self, data):
+        return self.customer_permit_query.filter(status=DRAFT).update(**data)
+
     def _resolve_prices(self, permit):
         total_price, monthly_price = permit.get_prices()
         permit.prices = resolve_price_response(total_price, monthly_price)

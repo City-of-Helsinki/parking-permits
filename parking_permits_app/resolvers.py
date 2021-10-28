@@ -12,7 +12,7 @@ from project.settings import BASE_DIR
 from . import constants
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
-from .models import Address, Customer, ParkingPermit, Vehicle
+from .models import Address, Customer, Vehicle
 from .services.hel_profile import HelsinkiProfile
 from .services.talpa import resolve_price_response
 
@@ -90,22 +90,9 @@ def resolve_create_parking_permit(obj, info, zone_id):
 @mutation.field("updateParkingPermit")
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_update_parking_permit(obj, info, permit_ids, input):
+def resolve_update_parking_permit(obj, info, input, permit_id=None):
     request = info.context["request"]
-    for permit_id in permit_ids:
-        permit, _ = ParkingPermit.objects.update_or_create(
-            id=permit_id, customer_id=request.user.customer.id, defaults=input
-        )
-    permits_query = ParkingPermit.objects.filter(
-        customer__id=request.user.customer.id,
-        status=constants.ParkingPermitStatus.DRAFT.value,
-    )
-    if "primary_vehicle" in input.keys():
-        other_permit = permits_query.exclude(id__in=permit_ids).first()
-        if other_permit:
-            other_permit.primary_vehicle = not input.get("primary_vehicle")
-            other_permit.save(update_fields=["primary_vehicle"])
-
+    CustomerPermit(request.user.customer.id).update(input, permit_id)
     return get_customer_permits(request.user.customer.id)
 
 
