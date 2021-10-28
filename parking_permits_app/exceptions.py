@@ -8,3 +8,11 @@ class PriceError(Exception):
 
 class InvalidUserZone(Exception):
     pass
+
+
+class InvalidContractType(Exception):
+    pass
+
+
+class NonDraftPermitUpdateError(Exception):
+    pass
