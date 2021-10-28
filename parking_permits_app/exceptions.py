@@ -4,3 +4,7 @@ class PermitLimitExceeded(Exception):
 
 class PriceError(Exception):
     pass
+
+
+class InvalidUserZone(Exception):
+    pass
