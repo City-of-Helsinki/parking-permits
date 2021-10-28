@@ -6,18 +6,14 @@ from ariadne import (
     snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
 
 from project.settings import BASE_DIR
 
 from . import constants
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
-from .exceptions import PermitLimitExceeded
-from .mock_vehicle import get_mock_vehicle
-from .models import Address, Customer, ParkingPermit, ParkingZone, Vehicle
+from .models import Address, Customer, ParkingPermit, Vehicle
 from .services.hel_profile import HelsinkiProfile
 from .services.talpa import resolve_price_response
 
@@ -110,33 +106,7 @@ def resolve_delete_parking_permit(obj, info, permit_id):
 @convert_kwargs_to_snake_case
 def resolve_create_parking_permit(obj, info, zone_id):
     request = info.context["request"]
-    registration = ""
-    customer = Customer.objects.get(id=request.user.customer.id)
-
-    permits = ParkingPermit.objects.filter(
-        Q(status__in=ACTIVE_PERMIT_STATUSES),
-        Q(vehicle__owner=customer) | Q(vehicle__holder=customer),
-    )
-    if permits.count() > settings.MAX_ALLOWED_USER_PERMIT:
-        raise PermitLimitExceeded(
-            f"You can have a max of ${settings.MAX_ALLOWED_USER_PERMIT} permits."
-        )
-
-    contract_type = constants.ContractType.OPEN_ENDED.value
-    primary_vehicle = True
-    if permits.count():
-        primary_permit = permits.get(primary_vehicle=True)
-        contract_type = primary_permit.contract_type
-        primary_vehicle = not primary_permit.primary_vehicle
-
-    ParkingPermit.objects.create(
-        customer=customer,
-        parking_zone=ParkingZone.objects.get(id=zone_id),
-        primary_vehicle=primary_vehicle,
-        contract_type=contract_type,
-        vehicle=get_mock_vehicle(customer, registration),
-    )
-
+    CustomerPermit(request.user.customer.id).create(zone_id)
     return get_customer_permits(request.user.customer.id)
 
 
