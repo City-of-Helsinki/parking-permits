@@ -56,6 +56,7 @@ class EmissionType(Enum):
 
 class ParkingPermitStatus(Enum):
     DRAFT = _("DRAFT")
+    PROCESSING = _("PROCESSING")
     VALID = _("VALID")
     CANCELLED = _("CANCELLED")
     EXPIRED = _("EXPIRED")
