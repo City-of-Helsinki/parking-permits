@@ -13,6 +13,7 @@ from django.db.models import Q
 from project.settings import BASE_DIR
 
 from . import constants
+from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import PermitLimitExceeded
 from .mock_vehicle import get_mock_vehicle
@@ -172,21 +173,10 @@ def resolve_update_vehicle(obj, info, vehicle_id, registration):
 
 
 def get_customer_permits(customer_id):
-    try:
-        permits = ParkingPermit.objects.filter(
-            customer__pk=customer_id, status__in=ACTIVE_PERMIT_STATUSES
-        ).order_by("start_time")
-        payload = {
-            "success": True,
-            "permits": [resolve_prices_and_low_emission(permit) for permit in permits],
-        }
-    except AttributeError:
-        payload = {
-            "success": False,
-            "errors": [f"Permits item matching {customer_id} not found"],
-        }
-
-    return payload
+    return {
+        "success": True,
+        "permits": CustomerPermit(customer_id).get(),
+    }
 
 
 def resolve_prices_and_low_emission(permit):
