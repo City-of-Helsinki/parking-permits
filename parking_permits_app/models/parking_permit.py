@@ -1,9 +1,9 @@
 import decimal
-from datetime import datetime
 
 import reversion
 from django.contrib.gis.db import models
 from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from .. import constants
@@ -59,7 +59,7 @@ class ParkingPermit(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         default=get_next_identifier, editable=False, unique=True, db_index=True
     )
     consent_low_emission_accepted = models.BooleanField(null=False, default=False)
-    start_time = models.DateTimeField(_("Start time"), default=datetime.now)
+    start_time = models.DateTimeField(_("Start time"), default=tz.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
     primary_vehicle = models.BooleanField(null=False, default=True)
     contract_type = models.CharField(
