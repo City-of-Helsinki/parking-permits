@@ -78,6 +78,10 @@ class CustomerPermit:
                 "consent_low_emission_accepted", False
             )
             return permit.save(update_fields=["consent_low_emission_accepted"])
+
+        if "primary_vehicle" in keys:
+            return self._toggle_primary_permit()
+
         return self._update_fields_to_all_draft(fields_to_update)
 
     def _update_fields_to_all_draft(self, data):
@@ -135,3 +139,13 @@ class CustomerPermit:
     def _get_permit(self, permit_id):
         permit = self.customer_permit_query.get(id=permit_id)
         return permit, permit.primary_vehicle
+
+    def _toggle_primary_permit(self):
+        primary, secondary = self._get_primary_and_secondary_permit()
+        if not secondary:
+            return [primary]
+        primary.primary_vehicle = secondary.primary_vehicle
+        primary.save(update_fields=["primary_vehicle"])
+        secondary.primary_vehicle = not secondary.primary_vehicle
+        secondary.save(update_fields=["primary_vehicle"])
+        return [primary, secondary]
