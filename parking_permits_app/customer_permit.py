@@ -1,3 +1,5 @@
+from dateutil.parser import parse
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
@@ -13,10 +15,19 @@ OPEN_ENDED = constants.ContractType.OPEN_ENDED.value
 DRAFT = constants.ParkingPermitStatus.DRAFT.value
 VALID = constants.ParkingPermitStatus.VALID.value
 PROCESSING = constants.ParkingPermitStatus.PROCESSING.value
+FROM = constants.StartType.FROM.value
 
 
 def next_day():
     return tz.localtime(tz.now() + tz.timedelta(days=1))
+
+
+def two_week_from_now():
+    return tz.localtime(tz.now() + tz.timedelta(weeks=2))
+
+
+def get_end_time(start, month=0):
+    return tz.localtime(start + relativedelta(months=month))
 
 
 class CustomerPermit:
@@ -92,6 +103,9 @@ class CustomerPermit:
         if "zone_id" in keys and self._can_buy_permit_for_zone(data["zone_id"]):
             fields_to_update.update({"parking_zone": data["zone_id"]})
 
+        if "start_type" in keys or "start_time" in keys:
+            fields_to_update.update(self._get_start_type_and_start_time(data))
+
         return self._update_fields_to_all_draft(fields_to_update)
 
     def _update_fields_to_all_draft(self, data):
@@ -159,3 +173,25 @@ class CustomerPermit:
         secondary.primary_vehicle = not secondary.primary_vehicle
         secondary.save(update_fields=["primary_vehicle"])
         return [primary, secondary]
+
+    # Start time will be next day by default if the type is immediately
+    # but if the start type is FROM then the start time can not be
+    # now or in the past also it can not be more than two weeks in future.
+    def _get_start_type_and_start_time(self, data):
+        start_type = data.get("start_type", None)
+        start_time = data.get("start_time", next_day())
+
+        if start_time and not start_type:
+            start_type = FROM
+
+        if not data.get("start_time", None) and not start_type:
+            start_type = IMMEDIATELY
+
+        if start_type == FROM:
+            parsed = tz.localtime(parse(start_time))
+            start_time = (
+                two_week_from_now()
+                if parsed.date() > two_week_from_now().date()
+                else parsed
+            )
+        return {"start_type": start_type, "start_time": start_time}
