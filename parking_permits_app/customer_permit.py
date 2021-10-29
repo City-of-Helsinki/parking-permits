@@ -5,10 +5,16 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 
 from . import constants
-from .exceptions import InvalidUserZone, PermitLimitExceeded
+from .exceptions import (
+    InvalidContractType,
+    InvalidUserZone,
+    NonDraftPermitUpdateError,
+    PermitLimitExceeded,
+)
 from .mock_vehicle import get_mock_vehicle
 from .models import Customer, ParkingPermit, ParkingZone
 from .services.talpa import resolve_price_response
+from .utils import calc_months_diff
 
 IMMEDIATELY = constants.StartType.IMMEDIATELY.value
 OPEN_ENDED = constants.ContractType.OPEN_ENDED.value
@@ -16,6 +22,7 @@ DRAFT = constants.ParkingPermitStatus.DRAFT.value
 VALID = constants.ParkingPermitStatus.VALID.value
 PROCESSING = constants.ParkingPermitStatus.PROCESSING.value
 FROM = constants.StartType.FROM.value
+FIXED_PERIOD = constants.ContractType.FIXED_PERIOD.value
 
 
 def next_day():
@@ -106,6 +113,54 @@ class CustomerPermit:
         if "start_type" in keys or "start_time" in keys:
             fields_to_update.update(self._get_start_type_and_start_time(data))
 
+        if "contract_type" in keys or "month_count" in keys:
+            permit_to_update = [permit_id]
+            contract_type = data.get("contract_type", None)
+            month_count = data.get("month_count", 1)
+            primary, secondary = self._get_primary_and_secondary_permit()
+            end_time = get_end_time(primary.start_time, month_count)
+            if not contract_type:
+                raise InvalidContractType("Contract type is required")
+
+            # Second permit can not be open ended if primary permit valid or processing and is fixed period
+            if (
+                primary.status != DRAFT
+                and primary.contract_type == FIXED_PERIOD
+                and contract_type != FIXED_PERIOD
+            ):
+                raise InvalidContractType(f"Only {FIXED_PERIOD} is allowed")
+
+            if permit_id:
+                permit, is_primary = self._get_permit(permit_id)
+
+                if permit.status != DRAFT:
+                    raise NonDraftPermitUpdateError(
+                        "This is not a draft permit and can not be edited"
+                    )
+
+                if is_primary:
+                    month_count = self._get_month_count_for_primary_permit(month_count)
+                    if secondary and secondary.month_count > month_count:
+                        permit_to_update.append(secondary.id)
+                else:
+                    month_count = self._get_month_count_for_secondary_permit(
+                        month_count
+                    )
+                    sec_p_end_time = get_end_time(secondary.start_time, month_count)
+                    end_time = end_time if sec_p_end_time > end_time else sec_p_end_time
+
+            fields_to_update.update(
+                {
+                    "contract_type": data["contract_type"],
+                    "month_count": month_count,
+                    "end_time": end_time,
+                }
+            )
+            if permit_id:
+                return self.customer_permit_query.filter(
+                    id__in=permit_to_update
+                ).update(**fields_to_update)
+
         return self._update_fields_to_all_draft(fields_to_update)
 
     def _update_fields_to_all_draft(self, data):
@@ -195,3 +250,20 @@ class CustomerPermit:
                 else parsed
             )
         return {"start_type": start_type, "start_time": start_time}
+
+    def _get_month_count_for_secondary_permit(self, count):
+        primary, secondary = self._get_primary_and_secondary_permit()
+        end_date = primary.end_time
+
+        month_diff = calc_months_diff(next_day(), end_date)
+        dangling_days = (end_date - get_end_time(next_day(), month_diff)).days
+
+        month_count = month_diff + 1 if dangling_days >= 1 else month_diff
+        return month_count if count > month_count else count
+
+    def _get_month_count_for_primary_permit(self, month_count):
+        if month_count > 12:
+            return 12
+        if month_count < 1:
+            return 1
+        return month_count
