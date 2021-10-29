@@ -89,6 +89,9 @@ class CustomerPermit:
         if "primary_vehicle" in keys:
             return self._toggle_primary_permit()
 
+        if "zone_id" in keys and self._can_buy_permit_for_zone(data["zone_id"]):
+            fields_to_update.update({"parking_zone": data["zone_id"]})
+
         return self._update_fields_to_all_draft(fields_to_update)
 
     def _update_fields_to_all_draft(self, data):
