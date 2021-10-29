@@ -69,7 +69,16 @@ class CustomerPermit:
         return True
 
     def update(self, data, permit_id=None):
-        return self._update_fields_to_all_draft(data)
+        keys = data.keys()
+        fields_to_update = {}
+
+        if "consent_low_emission_accepted" in keys:
+            permit, is_primary = self._get_permit(permit_id)
+            permit.consent_low_emission_accepted = data.get(
+                "consent_low_emission_accepted", False
+            )
+            return permit.save(update_fields=["consent_low_emission_accepted"])
+        return self._update_fields_to_all_draft(fields_to_update)
 
     def _update_fields_to_all_draft(self, data):
         return self.customer_permit_query.filter(status=DRAFT).update(**data)
@@ -122,3 +131,7 @@ class CustomerPermit:
         except ObjectDoesNotExist:
             pass
         return primary, secondary
+
+    def _get_permit(self, permit_id):
+        permit = self.customer_permit_query.get(id=permit_id)
+        return permit, permit.primary_vehicle
