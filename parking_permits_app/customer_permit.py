@@ -254,6 +254,8 @@ class CustomerPermit:
     def _get_month_count_for_secondary_permit(self, count):
         primary, secondary = self._get_primary_and_secondary_permit()
         end_date = primary.end_time
+        if not end_date:
+            return 12 if count > 12 else count
 
         month_diff = calc_months_diff(next_day(), end_date)
         dangling_days = (end_date - get_end_time(next_day(), month_diff)).days
