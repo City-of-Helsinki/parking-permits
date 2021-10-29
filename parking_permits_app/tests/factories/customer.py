@@ -19,6 +19,7 @@ class CustomerFactory(factory.django.DjangoModelFactory):
     last_name = factory.Faker("last_name")
     national_id_number = factory.LazyFunction(generate_random_national_id)
     primary_address = factory.SubFactory(AddressFactory)
+    other_address = factory.SubFactory(AddressFactory)
 
     class Meta:
         model = Customer
