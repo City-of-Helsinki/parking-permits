@@ -72,6 +72,13 @@ class CustomerPermit:
         keys = data.keys()
         fields_to_update = {}
 
+        # TODO: this is a remporary solution for now. It should be removed and the field
+        #  needs to be updated when a notification is received from talpa
+        if "order_id" in keys:
+            fields_to_update.update(
+                {"order_id": data["order_id"], "status": PROCESSING}
+            )
+
         if "consent_low_emission_accepted" in keys:
             permit, is_primary = self._get_permit(permit_id)
             permit.consent_low_emission_accepted = data.get(
