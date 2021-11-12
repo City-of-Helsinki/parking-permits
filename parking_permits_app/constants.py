@@ -56,10 +56,13 @@ class EmissionType(Enum):
 
 class ParkingPermitStatus(Enum):
     DRAFT = _("DRAFT")
+    ARRIVED = _("ARRIVED")
     PROCESSING = _("PROCESSING")
+    ACCEPTED = _("ACCEPTED")
+    REJECTED = _("REJECTED")
+    PAYMENT_IN_PROGRESS = _("PAYMENT_IN_PROGRESS")
     VALID = _("VALID")
-    CANCELLED = _("CANCELLED")
-    EXPIRED = _("EXPIRED")
+    CLOSED = _("CLOSED")
 
 
 class RefundStatus(Enum):

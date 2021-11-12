@@ -26,8 +26,7 @@ from parking_permits_app.tests.factories.vehicle import (
 
 DRAFT = constants.ParkingPermitStatus.DRAFT.value
 VALID = constants.ParkingPermitStatus.VALID.value
-CANCELLED = constants.ParkingPermitStatus.CANCELLED.value
-EXPIRED = constants.ParkingPermitStatus.EXPIRED.value
+CLOSED = constants.ParkingPermitStatus.CLOSED.value
 PROCESSING = constants.ParkingPermitStatus.PROCESSING.value
 IMMEDIATELY = constants.StartType.IMMEDIATELY.value
 FROM = constants.StartType.FROM.value
@@ -111,17 +110,11 @@ class GetCustomerPermitTestCase(TestCase):
         self.assertGreater(draft.start_time, tz.now())
         self.assertLessEqual(valid.start_time, tz.now())
 
-    def test_customer_should_not_get_canceled_or_expired_permit(self):
+    def test_customer_should_not_get_closed_permit(self):
         customer = CustomerFactory(first_name="Firstname", last_name="Lastname")
         ParkingPermitFactory(
             customer=customer,
-            status=CANCELLED,
-            primary_vehicle=True,
-            parking_zone=self.zone,
-        )
-        ParkingPermitFactory(
-            customer=customer,
-            status=EXPIRED,
+            status=CLOSED,
             primary_vehicle=True,
             parking_zone=self.zone,
         )
@@ -216,12 +209,7 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.customer_a = CustomerFactory(first_name="Firstname A", last_name="")
         self.customer_b = CustomerFactory(first_name="Firstname B", last_name="")
 
-        self.c_a_canceled = ParkingPermitFactory(
-            customer=self.customer_a, status=CANCELLED
-        )
-        self.c_a_expired = ParkingPermitFactory(
-            customer=self.customer_a, status=EXPIRED
-        )
+        self.c_a_closed = ParkingPermitFactory(customer=self.customer_a, status=CLOSED)
         self.c_a_processing = ParkingPermitFactory(
             customer=self.customer_a, status=PROCESSING
         )
@@ -234,10 +222,7 @@ class DeleteCustomerPermitTestCase(TestCase):
     def test_customer_a_can_not_delete_non_draft_permit(self):
         msg = "Non draft permit can not be deleted"
         with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
-            CustomerPermit(self.customer_a.id).delete(self.c_a_canceled.id)
-
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
-            CustomerPermit(self.customer_a.id).delete(self.c_a_expired.id)
+            CustomerPermit(self.customer_a.id).delete(self.c_a_closed.id)
 
         with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_valid.id)
@@ -264,8 +249,7 @@ class UpdateCustomerPermitTestCase(TestCase):
             status=DRAFT,
             parking_zone=self.cus_a.primary_address.zone,
         )
-        self.c_a_can = ParkingPermitFactory(customer=self.cus_a, status=CANCELLED)
-        self.c_a_exp = ParkingPermitFactory(customer=self.cus_a, status=EXPIRED)
+        self.c_a_can = ParkingPermitFactory(customer=self.cus_a, status=CLOSED)
         self.c_b_valid = ParkingPermitFactory(customer=self.cus_b, status=VALID)
         self.c_b_draft = ParkingPermitFactory(customer=self.cus_b, status=DRAFT)
         self.c_a_draft_sec = ParkingPermitFactory(
@@ -286,14 +270,12 @@ class UpdateCustomerPermitTestCase(TestCase):
         res = CustomerPermit(self.cus_a.id).update(data, self.c_a_draft.id)
         self.assertEqual(res.consent_low_emission_accepted, True)
 
-    def test_can_not_update_consent_low_emission_accepted_for_cancelled_or_expired_permit(
+    def test_can_not_update_consent_low_emission_accepted_for_closed(
         self,
     ):
         data = {"consent_low_emission_accepted": True}
         with self.assertRaises(ObjectDoesNotExist):
             CustomerPermit(self.cus_a.id).update(data, self.c_a_can.id)
-        with self.assertRaises(ObjectDoesNotExist):
-            CustomerPermit(self.cus_a.id).update(data, self.c_a_exp.id)
 
     def test_toggle_primary_vehicle_of_customer_a(self):
         data = {"primary_vehicle": True}
