@@ -114,17 +114,24 @@ def resolve_create_resident_permit(_, info, permit):
         id=vehicle_info["holder"]["national_id_number"],
         defaults=vehicle_info["holder"],
     )
-    vehicle, _ = Vehicle.objects.update_or_create(
-        registration_number=vehicle_info["registration_number"],
-        defaults={
-            "customer": customer,
-            "manufacturer": vehicle_info["manufacturer"],
-            "model": vehicle_info["model"],
-            "low_emission_vehicle": vehicle_info["is_low_emission"],
-            "owner": owner,
-            "holder": holder,
-        },
-    )
+
+    # Currently, the Vehicle registration_number is not unique,
+    # which raised exception there're multiple vehicles for the
+    # same registration number in the database
+    vehicle = Vehicle.objects.filter(
+        registration_number=vehicle_info["registration_number"]
+    ).first()
+    if not vehicle:
+        vehicle = Vehicle.objects.create(
+            registration_number=vehicle_info["registration_number"],
+            production_year=vehicle_info["production_year"],
+            manufacturer=vehicle_info["manufacturer"],
+            emission=vehicle_info["emission"],
+            model=vehicle_info["model"],
+            low_emission_vehicle=vehicle_info["is_low_emission"],
+            owner=owner,
+            holder=holder,
+        )
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"]["name"])
     with reversion.create_revision():
         permit = ParkingPermit.objects.create(

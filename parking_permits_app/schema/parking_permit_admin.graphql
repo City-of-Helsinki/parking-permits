@@ -155,6 +155,8 @@ input VehicleInput {
   manufacturer: String!
   model: String!
   registrationNumber: String!
+  productionYear: Int!
+  emission: Int!
   isLowEmission: Boolean!
   holder: VehicleUserInput
   owner: VehicleUserInput
