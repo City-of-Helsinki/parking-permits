@@ -17,6 +17,7 @@ from parking_permits_app.models import (
     ParkingPermit,
     ParkingZone,
     Vehicle,
+    VehicleType,
 )
 
 from .constants import ContractType
@@ -122,6 +123,7 @@ def resolve_create_resident_permit(_, info, permit):
         registration_number=vehicle_info["registration_number"]
     ).first()
     if not vehicle:
+        vehicle_type = VehicleType.objects.get(type=vehicle_info["engine_type"])
         vehicle = Vehicle.objects.create(
             registration_number=vehicle_info["registration_number"],
             production_year=vehicle_info["production_year"],
@@ -129,6 +131,8 @@ def resolve_create_resident_permit(_, info, permit):
             emission=vehicle_info["emission"],
             model=vehicle_info["model"],
             low_emission_vehicle=vehicle_info["is_low_emission"],
+            last_inspection_date=vehicle_info["last_inspection_date"],
+            type=vehicle_type,
             owner=owner,
             holder=holder,
         )

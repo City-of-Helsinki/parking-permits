@@ -162,10 +162,12 @@ input VehicleInput {
   productionYear: Int!
   emission: Int!
   isLowEmission: Boolean!
+  lastInspectionDate: String!
   holder: VehicleUserInput
   owner: VehicleUserInput
   serialNumber: String
   type: String
+  engineType: String
   consentLowEmissionAccepted: Boolean!
 }
 
@@ -182,6 +184,8 @@ type ResponseNode {
   success: Boolean
 }
 
+
 type Mutation {
   createResidentPermit(permit: ResidentPermitInput!): ResponseNode
+
 }
