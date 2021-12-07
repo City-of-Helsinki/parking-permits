@@ -1,5 +1,5 @@
 import reversion
-from dateutil.parser import parse
+from dateutil.parser import isoparse, parse
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -209,7 +209,11 @@ class CustomerPermit:
         keys = data.keys()
         with reversion.create_revision():
             for key in keys:
-                setattr(permit, key, data[key])
+                if isinstance(data[key], str) and key in ["start_time", "end_time"]:
+                    val = isoparse(data[key])
+                else:
+                    val = data[key]
+                setattr(permit, key, val)
             permit.save(update_fields=keys)
             event_type = EventType.CHANGED
             comment = get_reversion_comment(event_type, permit)
