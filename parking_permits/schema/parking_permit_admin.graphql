@@ -1,5 +1,4 @@
 type ZoneNode {
-  id: ID!
   name: String
   description: String
   descriptionSv: String
