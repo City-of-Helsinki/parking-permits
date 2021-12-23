@@ -68,7 +68,7 @@ class Product(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     unit = models.CharField(
         _("Unit"), max_length=50, choices=Unit.choices, default=Unit.MONTHLY
     )
-    vat = models.DecimalField(_("VAT"), max_digits=4, decimal_places=2)
+    vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     low_emission_discount = models.DecimalField(
         _("Low emission discount"), max_digits=4, decimal_places=2
     )

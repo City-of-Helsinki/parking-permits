@@ -98,6 +98,8 @@ class TalpaOrderManager:
         with transaction.atomic():
             order.talpa_order_id = response_data["orderId"]
             order.talpa_subscription_id = response_data["subscriptionId"]
+            order.talpa_checkout_url = response_data["checkoutUrl"]
+            order.talpa_receipt_url = response_data["receiptUrl"]
             order.save()
             talpa_order_item_id_mapping = {
                 item["meta"][0]["value"]: item["orderItemId"]

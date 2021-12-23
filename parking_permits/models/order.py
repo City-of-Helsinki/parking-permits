@@ -64,6 +64,8 @@ class Order(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     talpa_subscription_id = models.UUIDField(
         _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
     )
+    talpa_checkout_url = models.URLField(_("Talpa checkout url"), blank=True)
+    talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
     customer = models.ForeignKey(
         Customer,
         verbose_name=_("Customer"),
@@ -124,7 +126,7 @@ class OrderItem(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         on_delete=models.PROTECT,
     )
     unit_price = models.DecimalField(_("Unit price"), max_digits=6, decimal_places=2)
-    vat = models.DecimalField(_("VAT"), max_digits=4, decimal_places=2)
+    vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     quantity = models.IntegerField(_("Quantity"))
 
     class Meta:
