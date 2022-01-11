@@ -279,7 +279,7 @@ def resolve_update_product(obj, info, product_id, product):
     _product = Product.objects.get(id=product_id)
     _product.type = product["type"]
     _product.zone = zone
-    _product.unitPrice = product["unit_price"]
+    _product.unit_price = product["unit_price"]
     _product.unit = product["unit"]
     _product.start_date = product["start_date"]
     _product.end_date = product["end_date"]
@@ -297,4 +297,26 @@ def resolve_update_product(obj, info, product_id, product):
 def resolve_delete_product(obj, info, product_id):
     product = Product.objects.get(id=product_id)
     product.delete()
+    return {"success": True}
+
+
+@mutation.field("createProduct")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_create_product(obj, info, product):
+    request = info.context["request"]
+    zone = ParkingZone.objects.get(name=product["zone"])
+    Product.objects.create(
+        type=product["type"],
+        zone=zone,
+        unit_price=product["unit_price"],
+        unit=product["unit"],
+        start_date=product["start_date"],
+        end_date=product["end_date"],
+        vat=product["vat_percentage"] / 100,
+        low_emission_discount=product["low_emission_discount"],
+        created_by=request.user,
+        modified_by=request.user,
+    )
     return {"success": True}

@@ -233,4 +233,5 @@ type Mutation {
   updateResidentPermit(permitId: ID!, permitInfo: ResidentPermitInput!): MutationResponse
   updateProduct(productId: ID!, product: ProductInput!): MutationResponse
   deleteProduct(productId: ID!): MutationResponse
+  createProduct(product: ProductInput!): MutationResponse
 }
