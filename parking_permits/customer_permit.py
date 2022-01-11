@@ -222,19 +222,14 @@ class CustomerPermit:
 
     def _update_permit(self, permit, data):
         keys = data.keys()
-        with reversion.create_revision():
-            for key in keys:
-                if isinstance(data[key], str) and key in ["start_time", "end_time"]:
-                    val = isoparse(data[key])
-                else:
-                    val = data[key]
-                setattr(permit, key, val)
-            permit.save(update_fields=keys)
-            event_type = EventType.CHANGED
-            comment = get_reversion_comment(event_type, permit)
-            reversion.set_user(self.customer.user)
-            reversion.set_comment(comment)
-            return permit
+        for key in keys:
+            if isinstance(data[key], str) and key in ["start_time", "end_time"]:
+                val = isoparse(data[key])
+            else:
+                val = data[key]
+            setattr(permit, key, val)
+        permit.save(update_fields=keys)
+        return permit
 
     def _calculate_prices(self, permit, product_with_qty):
         product = product_with_qty[0]
