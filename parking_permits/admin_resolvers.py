@@ -70,7 +70,7 @@ def resolve_permit_detail_history(permit, info):
 @is_ad_admin
 @convert_kwargs_to_snake_case
 def resolve_zones(obj, info):
-    return ParkingZone.objects.all()
+    return ParkingZone.objects.all().order_by("name")
 
 
 @query.field("customer")
