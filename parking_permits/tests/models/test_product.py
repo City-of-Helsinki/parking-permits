@@ -1,11 +1,41 @@
 import uuid
+from datetime import date
 from unittest.mock import patch
 
 from django.test import TestCase
 
 from parking_permits.exceptions import CreateTalpaProductError
+from parking_permits.models import Product
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.zone import ParkingZoneFactory
+
+
+class TestProductQuerySet(TestCase):
+    def test_for_date_range_returns_products_overlaps_with_range(self):
+        zone = ParkingZoneFactory(name="A")
+        ProductFactory(
+            zone=zone, start_date=date(2021, 1, 1), end_date=date(2021, 8, 31)
+        )
+        ProductFactory(
+            zone=zone, start_date=date(2021, 9, 1), end_date=date(2021, 12, 31)
+        )
+        ProductFactory(
+            zone=zone, start_date=date(2022, 1, 1), end_date=date(2022, 12, 31)
+        )
+        qs = Product.objects.for_date_range(date(2021, 6, 1), date(2022, 3, 30))
+        self.assertEqual(qs.count(), 3)
+
+    def test_for_date_range_returns_product_covers_full_range(self):
+        zone = ParkingZoneFactory(name="A")
+        ProductFactory(
+            zone=zone, start_date=date(2021, 1, 1), end_date=date(2021, 12, 31)
+        )
+        ProductFactory(
+            zone=zone, start_date=date(2022, 1, 1), end_date=date(2022, 12, 31)
+        )
+        qs = Product.objects.for_date_range(date(2022, 2, 1), date(2022, 8, 31))
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs[0].start_date, date(2022, 1, 1))
 
 
 class MockResponse:
