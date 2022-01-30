@@ -168,3 +168,7 @@ LOGGING = {
     },
     "loggers": {"db": {"handlers": ["db_log"], "level": "DEBUG"}},
 }
+
+CRONJOBS = [
+    ("22 00 * * *", "parking_permits.cron.automatic_expiration_of_permits"),
+]
