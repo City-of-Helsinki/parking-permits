@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "reversion",
     "django_db_logger",
     "drf_yasg",
+    "django_crontab",
 ]
 
 MIDDLEWARE = [
