@@ -57,7 +57,7 @@ class TalpaResolvePrice(APIView):
         tags=["ResolvePrice"],
     )
     def post(self, request, format=None):
-        meta = request.data.get("meta")
+        meta = request.data.get("orderItem").get("meta")
         permit_id = talpa.get_meta_value(meta, "permitId")
 
         if permit_id is None:
@@ -107,7 +107,7 @@ class TalpaResolveRightOfPurchase(APIView):
         tags=["RightOfPurchase"],
     )
     def post(self, request):
-        meta = request.data.get("meta")
+        meta = request.data.get("orderItem").get("meta")
         permit_id = talpa.get_meta_value(meta, "permitId")
         user_id = request.data.get("userId")
 

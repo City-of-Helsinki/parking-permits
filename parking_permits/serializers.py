@@ -6,9 +6,13 @@ class MetaItemSerializer(serializers.Serializer):
     value = serializers.CharField(help_text="Meta value")
 
 
+class OrderItemSerializer(serializers.Serializer):
+    meta = MetaItemSerializer(many=True)
+
+
 class TalpaPayloadSerializer(serializers.Serializer):
     userId = serializers.CharField(help_text="User id")
-    meta = MetaItemSerializer(many=True)
+    orderItem = OrderItemSerializer()
 
 
 class RightOfPurchaseResponseSerializer(serializers.Serializer):
