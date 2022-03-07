@@ -12,6 +12,7 @@ ARG LOCAL_REDHAT_USERNAME
 ARG LOCAL_REDHAT_PASSWORD
 ARG BUILD_MODE
 
+RUN ls -la
 # Copy entitlements
 COPY ./etc-pki-entitlement /etc/pki/entitlement
 # Copy subscription manager configurations if required
