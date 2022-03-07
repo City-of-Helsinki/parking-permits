@@ -10,6 +10,7 @@
 !project*
 !users*
 !locale*
+!etc-pki-entitlement*
 
 #################################################
 # Allowed files
