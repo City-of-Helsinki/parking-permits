@@ -12,7 +12,6 @@ ARG LOCAL_REDHAT_USERNAME
 ARG LOCAL_REDHAT_PASSWORD
 ARG BUILD_MODE
 
-RUN ls -la
 # Copy entitlements
 COPY ./etc-pki-entitlement /etc/pki/entitlement
 # Copy subscription manager configurations if required
@@ -28,7 +27,6 @@ RUN if [ "x$BUILD_MODE" = "xlocal" ] ;\
     fi
 
 RUN subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
-RUN subscription-manager repos --disable rhel-8-for-x86_64-baseos-beta-rpms
 RUN subscription-manager repos --disable rhel-8-for-x86_64-appstream-beta-rpms
 RUN yum -y update
 
