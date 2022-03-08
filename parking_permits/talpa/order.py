@@ -78,7 +78,7 @@ class TalpaOrderManager:
     def _append_detail_meta(cls, item, permit):
         start_time = timezone.localtime(permit.start_time).strftime(DATE_FORMAT)
         item["meta"] += [
-            {"key": "permitId", "value": str(permit.id), "visible": False},
+            {"key": "permitId", "value": str(permit.id), "visibleInCheckout": False},
             {
                 "key": "permitDuration",
                 "label": _("Duration of parking permit"),
