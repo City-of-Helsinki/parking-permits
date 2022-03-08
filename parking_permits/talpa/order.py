@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 
 from parking_permits.exceptions import OrderCreationFailed
 from parking_permits.models.order import OrderType
+from parking_permits.utils import date_time_to_utc
 
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
@@ -46,9 +47,7 @@ class TalpaOrderManager:
             "productName": order_item.product.name,
             "productDescription": cls._get_product_description(order_item.product),
             "unit": "kk",
-            "startDate": timezone.localtime(order_item.permit.start_time).strftime(
-                DATE_FORMAT
-            ),
+            "startDate": date_time_to_utc(order_item.permit.start_time),
             "quantity": order_item.quantity,
             "priceNet": float(order_item.unit_price_net),
             "priceVat": float(order_item.unit_price_vat),

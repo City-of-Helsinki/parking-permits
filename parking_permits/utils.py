@@ -5,6 +5,7 @@ from functools import reduce
 from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 from django.utils import timezone
+from pytz import utc
 
 
 def apply_ordering(queryset, order_by):
@@ -73,3 +74,9 @@ def find_next_date(dt, day):
     if found < dt:
         found += relativedelta(months=1)
     return found
+
+
+def date_time_to_utc(dt):
+    return (
+        dt.replace(microsecond=0).astimezone(utc).replace(tzinfo=None).isoformat() + "Z"
+    )
