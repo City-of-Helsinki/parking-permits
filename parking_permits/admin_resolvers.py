@@ -125,7 +125,7 @@ def update_or_create_customer(customer_info):
     if customer_info["address_security_ban"]:
         customer_info.pop("first_name", None)
         customer_info.pop("last_name", None)
-        customer_info.pop("address", None)
+        customer_info.pop("primary_address", None)
 
     customer_data = {
         "first_name": customer_info.get("first_name", ""),
