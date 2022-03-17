@@ -45,41 +45,30 @@ def resolve_customer_permits(obj, info):
     return get_customer_permits(request.user.customer.id)
 
 
+def save_profile_address(address):
+    street_name = address.get("street_name")
+    street_number = address.get("street_number")
+    address_detail = get_address_detail_from_kmo(street_name, street_number)
+    address.update(address_detail)
+    zone = ParkingZone.objects.get_for_location(address["location"])
+    address["zone"] = zone
+    address_obj, _ = Address.objects.update_or_create(
+        source_system=address.get("source_system"),
+        source_id=address.get("source_id"),
+        defaults=address,
+    )
+    return address_obj
+
+
 @query.field("profile")
 @is_authenticated
 def resolve_user_profile(_, info, *args):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
-    primary_address, other_address = profile.get_addresses()
-
-    primary_street_name = primary_address.get("street_name")
-    primary_street_number = primary_address.get("street_number")
-    primary_address_detail = get_address_detail_from_kmo(
-        primary_street_name, primary_street_number
-    )
-    primary_address.update(primary_address_detail)
-    zone = ParkingZone.objects.get_for_location(primary_address["location"])
-    primary_address["zone"] = zone
-    primary_obj, _ = Address.objects.update_or_create(
-        source_system=primary_address.get("source_system"),
-        source_id=primary_address.get("source_id"),
-        defaults=primary_address,
-    )
-
-    other_street_name = primary_address.get("street_name")
-    other_street_number = primary_address.get("street_number")
-    other_address_detail = get_address_detail_from_kmo(
-        other_street_name, other_street_number
-    )
-    other_address.update(other_address_detail)
-    zone = ParkingZone.objects.get_for_location(other_address["location"])
-    other_address["zone"] = zone
-    other_obj, _ = Address.objects.update_or_create(
-        source_system=other_address.get("source_system"),
-        source_id=other_address.get("source_id"),
-        defaults=other_address,
-    )
+    primary_address_data, other_address_data = profile.get_addresses()
+    primary_address = save_profile_address(primary_address_data)
+    other_address = save_profile_address(other_address_data)
 
     customer_obj, _ = Customer.objects.update_or_create(
         source_system=customer.get("source_system"),
@@ -87,7 +76,7 @@ def resolve_user_profile(_, info, *args):
         defaults={
             "user": request.user,
             **customer,
-            **{"primary_address": primary_obj, "other_address": other_obj},
+            **{"primary_address": primary_address, "other_address": other_address},
         },
     )
 
