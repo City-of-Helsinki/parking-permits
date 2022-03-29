@@ -12,7 +12,6 @@ from dateutil.parser import isoparse
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import transaction
-from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 
 from parking_permits.models import (
@@ -108,11 +107,7 @@ def resolve_customer(obj, info, national_id_number):
 @convert_kwargs_to_snake_case
 def resolve_vehicle(obj, info, reg_number, national_id_number):
     try:
-        q = Q(registration_number=reg_number) & (
-            Q(owner__national_id_number=national_id_number)
-            | Q(holder__national_id_number=national_id_number)
-        )
-        vehicle = Vehicle.objects.get(q)
+        vehicle = Vehicle.objects.get(registration_number=reg_number)
     except Vehicle.DoesNotExist:
         logger.info("Vehicle does not exist, search from Traficom")
         # TODO: search from Traficom and create vehicle once Traficom integration is ready
