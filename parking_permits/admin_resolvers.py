@@ -164,10 +164,8 @@ def update_or_create_vehicle(vehicle_info):
         "registration_number": vehicle_info["registration_number"],
         "manufacturer": vehicle_info["manufacturer"],
         "model": vehicle_info["model"],
-        "low_emission_vehicle": vehicle_info["is_low_emission"],
         "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
         "serial_number": vehicle_info["serial_number"],
-        "category": vehicle_info["category"],
     }
     return Vehicle.objects.update_or_create(
         registration_number=vehicle_info["registration_number"], defaults=vehicle_data
