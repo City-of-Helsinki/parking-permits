@@ -37,6 +37,11 @@ env = environ.Env(
     TRAFICOM_SOKU_TUNNUS=(str, ""),
     TRAFICOM_PALVELU_TUNNUS=(str, ""),
     TRAFICOM_VERIFY_SSL=(bool, True),
+    DVV_PERSONAL_INFO_URL=(str, ""),
+    DVV_USERNAME=(str, ""),
+    DVV_PASSWORD=(str, ""),
+    DVV_SOSONIMI=(str, ""),
+    DVV_LOPPUKAYTTAJA=(str, ""),
 )
 
 if path.exists(".env"):
@@ -220,3 +225,11 @@ CRONJOBS = [
 GDPR_API_MODEL = "parking_permits.Customer"
 GDPR_API_QUERY_SCOPE = env("GDPR_API_QUERY_SCOPE")
 GDPR_API_DELETE_SCOPE = env("GDPR_API_DELETE_SCOPE")
+
+
+# DVV integration
+DVV_PERSONAL_INFO_URL = env("DVV_PERSONAL_INFO_URL")
+DVV_USERNAME = env("DVV_USERNAME")
+DVV_PASSWORD = env("DVV_PASSWORD")
+DVV_SOSONIMI = env("DVV_SOSONIMI")
+DVV_LOPPUKAYTTAJA = env("DVV_LOPPUKAYTTAJA")

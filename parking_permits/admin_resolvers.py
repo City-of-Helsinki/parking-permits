@@ -31,6 +31,7 @@ from .models.order import OrderStatus
 from .models.parking_permit import ContractType
 from .paginator import QuerySetPaginator
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
+from .services.dvv import get_person_info
 from .utils import apply_filtering, apply_ordering, get_end_time
 
 logger = logging.getLogger("db")
@@ -96,9 +97,10 @@ def resolve_customer(obj, info, national_id_number):
     try:
         customer = Customer.objects.get(national_id_number=national_id_number)
     except Customer.DoesNotExist:
-        logger.info("Customer does not exist, search from DVV")
-        # TODO: search from DVV and create customer once DVV integration is ready
-        raise ObjectNotFound(_("Customer not found"))
+        logger.info("Customer does not exist, searching from DVV...")
+        customer = get_person_info(national_id_number)
+        if not customer:
+            raise ObjectNotFound(_("Person not found"))
     return customer
 
 

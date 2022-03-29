@@ -68,3 +68,7 @@ class AddressError(ParkingPermitBaseException):
 
 class TraficomFetchVehicleError(ParkingPermitBaseException):
     pass
+
+
+class DVVIntegrationError(ParkingPermitBaseException):
+    pass
