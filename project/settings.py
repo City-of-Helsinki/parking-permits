@@ -199,8 +199,16 @@ LOGGING = {
             "level": "DEBUG",
             "class": "django_db_logger.db_log_handler.DatabaseLogHandler",
         },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
     },
-    "loggers": {"db": {"handlers": ["db_log"], "level": "DEBUG"}},
+    "loggers": {
+        "db": {"handlers": ["db_log"], "level": "DEBUG"},
+        "django": {"handlers": ["console"], "level": "INFO"},
+        "helusers": {"handlers": ["console"], "level": "DEBUG"},
+    },
 }
 
 CRONJOBS = [
