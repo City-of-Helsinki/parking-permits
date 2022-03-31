@@ -37,6 +37,7 @@ type CustomerNode {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressNode
+  otherAddress: AddressNode
   zone: String
   email: String
   phoneNumber: String
@@ -224,6 +225,7 @@ input CustomerInput {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressInput
+  otherAddress: AddressInput
   zone: String
   email: String
   phoneNumber: String
