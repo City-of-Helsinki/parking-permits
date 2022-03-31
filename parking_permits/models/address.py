@@ -1,18 +1,17 @@
+import logging
+
 from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from .common import SourceSystem
 from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
 from .parking_zone import ParkingZone
 
+logger = logging.getLogger("db")
+
 
 class Address(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
-    source_system = models.CharField(
-        _("Source system"), max_length=50, choices=SourceSystem.choices, blank=True
-    )
-    source_id = models.CharField(_("Source id"), max_length=100, blank=True)
     street_name = models.CharField(_("Street name"), max_length=128)
     street_name_sv = models.CharField(_("Street name sv"), max_length=128, blank=True)
     street_number = models.CharField(_("Street number"), max_length=128)
@@ -22,10 +21,12 @@ class Address(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
     location = models.PointField(
         _("Location (2D)"), srid=settings.SRID, blank=True, null=True
     )
-    primary = models.BooleanField(_("Primary address"), default=False)
-    zone = models.ForeignKey(
+    start_date = models.DateField(_("Start date"), blank=True, null=True)
+    end_date = models.DateField(_("End date"), blank=True, null=True)
+    _zone = models.ForeignKey(
         ParkingZone,
         verbose_name=_("Zone"),
+        db_column="zone",
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
@@ -45,14 +46,15 @@ class Address(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         verbose_name_plural = _("Addresses")
 
     def __str__(self):
-        return "%s %s, %s" % (
-            self.street_name,
-            self.street_number,
-            self.city,
-        )
+        return f"{self.street_name} {self.street_number}, {self.city}"
 
-    def get_zone(self):
-        if not self.zone:
-            self.zone = ParkingZone.objects.get_for_location(self.location)
-            self.save()
-        return self.zone
+    @property
+    def zone(self):
+        """Lazy loading property for get the zone of the address"""
+        if not self._zone and self.location:
+            try:
+                self._zone = ParkingZone.objects.get_for_location(self.location)
+                self.save()
+            except ParkingZone.DoesNotExist:
+                logger.warning(f"Cannot find parking zone for the address {self}")
+        return self._zone

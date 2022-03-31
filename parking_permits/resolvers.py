@@ -116,7 +116,7 @@ def validate_customer_address(customer, address_id):
 def resolve_get_update_address_price_changes(_, info, address_id):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
-    new_zone = address.get_zone()
+    new_zone = address.zone
 
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
@@ -218,7 +218,7 @@ def resolve_create_order(_, info):
 def resolve_change_address(_, info, address_id, iban=None):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
-    new_zone = address.get_zone()
+    new_zone = address.zone
 
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
