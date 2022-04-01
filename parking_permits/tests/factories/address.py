@@ -15,7 +15,7 @@ class AddressFactory(factory.django.DjangoModelFactory):
     city_sv = factory.Faker("city", locale="sv")
     postal_code = factory.Faker("postcode")
     location = Point(10000, 10000)
-    zone = factory.SubFactory(ParkingZoneFactory)
+    _zone = factory.SubFactory(ParkingZoneFactory)
 
     class Meta:
         model = Address

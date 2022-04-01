@@ -280,9 +280,9 @@ class CustomerPermit:
         other = self.customer.other_address
 
         # Check if zone belongs to either of the user address zone
-        if primary and str(primary.zone_id) == zone_id:
+        if primary and str(primary.zone.id) == zone_id:
             return True
-        if other and str(other.zone_id) == zone_id:
+        if other and str(other.zone.id) == zone_id:
             return True
         return False
 
