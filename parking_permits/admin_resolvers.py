@@ -118,6 +118,19 @@ def resolve_vehicle(obj, info, reg_number, national_id_number):
     return vehicle
 
 
+def create_address(address_info):
+    location = Point(*address_info["location"], srid=settings.SRID)
+    return Address.objects.create(
+        street_name=address_info["street_name"],
+        street_name_sv=address_info["street_name_sv"],
+        street_number=address_info["street_number"],
+        city=address_info["city"],
+        city_sv=address_info["city_sv"],
+        postal_code=address_info["postal_code"],
+        location=location,
+    )
+
+
 def update_or_create_customer(customer_info):
     if customer_info["address_security_ban"]:
         customer_info.pop("first_name", None)
@@ -134,28 +147,14 @@ def update_or_create_customer(customer_info):
         "driver_license_checked": customer_info["driver_license_checked"],
     }
 
-    address_info = customer_info.get("primary_address")
-    if address_info:
-        location = Point(*address_info["location"], srid=settings.SRID)
-        zone = ParkingZone.objects.get_for_location(location)
-        address = Address.objects.update_or_create(
-            source_system=address_info["source_system"],
-            source_id=address_info["source_id"],
-            defaults={
-                "street_name": address_info["street_name"],
-                "street_name_sv": address_info["street_name_sv"],
-                "street_number": address_info["street_number"],
-                "city": address_info["city"],
-                "city_sv": address_info["city_sv"],
-                "postal_code": address_info["postal_code"],
-                "location": location,
-                "zone": zone,
-                "primary": True,
-            },
-        )[0]
-        customer_data["primary_address"] = address
-    else:
-        customer_data["primary_address"] = None
+    primary_address = customer_info.get("primary_address")
+    if primary_address:
+        customer_data["primary_address"] = create_address(primary_address)
+
+    other_address = customer_info.get("other_address")
+    if other_address:
+        customer_data["other_address"] = create_address(other_address)
+
     return Customer.objects.update_or_create(
         national_id_number=customer_info["national_id_number"], defaults=customer_data
     )[0]

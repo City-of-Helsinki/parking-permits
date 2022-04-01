@@ -57,13 +57,10 @@ class HelsinkiProfile:
                     address_node.get("address")
                 )
                 data = {
-                    "source_system": SourceSystem.HELSINKI_PROFILE,
-                    "source_id": address_node.get("id"),
                     "street_name": parsed_address.get("street_name"),
                     "street_number": parsed_address.get("street_number"),
                     "city": address_node.get("city"),
                     "postal_code": address_node.get("postalCode"),
-                    "primary": address_node.get("primary"),
                 }
                 if address_node.get("primary"):
                     primary_address = data

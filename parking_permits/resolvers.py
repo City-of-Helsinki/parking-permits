@@ -18,7 +18,7 @@ from project.settings import BASE_DIR
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import AddressError, ObjectNotFound, ParkingZoneError
-from .models import Address, Customer, ParkingZone, Refund, Vehicle
+from .models import Address, Customer, Refund, Vehicle
 from .models.order import Order, OrderStatus
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
@@ -58,13 +58,7 @@ def save_profile_address(address):
     street_number = address.get("street_number")
     address_detail = get_address_detail_from_kmo(street_name, street_number)
     address.update(address_detail)
-    zone = ParkingZone.objects.get_for_location(address["location"])
-    address["zone"] = zone
-    address_obj, _ = Address.objects.update_or_create(
-        source_system=address.get("source_system"),
-        source_id=address.get("source_id"),
-        defaults=address,
-    )
+    address_obj = Address.objects.create(**address)
     return address_obj
 
 
@@ -87,7 +81,6 @@ def resolve_user_profile(_, info, *args):
             **{"primary_address": primary_address, "other_address": other_address},
         },
     )
-
     return customer_obj
 
 
