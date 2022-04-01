@@ -84,6 +84,14 @@ def resolve_user_profile(_, info, *args):
     return customer_obj
 
 
+@address_node.field("primary")
+def resolve_address_primary(address, info):
+    address_node_path_key = info.path.prev.key
+    if address_node_path_key == "otherAddress":
+        return False
+    return True
+
+
 def validate_customer_address(customer, address_id):
     """Check if the given address a valid customer address
 
