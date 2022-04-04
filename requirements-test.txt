@@ -4,11 +4,9 @@
 #
 #    pip-compile requirements-test.in
 #
-appdirs==1.4.4
-    # via black
 attrs==21.4.0
     # via pytest
-black==21.4b0
+black==22.3.0
     # via -r requirements-test.in
 certifi==2021.10.8
     # via requests
@@ -44,6 +42,8 @@ packaging==21.3
     # via pytest
 pathspec==0.9.0
     # via black
+platformdirs==2.5.1
+    # via black
 pluggy==1.0.0
     # via pytest
 py==1.11.0
@@ -70,8 +70,6 @@ python-dateutil==2.8.2
     # via
     #   faker
     #   freezegun
-regex==2022.3.15
-    # via black
 requests==2.27.1
     # via requests-mock
 requests-mock==1.9.3
@@ -80,11 +78,12 @@ six==1.16.0
     # via
     #   python-dateutil
     #   requests-mock
-toml==0.10.2
-    # via black
 tomli==2.0.1
     # via
+    #   black
     #   coverage
     #   pytest
+typing-extensions==4.1.1
+    # via black
 urllib3==1.26.9
     # via requests
