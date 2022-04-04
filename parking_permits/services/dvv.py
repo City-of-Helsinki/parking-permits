@@ -61,6 +61,7 @@ def format_address(address_data):
 def is_valid_address(address):
     return (
         address["LahiosoiteS"] != ""
+        and address["PostitoimipaikkaS"]
         and address["PostitoimipaikkaS"].upper() == "HELSINKI"
     )
 
