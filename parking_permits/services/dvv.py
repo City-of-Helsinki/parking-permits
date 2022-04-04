@@ -7,6 +7,8 @@ import requests
 from django.conf import settings
 
 from parking_permits.exceptions import DVVIntegrationError
+from parking_permits.models import ParkingZone
+from parking_permits.services.kmo import get_address_detail_from_kmo
 
 logger = logging.getLogger("db")
 
@@ -49,12 +51,19 @@ def format_address(address_data):
     # to use the street name and street number
 
     street_name, street_number = parse_address(address_data["LahiosoiteS"])
+    address_detail = get_address_detail_from_kmo(street_name, street_number)
+    try:
+        zone = ParkingZone.objects.get_for_location(address_detail["location"])
+    except ParkingZone.DoesNotExist:
+        zone = None
+
     return {
+        **address_detail,
         "street_name": street_name,
         "street_number": street_number,
         "city": "Helsinki",
-        "city_sv": "Helsingfors",
         "postal_code": address_data["Postinumero"],
+        "zone": zone,
     }
 
 
@@ -107,4 +116,8 @@ def get_person_info(hetu):
         "last_name": last_name,
         "primary_address": primary_address,
         "other_address": other_address,
+        "phone_number": "",
+        "email": "",
+        "address_security_ban": False,
+        "driver_license_checked": False,
     }
