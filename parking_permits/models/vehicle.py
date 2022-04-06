@@ -118,7 +118,11 @@ class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         except LowEmissionCriteria.DoesNotExist:
             return False
 
-        if not self.euro_class or self.euro_class < le_criteria.euro_min_class_limit:
+        if (
+            not self.euro_class
+            or not self.emission
+            or self.euro_class < le_criteria.euro_min_class_limit
+        ):
             return False
 
         if self.emission_type == EmissionType.NEDC:
