@@ -65,7 +65,7 @@ type PermitNode {
   orderId: String
   subscriptionId: String
   vehicle: VehicleNode!
-  products: [ProductNode]!
+  products: [ProductNode]
   contractType: String
   monthCount: Int
   startType: String
@@ -80,12 +80,6 @@ type PermitNode {
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
   hasRefund: Boolean
-}
-
-type PermitResult {
-  success: Boolean!
-  errors: [String]
-  permits: [PermitNode]
 }
 
 type PermitPriceChangeItem {
@@ -106,19 +100,8 @@ type PermitPriceChangeResult {
 
 type Query {
   profile: CustomerNode!
-  getPermits: PermitResult
+  getPermits: [PermitNode]
   getUpdateAddressPriceChanges(addressId: ID!): [PermitPriceChangeResult]
-}
-
-type updateVehicleResult {
-  success: Boolean!
-  errors: [String]
-  vehicle: VehicleNode
-}
-
-type DeletePermitResult {
-  success: Boolean!
-  errors: [String]
 }
 
 enum PermitEndType {
@@ -130,30 +113,17 @@ type TalpaOrderNode {
   checkoutUrl: String
 }
 
-type TalpaOrderResult {
-  success: Boolean!
-  errors: [String]
-  order: TalpaOrderNode
-}
-
 type ChangeAddressResult {
   success: Boolean!
   checkoutUrl: String
 }
 
 type Mutation {
-  createParkingPermit(zoneId: ID!): PermitResult!
-  createOrder: TalpaOrderResult!
-  deleteParkingPermit(permitId: ID!): DeletePermitResult!
-  endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): DeletePermitResult
-  updateParkingPermit(
-    input: ParkingPermitInput!
-    permitId: ID
-  ): PermitResult!
-  updateVehicle(
-    vehicleId: ID!
-    registration: String!
-  ): updateVehicleResult!
+  createParkingPermit(zoneId: ID!, registration: String!): PermitNode!
+  createOrder: TalpaOrderNode!
+  deleteParkingPermit(permitId: ID!): Boolean!
+  endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): Boolean
+  updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
 }
 

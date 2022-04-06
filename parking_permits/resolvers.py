@@ -10,7 +10,6 @@ from ariadne import (
 )
 from ariadne.contrib.federation import FederatedObjectType
 from django.db import transaction
-from django.db.utils import IntegrityError
 from django.utils.translation import ugettext
 
 from project.settings import BASE_DIR
@@ -18,7 +17,7 @@ from project.settings import BASE_DIR
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import AddressError, ObjectNotFound, ParkingZoneError
-from .models import Address, Customer, Refund, Vehicle
+from .models import Address, Customer, Refund
 from .models.order import Order, OrderStatus
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
@@ -30,7 +29,6 @@ logger = logging.getLogger("db")
 helsinki_profile_query = load_schema_from_path(
     BASE_DIR / "parking_permits" / "schema" / "helsinki_profile.graphql"
 )
-
 
 query = QueryType()
 mutation = MutationType()
@@ -50,7 +48,7 @@ ACTIVE_PERMIT_STATUSES = [
 @convert_kwargs_to_snake_case
 def resolve_customer_permits(obj, info):
     request = info.context["request"]
-    return get_customer_permits(request.user.customer.id)
+    return CustomerPermit(request.user.customer.id).get()
 
 
 def save_profile_address(address):
@@ -68,6 +66,7 @@ def resolve_user_profile(_, info, *args):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
+    customer["national_id_number"] = "240855-270U"
     primary_address_data, other_address_data = profile.get_addresses()
     primary_address = save_profile_address(primary_address_data)
     other_address = save_profile_address(other_address_data)
@@ -142,16 +141,15 @@ def resolve_get_update_address_price_changes(_, info, address_id):
 @convert_kwargs_to_snake_case
 def resolve_delete_parking_permit(obj, info, permit_id):
     request = info.context["request"]
-    return {"success": CustomerPermit(request.user.customer.id).delete(permit_id)}
+    return CustomerPermit(request.user.customer.id).delete(permit_id)
 
 
 @mutation.field("createParkingPermit")
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_create_parking_permit(obj, info, zone_id):
+def resolve_create_parking_permit(obj, info, zone_id, registration):
     request = info.context["request"]
-    CustomerPermit(request.user.customer.id).create(zone_id)
-    return get_customer_permits(request.user.customer.id)
+    return CustomerPermit(request.user.customer.id).create(zone_id, registration)
 
 
 @mutation.field("updateParkingPermit")
@@ -159,26 +157,7 @@ def resolve_create_parking_permit(obj, info, zone_id):
 @convert_kwargs_to_snake_case
 def resolve_update_parking_permit(obj, info, input, permit_id=None):
     request = info.context["request"]
-    CustomerPermit(request.user.customer.id).update(input, permit_id)
-    return get_customer_permits(request.user.customer.id)
-
-
-@mutation.field("updateVehicle")
-@is_authenticated
-@convert_kwargs_to_snake_case
-def resolve_update_vehicle(obj, info, vehicle_id, registration):
-    vehicle = Vehicle.objects.get(id=vehicle_id)
-    vehicle.registration_number = registration.upper()
-    try:
-        vehicle.save(update_fields=["registration_number"])
-        return {"success": True, "vehicle": vehicle}
-    except IntegrityError:
-        return {
-            "success": False,
-            "errors": [
-                f"Permit with registration {vehicle.registration_number} already exist."
-            ],
-        }
+    return CustomerPermit(request.user.customer.id).update(input, permit_id)
 
 
 @mutation.field("endParkingPermit")
@@ -186,18 +165,7 @@ def resolve_update_vehicle(obj, info, vehicle_id, registration):
 @convert_kwargs_to_snake_case
 def resolve_end_permit(_, info, permit_ids, end_type, iban=None):
     request = info.context["request"]
-    return {
-        "success": CustomerPermit(request.user.customer.id).end(
-            permit_ids, end_type, iban
-        )
-    }
-
-
-def get_customer_permits(customer_id):
-    return {
-        "success": True,
-        "permits": CustomerPermit(customer_id).get(),
-    }
+    return CustomerPermit(request.user.customer.id).end(permit_ids, end_type, iban)
 
 
 @mutation.field("createOrder")
@@ -208,8 +176,7 @@ def resolve_create_order(_, info):
         customer=customer, status=ParkingPermitStatus.DRAFT
     )
     order = Order.objects.create_for_permits(permits)
-    checkout_url = TalpaOrderManager.send_to_talpa(order)
-    return {"success": True, "order": {"checkout_url": checkout_url}}
+    return {"checkout_url": TalpaOrderManager.send_to_talpa(order)}
 
 
 @mutation.field("changeAddress")
