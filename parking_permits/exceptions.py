@@ -6,6 +6,10 @@ class PermitLimitExceeded(ParkingPermitBaseException):
     pass
 
 
+class DuplicatePermit(ParkingPermitBaseException):
+    pass
+
+
 class PriceError(ParkingPermitBaseException):
     pass
 

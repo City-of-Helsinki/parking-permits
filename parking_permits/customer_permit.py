@@ -8,15 +8,16 @@ from django.utils import timezone as tz
 
 from .constants import LOW_EMISSION_DISCOUNT, SECONDARY_VEHICLE_PRICE_INCREASE
 from .exceptions import (
+    DuplicatePermit,
     InvalidContractType,
     InvalidUserZone,
     NonDraftPermitUpdateError,
     PermitCanNotBeDelete,
     PermitLimitExceeded,
     RefundError,
+    TraficomFetchVehicleError,
 )
-from .mock_vehicle import get_mock_vehicle
-from .models import Customer, OrderItem, ParkingPermit, ParkingZone, Refund
+from .models import Customer, OrderItem, ParkingPermit, ParkingZone, Refund, Vehicle
 from .models.parking_permit import (
     ContractType,
     ParkingPermitStartType,
@@ -69,7 +70,11 @@ class CustomerPermit:
             permits.append(permit)
         return permits
 
-    def create(self, zone_id):
+    def create(self, zone_id, registration):
+        if self.customer_permit_query.filter(
+            vehicle__registration_number=registration
+        ).count():
+            raise DuplicatePermit("Permit for a given vehicle already exist.")
         if self._can_buy_permit_for_zone(zone_id):
             contract_type = OPEN_ENDED
             primary_vehicle = True
@@ -82,6 +87,11 @@ class CustomerPermit:
                     end_time = primary_permit.end_time
 
             with reversion.create_revision():
+                is_user_of_vehicle, message = self.customer.is_user_of_vehicle(
+                    registration
+                )
+                if not is_user_of_vehicle:
+                    raise TraficomFetchVehicleError(message)
                 permit = ParkingPermit.objects.create(
                     customer=self.customer,
                     parking_zone=ParkingZone.objects.get(id=zone_id),
@@ -89,7 +99,7 @@ class CustomerPermit:
                     contract_type=contract_type,
                     start_time=next_day(),
                     end_time=end_time,
-                    vehicle=get_mock_vehicle(""),  # TODO: Replace with traficom
+                    vehicle=Vehicle.objects.get(registration_number=registration),
                 )
                 comment = get_reversion_comment(EventType.CREATED, permit)
                 reversion.set_user(self.customer.user)
@@ -100,6 +110,7 @@ class CustomerPermit:
         permit = ParkingPermit.objects.get(customer=self.customer, id=permit_id)
         if permit.status != DRAFT:
             raise PermitCanNotBeDelete("Non draft permit can not be deleted")
+        OrderItem.objects.filter(permit=permit).delete()
         permit.delete()
 
         if self.customer_permit_query.count():
