@@ -13,7 +13,6 @@ from parking_permits.exceptions import (
     InvalidUserZone,
     NonDraftPermitUpdateError,
     PermitCanNotBeDelete,
-    PermitLimitExceeded,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -178,52 +177,9 @@ class CreateCustomerPermitTestCase(TestCase):
             vehicle=self.vehicle_a,
         )
 
-    def test_customer_a_can_create_secondary_permit(self):
-        customer_permit = CustomerPermit(self.customer_a.id)
-        self.assertEqual(len(customer_permit.get()), 1)
-        permit = CustomerPermit(self.customer_a.id).create(str(self.customer_a_zone.id))
-        self.assertEqual(len(customer_permit.get()), 2)
-        self.assertEqual(permit.primary_vehicle, False)
-
     def test_customer_a_can_not_create_permit_in_zone_outside_his_address(self):
         with self.assertRaisesMessage(InvalidUserZone, "Invalid user zone."):
-            CustomerPermit(self.customer_a.id).create(self.zone.id)
-
-    def test_customer_a_gets_error_for_exceeding_max_2_permit(self):
-        msg = "You can have a max of 2 permits."
-        with self.assertRaisesMessage(PermitLimitExceeded, msg):
-            for i in range(0, 3):
-                CustomerPermit(self.customer_a.id).create(str(self.customer_a_zone.id))
-
-    def test_customer_b_can_not_buy_permit_to_other_zone_if_he_has_any_valid_permit_to_primary_address(
-        self,
-    ):
-        vehicle = VehicleFactory(power_type=BENSIN)
-        primary_zone = self.customer_b.primary_address.zone
-        ParkingPermitFactory(
-            customer=self.customer_b,
-            status=VALID,
-            primary_vehicle=True,
-            parking_zone=self.customer_b.primary_address.zone,
-            vehicle=vehicle,
-        )
-        other_add_zone = self.customer_b.other_address.zone
-        msg = f"You can buy permit only for zone {primary_zone.name}"
-        with self.assertRaisesMessage(InvalidUserZone, msg):
-            CustomerPermit(self.customer_b.id).create(str(other_add_zone.id))
-
-    def test_customer_b_can_buy_permit_to_same_zone_that_he_has_at_least_one_valid_permit(
-        self,
-    ):
-        primary_zone = self.customer_c.primary_address.zone
-        permit = CustomerPermit(self.customer_c.id).create(str(primary_zone.id))
-        self.assertEqual(
-            permit.contract_type, self.customer_c_valid_primary_permit.contract_type
-        )
-        self.assertEqual(
-            permit.primary_vehicle,
-            not self.customer_c_valid_primary_permit.primary_vehicle,
-        )
+            CustomerPermit(self.customer_a.id).create(self.zone.id, "ABC-123")
 
 
 class DeleteCustomerPermitTestCase(TestCase):
