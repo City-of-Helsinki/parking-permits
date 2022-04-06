@@ -277,6 +277,9 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
             customer, status=OrderStatus.CONFIRMED
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
+        ParkingPermit.objects.active().fixed_period().filter(customer=customer).update(
+            order=new_order
+        )
         if total_price_change < 0:
             refund = Refund.objects.create(
                 name=str(customer),

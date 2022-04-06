@@ -207,7 +207,7 @@ def resolve_change_address(_, info, address_id, iban=None):
         logger.info("No changes to the parking zone")
         return response
 
-    fixed_period_permits = [permit for permit in permits if permit.is_fixed_period]
+    fixed_period_permits = permits.fixed_period()
     if len(fixed_period_permits) > 0:
         # There can be two cases regarding customer's active permits:
         #
@@ -249,13 +249,12 @@ def resolve_change_address(_, info, address_id, iban=None):
         # update permit to the new zone before creating
         # new order as the price is determined by the
         # new zone
-        for permit in fixed_period_permits:
-            permit.parking_zone = new_zone
-            permit.save()
+        fixed_period_permits.update(parking_zone=new_zone)
 
         new_order = Order.objects.create_renewal_order(
             customer, status=new_order_status
         )
+        fixed_period_permits.update(order=new_order)
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
             if order_total_price_change < 0:
@@ -272,16 +271,12 @@ def resolve_change_address(_, info, address_id, iban=None):
             # go through talpa checkout process if the price of
             # the permits goes up
             response["checkout_url"] = TalpaOrderManager.send_to_talpa(new_order)
-            for permit in fixed_period_permits:
-                permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
-                permit.save()
+            fixed_period_permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
 
-    open_ended_permits = [permit for permit in permits if permit.is_open_ended]
-    for permit in open_ended_permits:
-        # For open ended permits, it's enough to update the permit zone
-        # as talpa will get the updated price based on new zone when
-        # asking permit price for next month
-        permit.parking_zone = new_zone
-        permit.save()
+    # For open ended permits, it's enough to update the permit zone
+    # as talpa will get the updated price based on new zone when
+    # asking permit price for next month
+    open_ended_permits = permits.open_ended()
+    open_ended_permits.update(parking_zone=new_zone)
 
     return response

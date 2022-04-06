@@ -191,10 +191,6 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
-            # change permit active order to the new one
-            permit.order = new_order
-            permit.save()
-
         return new_order
 
 

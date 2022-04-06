@@ -60,6 +60,12 @@ def get_next_identifier():
 
 
 class ParkingPermitManager(SerializableMixin.SerializableManager):
+    def fixed_period(self):
+        return self.filter(contract_type=ContractType.FIXED_PERIOD)
+
+    def open_ended(self):
+        return self.filter(contract_type=ContractType.OPEN_ENDED)
+
     def active(self):
         active_status = [
             ParkingPermitStatus.VALID,
