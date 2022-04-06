@@ -91,7 +91,9 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
             is_owner = self.national_id_number in owners
             return (
                 is_owner,
-                "" if is_owner else "Customer is not an owner or holder of a vehicle",
+                ""
+                if is_owner
+                else f"Customer is not an owner or holder of a vehicle {registration_number}",
             )
         except TraficomFetchVehicleError as e:
             return False, str(e)

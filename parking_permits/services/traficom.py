@@ -72,7 +72,9 @@ class Traficom:
 
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
-                _(f"Unsupported vehicle class {vehicle_class}")
+                _(
+                    f"Unsupported vehicle class {vehicle_class} for {registration_number}"
+                )
             )
 
         vehicle_identity = et.find(".//tunnus")
