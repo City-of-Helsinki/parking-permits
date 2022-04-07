@@ -66,7 +66,6 @@ def resolve_user_profile(_, info, *args):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
-    customer["national_id_number"] = "240855-270U"
     primary_address_data, other_address_data = profile.get_addresses()
     primary_address = save_profile_address(primary_address_data)
     other_address = save_profile_address(other_address_data)
