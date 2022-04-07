@@ -173,6 +173,16 @@ def update_or_create_vehicle(vehicle_info):
     )[0]
 
 
+def create_permit_address(customer_info):
+    primary_address = customer_info.get("primary_address")
+    if primary_address:
+        return create_address(primary_address)
+
+    other_address = customer_info.get("other_address")
+    if other_address:
+        return create_address(other_address)
+
+
 @mutation.field("createResidentPermit")
 @is_ad_admin
 @convert_kwargs_to_snake_case
@@ -183,6 +193,8 @@ def resolve_create_resident_permit(obj, info, permit):
 
     vehicle_info = permit["vehicle"]
     vehicle = update_or_create_vehicle(vehicle_info)
+
+    address = create_permit_address(customer_info)
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
     with reversion.create_revision():
@@ -198,6 +210,7 @@ def resolve_create_resident_permit(obj, info, permit):
             month_count=permit["month_count"],
             end_time=end_time,
             description=permit["description"],
+            address=address,
         )
         request = info.context["request"]
         reversion.set_user(request.user)
