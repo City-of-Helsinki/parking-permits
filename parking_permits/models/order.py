@@ -1,4 +1,5 @@
 import logging
+from enum import Enum
 
 from django.db import models, transaction
 from django.db.models.expressions import RawSQL
@@ -15,6 +16,11 @@ from .parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
 from .product import Product
 
 logger = logging.getLogger("db")
+
+
+class OrderPaymentType(Enum):
+    ONLINE_PAYMENT = "ONLINE_PAYMENT"
+    CASHIER_PAYMENT = "CASHIER_PAYMENT"
 
 
 class OrderType(models.TextChoices):
@@ -57,8 +63,13 @@ class OrderManager(SerializableMixin.SerializableManager):
         else:
             order_type = OrderType.ORDER
 
+        paid_time = timezone.now() if status == OrderStatus.CONFIRMED else None
+
         order = Order.objects.create(
-            customer=permits[0].customer, order_type=order_type, status=status
+            customer=permits[0].customer,
+            order_type=order_type,
+            status=status,
+            paid_time=paid_time,
         )
         for permit in permits:
             products_with_quantity = permit.get_products_with_quantities()
@@ -225,6 +236,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         choices=OrderStatus.choices,
         default=OrderStatus.DRAFT,
     )
+    paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
     objects = OrderManager()
 
     serialize_fields = (
@@ -243,6 +255,19 @@ class Order(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
     @property
     def is_confirmed(self):
         return self.status == OrderStatus.CONFIRMED
+
+    @property
+    def payment_type(self):
+        if self.is_confirmed:
+            if self.talpa_order_id:
+                return OrderPaymentType.ONLINE_PAYMENT.value
+            else:
+                return OrderPaymentType.CASHIER_PAYMENT.value
+        return ""
+
+    @property
+    def order_permits(self):
+        return self.permits.all()
 
     @property
     def total_price(self):

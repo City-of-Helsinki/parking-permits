@@ -72,9 +72,11 @@ type PermitNode {
   vehicle: VehicleNode
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
+  address: AddressNode
   startTime: String
   endTime: String
   description: String
+  type: String
 }
 
 type RefundNode {
@@ -89,6 +91,17 @@ type RefundNode {
   createdBy: String
   modifiedAt: String
   modifiedBy: String
+}
+
+type OrderNode {
+  id: ID!
+  orderNumber: Int!
+  orderType: String!
+  totalPrice: Float!
+  customer: CustomerNode!
+  paidTime: String
+  paymentType: String
+  orderPermits: [PermitNode]
 }
 
 type PageInfo {
@@ -113,6 +126,11 @@ type PagedProducts {
 
 type PagedRefunds {
   objects: [RefundNode]
+  pageInfo: PageInfo
+}
+
+type PagedOrders {
+  objects: [OrderNode]
   pageInfo: PageInfo
 }
 
@@ -200,6 +218,10 @@ type Query {
   ): PagedRefunds!
   refund(refundNumber: Int): RefundNode!
   permitPriceChangeList(permitId: ID!, permitInfo: ResidentPermitInput!): [PermitPriceChange]
+  orders(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedOrders!
 }
 
 input AddressInput {

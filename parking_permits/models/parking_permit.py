@@ -31,6 +31,11 @@ from .vehicle import Vehicle
 logger = logging.getLogger("db")
 
 
+class ParkingPermitType(models.TextChoices):
+    RESIDENT = "RESIDENT", _("Resident")
+    COMPANY = "COMPANY", _("Company")
+
+
 class ContractType(models.TextChoices):
     FIXED_PERIOD = "FIXED_PERIOD", _("Fixed period")
     OPEN_ENDED = "OPEN_ENDED", _("Open ended")
@@ -89,6 +94,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         verbose_name=_("Parking zone"),
         on_delete=models.PROTECT,
     )
+    type = models.CharField(
+        _("Type"),
+        max_length=32,
+        choices=ParkingPermitType.choices,
+        default=ParkingPermitType.RESIDENT,
+    )
     status = models.CharField(
         _("Status"),
         max_length=32,
@@ -123,6 +134,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         on_delete=models.PROTECT,
     )
     description = models.TextField(_("Description"), blank=True)
+    address = models.ForeignKey(
+        "Address",
+        verbose_name=_("Address"),
+        on_delete=models.PROTECT,
+        related_name="permits",
+        null=True,
+        blank=True,
+    )
 
     serialize_fields = (
         {"name": "identifier"},

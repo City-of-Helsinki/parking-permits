@@ -438,3 +438,19 @@ def resolve_update_refund(obj, info, refund_number, refund):
     r.modified_by = request.user
     r.save()
     return {"success": True}
+
+
+@query.field("orders")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+def resolve_orders(obj, info, page_input, order_by=None, search_items=None):
+    orders = Order.objects.filter(status=OrderStatus.CONFIRMED)
+    if order_by:
+        orders = apply_ordering(orders, order_by)
+    if search_items:
+        orders = apply_filtering(orders, search_items)
+    paginator = QuerySetPaginator(orders, page_input)
+    return {
+        "page_info": paginator.page_info,
+        "objects": paginator.object_list,
+    }
