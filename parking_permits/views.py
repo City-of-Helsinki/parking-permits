@@ -125,30 +125,34 @@ class TalpaResolveRightOfPurchase(APIView):
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
             customer = permit.customer
-            vehicle = permit.vehicle
+            customer.fetch_driving_licence_detail()
+            vehicle = customer.fetch_vehicle_detail(permit.vehicle.registration_number)
+            is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
+            has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
+                vehicle
+            )
+            right_of_purchase = (
+                is_user_of_vehicle
+                and customer.driving_licence.active
+                and has_valid_driving_licence
+                and not vehicle.is_due_for_inspection()
+            )
+            res = talpa.snake_to_camel_dict(
+                {
+                    "error_message": "",
+                    "right_of_purchase": right_of_purchase,
+                    "user_id": user_id,
+                }
+            )
         except Exception as e:
-            logger.error(f"Resolve right of purchase error = {str(e)}")
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        is_owner_or_holder, error_msg = customer.is_user_of_vehicle(
-            vehicle.registration_number
-        )
-        (
-            has_valid_driving_licence,
-            error_msg,
-        ) = customer.has_valid_driving_licence_for_vehicle(vehicle)
-        right_of_purchase = (
-            is_owner_or_holder
-            and customer.driving_licence.active
-            and has_valid_driving_licence
-            and not vehicle.is_due_for_inspection()
-        )
-        res = talpa.snake_to_camel_dict(
-            {
-                "error_message": error_msg,
-                "right_of_purchase": right_of_purchase,
-                "user_id": user_id,
-            }
-        )
+            res = talpa.snake_to_camel_dict(
+                {
+                    "error_message": str(e),
+                    "right_of_purchase": False,
+                    "user_id": user_id,
+                }
+            )
+
         logger.info(f"Resolve right of purchase response = {json.dumps(res)}")
         return Response(res)
 
