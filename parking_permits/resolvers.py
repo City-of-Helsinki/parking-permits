@@ -79,6 +79,7 @@ def resolve_user_profile(_, info, *args):
             **{"primary_address": primary_address, "other_address": other_address},
         },
     )
+    customer_obj.fetch_driving_licence_detail()
     return customer_obj
 
 
