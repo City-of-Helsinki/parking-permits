@@ -2,6 +2,8 @@ from datetime import datetime
 
 import arrow
 from django.contrib.gis.db import models
+from django.contrib.postgres.fields import ArrayField
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
@@ -98,6 +100,10 @@ class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     last_inspection_date = models.DateField(
         _("Last inspection date"), null=True, blank=True
     )
+    updated_from_traficom_on = models.DateField(
+        _("Update from traficom on"), default=tz.now
+    )
+    users = ArrayField(models.CharField(max_length=15), default=list)
 
     def is_due_for_inspection(self):
         return (
