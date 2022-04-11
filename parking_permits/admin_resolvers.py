@@ -32,6 +32,7 @@ from .models.parking_permit import ContractType
 from .paginator import QuerySetPaginator
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
+from .services.traficom import Traficom
 from .utils import apply_filtering, apply_ordering, get_end_time
 
 logger = logging.getLogger("db")
@@ -108,14 +109,11 @@ def resolve_customer(obj, info, national_id_number):
 @is_ad_admin
 @convert_kwargs_to_snake_case
 def resolve_vehicle(obj, info, reg_number, national_id_number):
-    try:
-        vehicle = Vehicle.objects.get(registration_number=reg_number)
-    except Vehicle.DoesNotExist:
-        logger.info("Vehicle does not exist, search from Traficom")
-        # TODO: search from Traficom and create vehicle once Traficom integration is ready
+    vehicle = Traficom().fetch_vehicle_details(reg_number)
+    if vehicle and national_id_number in vehicle.users:
+        return vehicle
+    else:
         raise ObjectNotFound(_("Vehicle not found for the customer"))
-
-    return vehicle
 
 
 def create_address(address_info):
