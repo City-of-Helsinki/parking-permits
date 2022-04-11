@@ -49,10 +49,14 @@ type VehicleNode {
   manufacturer: String!
   model: String!
   registrationNumber: String!
-  isLowEmission: Boolean!
   consentLowEmissionAccepted: Boolean!
   serialNumber: String
-  category: String
+  isLowEmission: Boolean
+  vehicleClass: String
+  euroClass: Int
+  emission: Int
+  emissionType: String
+  powerType: String
 }
 
 enum ParkingPermitStatus {
@@ -259,10 +263,13 @@ input VehicleInput {
   manufacturer: String!
   model: String!
   registrationNumber: String!
-  isLowEmission: Boolean!
-  serialNumber: String
+  serialNumber: String!
   consentLowEmissionAccepted: Boolean!
-  category: String
+  vehicleClass: String!
+  euroClass: Int!
+  emission: Int!
+  emissionType: String!
+  powerType: String!
 }
 
 input ResidentPermitInput {
