@@ -55,12 +55,18 @@ class CustomerPermit:
 
     def get(self):
         permits = []
-        # Update the start_time to next day for all the draft permits
+        # Delete all the draft permits if it wasn't created today
+        self.customer_permit_query.filter(
+            status=DRAFT, start_time__lt=tz.localdate(tz.now())
+        ).delete()
+
         for permit in self.customer_permit_query.order_by("start_time"):
-            if permit.status == DRAFT:
-                permit.start_time = next_day()
-                permit.end_time = get_end_time(next_day(), permit.month_count)
-                permit.save(update_fields=["start_time", "end_time"])
+            vehicle = permit.vehicle
+            # Update vehicle detail from traficom if it wasn't updated today
+            if permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now()):
+                self.customer.fetch_vehicle_detail(vehicle.registration_number)
+
+            permit.vehicle_changed = not self.customer.is_user_of_vehicle(vehicle)
             products = []
             for product_with_qty in permit.get_products_with_quantities():
                 product = self._calculate_prices(permit, product_with_qty)
@@ -87,11 +93,21 @@ class CustomerPermit:
                     end_time = primary_permit.end_time
 
             with reversion.create_revision():
-                is_user_of_vehicle, message = self.customer.is_user_of_vehicle(
-                    registration
-                )
+                vehicle = self.customer.fetch_vehicle_detail(registration)
+                is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
                 if not is_user_of_vehicle:
-                    raise TraficomFetchVehicleError(message)
+                    raise TraficomFetchVehicleError(
+                        f"Customer is not an owner or holder of a vehicle {registration}"
+                    )
+
+                has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+                if not has_valid_licence:
+                    raise TraficomFetchVehicleError(
+                        "Customer does not have a valid driving licence"
+                    )
+
                 permit = ParkingPermit.objects.create(
                     customer=self.customer,
                     parking_zone=ParkingZone.objects.get(id=zone_id),

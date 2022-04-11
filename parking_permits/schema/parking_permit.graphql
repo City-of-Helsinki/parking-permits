@@ -80,6 +80,7 @@ type PermitNode {
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
   hasRefund: Boolean
+  vehicleChanged: Boolean
 }
 
 type PermitPriceChangeItem {

@@ -16,6 +16,7 @@ from parking_permits.exceptions import (
 )
 from parking_permits.models.parking_permit import (
     ContractType,
+    ParkingPermit,
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
@@ -103,8 +104,12 @@ class GetCustomerPermitTestCase(TestCase):
         permits = CustomerPermit(self.customer_a.id).get()
         self.assertEqual(len(permits), 2)
 
-    def test_customer_b_start_time_of_only_draft_should_be_next_day(self):
-        create_d_permit = ParkingPermitFactory(
+    def test_customer_b_should_delete_draft_permit_that_is_created_before_today(self):
+        query_set = ParkingPermit.objects.filter(
+            customer=self.customer_b, status__in=[VALID, PROCESSING, DRAFT]
+        )
+        self.assertEqual(query_set.count(), 1)
+        ParkingPermitFactory(
             customer=self.customer_b,
             status=DRAFT,
             primary_vehicle=False,
@@ -113,13 +118,9 @@ class GetCustomerPermitTestCase(TestCase):
             start_type=IMMEDIATELY,
             start_time=previous_day(),
         )
+        self.assertEqual(query_set.count(), 2)
         permits = CustomerPermit(self.customer_b.id).get()
-        draft = next(permit for permit in permits if permit.id == create_d_permit.id)
-        valid = next(permit for permit in permits if permit.status == VALID)
-
-        self.assertEqual(len(permits), 2)
-        self.assertGreater(draft.start_time, tz.now())
-        self.assertLessEqual(valid.start_time, tz.now())
+        self.assertEqual(len(permits), 1)
 
     def test_customer_should_not_get_closed_permit(self):
         customer = CustomerFactory(first_name="Firstname", last_name="Lastname")

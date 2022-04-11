@@ -3,6 +3,7 @@ import xml.etree.ElementTree as ET
 
 import requests
 from django.conf import settings
+from django.utils import timezone as tz
 from django.utils.translation import gettext as _
 
 from parking_permits.exceptions import TraficomFetchVehicleError
@@ -50,7 +51,7 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def get_vehicle_owners(self, registration_number):
+    def fetch_vehicle_details(self, registration_number):
         et = self._fetch_info(registration_number=registration_number)
         vehicle_detail = et.find(".//ajoneuvonTiedot")
 
@@ -104,8 +105,10 @@ class Traficom:
         vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
         vehicle_model = vehicle_detail.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
-
+        users = [owner_et.find("omistajanTunnus").text for owner_et in owners_et]
         vehicle_details = {
+            "updated_from_traficom_on": str(tz.now().date()),
+            "users": users,
             "power_type": POWER_TYPE_MAPPER.get(vehicle_power_type.text),
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
@@ -120,12 +123,12 @@ class Traficom:
             if last_inspection_date is not None
             else None,
         }
-        Vehicle.objects.update_or_create(
+        vehicle = Vehicle.objects.update_or_create(
             registration_number=registration_number, defaults=vehicle_details
         )
-        return [owner_et.find("omistajanTunnus").text for owner_et in owners_et]
+        return vehicle[0]
 
-    def get_driving_licence_details(self, hetu):
+    def fetch_driving_licence_details(self, hetu):
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
         if not driving_licence_et.find("ajooikeusluokat"):

@@ -64,7 +64,13 @@ def get_next_identifier():
     return last.identifier + 1
 
 
-class ParkingPermitManager(SerializableMixin.SerializableManager):
+class ParkingPermitQuerySet(models.QuerySet):
+    def fixed_period(self):
+        return self.filter(contract_type=ContractType.FIXED_PERIOD)
+
+    def open_ended(self):
+        return self.filter(contract_type=ContractType.OPEN_ENDED)
+
     def active(self):
         active_status = [
             ParkingPermitStatus.VALID,
@@ -74,6 +80,10 @@ class ParkingPermitManager(SerializableMixin.SerializableManager):
 
     def active_after(self, time):
         return self.active().filter(Q(end_time__isnull=True) | Q(end_time__gt=time))
+
+
+class ParkingPermitManager(SerializableMixin.SerializableManager):
+    pass
 
 
 @reversion.register()
@@ -155,7 +165,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         {"name": "description"},
     )
 
-    objects = ParkingPermitManager()
+    objects = ParkingPermitManager.from_queryset(ParkingPermitQuerySet)()
 
     class Meta:
         ordering = ["-identifier"]
