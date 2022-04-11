@@ -7,7 +7,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("parking_permits", "0021_update_address"),
+        ("parking_permits", "0022_add_fields_for_traficom_checks_in_vehicle"),
     ]
 
     operations = [
