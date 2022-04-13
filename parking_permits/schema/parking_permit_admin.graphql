@@ -32,6 +32,11 @@ type AddressNode {
   zone: ZoneNode
 }
 
+type CustomerActivePermit {
+  identifier: String!
+  primaryVehicle: Boolean!
+}
+
 type CustomerNode {
   firstName: String
   lastName: String
@@ -43,6 +48,7 @@ type CustomerNode {
   phoneNumber: String
   addressSecurityBan: Boolean
   driverLicenseChecked: Boolean
+  activePermits: [CustomerActivePermit]
 }
 
 type VehicleNode {
@@ -81,6 +87,7 @@ type PermitNode {
   endTime: String
   description: String
   type: String
+  primaryVehicle: Boolean!
 }
 
 type RefundNode {
