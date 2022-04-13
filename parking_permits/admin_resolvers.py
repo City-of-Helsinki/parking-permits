@@ -26,7 +26,13 @@ from parking_permits.models import (
 )
 
 from .decorators import is_ad_admin
-from .exceptions import ObjectNotFound, ParkingZoneError, RefundError, UpdatePermitError
+from .exceptions import (
+    ObjectNotFound,
+    ParkingZoneError,
+    PermitLimitExceeded,
+    RefundError,
+    UpdatePermitError,
+)
 from .models.order import OrderStatus
 from .models.parking_permit import ContractType
 from .paginator import QuerySetPaginator
@@ -193,6 +199,9 @@ def create_permit_address(customer_info):
 def resolve_create_resident_permit(obj, info, permit):
     customer_info = permit["customer"]
     customer = update_or_create_customer(customer_info)
+    active_permits_count = customer.active_permits.count()
+    if active_permits_count >= 2:
+        raise PermitLimitExceeded("Cannot create more than 2 permits")
 
     vehicle_info = permit["vehicle"]
     vehicle = update_or_create_vehicle(vehicle_info)
@@ -200,6 +209,7 @@ def resolve_create_resident_permit(obj, info, permit):
     address = create_permit_address(customer_info)
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
+    primary_vehicle = active_permits_count == 0
     with reversion.create_revision():
         start_time = isoparse(permit["start_time"])
         end_time = get_end_time(start_time, permit["month_count"])
@@ -214,6 +224,7 @@ def resolve_create_resident_permit(obj, info, permit):
             end_time=end_time,
             description=permit["description"],
             address=address,
+            primary_vehicle=primary_vehicle,
         )
         request = info.context["request"]
         reversion.set_user(request.user)

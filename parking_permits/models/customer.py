@@ -162,3 +162,7 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         if self.user:
             self.user.delete()
         self.delete()
+
+    @property
+    def active_permits(self):
+        return self.permits.active()
