@@ -73,6 +73,13 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         {"name": "permits"},
     )
 
+    class Meta:
+        verbose_name = _("Customer")
+        verbose_name_plural = _("Customers")
+
+    def __str__(self):
+        return "%s %s" % (self.first_name, self.last_name)
+
     @property
     def age(self):
         ssn = self.national_id_number
@@ -109,13 +116,6 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
             vehicle.vehicle_class in d_class.vehicle_classes
             for d_class in self.driving_licence.driving_classes.all()
         )
-
-    class Meta:
-        verbose_name = _("Customer")
-        verbose_name_plural = _("Customers")
-
-    def __str__(self):
-        return "%s %s" % (self.first_name, self.last_name)
 
     @property
     def can_be_deleted(self):
