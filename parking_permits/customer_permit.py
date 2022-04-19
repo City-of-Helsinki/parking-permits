@@ -66,7 +66,11 @@ class CustomerPermit:
             if permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now()):
                 self.customer.fetch_vehicle_detail(vehicle.registration_number)
 
-            permit.vehicle_changed = not self.customer.is_user_of_vehicle(vehicle)
+            user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
+            if not user_of_vehicle:
+                permit.vehicle_changed = True
+                permit.vehicle_changed_date = tz.localdate(tz.now())
+                permit.save()
             products = []
             for product_with_qty in permit.get_products_with_quantities():
                 product = self._calculate_prices(permit, product_with_qty)

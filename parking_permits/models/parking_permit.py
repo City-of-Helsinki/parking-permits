@@ -122,6 +122,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
     start_time = models.DateTimeField(_("Start time"), default=timezone.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
     primary_vehicle = models.BooleanField(default=True)
+    vehicle_changed = models.BooleanField(default=False)
+    vehicle_changed_date = models.DateField(
+        _("Vehicle changed date"), null=True, blank=True
+    )
     contract_type = models.CharField(
         _("Contract type"),
         max_length=16,
