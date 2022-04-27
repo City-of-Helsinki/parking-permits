@@ -195,6 +195,19 @@ def resolve_get_vehicle_information(_, info, registration):
     return vehicle
 
 
+@mutation.field("updatePermitVehicle")
+@is_authenticated
+@convert_kwargs_to_snake_case
+def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id):
+    customer = info.context["request"].user.customer
+    permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
+    permit.vehicle_id = vehicle_id
+    permit.vehicle_changed = False
+    permit.vehicle_changed_date = None
+    permit.save()
+    return permit
+
+
 @mutation.field("createOrder")
 @is_authenticated
 def resolve_create_order(_, info):

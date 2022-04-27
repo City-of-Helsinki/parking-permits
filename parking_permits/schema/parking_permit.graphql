@@ -127,6 +127,7 @@ type Mutation {
   updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
   getVehicleInformation(registration: String!): VehicleNode!
+  updatePermitVehicle(permitId: ID!, vehicleId: ID!): PermitNode!
 }
 
 input ParkingPermitInput {
