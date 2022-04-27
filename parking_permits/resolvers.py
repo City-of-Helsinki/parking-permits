@@ -16,12 +16,18 @@ from project.settings import BASE_DIR
 
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
-from .exceptions import AddressError, ObjectNotFound, ParkingZoneError
+from .exceptions import (
+    AddressError,
+    ObjectNotFound,
+    ParkingZoneError,
+    TraficomFetchVehicleError,
+)
 from .models import Address, Customer, Refund
 from .models.order import Order, OrderStatus
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
 from .services.kmo import get_address_detail_from_kmo
+from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
 
 logger = logging.getLogger("db")
@@ -166,6 +172,27 @@ def resolve_update_parking_permit(obj, info, input, permit_id=None):
 def resolve_end_permit(_, info, permit_ids, end_type, iban=None):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).end(permit_ids, end_type, iban)
+
+
+@mutation.field("getVehicleInformation")
+@is_authenticated
+@convert_kwargs_to_snake_case
+def resolve_get_vehicle_information(_, info, registration):
+    request = info.context["request"]
+    vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
+    customer = request.user.customer
+    is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
+    if not is_user_of_vehicle:
+        raise TraficomFetchVehicleError(
+            f"Customer is not an owner or holder of a vehicle {registration}"
+        )
+
+    has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
+    if not has_valid_licence:
+        raise TraficomFetchVehicleError(
+            "Customer does not have a valid driving licence"
+        )
+    return vehicle
 
 
 @mutation.field("createOrder")

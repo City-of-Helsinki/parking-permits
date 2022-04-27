@@ -126,6 +126,7 @@ type Mutation {
   endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): Boolean
   updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
+  getVehicleInformation(registration: String!): VehicleNode!
 }
 
 input ParkingPermitInput {
