@@ -500,3 +500,38 @@ def resolve_addresses(obj, info, page_input, order_by=None, search_items=None):
         "page_info": paginator.page_info,
         "objects": paginator.object_list,
     }
+
+
+@query.field("address")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+def resolve_address(obj, info, address_id):
+    return Address.objects.get(id=address_id)
+
+
+@mutation.field("updateAddress")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_update_address(obj, info, address_id, address):
+    _address = Address.objects.get(id=address_id)
+    _address.street_name = address["street_name"]
+    _address.street_name_sv = address["street_name_sv"]
+    _address.street_number = address["street_number"]
+    _address.postal_code = address["postal_code"]
+    _address.city = address["city"]
+    _address.city_sv = address["city_sv"]
+    _address.location = Point(*address["location"], srid=settings.SRID)
+    _address._zone = ParkingZone.objects.get_for_location(_address.location)
+    _address.save()
+    return {"success": True}
+
+
+@mutation.field("deleteAddress")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_delete_address(obj, info, address_id):
+    address = Address.objects.get(id=address_id)
+    address.delete()
+    return {"success": True}

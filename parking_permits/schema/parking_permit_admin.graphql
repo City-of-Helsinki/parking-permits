@@ -29,6 +29,7 @@ type AddressNode {
   city: String
   citySv: String
   postalCode: String
+  location: [Float]
   zone: ZoneNode
 }
 
@@ -242,6 +243,7 @@ type Query {
     pageInput: PageInput!
     orderBy: OrderByInput
   ): PagedAddresses!
+  address(addressId: ID!): AddressNode!
 }
 
 input AddressInput {
@@ -337,4 +339,6 @@ type Mutation {
   deleteProduct(productId: ID!): MutationResponse
   createProduct(product: ProductInput!): MutationResponse
   updateRefund(refundNumber: Int!, refund: RefundInput!): MutationResponse
+  updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
+  deleteAddress(addressId: ID!): MutationResponse
 }
