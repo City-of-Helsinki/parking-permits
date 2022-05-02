@@ -34,7 +34,7 @@ from parking_permits.tests.factories.vehicle import VehicleFactory
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
 CLOSED = ParkingPermitStatus.CLOSED
-PROCESSING = ParkingPermitStatus.PROCESSING
+PAYMENT_IN_PROGRESS = ParkingPermitStatus.PAYMENT_IN_PROGRESS
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 FROM = ParkingPermitStartType.FROM
 OPEN_ENDED = ContractType.OPEN_ENDED
@@ -106,7 +106,7 @@ class GetCustomerPermitTestCase(TestCase):
 
     def test_customer_b_should_delete_draft_permit_that_is_created_before_today(self):
         query_set = ParkingPermit.objects.filter(
-            customer=self.customer_b, status__in=[VALID, PROCESSING, DRAFT]
+            customer=self.customer_b, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
         )
         self.assertEqual(query_set.count(), 1)
         ParkingPermitFactory(
@@ -189,8 +189,8 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.customer_b = CustomerFactory(first_name="Firstname B", last_name="")
 
         self.c_a_closed = ParkingPermitFactory(customer=self.customer_a, status=CLOSED)
-        self.c_a_processing = ParkingPermitFactory(
-            customer=self.customer_a, status=PROCESSING
+        self.c_a_payment_in_progress = ParkingPermitFactory(
+            customer=self.customer_a, status=PAYMENT_IN_PROGRESS
         )
         self.c_a_draft = ParkingPermitFactory(
             customer=self.customer_a, status=DRAFT, primary_vehicle=False
@@ -207,7 +207,7 @@ class DeleteCustomerPermitTestCase(TestCase):
             CustomerPermit(self.customer_a.id).delete(self.c_a_valid.id)
 
         with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
-            CustomerPermit(self.customer_a.id).delete(self.c_a_processing.id)
+            CustomerPermit(self.customer_a.id).delete(self.c_a_payment_in_progress.id)
 
     def test_customer_a_can_delete_draft_permit(self):
         result = CustomerPermit(self.customer_a.id).delete(self.c_a_draft.id)
@@ -292,8 +292,10 @@ class UpdateCustomerPermitTestCase(TestCase):
         for result in results:
             self.assertEqual(result.parking_zone, sec_add_zone)
 
-    def test_can_not_update_zone_if_it_has_processing_or_valid_primary_permit(self):
-        for status in [PROCESSING, VALID]:
+    def test_can_not_update_zone_if_it_has_payment_in_progress_or_valid_primary_permit(
+        self,
+    ):
+        for status in [PAYMENT_IN_PROGRESS, VALID]:
             self.c_a_draft.status = status
             self.c_a_draft.save(update_fields=["status"])
             sec_add_zone = self.cus_a.other_address.zone
