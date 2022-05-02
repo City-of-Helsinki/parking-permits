@@ -50,6 +50,7 @@ type VehicleNode {
 }
 
 type ProductNode {
+  name: String!
   vat: Float!
   quantity: Int!
   unitPrice: Float!
