@@ -168,7 +168,7 @@ class TalpaOrderManager:
     @classmethod
     def send_to_talpa(cls, order):
         order_data = cls._create_order_data(order)
-        logger.info(f"Sending order to talpa, order id: {order.id}")
+        logger.info(f"Order data sent to talpa: {json.dumps(order_data)}")
         response = requests.post(
             cls.url, data=json.dumps(order_data), headers=cls.headers
         )
