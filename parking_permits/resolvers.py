@@ -22,9 +22,9 @@ from .exceptions import (
     ParkingZoneError,
     TraficomFetchVehicleError,
 )
-from .models import Address, Customer, Refund
+from .models import Address, Customer, Refund, Vehicle
 from .models.order import Order, OrderStatus
-from .models.parking_permit import ParkingPermit, ParkingPermitStatus
+from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
 from .services.kmo import get_address_detail_from_kmo
 from .services.traficom import Traficom
@@ -198,14 +198,44 @@ def resolve_get_vehicle_information(_, info, registration):
 @mutation.field("updatePermitVehicle")
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id):
+def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
     customer = info.context["request"].user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
-    permit.vehicle_id = vehicle_id
+    new_vehicle = Vehicle.objects.get(id=vehicle_id)
+    checkout_url = None
+
+    if (
+        permit.contract_type == ContractType.FIXED_PERIOD
+        and permit.vehicle.is_low_emission != new_vehicle.is_low_emission
+    ):
+        price_change_list = permit.get_price_change_list(
+            permit.parking_zone, new_vehicle.is_low_emission
+        )
+        permit_total_price_change = sum(
+            [item["price_change"] for item in price_change_list]
+        )
+        permit.order = Order.objects.create_renewal_order(
+            customer, status=OrderStatus.CONFIRMED
+        )
+        if permit_total_price_change < 0:
+            refund = Refund.objects.create(
+                name=str(customer),
+                order=permit.order,
+                amount=-permit_total_price_change,
+                iban=iban if iban else "",
+                description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
+            )
+            logger.info(f"Refund for updating permits zone created: {refund}")
+
+        if permit_total_price_change > 0:
+            checkout_url = TalpaOrderManager.send_to_talpa(permit.order)
+            permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+
+    permit.vehicle = new_vehicle
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
-    return permit
+    return {"order_id": permit.order_id, "checkout_url": checkout_url}
 
 
 @mutation.field("createOrder")
