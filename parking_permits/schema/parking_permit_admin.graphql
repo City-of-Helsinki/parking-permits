@@ -341,4 +341,5 @@ type Mutation {
   updateRefund(refundNumber: Int!, refund: RefundInput!): MutationResponse
   updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
   deleteAddress(addressId: ID!): MutationResponse
+  createAddress(address: AddressInput!): MutationResponse
 }
