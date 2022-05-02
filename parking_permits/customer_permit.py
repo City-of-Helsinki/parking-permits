@@ -31,6 +31,7 @@ OPEN_ENDED = ContractType.OPEN_ENDED
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
 PROCESSING = ParkingPermitStatus.PROCESSING
+PAYMENT_IN_PROGRESS = ParkingPermitStatus.PAYMENT_IN_PROGRESS
 FROM = ParkingPermitStartType.FROM
 FIXED_PERIOD = ContractType.FIXED_PERIOD
 
@@ -50,7 +51,7 @@ class CustomerPermit:
     def __init__(self, customer_id):
         self.customer = Customer.objects.get(id=customer_id)
         self.customer_permit_query = ParkingPermit.objects.filter(
-            customer=self.customer, status__in=[VALID, PROCESSING, DRAFT]
+            customer=self.customer, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
         )
 
     def get(self):
@@ -147,7 +148,7 @@ class CustomerPermit:
         #  needs to be updated when a notification is received from talpa
         if "order_id" in keys:
             fields_to_update.update(
-                {"order_id": data["order_id"], "status": PROCESSING}
+                {"order_id": data["order_id"], "status": PAYMENT_IN_PROGRESS}
             )
 
         if "consent_low_emission_accepted" in keys:
