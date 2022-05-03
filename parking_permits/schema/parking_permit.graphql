@@ -63,7 +63,7 @@ type ProductNode {
 type PermitNode {
   id: ID!
   zone: ID!
-  orderId: String
+  latestOrderId: String
   subscriptionId: String
   vehicle: VehicleNode!
   products: [ProductNode]
@@ -121,7 +121,7 @@ type ChangeAddressResult {
 }
 
 type ChangeVehicleResult {
-  orderId: String!
+  latestOrderId: String!
   checkoutUrl: String
 }
 

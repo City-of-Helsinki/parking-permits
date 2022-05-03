@@ -200,6 +200,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.orders.latest("id")
 
     @property
+    def latest_order_id(self):
+        return self.latest_order.id
+
+    @property
     def latest_order_items(self):
         """Get latest order items for the permit"""
         return self.order_items.filter(order=self.latest_order)
