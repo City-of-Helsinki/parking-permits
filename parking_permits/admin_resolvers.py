@@ -444,9 +444,9 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_items=None):
 @query.field("refund")
 @is_ad_admin
 @convert_kwargs_to_snake_case
-def resolve_refund(obj, info, refund_number):
+def resolve_refund(obj, info, refund_id):
     try:
-        return Refund.objects.get(refund_number=refund_number)
+        return Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
         raise ObjectNotFound("Refund not found")
 

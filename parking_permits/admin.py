@@ -1,5 +1,4 @@
 from django.contrib.gis import admin
-from django.utils.translation import ugettext_lazy as _
 
 from parking_permits.models import (
     Address,
@@ -116,19 +115,11 @@ class VehicleAdmin(admin.ModelAdmin):
 @admin.register(Refund)
 class RefundAdmin(admin.ModelAdmin):
     list_display = (
-        "refund_number",
         "name",
         "iban",
         "order",
         "amount",
     )
-    readonly_fields = ("refund_number",)
-
-    def refund_number(self, obj):
-        return obj.refund_number
-
-    refund_number.admin_order_field = "refund_number"
-    refund_number.short_description = _("Refund number")
 
 
 @admin.register(Product)

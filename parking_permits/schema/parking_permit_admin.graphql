@@ -93,7 +93,6 @@ type PermitNode {
 
 type RefundNode {
   id: ID!
-  refundNumber: Int!
   name: String
   amount: Float!
   iban: String!
@@ -107,7 +106,6 @@ type RefundNode {
 
 type OrderNode {
   id: ID!
-  orderNumber: Int!
   totalPrice: Float!
   customer: CustomerNode!
   paidTime: String
@@ -232,7 +230,7 @@ type Query {
     pageInput: PageInput!
     orderBy: OrderByInput
   ): PagedRefunds!
-  refund(refundNumber: Int): RefundNode!
+  refund(refundId: ID!): RefundNode!
   permitPriceChangeList(permitId: ID!, permitInfo: ResidentPermitInput!): [PermitPriceChange]
   orders(
     pageInput: PageInput!
