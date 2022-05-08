@@ -14,7 +14,6 @@ from .exceptions import (
     NonDraftPermitUpdateError,
     PermitCanNotBeDelete,
     PermitLimitExceeded,
-    RefundError,
     TraficomFetchVehicleError,
 )
 from .models import Customer, OrderItem, ParkingPermit, ParkingZone, Refund, Vehicle
@@ -224,14 +223,14 @@ class CustomerPermit:
         return self._update_fields_to_all_draft(fields_to_update)
 
     def end(self, permit_ids, end_type, iban=None):
-        for permit_id in permit_ids:
+        for permit in self.customer_permit_query.filter(id__in=permit_ids).order_by(
+            "primary_vehicle"
+        ):
             with reversion.create_revision():
-                permit = ParkingPermit.objects.get(id=permit_id)
                 permit.end_permit(end_type)
-                permit.update_parkkihubi_permit()
+                if not settings.DEBUG:
+                    permit.update_parkkihubi_permit()
                 if permit.can_be_refunded:
-                    if not iban:
-                        raise RefundError("IBAN is not provided")
                     description = f"Refund for ending permit #{permit.id}"
                     Refund.objects.create(
                         name=str(permit.customer),
