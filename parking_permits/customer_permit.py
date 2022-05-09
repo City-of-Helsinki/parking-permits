@@ -227,7 +227,6 @@ class CustomerPermit:
             "primary_vehicle"
         ):
             with reversion.create_revision():
-                permit.end_permit(end_type)
                 if not settings.DEBUG:
                     permit.update_parkkihubi_permit()
                 if permit.can_be_refunded:
@@ -239,7 +238,7 @@ class CustomerPermit:
                         iban=iban,
                         description=description,
                     )
-
+                permit.end_permit(end_type)
                 reversion.set_user(self.customer.user)
                 comment = get_reversion_comment(EventType.CHANGED, permit)
                 reversion.set_comment(comment)
