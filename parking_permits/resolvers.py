@@ -214,13 +214,15 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
         permit_total_price_change = sum(
             [item["price_change"] for item in price_change_list]
         )
-        permit.order = Order.objects.create_renewal_order(
+        permit.vehicle = new_vehicle
+        permit.save()
+        new_order = Order.objects.create_renewal_order(
             customer, status=OrderStatus.CONFIRMED
         )
         if permit_total_price_change < 0:
             refund = Refund.objects.create(
                 name=str(customer),
-                order=permit.order,
+                order=new_order,
                 amount=-permit_total_price_change,
                 iban=iban if iban else "",
                 description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
@@ -228,10 +230,11 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
             logger.info(f"Refund for updating permits zone created: {refund}")
 
         if permit_total_price_change > 0:
-            checkout_url = TalpaOrderManager.send_to_talpa(permit.order)
+            checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+    else:
+        permit.vehicle = new_vehicle
 
-    permit.vehicle = new_vehicle
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
