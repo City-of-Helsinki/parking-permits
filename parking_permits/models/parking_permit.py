@@ -234,22 +234,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.start_time + relativedelta(months=self.months_used)
 
     @property
-    def monthly_price(self):
-        """
-        Return the monthly price for current period
-
-        Current monthly price is determined by the start date of current period
-        """
-        period_start_date = timezone.localdate(self.current_period_start_time)
-        product = self.parking_zone.products.for_resident().get_for_date(
-            period_start_date
-        )
-        is_secondary = not self.primary_vehicle
-        return product.get_modified_unit_price(
-            self.vehicle.is_low_emission, is_secondary
-        )
-
-    @property
     def can_be_refunded(self):
         return self.is_valid and self.is_fixed_period
 

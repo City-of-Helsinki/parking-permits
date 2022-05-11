@@ -191,7 +191,6 @@ type PermitDetailNode {
   contractType: String
   monthCount: Int
   monthsLeft: Int
-  monthlyPrice: Float
   currentPeriodEndTime: String
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
