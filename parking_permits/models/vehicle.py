@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import arrow
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -42,6 +40,31 @@ class VehicleClass(models.TextChoices):
 class EmissionType(models.TextChoices):
     NEDC = "NEDC", _("NEDC")
     WLTP = "WLTP", _("WLTP")
+
+
+def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
+    if power_type == VehiclePowerType.ELECTRIC:
+        return True
+    try:
+        now = tz.now()
+        le_criteria = LowEmissionCriteria.objects.get(
+            power_type=power_type,
+            start_date__lte=now,
+            end_date__gte=now,
+        )
+    except LowEmissionCriteria.DoesNotExist:
+        return False
+
+    if not euro_class or not emission or euro_class < le_criteria.euro_min_class_limit:
+        return False
+
+    if emission_type == EmissionType.NEDC:
+        return emission <= le_criteria.nedc_max_emission_limit
+
+    if emission_type == EmissionType.WLTP:
+        return emission <= le_criteria.wltp_max_emission_limit
+
+    return False
 
 
 class LowEmissionCriteria(TimestampedModelMixin):
@@ -117,31 +140,12 @@ class Vehicle(TimestampedModelMixin):
 
     @property
     def is_low_emission(self):
-        if self.power_type == VehiclePowerType.ELECTRIC:
-            return True
-        try:
-            le_criteria = LowEmissionCriteria.objects.get(
-                power_type=self.power_type,
-                start_date__lte=datetime.today(),
-                end_date__gte=datetime.today(),
-            )
-        except LowEmissionCriteria.DoesNotExist:
-            return False
-
-        if (
-            not self.euro_class
-            or not self.emission
-            or self.euro_class < le_criteria.euro_min_class_limit
-        ):
-            return False
-
-        if self.emission_type == EmissionType.NEDC:
-            return self.emission <= le_criteria.nedc_max_emission_limit
-
-        if self.emission_type == EmissionType.WLTP:
-            return self.emission <= le_criteria.wltp_max_emission_limit
-
-        return False
+        return is_low_emission_vehicle(
+            self.power_type,
+            self.euro_class,
+            self.emission_type,
+            self.emission,
+        )
 
     def __str__(self):
         return "%s (%s, %s)" % (
