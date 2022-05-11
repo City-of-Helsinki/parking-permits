@@ -105,6 +105,10 @@ class Vehicle(TimestampedModelMixin):
     )
     users = ArrayField(models.CharField(max_length=15), default=list)
 
+    class Meta:
+        verbose_name = _("Vehicle")
+        verbose_name_plural = _("Vehicles")
+
     def is_due_for_inspection(self):
         return (
             self.last_inspection_date is not None
@@ -138,10 +142,6 @@ class Vehicle(TimestampedModelMixin):
             return self.emission <= le_criteria.wltp_max_emission_limit
 
         return False
-
-    class Meta:
-        verbose_name = _("Vehicle")
-        verbose_name_plural = _("Vehicles")
 
     def __str__(self):
         return "%s (%s, %s)" % (

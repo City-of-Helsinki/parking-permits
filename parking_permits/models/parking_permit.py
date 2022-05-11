@@ -12,11 +12,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from ..constants import (
-    LOW_EMISSION_DISCOUNT,
-    SECONDARY_VEHICLE_PRICE_INCREASE,
-    ParkingPermitEndType,
-)
+from ..constants import ParkingPermitEndType
 from ..exceptions import (
     InvalidContractType,
     ParkkihubiPermitError,
@@ -168,26 +164,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     @property
     def consent_low_emission_accepted(self):
         return self.vehicle.consent_low_emission_accepted
-
-    def get_prices(self):
-        # TODO: account for different prices in different years
-        logger.error(
-            "To be removed. This method is replaced by get_products_with_quantities"
-        )
-        monthly_price = self.parking_zone.resident_price
-        month_count = self.month_count
-
-        if self.contract_type == ContractType.OPEN_ENDED:
-            month_count = 1
-        if self.is_secondary_vehicle:
-            increase = Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
-            monthly_price += increase * monthly_price
-
-        if self.vehicle.is_low_emission:
-            discount = Decimal(LOW_EMISSION_DISCOUNT) / 100
-            monthly_price -= discount * monthly_price
-
-        return monthly_price * month_count, monthly_price
 
     @property
     def latest_order(self):
