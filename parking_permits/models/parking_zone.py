@@ -6,9 +6,7 @@ from django.contrib.gis.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from ..exceptions import PriceError
 from .mixins import TimestampedModelMixin
-from .price import Price, PriceType
 
 logger = logging.getLogger("db")
 
@@ -40,29 +38,6 @@ class ParkingZone(TimestampedModelMixin):
     @property
     def label_sv(self):
         return f"{self.name} - {self.description_sv}"
-
-    @property
-    def price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        return self.resident_price
-
-    @property
-    def resident_price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        try:
-            price = self.prices.get(type=PriceType.RESIDENT, year=timezone.now().year)
-        except Price.DoesNotExist:
-            raise PriceError("No resident price available")
-        return price.price
-
-    @property
-    def company_price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        try:
-            price = self.prices.get(type=PriceType.COMPANY, year=timezone.now().year)
-        except Price.DoesNotExist:
-            raise PriceError("No company price available")
-        return price.price
 
     @property
     def resident_products(self):
