@@ -96,3 +96,33 @@ def convert_to_snake_case(d):
             converted[convert_camel_case_to_snake(k)] = v
         return converted
     return d
+
+
+def get_permit_prices(
+    zone,
+    is_low_emission,
+    is_secondary,
+    permit_start_date,
+    permit_end_date,
+):
+    products = zone.products.for_resident().for_date_range(
+        permit_start_date,
+        permit_end_date,
+    )
+    permit_prices = []
+    for product in products:
+        start_date = max(product.start_date, permit_start_date)
+        end_date = min(product.end_date, permit_end_date)
+        quantity = diff_months_ceil(start_date, end_date)
+        permit_prices.append(
+            {
+                "original_unit_price": product.unit_price,
+                "unit_price": product.get_modified_unit_price(
+                    is_low_emission, is_secondary
+                ),
+                "start_date": start_date,
+                "end_date": end_date,
+                "quantity": quantity,
+            }
+        )
+    return permit_prices

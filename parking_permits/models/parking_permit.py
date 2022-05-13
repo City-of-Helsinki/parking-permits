@@ -19,7 +19,7 @@ from ..exceptions import (
     PermitCanNotBeEnded,
     RefundError,
 )
-from ..utils import diff_months_ceil, get_end_time
+from ..utils import diff_months_ceil, get_end_time, get_permit_prices
 from .mixins import TimestampedModelMixin
 from .parking_zone import ParkingZone
 from .vehicle import Vehicle
@@ -183,6 +183,20 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def latest_order_items(self):
         """Get latest order items for the permit"""
         return self.order_items.filter(order=self.latest_order)
+
+    @property
+    def permit_prices(self):
+        if self.is_fixed_period:
+            end_time = self.end_time
+        else:
+            end_time = get_end_time(self.start_time, 1)
+        return get_permit_prices(
+            self.parking_zone,
+            self.vehicle.is_low_emission,
+            not self.primary_vehicle,
+            self.start_time.date(),
+            end_time.date(),
+        )
 
     @property
     def is_valid(self):

@@ -42,7 +42,7 @@ from .paginator import QuerySetPaginator
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.traficom import Traficom
-from .utils import apply_filtering, apply_ordering, diff_months_ceil, get_end_time
+from .utils import apply_filtering, apply_ordering, get_end_time, get_permit_prices
 
 logger = logging.getLogger("db")
 
@@ -257,27 +257,13 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
     permit_start_date = start_time.date()
     end_time = get_end_time(start_time, permit["month_count"])
     permit_end_date = end_time.date()
-    products = parking_zone.products.for_resident().for_date_range(
+    return get_permit_prices(
+        parking_zone,
+        is_low_emission,
+        is_secondary,
         permit_start_date,
         permit_end_date,
     )
-    permit_prices = []
-    for product in products:
-        start_date = max(product.start_date, permit_start_date)
-        end_date = min(product.end_date, permit_end_date)
-        quantity = diff_months_ceil(start_date, end_date)
-        permit_prices.append(
-            {
-                "original_unit_price": product.unit_price,
-                "unit_price": product.get_modified_unit_price(
-                    is_low_emission, is_secondary
-                ),
-                "start_date": start_date,
-                "end_date": end_date,
-                "quantity": quantity,
-            }
-        )
-    return permit_prices
 
 
 @query.field("permitPriceChangeList")

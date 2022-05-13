@@ -197,6 +197,7 @@ type PermitDetailNode {
   canEndAfterCurrentPeriod: Boolean
   canBeRefunded: Boolean
   changeLogs: [ChangeLog]!
+  permitPrices: [PermitPriceNode]
 }
 
 type PermitPriceChange {
