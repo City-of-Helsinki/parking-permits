@@ -37,11 +37,12 @@ from .exceptions import (
 )
 from .models.order import OrderStatus
 from .models.parking_permit import ContractType
+from .models.vehicle import is_low_emission_vehicle
 from .paginator import QuerySetPaginator
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.traficom import Traficom
-from .utils import apply_filtering, apply_ordering, get_end_time
+from .utils import apply_filtering, apply_ordering, diff_months_ceil, get_end_time
 
 logger = logging.getLogger("db")
 
@@ -237,6 +238,46 @@ def resolve_create_resident_permit(obj, info, permit):
     # and the order status should be confirmed
     Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
     return {"success": True, "permit": parking_permit}
+
+
+@query.field("permitPrices")
+@is_ad_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_permit_prices(obj, info, permit, is_secondary):
+    parking_zone = ParkingZone.objects.get(name=permit["customer"]["zone"])
+    vehicle_info = permit["vehicle"]
+    is_low_emission = is_low_emission_vehicle(
+        vehicle_info["power_type"],
+        vehicle_info["euro_class"],
+        vehicle_info["emission_type"],
+        vehicle_info["emission"],
+    )
+    start_time = isoparse(permit["start_time"])
+    permit_start_date = start_time.date()
+    end_time = get_end_time(start_time, permit["month_count"])
+    permit_end_date = end_time.date()
+    products = parking_zone.products.for_resident().for_date_range(
+        permit_start_date,
+        permit_end_date,
+    )
+    permit_prices = []
+    for product in products:
+        start_date = max(product.start_date, permit_start_date)
+        end_date = min(product.end_date, permit_end_date)
+        quantity = diff_months_ceil(start_date, end_date)
+        permit_prices.append(
+            {
+                "original_unit_price": product.unit_price,
+                "unit_price": product.get_modified_unit_price(
+                    is_low_emission, is_secondary
+                ),
+                "start_date": start_date,
+                "end_date": end_date,
+                "quantity": quantity,
+            }
+        )
+    return permit_prices
 
 
 @query.field("permitPriceChangeList")

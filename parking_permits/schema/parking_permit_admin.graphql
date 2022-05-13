@@ -182,6 +182,7 @@ type PermitDetailNode {
   id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
+  primaryVehicle: Boolean!
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
   startTime: String
@@ -224,6 +225,14 @@ type PagedLowEmissionCriteria {
   pageInfo: PageInfo
 }
 
+type PermitPriceNode {
+  originalUnitPrice: Float!
+  unitPrice: Float!
+  startDate: String!
+  endDate: String!
+  quantity: Int!
+}
+
 type Query {
   permits(
     pageInput: PageInput!
@@ -260,6 +269,7 @@ type Query {
     orderBy: OrderByInput
   ): PagedLowEmissionCriteria!
   lowEmissionCriterion(criterionId: ID!): LowEmissionCriterionNode!
+  permitPrices(permit: ResidentPermitInput!, isSecondary: Boolean!): [PermitPriceNode]!
 }
 
 input AddressInput {
