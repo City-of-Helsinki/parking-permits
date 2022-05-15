@@ -503,6 +503,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             "series": settings.PARKKIHUBI_PERMIT_SERIES,
             "domain": settings.PARKKIHUBI_DOMAIN,
             "external_id": str(self.id),
+            "properties": {"permit_type": self.type},
             "subjects": [
                 {
                     "start_time": start_time,
