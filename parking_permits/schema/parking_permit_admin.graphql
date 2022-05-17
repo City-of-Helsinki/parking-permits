@@ -164,9 +164,14 @@ input OrderByInput {
   orderDirection: OrderDirection!
 }
 
-input SearchItem {
+input SearchField {
   matchType: String!
-  fields: [String]!
+  fieldName: String!
+}
+
+input SearchItem {
+  connector: String!
+  fields: [SearchField]!
   value: String!
 }
 

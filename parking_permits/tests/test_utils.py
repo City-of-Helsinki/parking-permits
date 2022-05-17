@@ -65,13 +65,21 @@ class ApplyingFilteringTestCase(TestCase):
     def test_search_with_model_fields(self):
         all_parking_permits = ParkingPermit.objects.all()
         search_items = [
-            {"match_type": "iexact", "fields": ["status"], "value": "VALID"}
+            {
+                "connector": "and",
+                "fields": [{"match_type": "iexact", "field_name": "status"}],
+                "value": "VALID",
+            }
         ]
         qs = apply_filtering(all_parking_permits, search_items)
         self.assertEqual(qs.count(), 1)
 
         search_items = [
-            {"match_type": "iexact", "fields": ["status"], "value": "DRAFT"}
+            {
+                "connector": "and",
+                "fields": [{"match_type": "iexact", "field_name": "status"}],
+                "value": "DRAFT",
+            }
         ]
         qs = apply_filtering(all_parking_permits, search_items)
         self.assertEqual(qs.count(), 2)
@@ -80,8 +88,11 @@ class ApplyingFilteringTestCase(TestCase):
         all_parking_permits = ParkingPermit.objects.all()
         search_items = [
             {
-                "match_type": "istartswith",
-                "fields": ["customer__first_name", "customer__last_name"],
+                "connector": "or",
+                "fields": [
+                    {"match_type": "istartswith", "field_name": "customer__first_name"},
+                    {"match_type": "istartswith", "field_name": "customer__last_name"},
+                ],
                 "value": "last",
             }
         ]
@@ -90,8 +101,11 @@ class ApplyingFilteringTestCase(TestCase):
 
         search_items = [
             {
-                "match_type": "iexact",
-                "fields": ["customer__first_name", "customer__last_name"],
+                "connector": "or",
+                "fields": [
+                    {"match_type": "istartswith", "field_name": "customer__first_name"},
+                    {"match_type": "istartswith", "field_name": "customer__last_name"},
+                ],
                 "value": "Firstname A",
             }
         ]
@@ -102,11 +116,18 @@ class ApplyingFilteringTestCase(TestCase):
         all_parking_permits = ParkingPermit.objects.all()
         search_items = [
             {
-                "match_type": "iexact",
-                "fields": ["customer__first_name", "customer__last_name"],
+                "connector": "or",
+                "fields": [
+                    {"match_type": "istartswith", "field_name": "customer__first_name"},
+                    {"match_type": "istartswith", "field_name": "customer__last_name"},
+                ],
                 "value": "firstname a",
             },
-            {"match_type": "iexact", "fields": ["status"], "value": "DRAFT"},
+            {
+                "connector": "and",
+                "fields": [{"match_type": "iexact", "field_name": "status"}],
+                "value": "DRAFT",
+            },
         ]
         qs = apply_filtering(all_parking_permits, search_items)
         self.assertEqual(qs.count(), 1)

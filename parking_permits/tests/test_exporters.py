@@ -31,7 +31,11 @@ class DataExporterTestCase(TestCase):
             "order_direction": "DESC",
         }
         search_items = [
-            {"match_type": "exact", "fields": ["parking_zone__name"], "value": "B"}
+            {
+                "connector": "and",
+                "fields": [{"match_type": "exact", "field_name": "parking_zone__name"}],
+                "value": "B",
+            }
         ]
         exporter = DataExporter("permits", order_by, search_items)
         self.assertEqual(exporter.get_headers(), PERMIT_HEADERS)

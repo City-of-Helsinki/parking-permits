@@ -19,13 +19,20 @@ def apply_ordering(queryset, order_by):
 
 def apply_filtering(queryset, search_items):
     query = Q()
+    connector_ops = {
+        "or": operator.or_,
+        "and": operator.and_,
+    }
     for search_item in search_items:
-        match_type = search_item["match_type"]
+        connector = search_item["connector"]
         fields = search_item["fields"]
         value = search_item["value"]
-        search_item_query = reduce(
-            operator.or_, [Q(**{f"{field}__{match_type}": value}) for field in fields]
-        )
+        connector_op = connector_ops[connector]
+        field_queries = []
+        for field in fields:
+            field_query = Q(**{f'{field["field_name"]}__{field["match_type"]}': value})
+            field_queries.append(field_query)
+        search_item_query = reduce(connector_op, field_queries)
         query &= search_item_query
     return queryset.filter(query)
 
