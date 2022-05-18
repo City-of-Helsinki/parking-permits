@@ -42,6 +42,13 @@ env = environ.Env(
     DVV_PASSWORD=(str, ""),
     DVV_SOSONIMI=(str, ""),
     DVV_LOPPUKAYTTAJA=(str, ""),
+    EMAIL_USE_TLS=(bool, False),
+    EMAIL_HOST=(str, "localhost"),
+    EMAIL_HOST_USER=(str, ""),
+    EMAIL_HOST_PASSWORD=(str, ""),
+    EMAIL_PORT=(int, 25),
+    EMAIL_TIMEOUT=(int, 15),
+    DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <kaupunkiymparisto@hel.fi>"),
 )
 
 if path.exists(".env"):
@@ -236,3 +243,12 @@ DVV_USERNAME = env("DVV_USERNAME")
 DVV_PASSWORD = env("DVV_PASSWORD")
 DVV_SOSONIMI = env("DVV_SOSONIMI")
 DVV_LOPPUKAYTTAJA = env("DVV_LOPPUKAYTTAJA")
+
+# Email configuration
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
