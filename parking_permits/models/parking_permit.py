@@ -251,6 +251,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def can_be_refunded(self):
         return self.is_valid and self.is_fixed_period
 
+    @property
+    def total_refund_amount(self):
+        return self.get_refund_amount_for_unused_items()
+
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
 
