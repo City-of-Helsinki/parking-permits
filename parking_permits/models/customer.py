@@ -14,6 +14,12 @@ from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitStatus
 
 
+class Languages(models.TextChoices):
+    FINNISH = "fi", _("Finnish")
+    SWEDISH = "sv", _("Swedish")
+    ENGLISH = "en", _("English")
+
+
 class Customer(SerializableMixin, TimestampedModelMixin):
     source_system = models.CharField(
         _("Source system"), max_length=50, choices=SourceSystem.choices, blank=True
@@ -59,6 +65,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         on_delete=models.PROTECT,
         blank=True,
         null=True,
+    )
+    language = models.CharField(
+        _("Language"),
+        max_length=10,
+        choices=Languages.choices,
+        default=Languages.FINNISH,
     )
 
     serialize_fields = (
