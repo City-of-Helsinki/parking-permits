@@ -48,7 +48,7 @@ env = environ.Env(
     EMAIL_HOST_PASSWORD=(str, ""),
     EMAIL_PORT=(int, 25),
     EMAIL_TIMEOUT=(int, 15),
-    DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <kaupunkiymparisto@hel.fi>"),
+    DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <noreply_pysakointitunnus@hel.fi>"),
 )
 
 if path.exists(".env"):
