@@ -89,6 +89,16 @@ def resolve_user_profile(_, info, *args):
     return customer_obj
 
 
+@mutation.field("updateLanguage")
+@is_authenticated
+def resolve_update_language(_, info, lang):
+    request = info.context["request"]
+    customer = request.user.customer
+    customer.language = lang
+    customer.save()
+    return customer
+
+
 @address_node.field("primary")
 def resolve_address_primary(address, info):
     address_node_path_key = info.path.prev.key

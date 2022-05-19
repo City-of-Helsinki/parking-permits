@@ -134,6 +134,7 @@ type Mutation {
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
   getVehicleInformation(registration: String!): VehicleNode!
   updatePermitVehicle(permitId: ID!, vehicleId: ID!, iban: String): ChangeVehicleResult!
+  updateLanguage(lang: String!): CustomerNode!
 }
 
 input ParkingPermitInput {
