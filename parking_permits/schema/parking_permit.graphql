@@ -19,18 +19,12 @@ type AddressNode  {
   primary: Boolean
 }
 
-enum Language {
-  FINNISH
-  ENGLISH
-  SWEDISH
-}
-
 type CustomerNode {
   id: ID!
   age: Int!
   firstName: String!
   lastName: String!
-  language: Language
+  language: String
   email: String
   phoneNumber: String
   primaryAddress: AddressNode
