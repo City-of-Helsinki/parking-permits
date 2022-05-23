@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+
+{% block title %}Pysäköintitunnuksen tiedot on päivitetty{% endblock %}
+
+{% block content %}
+    <p>
+        Kiitos tilauksestasi! Pysäköintitunnus on sähköinen ja pysäköintivalvonta tunnistaa
+        voimassa olevan tunnuksen ajoneuvosi rekisterinumeron perusteella.
+    </p>
+    {% include "emails/_permit_info.html" %}
+{% endblock %}

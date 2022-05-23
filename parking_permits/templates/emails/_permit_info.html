@@ -1,0 +1,10 @@
+<p>
+    Tilauksen tiedot: <br>
+    {{ permit.get_type_display }} <br>
+    {{ permit.customer }} <br>
+    Osoite: {{ permit.address }} <br>
+    Alue: {{ permit.parking_zone.name }} <br>
+    Ajoneuvo: {{ permit.vehicle }} <br>
+    {{ permit.get_contract_type_display }} <br>
+    Voimassaoloaika: {{ permit.start_time|time:"%-d.%-m.%Y, %H:%M" }} – {{ permit.end_time|time:"%-d.%-m.%Y, %H:%M" }}
+</p>
