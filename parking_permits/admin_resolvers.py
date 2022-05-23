@@ -41,6 +41,7 @@ from .models.vehicle import is_low_emission_vehicle
 from .paginator import QuerySetPaginator
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
+from .services.mail import PermitEmailType, send_permit_email
 from .services.traficom import Traficom
 from .utils import apply_filtering, apply_ordering, get_end_time, get_permit_prices
 
@@ -237,6 +238,7 @@ def resolve_create_resident_permit(obj, info, permit):
     # when creating from Admin UI, it's considered the payment is completed
     # and the order status should be confirmed
     Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
+    send_permit_email(PermitEmailType.CREATED, parking_permit)
     return {"success": True, "permit": parking_permit}
 
 
@@ -343,6 +345,7 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
 
+    send_permit_email(PermitEmailType.UPDATED, permit)
     return {"success": True}
 
 
@@ -374,6 +377,7 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
 
+    send_permit_email(PermitEmailType.ENDED, permit)
     return {"success": True}
 
 

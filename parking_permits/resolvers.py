@@ -27,6 +27,7 @@ from .models.order import Order, OrderStatus
 from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
 from .services.kmo import get_address_detail_from_kmo
+from .services.mail import PermitEmailType, send_permit_email
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
 
@@ -238,6 +239,8 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
+
+    send_permit_email(PermitEmailType.UPDATED, permit)
     return {"latest_order_id": permit.latest_order_id, "checkout_url": checkout_url}
 
 
@@ -350,5 +353,8 @@ def resolve_change_address(_, info, address_id, iban=None):
     # asking permit price for next month
     open_ended_permits = permits.open_ended()
     open_ended_permits.update(parking_zone=new_zone)
+
+    for permit in permits:
+        send_permit_email(PermitEmailType.UPDATED, permit)
 
     return response

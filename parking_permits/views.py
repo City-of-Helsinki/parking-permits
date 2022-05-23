@@ -30,6 +30,7 @@ from .serializers import (
     TalpaPayloadSerializer,
 )
 from .services import talpa
+from .services.mail import PermitEmailType, send_permit_email
 
 logger = logging.getLogger("db")
 
@@ -188,6 +189,7 @@ class OrderView(APIView):
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
                 permit.save()
+                send_permit_email(PermitEmailType.CREATED, permit)
                 if not settings.DEBUG:
                     permit.create_parkkihubi_permit()
 

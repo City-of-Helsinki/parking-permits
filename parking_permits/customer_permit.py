@@ -23,6 +23,7 @@ from .models.parking_permit import (
     ParkingPermitStatus,
 )
 from .reversion import EventType, get_reversion_comment
+from .services.mail import PermitEmailType, send_permit_email
 from .utils import diff_months_floor, get_end_time
 
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
@@ -242,6 +243,7 @@ class CustomerPermit:
                 reversion.set_user(self.customer.user)
                 comment = get_reversion_comment(EventType.CHANGED, permit)
                 reversion.set_comment(comment)
+                send_permit_email(PermitEmailType.ENDED, permit)
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
