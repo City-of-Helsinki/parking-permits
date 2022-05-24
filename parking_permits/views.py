@@ -19,7 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .decorators import require_ad_admin
-from .exporters import DataExporter, ParkingPermitPDF, PdfExporter
+from .exporters import DataExporter, PdfExporter
 from .forms import DataExportForm, PdfExportForm
 from .models import Customer, Order
 from .models.common import SourceSystem
