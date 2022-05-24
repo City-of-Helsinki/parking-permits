@@ -17,3 +17,4 @@ django_db_logger
 drf-yasg
 django-crontab
 helsinki-profile-gdpr-api
+fpdf
