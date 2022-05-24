@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2021-06-10 11:07+0000\n"
+"POT-Creation-Date: 2022-05-24 14:15+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,50 +18,182 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "M1"
-msgstr "M1"
+msgid "No parking zone found for the location"
+msgstr "Pysäköintialuetta ei löytynyt tälle sijainnille"
 
-msgid "M2"
-msgstr "M2"
+msgid "Multiple parking zones found for the location"
+msgstr "Useita pysäköintialueita löytyi tälle sijainnille"
 
-msgid "N1"
-msgstr "N1"
+msgid "Person not found"
+msgstr "Henkilöä ei löytynyt"
 
-msgid "N2"
-msgstr "N2"
+msgid "Vehicle not found for the customer"
+msgstr "Asiakkaan ajoneuvoa ei löytynyt"
 
-msgid "L3e"
-msgstr "L3e"
+msgid "Parking permit not found"
+msgstr "Pysäköintitunnusta ei löytynyt"
 
-msgid "L4e"
-msgstr "L4e"
+msgid "Cannot change the customer of the permit"
+msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
 
-msgid "L5e"
-msgstr "L5e"
+msgid "Cannot find parking zone for the address location"
+msgstr "Pysäköintialuetta tälle osoitteelle ei löytynyt"
 
-msgid "L6e"
-msgstr "L6e"
+msgid "Name"
+msgstr "Nimi"
 
-msgid "Fixed period"
-msgstr "Määräaikainen"
+msgid "Registration number"
+msgstr "Rekisteritunnus"
 
-msgid "Open ended"
-msgstr "Jatkuvavelotteinen"
+msgid "Permanent address"
+msgstr "Pysyvä osoite"
 
-msgid "Bensin"
-msgstr "Bensiini"
+msgid "Temporary address"
+msgstr "Väliaikainen osoite"
 
-msgid "Diesel"
-msgstr "Diesel"
+msgid "Parking zone"
+msgstr "Pysäköintialue"
 
-msgid "Bifuel"
-msgstr "Kaasu"
+msgid "Start time"
+msgstr "Alkuaika"
+
+msgid "End time"
+msgstr "Loppuaika"
+
+msgid "Status"
+msgstr "Tila"
+
+msgid "Address"
+msgstr "Osoite"
+
+msgid "Permit type"
+msgstr "Pysäköintitunnuksen tyyppi"
+
+msgid "Order number"
+msgstr "Tilauksen numero"
+
+msgid "Paid time"
+msgstr "Maksuaika"
+
+msgid "Amount"
+msgstr "Määrä"
+
+msgid "Created at"
+msgstr "Luotu"
+
+msgid "Product type"
+msgstr "Tuotteen tyyppi"
+
+msgid "Price"
+msgstr "Hinta"
+
+msgid "VAT"
+msgstr "ALV"
+
+msgid "Valid period"
+msgstr "Voimassaoloaika"
+
+msgid "Modified at"
+msgstr "Muokattu"
+
+msgid "Modified by"
+msgstr "Muokkaaja"
+
+msgid "City of Helsinki"
+msgstr "Helsingin kaupunki"
+
+msgid "Urban Environment Division"
+msgstr "Kaupunkiympäristö"
+
+msgid "Parking permits"
+msgstr "Pysäköintitunnukset"
+
+msgid "Resident permit"
+msgstr "Asukaspysäköintitunnus"
+
+msgid "Permit ID"
+msgstr "Tunniste"
+
+msgid "Customer"
+msgstr "Asiakas"
+
+msgid "Area"
+msgstr "Alue"
+
+msgid "Vehicle"
+msgstr "Ajoneuvo"
+
+msgid "Type"
+msgstr "Tyyppi"
+
+msgid "Validity period"
+msgstr "Voimassaoloaika"
+
+msgid "Invalid order by"
+msgstr "Virheellinen tunnuksen järjestys"
+
+msgid "Invalid search items"
+msgstr "Virheellinen hakutermi"
 
 msgid "Time created"
 msgstr "Luonti-aikaleima"
 
 msgid "Time modified"
 msgstr "Muokattu-aikaleima"
+
+msgid "Street name"
+msgstr "Kadunnimi"
+
+msgid "Street name sv"
+msgstr "Kadunnimi (sv)"
+
+msgid "Street number"
+msgstr "Kadunnumero"
+
+msgid "City"
+msgstr "Postitoimipaikka"
+
+msgid "City sv"
+msgstr "Postitoimipaikka (sv)"
+
+msgid "Postal code"
+msgstr "Postinumero"
+
+msgid "Location (2D)"
+msgstr "Sijainti (2D)"
+
+msgid "Start date"
+msgstr "Alkupäivä"
+
+msgid "End date"
+msgstr "Loppupäivä"
+
+msgid "Zone"
+msgstr "Alue"
+
+msgid "Addresses"
+msgstr "Osoitteet"
+
+msgid "Company name"
+msgstr "Yrityksen nimi"
+
+msgid "Business Id"
+msgstr "Y-tunnus"
+
+msgid "Company owner"
+msgstr "Yrityksen omistaja"
+
+msgid "Company"
+msgstr "Yritys"
+
+msgid "Companies"
+msgstr "Yritykset"
+
+msgid "Source system"
+msgstr "Lähdejärjestelmä"
+
+msgid "Source id"
+msgstr "Lähdejärjestelmän tunniste"
 
 msgid "First name"
 msgstr "Etunimi"
@@ -84,122 +216,17 @@ msgstr "Sähköposti"
 msgid "Phone number"
 msgstr "Puhelinnumero"
 
-msgid "Parking zone"
-msgstr "Pysäköintivyöhyke"
+msgid "Address security ban"
+msgstr "Turvakielto"
 
-msgid "Customer"
-msgstr "Asiakas"
+msgid "Driver's license checked"
+msgstr "Ajokortti"
 
 msgid "Customers"
 msgstr "Asiakkaat"
 
-msgid "Name"
-msgstr "Nimi"
-
-msgid "Area (2D)"
-msgstr "Alue (2D)"
-
-msgid "Parking zones"
-msgstr "Pysäköintivyöhykkeet"
-
-msgid "Type"
-msgstr "Tyyppi"
-
-msgid "Vehicle type"
-msgstr "Ajoneuvon tyyppi"
-
-msgid "Vehicle types"
-msgstr "Ajoneuvon tyypit"
-
-msgid "Emission limit (NEDC)"
-msgstr "Päästöraja (NEDC)"
-
-msgid "Emission limit (WLTP)"
-msgstr "Päästöraja (WLTP)"
-
-msgid "Start date"
-msgstr "Alkupäivä"
-
-msgid "End date"
-msgstr "Loppupäivä"
-
-msgid "Low-emission criteria"
-msgstr "Päästökriteeri"
-
-msgid "Low-emission criterias"
-msgstr "Päästökriteerit"
-
-msgid "Street name"
-msgstr "Kadunnimi"
-
-msgid "Street number"
-msgstr "Kadunnumero"
-
-msgid "City"
-msgstr "Postitoimipaikka"
-
-msgid "Location (2D)"
-msgstr "Sijainti (2D)"
-
-msgid "Address"
-msgstr "Osoite"
-
-msgid "Addresses"
-msgstr "Osoitteet"
-
-msgid "Company name"
-msgstr "Yrityksen nimi"
-
-msgid "Business Id"
-msgstr "Y-tunnus"
-
-msgid "Company owner"
-msgstr "Yrityksen omistaja"
-
-msgid "Company"
-msgstr "Yritys"
-
-msgid "Companies"
-msgstr "Yritykset"
-
-msgid "Vehicle category"
-msgstr "Ajoneuvon kategoria"
-
-msgid "Vehicle manufacturer"
-msgstr "Ajoneuvon valmistaja"
-
-msgid "Vehicle model"
-msgstr "Ajoneuvon malli"
-
-msgid "Vehicle production_year"
-msgstr "Ajoneuvon valmistamisvuosi"
-
-msgid "Vehicle registration number"
-msgstr "Ajoneuvon rekisteritunnus"
-
-msgid "Emission"
-msgstr "Päästölukema"
-
-msgid "Last inspection date"
-msgstr "Viimeisin katsastuspäivä"
-
-msgid "Owner"
-msgstr "Omistaja"
-
-msgid "Holder"
-msgstr "Haltija"
-
-msgid "Vehicle"
-msgstr "Ajoneuvo"
-
-msgid "Vehicles"
-msgstr "Ajoneuvot"
-
-msgid "Driving class name"
-msgstr "Ajoneuvoluokan nimi"
-
-msgid "Driving class identifier"
-msgstr "Ajoneuvoluokan tunniste"
+msgid "Identifier"
+msgstr "Tunniste"
 
 msgid "Driving class"
 msgstr "Ajoneuvoluokka"
@@ -207,62 +234,378 @@ msgstr "Ajoneuvoluokka"
 msgid "Driving classes"
 msgstr "Ajoneuvoluokat"
 
-msgid "Valid start"
-msgstr "Myönnetty (pvm)"
-
-msgid "Valid end"
-msgstr "Viimeinen voimassaolopäivä"
-
 msgid "Driving licence"
 msgstr "Ajokortti"
 
 msgid "Driving licences"
 msgstr "Ajokortit"
 
-msgid "Contract type"
-msgstr "Sopimustyyppi"
+msgid "Created by"
+msgstr "Luotu"
 
-msgid "Month count"
-msgstr "Kuukaudet (lkm)"
+msgid "Confirmed"
+msgstr "Vahvistettu"
 
-msgid "Contract types"
-msgstr "Sopimustyypit"
+msgid "Cancelled"
+msgstr "Peruutettu"
 
-msgid "Product name"
-msgstr "Tuotteen nimi"
+msgid "Talpa subscription id"
+msgstr "Talpan jatkuvaveloitteisen sopimuksen tunniste"
 
-msgid "Product price"
-msgstr "Tuotteen hinta"
+msgid "Period unit"
+msgstr "Aikajakson tuote"
+
+msgid "Period frequency"
+msgstr "Aikajakson väli"
+
+msgid "Subscription"
+msgstr "Sopimus"
+
+msgid "Subscriptions"
+msgstr "Sopimukset"
+
+msgid "Online payment"
+msgstr "Verkkomaksu"
+
+msgid "Cashier payment"
+msgstr "Kanssamaksu"
+
+msgid "Draft"
+msgstr "Luonnos"
+
+msgid "Talpa order id"
+msgstr "Talpan tilauksen tunniste"
+
+msgid "Talpa checkout url"
+msgstr "Talpan checkoutin url"
+
+msgid "Talpa receipt_url"
+msgstr "Talpan kuitin url"
+
+msgid "Order status"
+msgstr "Tilauksen tila"
+
+msgid "permits"
+msgstr "Pysäköintitunnukset"
+
+msgid "Order"
+msgstr "Tilaus"
+
+msgid "Orders"
+msgstr "Tilaukset"
+
+msgid "Talpa order item id"
+msgstr "Talpan tilausrivin tunniste"
 
 msgid "Product"
 msgstr "Tuote"
 
-msgid "Products"
-msgstr "Tuotteet"
-
-msgid "Start time"
-msgstr "Alkuaika"
-
-msgid "End time"
-msgstr "Loppuaika"
-
 msgid "Parking permit"
 msgstr "Pysäköintitunnus"
 
-msgid "Parking permits"
-msgstr "Pysäköintitunnukset"
+msgid "Unit price"
+msgstr "Tuotteen hinta"
 
-msgid "* The permit is valid from the selected start date once the payment has been accepted."
-msgstr "* Tunnus on voimassa valitsemastasi alkamispäivästä kun maksusuoritus on hyväksytty."
+msgid "Payment unit price"
+msgstr "Maksun tuotteen hinta"
 
-msgid "Parking permit expiration date"
-msgstr "Pysäköintitunnuksen päättymispäivä"
+msgid "Quantity"
+msgstr "Määrä"
 
-msgid "Parking permit start date*"
-msgstr "Pysäköintitunnuksen alkamispäivä*"
+msgid "Order item"
+msgstr "Tilausrivi"
+
+msgid "Order items"
+msgstr "Tilausrivit"
+
+msgid "Resident"
+msgstr "Asukas"
+
+msgid "Fixed period"
+msgstr "Määräaikainen"
+
+msgid "Open ended"
+msgstr "Jatkuvavelotteinen"
+
+msgid "Immediately"
+msgstr "Heti"
+
+msgid "From"
+msgstr "Alkaen"
+
+msgid "Arrived"
+msgstr "Saapunut"
+
+msgid "Processing"
+msgstr "Käsittelyssä"
+
+msgid "Accepted"
+msgstr "Hyväksytty"
+
+msgid "Rejected"
+msgstr "Hylätty"
+
+msgid "Payment in progress"
+msgstr "Maksussa"
+
+msgid "Valid"
+msgstr "Viimeinen voimassaolopäivä"
+
+msgid "Closed"
+msgstr "Suljettu"
+
+msgid "Vehicle changed date"
+msgstr "Ajoneuvon tietojen muuttamispäivä"
+
+msgid "Contract type"
+msgstr "Sopimustyyppi"
+
+msgid "Start type"
+msgstr "Alkamistyyppi"
+
+msgid "Month count"
+msgstr "Kuukaudet (lkm)"
+
+msgid "Description"
+msgstr "Kuvaus"
+
+msgid ""
+"Cannot close primary vehicle permit if an active secondary vehicle permit "
+"exists"
+msgstr ""
+"Ensisijaista ajoneuvoa sisältävää tunnusta ei voida sulkea, koska "
+"toissijainen ajoneuvo löytyy"
+
+msgid "Description sv"
+msgstr "Kuvaus (sv)"
+
+msgid "Area (2D)"
+msgstr "Alue (2D)"
+
+msgid "Parking zones"
+msgstr "Pysäköintialueet"
+
+msgid "Year"
+msgstr "Vuosi"
+
+msgid "Prices"
+msgstr "Hinnat"
+
+msgid "Monthly"
+msgstr "Kuukausittainen"
+
+msgid "Pieces"
+msgstr "Osat"
+
+msgid "Product catalog error, please report to admin"
+msgstr "Tuotetietojen virhe, raportoi ylläpitäjälle"
+
+msgid "Talpa product id"
+msgstr "Talpan tuotteen tunniste"
+
+msgid "zone"
+msgstr "alue"
+
+msgid "Unit"
+msgstr "Yksikkö"
+
+msgid "Low emission discount"
+msgstr "Päästöalennus"
+
+msgid "Products"
+msgstr "Tuotteet"
+
+msgid "Open"
+msgstr "Avoin"
+
+msgid "In progress"
+msgstr "Käsittelyssä"
+
+msgid "Permit"
+msgstr "Pysäköintitunnus"
+
+msgid "Refund"
+msgstr "Palautus"
+
+msgid "Refunds"
+msgstr "Palautukset"
+
+msgid "Electric"
+msgstr "Sähkö"
+
+msgid "Bensin"
+msgstr "Bensiini"
+
+msgid "Diesel"
+msgstr "Diesel"
+
+msgid "Bifuel"
+msgstr "Kaasu"
+
+msgid "M1"
+msgstr "M1"
+
+msgid "M2"
+msgstr "M2"
+
+msgid "N1"
+msgstr "N1"
+
+msgid "N2"
+msgstr "N2"
+
+msgid "L3e-A1"
+msgstr "L3e-A1"
+
+msgid "L3e-A2"
+msgstr "L3e-A2"
+
+msgid "L3e-A3"
+msgstr "L3e-A3"
+
+msgid "L3e-A1E"
+msgstr "L3e-A1E"
+
+msgid "L3e-A2E"
+msgstr "L3e-A2E"
+
+msgid "L3e-A3E"
+msgstr "L3e-A3E"
+
+msgid "L3e-A1T"
+msgstr "L3e-A1T"
+
+msgid "L3e-A2T"
+msgstr "L3e-A2T"
+
+msgid "L3e-A3T"
+msgstr "L3e-A3T"
+
+msgid "L4e"
+msgstr "L4e"
+
+msgid "L5e-A"
+msgstr "L5e-A"
+
+msgid "L5e-B"
+msgstr "L5e-B"
+
+msgid "L6e-A"
+msgstr "L6e-A"
+
+msgid "L6e-B"
+msgstr "L6e-B"
+
+msgid "L6e-BP"
+msgstr "L6e-BP"
+
+msgid "L6e-BU"
+msgstr "L6e-BU"
+
+msgid "NEDC"
+msgstr "NEDC"
+
+msgid "WLTP"
+msgstr "WLTP"
+
+msgid "Power type"
+msgstr "Käyttövoima"
+
+msgid "NEDC maximum emission limit"
+msgstr "NEDC maksimipäästöraja"
+
+msgid "WLTP maximum emission limit"
+msgstr "WLTP maksimipäästöraja"
+
+msgid "Euro minimum class limit"
+msgstr "Euro-miniluokitus"
+
+msgid "Low-emission criteria"
+msgstr "Päästökriteeri"
+
+msgid "Low-emission criterias"
+msgstr "Päästökriteerit"
+
+msgid "VehicleClass"
+msgstr "Ajoneuvoluokka"
+
+msgid "Manufacturer"
+msgstr "Valmistaja"
+
+msgid "Model"
+msgstr "Malli"
+
+msgid "Total weigh of vehicle"
+msgstr "Kokonaispaino"
+
+msgid "Euro class"
+msgstr "Euro-luokitus"
+
+msgid "Emission"
+msgstr "Päästöt"
+
+msgid "Emission type"
+msgstr "Päästötyyppi"
+
+msgid "Serial number"
+msgstr "Sarjanumero"
+
+msgid "Last inspection date"
+msgstr "Viimeisin katsastuspäivä"
+
+msgid "Update from traficom on"
+msgstr "Päivitetty Traficomista"
+
+msgid "Vehicles"
+msgstr "Ajoneuvot"
+
+msgid "Not a valid customer address"
+msgstr "Epäkelpo asiakkaan osoite"
+
+msgid "Address not found"
+msgstr "Osoitetta ei löytynyt"
+
+msgid "No active permits for the customer"
+msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
+
+msgid "Conflict parking zones for active permits"
+msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
+
+#, python-brace-format
+msgid ""
+"Could not find vehicle detail with given {registration_number} registration "
+"number"
+msgstr "Rekisteritunnukselle {registration_number} ei löytynyt ajoneuvon tietoja"
+
+#, python-brace-format
+msgid "Unsupported vehicle class {vehicle_class} for {registration_number}"
+msgstr "Ajoneuvoluokkaa {vehicle_class} ei tueta rekisteritunnukselle {registration_number}"
+
+msgid "Could not find any driving license information for given customer"
+msgstr "Asiakkaan ajokorttitietoja ei löydetty"
+
+msgid "Failed to fetch data from traficom"
+msgstr "Tietojen haku Traficomilta epäonnistui"
 
 msgid "Duration of parking permit"
 msgstr "Pysäköintitunnuksen kesto"
 
+#, python-format
 msgid "Fixed period %(month)d kk"
 msgstr "Määräaikainen %(month)d kk"
+
+msgid "Parking permit start date*"
+msgstr "Pysäköintitunnuksen alkamispäivä*"
+
+msgid ""
+"* The permit is valid from the selected start date once the payment has been "
+"accepted"
+msgstr ""
+"* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun maksusuoritus on "
+"hyväksytty."
+
+msgid "Parking permit expiration date"
+msgstr "Pysäköintitunnuksen päättymispäivä"
+
+msgid "Failed to create the order"
+msgstr "Tilauksen luonti epäonnistui"
