@@ -4,7 +4,12 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseBadRequest,
+    HttpResponseNotFound,
+)
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -14,8 +19,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .decorators import require_ad_admin
-from .exporters import DataExporter
-from .forms import DataExportForm
+from .exporters import DataExporter, ParkingPermitPDF, PdfExporter
+from .forms import DataExportForm, PdfExportForm
 from .models import Customer, Order
 from .models.common import SourceSystem
 from .models.order import OrderStatus
@@ -245,4 +250,29 @@ def csv_export(request):
     writer = csv.writer(response)
     writer.writerow(data_exporter.get_headers())
     writer.writerows(data_exporter.get_rows())
+    return response
+
+
+@require_ad_admin
+@require_safe
+def pdf_export(request):
+    form = PdfExportForm(request.GET)
+    if not form.is_valid():
+        return HttpResponseBadRequest()
+
+    pdf_exporter = PdfExporter(
+        form.cleaned_data["data_type"],
+        form.cleaned_data["object_id"],
+    )
+
+    pdf = pdf_exporter.get_pdf()
+    if not pdf:
+        return HttpResponseNotFound()
+
+    filename = f'{form.cleaned_data["data_type"]}_{form.cleaned_data["object_id"]}'
+    response = HttpResponse(
+        content_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
+        content=pdf.output(dest="S").encode("latin-1"),
+    )
     return response

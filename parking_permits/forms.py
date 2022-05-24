@@ -12,6 +12,12 @@ EXPORT_DATA_TYPE_CHOICES = [
     ("products", "Products"),
 ]
 
+PDF_EXPORT_DATA_TYPE_CHOICES = [
+    ("permit", "Permit"),
+    ("order", "Order"),
+    ("refund", "Refund"),
+]
+
 
 class DataExportForm(forms.Form):
     data_type = forms.ChoiceField(choices=EXPORT_DATA_TYPE_CHOICES)
@@ -67,3 +73,8 @@ class DataExportForm(forms.Form):
                 )
         except json.JSONDecodeError:
             raise forms.ValidationError(_("Invalid search items"), code="decode_error")
+
+
+class PdfExportForm(forms.Form):
+    data_type = forms.ChoiceField(choices=PDF_EXPORT_DATA_TYPE_CHOICES)
+    object_id = forms.IntegerField()
