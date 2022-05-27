@@ -16,7 +16,16 @@ from .exceptions import (
     PermitLimitExceeded,
     TraficomFetchVehicleError,
 )
-from .models import Customer, OrderItem, ParkingPermit, ParkingZone, Refund, Vehicle
+from .models import (
+    Customer,
+    Order,
+    OrderItem,
+    ParkingPermit,
+    ParkingZone,
+    Refund,
+    Vehicle,
+)
+from .models.order import OrderStatus
 from .models.parking_permit import (
     ContractType,
     ParkingPermitStartType,
@@ -224,21 +233,26 @@ class CustomerPermit:
         return self._update_fields_to_all_draft(fields_to_update)
 
     def end(self, permit_ids, end_type, iban=None):
-        for permit in self.customer_permit_query.filter(id__in=permit_ids).order_by(
+        permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
-        ):
+        )
+        if all(permit.can_be_refunded for permit in permits):
+            Refund.objects.create(
+                name=str(self.customer),
+                order=permits.first().latest_order,
+                amount=sum(
+                    [permit.get_refund_amount_for_unused_items() for permit in permits]
+                ),
+                iban=iban,
+                description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
+            )
+        Order.objects.create_renewal_order(
+            customer=self.customer, status=OrderStatus.CONFIRMED
+        )
+        for permit in permits:
             with reversion.create_revision():
                 if not settings.DEBUG:
                     permit.update_parkkihubi_permit()
-                if permit.can_be_refunded:
-                    description = f"Refund for ending permit #{permit.id}"
-                    Refund.objects.create(
-                        name=str(permit.customer),
-                        order=permit.latest_order,
-                        amount=permit.get_refund_amount_for_unused_items(),
-                        iban=iban,
-                        description=description,
-                    )
                 permit.end_permit(end_type)
                 reversion.set_user(self.customer.user)
                 comment = get_reversion_comment(EventType.CHANGED, permit)
