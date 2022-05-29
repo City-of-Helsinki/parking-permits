@@ -255,6 +255,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def total_refund_amount(self):
         return self.get_refund_amount_for_unused_items()
 
+    @property
+    def zone_changed(self):
+        addresses = [self.customer.primary_address, self.customer.other_address]
+        return not any(
+            address and address.zone == self.parking_zone for address in addresses
+        )
+
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
 
