@@ -13,7 +13,7 @@ ARG LOCAL_REDHAT_PASSWORD
 ARG BUILD_MODE
 
 # Copy entitlements
-COPY ./etc-pki-entitlement /etc/pki/entitlement
+COPY ./etc-pki-entitlement* /etc/pki/entitlement
 # Copy subscription manager configurations if required
 #COPY ./rhsm-conf /etc/rhsm
 #COPY ./rhsm-ca /etc/rhsm/ca
