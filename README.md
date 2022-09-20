@@ -8,16 +8,6 @@ Instructions in this README.md are written with an experienced Python developer 
 
 In order to create placeholder for your own environment variables file, copy and rename `.env.example` to `.env`.
 
-You'll need a redhat developer account to gain access to RedHat subscriptions
-needed to run the docker image.
-
-Register at https://developers.redhat.com/register and confirm your email address.
-
-Set following environment variables in .env file:
-- BUILD_MODE=local
-- REDHAT_USERNAME=your redhat account username
-- REDHAT_PASSWORD=your redhat account password
-
 Then you can run docker image with:
 
   ```bash
