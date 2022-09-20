@@ -1,10 +1,5 @@
 FROM ubuntu:20.04
 
-# Fixes git vulnerability issue in openshift
-COPY .gitconfig .
-# Fixes git vulnerability issue locally
-COPY .gitconfig /etc/gitconfig
-
 WORKDIR /app
 
 RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update && \
