@@ -18,11 +18,6 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-      target: development_stage
-      args:
-        BUILD_MODE: ${BUILD_MODE}
-        LOCAL_REDHAT_USERNAME: ${REDHAT_USERNAME}
-        LOCAL_REDHAT_PASSWORD: ${REDHAT_PASSWORD}
     env_file:
       - .env
     volumes:
