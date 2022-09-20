@@ -16,7 +16,7 @@ COPY . .
 ENV STATIC_ROOT /srv/app/static
 RUN mkdir -p /srv/app/static
 
-RUN SECRET_KEY="only-used-for-collectstatic" python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" python manage.py collectstatic --noinput
 RUN python manage.py compilemessages
 
 # Openshift starts the container process with group zero and random ID
