@@ -46,7 +46,7 @@ class Command(BaseCommand):
         end_date = date(options["year"], 12, 31)
         for zone_name, zone_price in ZONE_MONTHLY_PRICES.items():
             zone = ParkingZone.objects.get(name=zone_name)
-            Product.objects.get_or_create(
+            product = Product.objects.get_or_create(
                 zone=zone,
                 start_date=start_date,
                 end_date=end_date,
@@ -57,5 +57,7 @@ class Command(BaseCommand):
                     "low_emission_discount": Decimal(0.5),
                 },
             )
+            if not product[0].talpa_product_id:
+                product[0].create_talpa_product()
 
         self.stdout.write("Test resident products created")
