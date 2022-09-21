@@ -44,6 +44,7 @@ class CompanyAdmin(admin.ModelAdmin):
 class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
     list_display = ("__str__", "national_id_number", "email")
+    exclude = ("_national_id_number", "old_national_id_number")
 
     def has_add_permission(self, request):
         return False
