@@ -151,6 +151,10 @@ class Vehicle(TimestampedModelMixin):
         verbose_name = _("Vehicle")
         verbose_name_plural = _("Vehicles")
 
+    def save(self, *args, **kwargs):
+        self._is_low_emission = self.is_low_emission
+        super(Vehicle, self).save(*args, **kwargs)
+
     def is_due_for_inspection(self):
         return (
             self.last_inspection_date is not None
