@@ -242,6 +242,16 @@ type PermitPriceNode {
   quantity: Int!
 }
 
+input OrderSearchParamsInput {
+  q: String!
+  startDate: String!
+  endDate: String!
+  contractTypes: String!
+  paymentTypes: String!
+  priceDiscounts: String!
+  parkingZone: String!
+}
+
 input PermitSearchParamsInput {
   q: String!
   status: String!
@@ -281,6 +291,7 @@ type Query {
   orders(
     pageInput: PageInput!
     orderBy: OrderByInput
+    searchParams: OrderSearchParamsInput
   ): PagedOrders!
   addresses(
     pageInput: PageInput!
