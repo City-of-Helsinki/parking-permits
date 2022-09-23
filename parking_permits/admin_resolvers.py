@@ -575,10 +575,12 @@ def resolve_update_refund(obj, info, refund_id, refund):
 @query.field("orders")
 @is_ad_admin
 @convert_kwargs_to_snake_case
-def resolve_orders(obj, info, page_input, order_by=None):
+def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
         form_data.update(order_by)
+    if search_params:
+        form_data.update(search_params)
 
     form = OrderSearchForm(form_data)
     if not form.is_valid():

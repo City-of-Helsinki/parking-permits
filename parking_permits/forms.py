@@ -5,7 +5,11 @@ from django.db.models import Q
 
 from parking_permits.models import Address, LowEmissionCriteria, Product
 from parking_permits.models.order import Order, OrderPaymentType
-from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermit,
+    ParkingPermitStatus,
+)
 from parking_permits.models.refund import Refund, RefundStatus
 from parking_permits.paginator import QuerySetPaginator
 
@@ -174,6 +178,25 @@ class RefundSearchForm(SearchFormBase):
 
 
 class OrderSearchForm(SearchFormBase):
+    q = forms.CharField(required=False)
+    start_date = forms.DateField(required=False)
+    end_date = forms.DateField(required=False)
+    parking_zone = forms.CharField(required=False)
+    contract_types = SimpleArrayField(
+        forms.ChoiceField(choices=ContractType.choices), required=False
+    )
+    payment_types = SimpleArrayField(
+        forms.ChoiceField(choices=OrderPaymentType.choices), required=False
+    )
+    price_discounts = SimpleArrayField(
+        forms.ChoiceField(
+            choices=[
+                ("LOW_EMISSION", "LOW_EMISSION"),
+            ]
+        ),
+        required=False,
+    )
+
     def get_model_class(self):
         return Order
 
@@ -190,6 +213,41 @@ class OrderSearchForm(SearchFormBase):
             "id": ["id"],
             "paidTime": ["paid_time"],
         }
+
+    def filter_queryset(self, qs):
+        q = self.cleaned_data.get("q")
+        contract_types = self.cleaned_data.get("contract_types")
+        payment_types = self.cleaned_data.get("payment_types")
+        parking_zone = self.cleaned_data.get("parking_zone")
+        price_discounts = self.cleaned_data.get("price_discounts")
+
+        # TODO Add date filters
+
+        if q:
+            if q.isdigit():
+                query = Q(id=int(q))
+            else:
+                query = (
+                    Q(customer__first_name__icontains=q)
+                    | Q(customer__last_name__icontains=q)
+                    | Q(permits__vehicle__registration_number=q)
+                    | Q(customer__national_id_number=q)
+                )
+            qs = qs.filter(query)
+
+        if parking_zone:
+            qs = qs.filter(permits__parking_zone__name=parking_zone)
+
+        if contract_types:
+            qs = qs.filter(permits__contract_type__in=contract_types)
+
+        if payment_types:
+            qs = qs.filter(payment_type__in=payment_types)
+
+        if "LOW_EMISSION" in price_discounts:
+            qs = qs.filter(permits__vehicle___is_low_emission=True)
+
+        return qs
 
 
 class ProductSearchForm(SearchFormBase):
