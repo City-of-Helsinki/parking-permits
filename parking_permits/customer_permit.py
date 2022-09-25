@@ -110,9 +110,12 @@ class CustomerPermit:
     def get(self):
         permits = []
         # Delete all the draft permits if it wasn't created today
-        self.customer_permit_query.filter(
+        draft_permits = self.customer_permit_query.filter(
             status=DRAFT, start_time__lt=tz.localdate(tz.now())
-        ).delete()
+        ).all()
+        for permit in draft_permits:
+            permit.order_items.all().delete()
+            permit.delete()
 
         for permit in self.customer_permit_query.order_by("start_time"):
             permit.temporary_vehicles.filter(end_time__lt=tz.now()).update(
