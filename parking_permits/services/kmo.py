@@ -61,13 +61,17 @@ def get_wfs_result(street_name="", street_number_token=""):
 
 
 def parse_street_name_and_number(street_address):
-    tokens = street_address.split()
+    index_of_street_number = 0
+    for character in street_address:
+        if character.isdigit():
+            index_of_street_number = street_address.index(character)
+            break
 
-    street_name = tokens[0] if len(tokens) >= 1 else ""
-
+    street_name = street_address[:index_of_street_number].strip()
+    street_number = street_address[index_of_street_number:].strip()
     return dict(
         street_name=street_name,
-        street_number=" ".join(tokens[1:]) if len(tokens) else "",
+        street_number=street_number,
     )
 
 
