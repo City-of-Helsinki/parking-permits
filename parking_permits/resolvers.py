@@ -55,6 +55,12 @@ ACTIVE_PERMIT_STATUSES = [
 ]
 
 
+def is_valid_address(address):
+    if not address:
+        return False
+    return address.get("city").upper() == "HELSINKI"
+
+
 @query.field("getPermits")
 @is_authenticated
 @convert_kwargs_to_snake_case
@@ -85,8 +91,16 @@ def resolve_user_profile(_, info, *args):
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
     primary_address_data, other_address_data = profile.get_addresses()
-    primary_address = save_profile_address(primary_address_data)
-    other_address = save_profile_address(other_address_data)
+    primary_address = (
+        save_profile_address(primary_address_data)
+        if is_valid_address(primary_address_data)
+        else None
+    )
+    other_address = (
+        save_profile_address(other_address_data)
+        if is_valid_address(other_address_data)
+        else None
+    )
 
     customer_obj, _ = Customer.objects.update_or_create(
         source_system=customer.get("source_system"),
@@ -97,7 +111,7 @@ def resolve_user_profile(_, info, *args):
             **{"primary_address": primary_address, "other_address": other_address},
         },
     )
-    customer_obj.fetch_driving_licence_detail()
+    # customer_obj.fetch_driving_licence_detail()
     return customer_obj
 
 
