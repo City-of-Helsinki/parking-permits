@@ -311,6 +311,10 @@ class CustomerPermit:
         )
         for permit in permits:
             with reversion.create_revision():
+                active_temporary_vehicle = permit.active_temporary_vehicle
+                if active_temporary_vehicle:
+                    active_temporary_vehicle.is_active = False
+                    active_temporary_vehicle.save()
                 if not settings.DEBUG:
                     permit.update_parkkihubi_permit()
                 permit.end_permit(end_type)
