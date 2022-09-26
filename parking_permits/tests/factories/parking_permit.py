@@ -13,3 +13,12 @@ class ParkingPermitFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = ParkingPermit
+
+    @factory.post_generation
+    def orders(self, create, extracted, **kwargs):
+        if not create:
+            return
+
+        if extracted:
+            for order in extracted:
+                self.orders.add(order)
