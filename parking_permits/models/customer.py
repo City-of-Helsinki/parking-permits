@@ -56,7 +56,9 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         null=True,
     )
     email = models.CharField(_("Email"), max_length=128, blank=True)
-    phone_number = models.CharField(_("Phone number"), max_length=32, blank=True)
+    phone_number = models.CharField(
+        _("Phone number"), max_length=32, blank=True, null=True
+    )
     address_security_ban = models.BooleanField(_("Address security ban"), default=False)
     driver_license_checked = models.BooleanField(
         _("Driver's license checked"), default=False
