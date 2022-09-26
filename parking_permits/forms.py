@@ -219,9 +219,9 @@ class OrderSearchForm(SearchFormBase):
         contract_types = self.cleaned_data.get("contract_types")
         payment_types = self.cleaned_data.get("payment_types")
         parking_zone = self.cleaned_data.get("parking_zone")
+        start_date = self.cleaned_data.get("start_date")
+        end_date = self.cleaned_data.get("end_date")
         price_discounts = self.cleaned_data.get("price_discounts")
-
-        # TODO Add date filters
 
         if q:
             if q.isdigit():
@@ -234,6 +234,18 @@ class OrderSearchForm(SearchFormBase):
                     | Q(customer__national_id_number=q)
                 )
             qs = qs.filter(query)
+
+        if start_date:
+            # Find all orders with permits that are or will be valid after the given start date.
+            qs = qs.filter(
+                Q(permits__start_time__gte=start_date)
+                | Q(permits__end_time__isnull=True)
+                | Q(permits__end_time__gte=start_date)
+            )
+
+        if end_date:
+            # Find all orders with permits that are or have been valid before the given end date.
+            qs = qs.filter(permits__start_time__lte=end_date)
 
         if parking_zone:
             qs = qs.filter(permits__parking_zone__name=parking_zone)
