@@ -175,9 +175,13 @@ class OrderManager(SerializableMixin.SerializableManager):
                         "Error on product date ranges or order item date ranges"
                     )
 
+                is_low_emission = permit.vehicle.is_low_emission
                 unit_price = product.get_modified_unit_price(
-                    permit.vehicle.is_low_emission, permit.is_secondary_vehicle
+                    is_low_emission, permit.is_secondary_vehicle
                 )
+                if permit.vehicle._is_low_emission != is_low_emission:
+                    permit.vehicle._is_low_emission = is_low_emission
+                    permit.vehicle.save()
 
                 # the price the customer needs to pay after deducting the price
                 # that the customer has already paid in previous order for this
