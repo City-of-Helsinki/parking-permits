@@ -3,7 +3,7 @@ default_language_version:
   python: python3.9
 repos:
   - repo: https://github.com/psf/black
-    rev: 21.4b0 # You MUST keep this version in sync with the version in requirements-dev.in
+    rev: 22.3.0 # You MUST keep this version in sync with the version in requirements-dev.in
     hooks:
       - id: black
 
