@@ -51,14 +51,14 @@ def initialize_is_low_emission_on_existing_vehicles(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("parking_permits", "0013_add_search_field_for_customer_national_id_number"),
+        ("parking_permits", "0014_add_search_field_for_customer_national_id_number"),
     ]
 
     operations = [
         migrations.AddField(
             model_name="vehicle",
             name="_is_low_emission",
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(default=False, editable=False),
         ),
         migrations.RunPython(
             initialize_is_low_emission_on_existing_vehicles,

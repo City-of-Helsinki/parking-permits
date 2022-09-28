@@ -11,9 +11,16 @@ def migrate_data(apps, schema_editor):
         obj.save()
 
 
+def reverse_migrate_data(apps, schema_editor):
+    customer_model = apps.get_model("parking_permits", "Customer")
+    for obj in customer_model.objects.all():
+        obj.old_national_id_number = obj.national_id_number
+        obj.save()
+
+
 class Migration(migrations.Migration):
     dependencies = [
-        ("parking_permits", "0012_add_temporary_vehicle"),
+        ("parking_permits", "0013_allow_phone_number_to_be_null"),
     ]
 
     operations = [
@@ -41,5 +48,5 @@ class Migration(migrations.Migration):
                 null=True,
             ),
         ),
-        migrations.RunPython(migrate_data, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(migrate_data, reverse_code=reverse_migrate_data),
     ]

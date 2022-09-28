@@ -6,17 +6,12 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("parking_permits", "0014_vehicle__is_low_emission"),
+        ("parking_permits", "0015_vehicle__is_low_emission"),
     ]
 
     operations = [
         migrations.RemoveField(
             model_name="customer",
             name="old_national_id_number",
-        ),
-        migrations.AlterField(
-            model_name="vehicle",
-            name="_is_low_emission",
-            field=models.BooleanField(default=False, editable=False),
         ),
     ]
