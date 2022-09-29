@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-06-08 10:49+0300\n"
+"POT-Creation-Date: 2022-09-29 08:57+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -41,9 +41,6 @@ msgstr "Pysäköintitunnusta ei löytynyt"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
-
-msgid "Cannot find parking zone for the address location"
-msgstr "Pysäköintialuetta tälle osoitteelle ei löytynyt"
 
 msgid "Name"
 msgstr "Nimi"
@@ -170,12 +167,6 @@ msgstr "1. tunnus"
 
 msgid "Secondary permit"
 msgstr "2. tunnus"
-
-msgid "Invalid order by"
-msgstr "Virheellinen tunnuksen järjestys"
-
-msgid "Invalid search items"
-msgstr "Virheellinen hakutermi"
 
 msgid "Time created"
 msgstr "Luonti-aikaleima"
@@ -481,6 +472,12 @@ msgstr "Avoin"
 msgid "Request for approval"
 msgstr "Hyväksyttävänä"
 
+msgid "Accepted at"
+msgstr "Hyväksytty"
+
+msgid "Accepted by"
+msgstr "Hyväksyjä"
+
 msgid "Electric"
 msgstr "Sähkö"
 
@@ -576,6 +573,12 @@ msgstr "Päästökriteeri"
 
 msgid "Low-emission criterias"
 msgstr "Päästökriteerit"
+
+msgid "Vehicle user"
+msgstr "Ajoneuvon käyttäjä"
+
+msgid "Vehicle users"
+msgstr "Ajoneuvon käyttäjät"
 
 msgid "VehicleClass"
 msgstr "Ajoneuvoluokka"
