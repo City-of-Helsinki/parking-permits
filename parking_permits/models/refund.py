@@ -1,8 +1,12 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
+
+VAT_PERCENT = Decimal(0.24)
 
 
 class RefundStatus(models.TextChoices):
@@ -46,3 +50,7 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
     def __str__(self):
         return f"{self.name} ({self.iban})"
+
+    @property
+    def vat(self):
+        return self.amount * VAT_PERCENT
