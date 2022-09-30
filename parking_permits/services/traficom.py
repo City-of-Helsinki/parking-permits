@@ -59,8 +59,9 @@ class Traficom:
         if not vehicle_detail:
             raise TraficomFetchVehicleError(
                 _(
-                    f"Could not find vehicle detail with given {registration_number} registration number"
+                    "Could not find vehicle detail with given %(registration_number)s registration number"
                 )
+                % {"registration_number": registration_number}
             )
 
         vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
@@ -75,8 +76,12 @@ class Traficom:
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
                 _(
-                    f"Unsupported vehicle class {vehicle_class} for {registration_number}"
+                    "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
                 )
+                % {
+                    "vehicle_class": vehicle_class,
+                    "registration_number": registration_number,
+                }
             )
 
         vehicle_identity = et.find(".//tunnus")
