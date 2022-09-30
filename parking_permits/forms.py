@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
-from django.db.models import Q
+from django.db.models import OuterRef, Q, Subquery
 
 from parking_permits.models import Address, LowEmissionCriteria, Product
 from parking_permits.models.order import Order, OrderPaymentType
@@ -203,16 +203,34 @@ class OrderSearchForm(SearchFormBase):
     def get_order_fields_mapping(self):
         return {
             "name": ["customer__first_name", "customer__last_name"],
-            "permits": ["permits__id"],
-            "parkingZone": ["permits__parking_zone__name"],
+            "permits": ["_permit_id"],
+            "parkingZone": ["_permit_parking_zone_name"],
             "address": [
-                "permits__address__street_name",
-                "permits__address__street_number",
+                "_permit_address_street_name",
+                "_permit_address_street_number",
             ],
-            "permitType": ["permits__type"],
+            "permitType": ["_permit_type"],
             "id": ["id"],
             "paidTime": ["paid_time"],
         }
+
+    def order_queryset(self, qs):
+        permit = ParkingPermit.objects.filter(orders=OuterRef("pk"))
+        return super(OrderSearchForm, self).order_queryset(
+            qs.annotate(
+                _permit_parking_zone_name=Subquery(
+                    permit.values("parking_zone__name")[:1]
+                ),
+                _permit_address_street_name=Subquery(
+                    permit.values("address__street_name")[:1]
+                ),
+                _permit_address_street_number=Subquery(
+                    permit.values("address__street_number")[:1]
+                ),
+                _permit_type=Subquery(permit.values("type")[:1]),
+                _permit_id=Subquery(permit.values("id")[:1]),
+            )
+        )
 
     def filter_queryset(self, qs):
         q = self.cleaned_data.get("q")
@@ -259,7 +277,8 @@ class OrderSearchForm(SearchFormBase):
         if "LOW_EMISSION" in price_discounts:
             qs = qs.filter(permits__vehicle___is_low_emission=True)
 
-        return qs.distinct("pk")
+        model_class = self.get_model_class()
+        return model_class.objects.filter(id__in=qs.distinct("id"))
 
 
 class ProductSearchForm(SearchFormBase):

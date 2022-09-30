@@ -2,7 +2,9 @@ from django.test import TestCase
 from django.utils import timezone
 
 from parking_permits.forms import OrderSearchForm, PdfExportForm
+from parking_permits.models.parking_permit import ContractType, ParkingPermitType
 from parking_permits.tests.factories import ParkingZoneFactory
+from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 
@@ -31,7 +33,7 @@ class PdfExportFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class OrderSearchFormTestCase(TestCase):
+class OrderSearchFormDistinctOrdersTestCase(TestCase):
     def test_return_only_distinct_results_on_orders_with_multiple_permits(self):
         order = OrderFactory()
 
@@ -43,9 +45,122 @@ class OrderSearchFormTestCase(TestCase):
 
         form = OrderSearchForm({"parking_zone": "FOO"})
         self.assertTrue(form.is_valid())
+        qs = form.get_queryset()
+        self.assertEqual(len(qs), 1)
+
+    def test_return_only_distinct_results_on_orders_with_multiple_permits_with_order_by(
+        self,
+    ):
+        # Create four orders with two permits each.
+        for name in ["B", "A", "D", "C"]:
+            parking_zone = ParkingZoneFactory(name=name)
+            order = OrderFactory()
+            ParkingPermitFactory(
+                orders=[order],
+                contract_type=ContractType.OPEN_ENDED,
+                parking_zone=parking_zone,
+            )
+            ParkingPermitFactory(
+                orders=[order],
+                contract_type=ContractType.OPEN_ENDED,
+                parking_zone=parking_zone,
+            )
+
+        # Find open-ended orders and sort by parking zone name.
+        form = OrderSearchForm(
+            {
+                "contract_types": "OPEN_ENDED",
+                "order_direction": "ASC",
+                "order_field": "parkingZone",
+            }
+        )
+        self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
-        self.assertEqual(qs.count(), 1)
+        self.assertEqual(len(qs), 4)
+        for idx, name in enumerate(["A", "B", "C", "D"]):
+            self.assertEqual(name, qs[idx].permits.first().parking_zone.name)
+
+
+class OrderSearchFormSortTestCase(TestCase):
+    def test_sort_by_address_name(self):
+        for name, number in [
+            ("B", "2"),
+            ("A", "2"),
+            ("D", "1"),
+            ("A", "1"),
+            ("C", "1"),
+        ]:
+            address = AddressFactory(street_name=name, street_number=number)
+            order = OrderFactory()
+            ParkingPermitFactory(orders=[order], address=address)
+
+        # Find open-ended orders and sort by parking zone name.
+        form = OrderSearchForm({"order_direction": "ASC", "order_field": "address"})
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(len(qs), 5)
+        for idx, (name, number) in enumerate(
+            [("A", "1"), ("A", "2"), ("B", "2"), ("C", "1"), ("D", "1")]
+        ):
+            self.assertEqual(name, qs[idx].permits.first().address.street_name)
+            self.assertEqual(number, qs[idx].permits.first().address.street_number)
+
+    def test_sort_by_contract_type(self):
+        for permit_type in [
+            ParkingPermitType.COMPANY,
+            ParkingPermitType.RESIDENT,
+            ParkingPermitType.COMPANY,
+            ParkingPermitType.RESIDENT,
+        ]:
+            ParkingPermitFactory(orders=[OrderFactory()], type=permit_type)
+
+        # Find open-ended orders and sort by parking zone name.
+        form = OrderSearchForm({"order_direction": "ASC", "order_field": "permitType"})
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(len(qs), 4)
+        for idx, permit_type in enumerate(
+            [
+                ParkingPermitType.COMPANY,
+                ParkingPermitType.COMPANY,
+                ParkingPermitType.RESIDENT,
+                ParkingPermitType.RESIDENT,
+            ]
+        ):
+            self.assertEqual(permit_type, qs[idx].permits.first().type)
+
+    def test_sort_by_parking_zone_name(self):
+        for name in ["B", "A", "D", "C"]:
+            ParkingPermitFactory(
+                orders=[OrderFactory()], parking_zone=ParkingZoneFactory(name=name)
+            )
+
+        form = OrderSearchForm({"order_direction": "ASC", "order_field": "parkingZone"})
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(len(qs), 4)
+        for idx, name in enumerate(["A", "B", "C", "D"]):
+            self.assertEqual(name, qs[idx].permits.first().parking_zone.name)
+
+    def test_sort_by_permit(self):
+        # Create orders, store them in a list and change their order.
+        orders = [OrderFactory() for _ in range(0, 5)]
+        orders[2], orders[4] = orders[4], orders[2]
+
+        # Create the parking permits and store their IDs. This is the expected order of the order search as well.
+        permit_ids = [ParkingPermitFactory(orders=[order]).pk for order in orders]
+
+        form = OrderSearchForm({"order_direction": "ASC", "order_field": "permits"})
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(len(qs), 5)
+        for idx, permit_id in enumerate(permit_ids):
+            self.assertEqual(permit_id, qs[idx].permits.first().pk)
 
 
 class OrderSearchFormDateRangeTestCase(TestCase):
