@@ -6,4 +6,9 @@
     <p>
         Olet oikeutettu palautukseen ja se on otettu käsittelyyn. Saat erillisen ilmoituksen, kun palautus on hyväksytty.
     </p>
+
+    <p>
+        Palautettava summa yhteensä
+        {{ refund.amount }}€ (sis.alv 24%, {{ refund.vat|floatformat:2 }} €)
+    </p>
 {% endblock %}

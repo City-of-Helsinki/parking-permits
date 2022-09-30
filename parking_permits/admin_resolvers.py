@@ -375,7 +375,7 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
                 description=f"Refund for updating permit: {permit.id}",
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
-            send_refund_email(RefundEmailType.CREATED, customer)
+            send_refund_email(RefundEmailType.CREATED, customer, refund)
         logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
             customer, status=OrderStatus.CONFIRMED
@@ -400,14 +400,14 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
         if not iban:
             raise RefundError("IBAN is not provided")
         description = f"Refund for ending permit #{permit.id}"
-        Refund.objects.create(
+        refund = Refund.objects.create(
             name=str(permit.customer),
             order=permit.latest_order,
             amount=permit.get_refund_amount_for_unused_items(),
             iban=iban,
             description=description,
         )
-        send_refund_email(RefundEmailType.CREATED, permit.customer)
+        send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
     if permit.is_open_ended:
         # TODO: handle open ended. Currently how to handle
         # open ended permit are not defined.
@@ -541,7 +541,7 @@ def resolve_accept_refunds(obj, info, ids):
         id__in=ids, status=RefundStatus.ACCEPTED
     ).select_related("order__customer")
     for refund in accepted_refunds:
-        send_refund_email(RefundEmailType.ACCEPTED, refund.order.customer)
+        send_refund_email(RefundEmailType.ACCEPTED, refund.order.customer, refund)
     return qs.count()
 
 

@@ -264,7 +264,7 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
                 description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
             )
             logger.info(f"Refund for updating permits zone created: {refund}")
-            send_refund_email(RefundEmailType.CREATED, customer)
+            send_refund_email(RefundEmailType.CREATED, customer, refund)
 
         if permit_total_price_change > 0:
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
@@ -405,7 +405,7 @@ def resolve_change_address(_, info, address_id, iban=None):
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
                 logger.info(f"Refund for updating permits zone created: {refund}")
-                send_refund_email(RefundEmailType.CREATED, customer)
+                send_refund_email(RefundEmailType.CREATED, customer, refund)
 
         if customer_total_price_change > 0:
             # go through talpa checkout process if the price of

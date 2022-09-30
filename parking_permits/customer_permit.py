@@ -296,7 +296,7 @@ class CustomerPermit:
             "primary_vehicle"
         )
         if all(permit.can_be_refunded for permit in permits):
-            Refund.objects.create(
+            refund = Refund.objects.create(
                 name=str(self.customer),
                 order=permits.first().latest_order,
                 amount=sum(
@@ -305,7 +305,7 @@ class CustomerPermit:
                 iban=iban,
                 description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
             )
-            send_refund_email(RefundEmailType.CREATED, self.customer)
+            send_refund_email(RefundEmailType.CREATED, self.customer, refund)
         Order.objects.create_renewal_order(
             customer=self.customer, status=OrderStatus.CONFIRMED
         )

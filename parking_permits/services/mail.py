@@ -62,11 +62,11 @@ refund_email_templates = {
 }
 
 
-def send_refund_email(action, customer):
+def send_refund_email(action, customer, refund):
     with translation.override(customer.language):
         subject = refund_email_subjects[action]
         template = refund_email_templates[action]
-        html_message = render_to_string(template)
+        html_message = render_to_string(template, context={"refund": refund})
         plain_message = strip_tags(html_message)
         recipient_list = [customer.email]
         mail.send_mail(
