@@ -259,7 +259,7 @@ class OrderSearchForm(SearchFormBase):
         if "LOW_EMISSION" in price_discounts:
             qs = qs.filter(permits__vehicle___is_low_emission=True)
 
-        return qs
+        return qs.distinct("pk")
 
 
 class ProductSearchForm(SearchFormBase):

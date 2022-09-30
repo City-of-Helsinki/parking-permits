@@ -2,6 +2,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from parking_permits.forms import OrderSearchForm, PdfExportForm
+from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 
@@ -28,6 +29,23 @@ class PdfExportFormTestCase(TestCase):
         }
         form = PdfExportForm(data)
         self.assertFalse(form.is_valid())
+
+
+class OrderSearchFormTestCase(TestCase):
+    def test_return_only_distinct_results_on_orders_with_multiple_permits(self):
+        order = OrderFactory()
+
+        # We test this by filtering by a value of something that has a many-to-one relation to the order.
+        # In this case, we'll use permits & their parking zone value.
+        parking_zone = ParkingZoneFactory(name="FOO")
+        ParkingPermitFactory(orders=[order], parking_zone=parking_zone)
+        ParkingPermitFactory(orders=[order], parking_zone=parking_zone)
+
+        form = OrderSearchForm({"parking_zone": "FOO"})
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
 
 
 class OrderSearchFormDateRangeTestCase(TestCase):
