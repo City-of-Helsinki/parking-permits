@@ -26,7 +26,7 @@ from .models import Address, Customer, Refund, Vehicle
 from .models.order import Order, OrderStatus
 from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
 from .services.hel_profile import HelsinkiProfile
-from .services.kmo import get_address_detail_from_kmo
+from .services.kmo import get_address_details
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
@@ -72,7 +72,7 @@ def resolve_customer_permits(obj, info):
 def save_profile_address(address):
     street_name = address.get("street_name")
     street_number = address.get("street_number")
-    address_detail = get_address_detail_from_kmo(street_name, street_number)
+    address_detail = get_address_details(street_name, street_number)
     address.update(address_detail)
     address_obj = Address.objects.update_or_create(
         street_name=street_name,
