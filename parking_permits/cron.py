@@ -16,7 +16,7 @@ def automatic_expiration_of_permits():
 
 
 def automatic_remove_obsolete_customer_data():
-    logger.info("Automatically removing obsolte customer data started...")
+    logger.info("Automatically removing obsolete customer data started...")
     qs = Customer.objects.all()
     count = 0
     for customer in qs:
@@ -24,7 +24,7 @@ def automatic_remove_obsolete_customer_data():
             customer.delete_all_data()
             count += 1
     logger.info(
-        "Automatically removing obsolte customer data completed. "
+        "Automatically removing obsolete customer data completed. "
         f"{count} customers are removed."
     )
 
