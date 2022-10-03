@@ -1,10 +1,16 @@
+import logging
+
 import requests
 from ariadne import load_schema_from_path
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 
+from parking_permits.exceptions import ObjectNotFound
 from parking_permits.models.common import SourceSystem
-from parking_permits.services.kmo import parse_street_name_and_number
+from parking_permits.services.dvv import get_person_info
 from project.settings import BASE_DIR
+
+logger = logging.getLogger("db")
 
 helsinki_profile_query = load_schema_from_path(
     BASE_DIR / "parking_permits" / "schema" / "helsinki_profile.graphql"
@@ -40,33 +46,33 @@ class HelsinkiProfile:
         }
 
     def get_addresses(self):
-        addresses = self.__profile.get("addresses")
-        if not addresses:
-            return None, None
-        return self._extract_addresses(addresses)
-
-    def _extract_addresses(self, addresses):
         if not self.__profile:
             self._get_profile()
-        primary_address = None
-        other_address = None
-        for address in addresses.get("edges"):
-            address_node = address.get("node")
-            if address_node:
-                parsed_address = parse_street_name_and_number(
-                    address_node.get("address")
-                )
-                data = {
-                    "street_name": parsed_address.get("street_name"),
-                    "street_number": parsed_address.get("street_number"),
-                    "city": address_node.get("city"),
-                    "postal_code": address_node.get("postalCode"),
-                }
-                if address_node.get("primary"):
-                    primary_address = data
-                else:
-                    other_address = data
+        primary_address, other_address = None, None
+        national_id_number = self.__profile.get("verifiedPersonalInformation", {}).get(
+            "nationalIdentificationNumber"
+        )
+        if national_id_number:
+            logger.info("Retrieving customer addresses from DVV...")
+            customer = get_person_info(national_id_number)
+            if not customer:
+                raise ObjectNotFound(_("Person not found"))
+            primary_address_data = customer.get("primary_address")
+            if primary_address_data:
+                primary_address = self._extract_dvv_address(primary_address_data)
+            other_address_data = customer.get("other_address")
+            if other_address_data:
+                other_address = self._extract_dvv_address(other_address_data)
         return primary_address, other_address
+
+    def _extract_dvv_address(self, address):
+        other_address = {
+            "street_name": address.get("street_name"),
+            "street_number": address.get("street_number"),
+            "city": address.get("city"),
+            "postal_code": address.get("postal_code"),
+        }
+        return other_address
 
     def _get_profile(self):
         api_token = self.request.headers.get("X-Authorization")
