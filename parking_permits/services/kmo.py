@@ -1,10 +1,17 @@
+import logging
 import re
 
 import requests
 import xmltodict
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
+
+from parking_permits.exceptions import AddressError
+from parking_permits.models.address import Address
+
+logger = logging.getLogger("db")
 
 
 def get_wfs_result(street_name="", street_number_token=""):
@@ -12,6 +19,9 @@ def get_wfs_result(street_name="", street_number_token=""):
     street_number = (
         int(street_number_first_part.group()) if street_number_first_part else 0
     )
+    # escape single quotes
+    street_name = street_name.replace("'", r"&#39")
+
     street_address = f"katunimi=''{street_name}'' AND osoitenumero=''{street_number}''"
     query_single_args = [
         "'avoindata:Helsinki_osoiteluettelo'",
@@ -71,11 +81,30 @@ def parse_street_name_and_number(street_address):
     )
 
 
-def get_address_detail_from_kmo(street_name, street_number):
+def get_address_detail_from_db(street_name, street_number):
+    address_qs = Address.objects.filter(
+        street_name=street_name, street_number=street_number
+    )
+    if address_qs.exists():
+        return address_qs.first()
+
+
+def get_address_details(street_name, street_number):
     results = get_wfs_result(street_name, street_number)
+    features = results.get("features")
+    if not features:
+        address = get_address_detail_from_db(street_name, street_number)
+        if address:
+            return {
+                "street_name_sv": address.street_name_sv,
+                "city_sv": address.city_sv,
+                "location": address.location.centroid,
+            }
+        logger.error("Not a valid customer address")
+        raise AddressError(_("Not a valid customer address"))
     address_feature = next(
         feature
-        for feature in results.get("features")
+        for feature in features
         if feature.get("geometry").get("type") == "Point"
     )
     address_property = address_feature.get("properties")
