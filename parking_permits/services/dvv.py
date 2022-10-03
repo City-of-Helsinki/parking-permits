@@ -1,14 +1,15 @@
 import base64
 import json
 import logging
-import re
 
 import requests
 from django.conf import settings
 
-from parking_permits.exceptions import DVVIntegrationError
 from parking_permits.models import ParkingZone
-from parking_permits.services.kmo import get_address_detail_from_kmo
+from parking_permits.services.kmo import (
+    get_address_details,
+    parse_street_name_and_number,
+)
 
 logger = logging.getLogger("db")
 
@@ -31,27 +32,15 @@ def get_request_data(hetu):
     }
 
 
-def parse_address(address):
-    """
-    Parse an address string and return the street name and street number
-
-    The first spaced number is considered as the street number, and the
-    sub-string before the number is considered as the street name
-    """
-    m = re.search(r"(.+?)\s(\d+)", address)
-    if not m:
-        logger.error(f"Cannot parse address: {address}")
-        raise DVVIntegrationError("Parsing address error")
-    return m.group(1), m.group(2)
-
-
 def format_address(address_data):
     # DVV combines the street name, street number and apartment
     # building number together in a single string. We only need
     # to use the street name and street number
 
-    street_name, street_number = parse_address(address_data["LahiosoiteS"])
-    address_detail = get_address_detail_from_kmo(street_name, street_number)
+    parsed_address = parse_street_name_and_number(address_data["LahiosoiteS"])
+    street_name = parsed_address.get("street_name")
+    street_number = parsed_address.get("street_number")
+    address_detail = get_address_details(street_name, street_number)
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])
     except ParkingZone.DoesNotExist:
