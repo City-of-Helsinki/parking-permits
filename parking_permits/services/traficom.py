@@ -148,7 +148,9 @@ class Traficom:
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
         if not driving_licence_et.find("ajooikeusluokat"):
             raise TraficomFetchVehicleError(
-                _("Could not find any driving license information for given customer")
+                _(
+                    "Could not find any driving license information for given customer from Traficom"
+                )
             )
 
         driving_licence_categories_et = driving_licence_et.findall(
