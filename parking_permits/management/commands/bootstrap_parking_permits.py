@@ -6,6 +6,7 @@ class Command(BaseCommand):
     help = "Usage: python manage.py bootstrap_parking_permits"
 
     def handle(self, *args, **options):
+        call_command("create_test_address")
         call_command("import_parking_zones")
         call_command(
             "create_parking_zone_products",
