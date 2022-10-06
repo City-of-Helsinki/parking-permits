@@ -81,7 +81,7 @@ def parse_street_name_and_number(street_address):
     )
 
 
-def get_address_detail_from_db(street_name, street_number):
+def get_address_from_db(street_name, street_number):
     address_qs = Address.objects.filter(
         street_name=street_name, street_number=street_number
     )
@@ -93,11 +93,9 @@ def get_address_details(street_name, street_number):
     results = get_wfs_result(street_name, street_number)
     features = results.get("features")
     if not features:
-        address = get_address_detail_from_db(street_name, street_number)
+        address = get_address_from_db(street_name, street_number)
         if address:
             return {
-                "street_name_sv": address.street_name_sv,
-                "city_sv": address.city_sv,
                 "location": address.location.centroid,
             }
         logger.error("Not a valid customer address")
@@ -107,10 +105,7 @@ def get_address_details(street_name, street_number):
         for feature in features
         if feature.get("geometry").get("type") == "Point"
     )
-    address_property = address_feature.get("properties")
     location = GEOSGeometry(str(address_feature.get("geometry")))
     return {
-        "street_name_sv": address_property.get("gatan"),
-        "city_sv": address_property.get("staden"),
         "location": location,
     }
