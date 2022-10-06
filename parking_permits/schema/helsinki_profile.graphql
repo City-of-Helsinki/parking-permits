@@ -13,16 +13,5 @@ query MyProfileQuery {
     primaryEmail {
       email
     }
-    addresses {
-      edges {
-        node {
-          id
-          city
-          postalCode
-          address
-          primary
-        }
-      }
-    }
   }
 }
