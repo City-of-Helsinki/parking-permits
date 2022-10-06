@@ -4,7 +4,9 @@ import logging
 
 import requests
 from django.conf import settings
+from django.utils.translation import ugettext_lazy as _
 
+from parking_permits.exceptions import ObjectNotFound
 from parking_permits.models import ParkingZone
 from parking_permits.services.kmo import (
     get_address_details,
@@ -32,6 +34,30 @@ def get_request_data(hetu):
     }
 
 
+def get_addresses(national_id_number):
+    primary_address, other_address = None, None
+    if national_id_number:
+        customer = get_person_info(national_id_number)
+        if not customer:
+            raise ObjectNotFound(_("Person not found"))
+        primary_address = _extract_address_data(customer.get("primary_address"))
+        other_address = _extract_address_data(customer.get("other_address"))
+    return primary_address, other_address
+
+
+def _extract_address_data(address):
+    return (
+        {
+            "street_name": address.get("street_name"),
+            "street_number": address.get("street_number"),
+            "city": address.get("city"),
+            "postal_code": address.get("postal_code"),
+        }
+        if address
+        else None
+    )
+
+
 def format_address(address_data):
     # DVV combines the street name, street number and apartment
     # building number together in a single string. We only need
@@ -40,6 +66,8 @@ def format_address(address_data):
     parsed_address = parse_street_name_and_number(address_data["LahiosoiteS"])
     street_name = parsed_address.get("street_name")
     street_number = parsed_address.get("street_number")
+    parsed_address_sv = parse_street_name_and_number(address_data["LahiosoiteR"])
+    street_name_sv = parsed_address_sv.get("street_name")
     address_detail = get_address_details(street_name, street_number)
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])
@@ -49,8 +77,10 @@ def format_address(address_data):
     return {
         **address_detail,
         "street_name": street_name,
+        "street_name_sv": street_name_sv,
         "street_number": street_number,
-        "city": "Helsinki",
+        "city_sv": address_data["PostitoimipaikkaR"],
+        "city": address_data["PostitoimipaikkaS"],
         "postal_code": address_data["Postinumero"],
         "zone": zone,
     }
@@ -64,8 +94,9 @@ def is_valid_address(address):
     )
 
 
-def get_person_info(hetu):
-    data = get_request_data(hetu)
+def get_person_info(national_id_number):
+    logger.info(f"Retrieving person info with national_id_number: {national_id_number}")
+    data = get_request_data(national_id_number)
     headers = get_request_headers()
     response = requests.post(
         settings.DVV_PERSONAL_INFO_URL,
@@ -73,7 +104,9 @@ def get_person_info(hetu):
         headers=headers,
     )
     if not response.ok:
-        logger.error(f"Invalid DVV response for {hetu}. Response: {response.text}")
+        logger.error(
+            f"Invalid DVV response for {national_id_number}. Response: {response.text}"
+        )
         return None
 
     response_data = response.json()
@@ -82,7 +115,7 @@ def get_person_info(hetu):
     # content
     person_info = response_data.get("Henkilo")
     if not person_info:
-        logger.error(f"Person info not found: {hetu}")
+        logger.error(f"Person info not found: {national_id_number}")
         return None
 
     last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
@@ -100,7 +133,7 @@ def get_person_info(hetu):
         else None
     )
     return {
-        "national_id_number": hetu,
+        "national_id_number": national_id_number,
         "first_name": first_name,
         "last_name": last_name,
         "primary_address": primary_address,
