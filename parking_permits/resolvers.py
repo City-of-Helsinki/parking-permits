@@ -25,6 +25,7 @@ from .exceptions import (
 from .models import Address, Customer, Refund, Vehicle
 from .models.order import Order, OrderStatus
 from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
+from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
 from .services.kmo import get_address_details
 from .services.mail import (
@@ -90,7 +91,9 @@ def resolve_user_profile(_, info, *args):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
-    primary_address_data, other_address_data = profile.get_addresses()
+    primary_address_data, other_address_data = get_addresses(
+        customer.get("national_id_number")
+    )
     primary_address = (
         save_profile_address(primary_address_data)
         if is_valid_address(primary_address_data)
