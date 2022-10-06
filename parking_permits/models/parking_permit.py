@@ -170,9 +170,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def is_order_confirmed(self):
+        from .order import OrderStatus
+
         if self.orders:
             recent_order = self.orders.order_by("-paid_time").first()
-            return recent_order.status == "CONFIRMED"
+            return (
+                recent_order.status == OrderStatus.CONFIRMED if recent_order else False
+            )
         return False
 
     @property
