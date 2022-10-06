@@ -20,6 +20,7 @@ from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType, VehiclePowerType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -529,6 +530,14 @@ class ParkingZoneTestCase(TestCase):
 class TestParkingPermit(TestCase):
     def setUp(self):
         self.permit = ParkingPermitFactory()
+
+    def test_should_have_is_order_confirmed_property_False(self):
+        assert self.permit.is_order_confirmed is False
+
+    def test_should_have_is_order_confirmed_property_True(self):
+        order = OrderFactory(status=OrderStatus.CONFIRMED)
+        order.permits.add(self.permit)
+        assert self.permit.is_order_confirmed is True
 
     def test_should_return_correct_product_name(self):
         self.assertIsNotNone(self.permit.parking_zone.name)
