@@ -169,6 +169,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.temp_vehicles.all()
 
     @property
+    def is_order_confirmed(self):
+        if self.orders:
+            recent_order = self.orders.order_by("-paid_time").first()
+            return recent_order.status == "CONFIRMED"
+        return False
+
+    @property
     def active_temporary_vehicle(self):
         return self.temporary_vehicles.filter(is_active=True).first()
 
