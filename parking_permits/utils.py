@@ -1,4 +1,5 @@
 import calendar
+from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -130,3 +131,15 @@ def snake_to_camel_dict(dictionary):
 def camel_str(snake_str):
     first, *others = snake_str.split("_")
     return "".join([first.lower(), *map(str.title, others)])
+
+
+def to_dict(instance):
+    if not instance:
+        return None
+    opts = instance._meta
+    data = {}
+    for f in chain(opts.concrete_fields, opts.private_fields):
+        data[f.name] = f.value_from_object(instance)
+    for f in opts.many_to_many:
+        data[f.name] = [i.id for i in f.value_from_object(instance)]
+    return data
