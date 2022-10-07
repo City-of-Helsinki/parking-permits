@@ -2,6 +2,7 @@ from django.contrib.gis import admin
 
 from parking_permits.models import (
     Address,
+    Announcement,
     Company,
     Customer,
     DrivingClass,
@@ -30,6 +31,18 @@ class AddressAdmin(admin.OSMGeoAdmin):
         "postal_code",
         "city",
         "city_sv",
+    )
+
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "subject_en",
+        "subject_fi",
+        "subject_sv",
+        "created_at",
+        "created_by",
     )
 
 

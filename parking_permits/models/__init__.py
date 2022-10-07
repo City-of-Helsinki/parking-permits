@@ -1,4 +1,5 @@
 from .address import Address
+from .announcement import Announcement
 from .company import Company
 from .customer import Customer
 from .driving_class import DrivingClass
@@ -14,6 +15,7 @@ from .vehicle import LowEmissionCriteria, Vehicle
 
 __all__ = [
     "Address",
+    "Announcement",
     "Company",
     "Customer",
     "DrivingClass",
