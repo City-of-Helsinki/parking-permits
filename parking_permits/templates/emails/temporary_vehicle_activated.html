@@ -1,20 +1,23 @@
 {% extends "emails/base.html" %}
+{% load i18n %}
 
-{% block title %}Tilapäinen ajoneuvo liitetty tunnukseen{% endblock %}
+{% block title %}{% translate "Temporary vehicle attached to your permit" %}{% endblock %}
 
 {% block content %}
-    <p>Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot.</p>
-
     <p>
-        Tilauksen tiedot: <br>
+        {% translate "Temporary vehicle information has been updated to your permit." %}
+    </p>
+    <p>
+        {% translate "Order info" %}: <br>
         {{ permit.get_type_display }} <br>
         {{ permit.customer }} <br>
-        Osoite: {{ permit.address }} <br>
-        Alue: {{ permit.parking_zone.name }} <br>
-        Ajoneuvo: {{ permit.active_temporary_vehicle.vehicle }}<br>
+        {% translate "Address" %}: {{ permit.address }} <br>
+        {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
+        {% translate "Vehicle" %}: {{ permit.active_temporary_vehicle.vehicle }}<br>
         {{ permit.get_contract_type_display }} <br>
-        Voimassaoloaika: {{ permit.active_temporary_vehicle.start_time|date:"j.n.Y, H:i" }} – {{ permit.active_temporary_vehicle.end_time|date:"j.n.Y, H:i" }}
+        {% translate "Validity period" %}: {{ permit.active_temporary_vehicle.start_time|date:"j.n.Y, H:i" }} – {{ permit.active_temporary_vehicle.end_time|date:"j.n.Y, H:i" }}
     </p>
-
-    <p>Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassaolevan tunnuksen ajoneuvosi rekisterinumeron perusteella.</p>
+    <p>
+        {% translate "The parking permit is electronic and parking permit enforcers will identify permit validity based on your vehicle licence plate number." %}
+    </p>
 {% endblock %}

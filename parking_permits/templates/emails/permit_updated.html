@@ -1,11 +1,11 @@
 {% extends "emails/base.html" %}
+{% load i18n %}
 
-{% block title %}Pysäköintitunnuksen tiedot on päivitetty{% endblock %}
+{% block title %}{% translate "Your parking permit information has been updated" %}{% endblock %}
 
 {% block content %}
     <p>
-        Kiitos tilauksestasi! Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa
-        voimassa olevan tunnuksen ajoneuvosi rekisterinumeron perusteella.
+        {% translate "Thank you for your order! The parking permit is electronic and parking permit enforcers will identify permit validity based on your vehicle licence plate number." %}
     </p>
     {% include "emails/_permit_info.html" %}
 {% endblock %}

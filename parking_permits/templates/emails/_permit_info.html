@@ -1,10 +1,11 @@
+{% load i18n %}
 <p>
-    Tilauksen tiedot: <br>
+    {% translate "Order info" %}: <br>
     {{ permit.get_type_display }} <br>
     {{ permit.customer }} <br>
-    Osoite: {{ permit.address }} <br>
-    Alue: {{ permit.parking_zone.name }} <br>
-    Ajoneuvo: {{ permit.vehicle }} <br>
+    {% translate "Address" %}: {{ permit.address }} <br>
+    {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
+    {% translate "Vehicle" %}: {{ permit.vehicle }} <br>
     {{ permit.get_contract_type_display }} <br>
-    Voimassaoloaika: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+    {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
 </p>

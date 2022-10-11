@@ -2,6 +2,7 @@ from django.core import mail
 from django.template.loader import render_to_string
 from django.utils import translation
 from django.utils.html import strip_tags
+from django.utils.translation import gettext_lazy as _
 
 
 class PermitEmailType:
@@ -12,12 +13,18 @@ class PermitEmailType:
     TEMP_VEHICLE_DEACTIVATED = "temp_vehicle_deactivated"
 
 
+SUBJECT_PREFIX = _("Parking permits")
+
 permit_email_subjects = {
-    PermitEmailType.CREATED: "Pysäköintitunnukset: Sinulle on luotu pysäköintitunnus",
-    PermitEmailType.UPDATED: "Pysäköintitunnukset: Tiedot päivitetty",
-    PermitEmailType.ENDED: "Pysäköintitunnukset: Tilauksesi on päättynyt",
-    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "Pysäköintitunnukset: Tilapäinen ajoneuvo liitetty tunnukseen",
-    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "Pysäköintitunnukset: Pysäköintitunnuksen voimassaolo päättyy pian",
+    PermitEmailType.CREATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("New parking permit has been created for you")),
+    PermitEmailType.UPDATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
+    PermitEmailType.ENDED: "%s: %s" % (SUBJECT_PREFIX, _("Your order has ended")),
+    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Temporary vehicle attached to your permit")),
+    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
 }
 
 permit_email_templates = {
@@ -51,8 +58,10 @@ class RefundEmailType:
 
 
 refund_email_subjects = {
-    RefundEmailType.CREATED: "Pysäköintitunnukset: Palautus otettu käsittelyyn",
-    RefundEmailType.ACCEPTED: "Pysäköintitunnukset: Palautus on hyväksytty",
+    RefundEmailType.CREATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Your refund has been registered")),
+    RefundEmailType.ACCEPTED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Your refund has been accepted")),
 }
 
 
