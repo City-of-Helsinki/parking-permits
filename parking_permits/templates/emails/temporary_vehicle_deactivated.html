@@ -1,19 +1,23 @@
 {% extends "emails/base.html" %}
+{% load i18n %}
 
-{% block title %}Pysäköintitunnuksen tiedot on päivitetty{% endblock %}
+{% block title %}{% translate "Your parking permit information has been updated" %}{% endblock %}
 
 {% block content %}
     <p>
-        Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa olevan tunnuksen ajoneuvosi rekisterinumeron perusteella.
+        {% translate "Original vehicle has been restored to your permit." %}
     </p>
     <p>
-        Tilauksen tiedot: <br>
+        {% translate "Order info" %}: <br>
         {{ permit.get_type_display }} <br>
         {{ permit.customer }} <br>
-        Osoite: {{ permit.address }} <br>
-        Alue: {{ permit.parking_zone.name }} <br>
-        Ajoneuvo: {{ permit.vehicle }}<br>
+        {% translate "Address" %}: {{ permit.address }} <br>
+        {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
+        {% translate "Vehicle" %}: {{ permit.vehicle }}<br>
         {{ permit.get_contract_type_display }} <br>
-        Voimassaoloaika: {{ permit.active_temporary_vehicle.end_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+        {% translate "Validity period" %}: {{ permit.active_temporary_vehicle.end_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+    </p>
+    <p>
+        {% translate "The parking permit is electronic and parking permit enforcers will identify permit validity based on your vehicle licence plate number." %}
     </p>
 {% endblock %}

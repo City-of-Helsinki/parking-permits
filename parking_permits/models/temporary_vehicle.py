@@ -16,5 +16,9 @@ class TemporaryVehicle(TimestampedModelMixin):
     end_time = models.DateTimeField(_("End time"))
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        verbose_name = _("Temporary vehicle")
+        verbose_name_plural = _("Temporary vehicles")
+
     def __str__(self):
         return str(self.vehicle)

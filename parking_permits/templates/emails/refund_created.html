@@ -1,14 +1,14 @@
 {% extends "emails/base.html" %}
+{% load i18n %}
 
-{% block title %}Palautus otettu käsittelyyn{% endblock %}
+{% block title %}{% translate "Your refund has been registered" %}{% endblock %}
 
 {% block content %}
     <p>
-        Olet oikeutettu palautukseen ja se on otettu käsittelyyn. Saat erillisen ilmoituksen, kun palautus on hyväksytty.
+        {% translate "You are entitled to a refund and it has been registered. You will receive a separate notification when the return has been approved." %}
     </p>
-
     <p>
-        Palautettava summa yhteensä
-        {{ refund.amount }}€ (sis.alv 24%, {{ refund.vat|floatformat:2 }} €)
+        {% translate "Total refundable amount" %}
+        {{ refund.amount }}€ ({% translate "incl. VAT" %} 24%, {{ refund.vat|floatformat:2 }} €)
     </p>
 {% endblock %}

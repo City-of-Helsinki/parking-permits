@@ -131,7 +131,7 @@ PRODUCT_HEADERS = [
     _("Parking zone"),
     _("Price"),
     _("VAT"),
-    _("Valid period"),
+    _("Validity period"),
     _("Modified at"),
     _("Modified by"),
 ]

@@ -1,11 +1,12 @@
 {% extends "emails/base.html" %}
+{% load i18n %}
 
-{% block title %}Tilauksesi on päättynyt{% endblock %}
+{% block title %}{% translate "Your order has ended" %}{% endblock %}
 
 {% block content %}
     <p>
-        Pysäköintitunnuksesi päättyy {{ permit.end_time|date:"j.n.Y, H:i" }}. Mikäli haluat jatkaa
-        tunnuksen käyttöä tulee sinun tehdä uusi tilaus.
+        {% translate "Your parking permit validity period will end at" %} {{ permit.end_time|date:"j.n.Y, H:i" }}.
+        {% translate "If you want to continue permit usage, you will need to make a new order." %}
     </p>
     {% include "emails/_permit_info.html" %}
 {% endblock %}
