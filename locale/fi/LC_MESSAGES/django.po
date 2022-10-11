@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-04 20:01+0300\n"
+"POT-Creation-Date: 2022-10-11 14:18+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -93,7 +93,7 @@ msgstr "Hinta"
 msgid "VAT"
 msgstr "ALV"
 
-msgid "Valid period"
+msgid "Validity period"
 msgstr "Voimassaoloaika"
 
 msgid "Modified at"
@@ -125,9 +125,6 @@ msgstr "Ajoneuvo"
 
 msgid "Type"
 msgstr "Tyyppi"
-
-msgid "Validity period"
-msgstr "Voimassaoloaika"
 
 msgid "Resident permit"
 msgstr "Asukaspysäköintitunnus"
@@ -397,7 +394,7 @@ msgid "Payment in progress"
 msgstr "Maksussa"
 
 msgid "Valid"
-msgstr "Viimeinen voimassaolopäivä"
+msgstr "Voimassa"
 
 msgid "Closed"
 msgstr "Suljettu"
@@ -477,6 +474,12 @@ msgstr "Hyväksytty"
 
 msgid "Accepted by"
 msgstr "Hyväksyjä"
+
+msgid "Temporary vehicle"
+msgstr "Väliaikainen ajoneuvo"
+
+msgid "Temporary vehicles"
+msgstr "Väliaikaiset ajoneuvot"
 
 msgid "Electric"
 msgstr "Sähkö"
@@ -625,6 +628,24 @@ msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
 
+msgid "New parking permit has been created for you"
+msgstr "Sinulle on luotu pysäköintitunnus"
+
+msgid "Your parking permit information has been updated"
+msgstr "Pysäköintitunnuksen tiedot on päivitetty"
+
+msgid "Your order has ended"
+msgstr "Tilauksesi on päättynyt"
+
+msgid "Temporary vehicle attached to your permit"
+msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
+
+msgid "Your refund has been registered"
+msgstr "Palautus otettu käsittelyyn"
+
+msgid "Your refund has been accepted"
+msgstr "Palautus on hyväksytty"
+
 #, python-format
 msgid ""
 "Could not find vehicle detail with given %(registration_number)s "
@@ -668,3 +689,69 @@ msgstr "Pysäköintitunnuksen päättymispäivä"
 
 msgid "Failed to create the order"
 msgstr "Tilauksen luonti epäonnistui"
+
+msgid ""
+"This message has been sent automatically from the system. Please do not "
+"reply to this message as replies will not be processed."
+msgstr ""
+"Tämä viesti on lähetetty järjestelmästä automaattisesti. Älä vastaa tähän "
+"viestiin, sillä vastauksia ei käsitellä."
+
+msgid "Parking permit terms of usage"
+msgstr "Pysäköintitunnuksen ehdot"
+
+msgid "Support"
+msgstr "Tuki"
+
+msgid "Feedback"
+msgstr "Palaute"
+
+msgid "Customer service contact info"
+msgstr "Asiakaspalvelu ja yhteystiedot"
+
+msgid "Thank you for your order!"
+msgstr "Kiitos tilauksestasi!"
+
+msgid ""
+"The parking permit is electronic and parking permit enforcers will identify "
+"permit validity based on your vehicle licence plate number."
+msgstr ""
+"Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
+"olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
+
+msgid "Your parking permit validity period will end at"
+msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy"
+
+msgid ""
+"If you want to continue permit usage, you will need to make a new order."
+msgstr "Mikäli haluat jatkaa tunnuksen käyttöä tulee sinun tehdä uusi tilaus."
+
+msgid ""
+"Thank you for your order! The parking permit is electronic and parking "
+"permit enforcers will identify permit validity based on your vehicle licence "
+"plate number."
+msgstr ""
+"Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
+"olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
+
+msgid ""
+"Your refund has been accepted and will appear on the account you reported "
+"within about a week"
+msgstr ""
+"Palautus on hyväksytty ja näkyy ilmoittamallasi tilillä noin viikon kuluessa."
+
+msgid "Total refundable amount"
+msgstr "Palautettava summa yhteensä"
+
+msgid ""
+"You are entitled to a refund and it has been registered. You will receive a "
+"separate notification when the return has been approved."
+msgstr ""
+"Olet oikeutettu palautukseen ja se on otettu käsittelyyn. Saat erillisen "
+"ilmoituksen, kun palautus on hyväksytty."
+
+msgid "Temporary vehicle information has been updated to your permit."
+msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
+
+msgid "Original vehicle has been restored to your permit."
+msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
