@@ -41,6 +41,7 @@ from .exceptions import (
 )
 from .forms import (
     AddressSearchForm,
+    AnnouncementSearchForm,
     LowEmissionCriteriaSearchForm,
     OrderSearchForm,
     PermitSearchForm,
@@ -751,3 +752,18 @@ def resolve_create_low_emission_criterion(obj, info, criterion):
         end_date=criterion["end_date"],
     )
     return {"success": True}
+
+
+@query.field("announcements")
+@is_super_admin
+@convert_kwargs_to_snake_case
+def resolve_announcements(obj, info, page_input, order_by=None):
+    form_data = {**page_input}
+    if order_by:
+        form_data.update(order_by)
+
+    form = AnnouncementSearchForm(form_data)
+    if not form.is_valid():
+        logger.error(f"Announcement search error: {form.errors}")
+        raise SearchError("Announcement search error")
+    return form.get_paged_queryset()

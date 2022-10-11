@@ -66,6 +66,19 @@ type VehicleNode {
   powerType: String
 }
 
+type AnnouncementNode {
+  id: ID!
+  subjectFi: String!
+  contentFi: String!
+  subjectSv: String!
+  contentSv: String!
+  subjectEn: String!
+  contentEn: String!
+  parkingZones: [ZoneNode]
+  createdAt: String!
+  createdBy: String
+}
+
 enum ParkingPermitStatus {
   DRAFT
   ARRIVED
@@ -148,6 +161,11 @@ type PagedOrders {
 
 type PagedAddresses {
   objects: [AddressNode]
+  pageInfo: PageInfo
+}
+
+type PagedAnnouncements {
+  objects: [AnnouncementNode]
   pageInfo: PageInfo
 }
 
@@ -304,6 +322,10 @@ type Query {
   ): PagedLowEmissionCriteria!
   lowEmissionCriterion(criterionId: ID!): LowEmissionCriterionNode!
   permitPrices(permit: ResidentPermitInput!, isSecondary: Boolean!): [PermitPriceNode]!
+  announcements(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedAnnouncements!
 }
 
 input AddressInput {

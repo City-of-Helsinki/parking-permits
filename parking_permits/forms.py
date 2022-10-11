@@ -3,7 +3,7 @@ from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
 from django.db.models import OuterRef, Q, Subquery
 
-from parking_permits.models import Address, LowEmissionCriteria, Product
+from parking_permits.models import Address, Announcement, LowEmissionCriteria, Product
 from parking_permits.models.order import Order, OrderPaymentType
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -324,4 +324,15 @@ class LowEmissionCriteriaSearchForm(SearchFormBase):
             "nedcMaxEmissionLimit": ["nedc_max_emission_limit"],
             "wltpMaxEmissionLimit": ["wltp_max_emission_limit"],
             "validPeriod": ["start_date"],
+        }
+
+
+class AnnouncementSearchForm(SearchFormBase):
+    def get_model_class(self):
+        return Announcement
+
+    def get_order_fields_mapping(self):
+        return {
+            "createdAt": ["created_at"],
+            "createdBy": ["created_by"],
         }
