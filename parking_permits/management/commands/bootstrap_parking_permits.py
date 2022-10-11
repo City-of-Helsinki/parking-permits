@@ -32,3 +32,4 @@ class Command(BaseCommand):
             "create_low_emission_criteria",
             year=2023,
         )
+        call_command("create_group_mapping")
