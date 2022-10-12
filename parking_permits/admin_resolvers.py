@@ -18,6 +18,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.models import (
     Address,
+    Announcement,
     Customer,
     LowEmissionCriteria,
     Order,
@@ -767,3 +768,13 @@ def resolve_announcements(obj, info, page_input, order_by=None):
         logger.error(f"Announcement search error: {form.errors}")
         raise SearchError("Announcement search error")
     return form.get_paged_queryset()
+
+
+@query.field("announcement")
+@is_super_admin
+@convert_kwargs_to_snake_case
+def resolve_announcement(obj, info, announcement_id):
+    try:
+        return Announcement.objects.get(id=announcement_id)
+    except Announcement.DoesNotExist:
+        raise ObjectNotFound("Announcement not found")

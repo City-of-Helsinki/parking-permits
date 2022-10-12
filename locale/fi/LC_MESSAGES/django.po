@@ -791,3 +791,6 @@ msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
 
 msgid "Discount right ends"
 msgstr "Alennusoikeus päättyy"
+
+msgid "Announcement not found"
+msgstr "Ilmoitusta ei löytynyt"

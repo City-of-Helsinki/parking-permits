@@ -326,6 +326,7 @@ type Query {
     pageInput: PageInput!
     orderBy: OrderByInput
   ): PagedAnnouncements!
+  announcement(announcementId: ID!): AnnouncementNode!
 }
 
 input AddressInput {
