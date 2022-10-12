@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-11 14:18+0300\n"
+"POT-Creation-Date: 2022-10-12 14:48+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -640,6 +640,9 @@ msgstr "Tilauksesi on päättynyt"
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
 
+msgid "Your parking permit will expire soon"
+msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy pian"
+
 msgid "Your refund has been registered"
 msgstr "Palautus otettu käsittelyyn"
 
@@ -708,6 +711,13 @@ msgstr "Palaute"
 
 msgid "Customer service contact info"
 msgstr "Asiakaspalvelu ja yhteystiedot"
+
+msgid ""
+"Your parking permit will expire soon. You can renew your permit by logging "
+"in to the service again."
+msgstr ""
+"Pysäköintitunnuksesi voimassaoloaika päättyy lähiaikoina. Voit uusia "
+"tunnuksen kirjautumalla palveluun"
 
 msgid "Thank you for your order!"
 msgstr "Kiitos tilauksestasi!"
