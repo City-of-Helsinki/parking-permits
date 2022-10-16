@@ -1,11 +1,62 @@
-from django.conf import settings
+from django.contrib.gis.db import models
 from helusers.models import AbstractUser
+
+
+class ParkingPermitGroups(models.TextChoices):
+    SUPER_ADMIN = "super_admin"
+    SANCTIONS_AND_RETURNS = "sanctions_and_returns"
+    SANCTIONS = "sanctions"
+    CUSTOMER_SERVICE = "customer_service"
+    PREPARATORS = "preparators"
+    INSPECTORS = "inspectors"
 
 
 class User(AbstractUser):
     @property
-    def is_ad_admin(self):
-        # currently the Helsinki AD is not working
-        # this is pending until Helsinki AD is fixed
-        # TODO: change to check actual ad groups when Helsinki AD is fixed
-        return settings.ALLOWED_ADMIN_AD_GROUPS is not None
+    def is_super_admin(self):
+        return self.groups.filter(name=ParkingPermitGroups.SUPER_ADMIN).exists()
+
+    @property
+    def is_sanctions_and_returns(self):
+        return (
+            self.groups.filter(name=ParkingPermitGroups.SANCTIONS_AND_RETURNS).exists()
+            or self.is_super_admin
+        )
+
+    @property
+    def is_sanctions(self):
+        return (
+            self.groups.filter(name=ParkingPermitGroups.SANCTIONS).exists()
+            or self.is_sanctions_and_returns
+            or self.is_super_admin
+        )
+
+    @property
+    def is_customer_service(self):
+        return (
+            self.groups.filter(name=ParkingPermitGroups.CUSTOMER_SERVICE).exists()
+            or self.is_sanctions
+            or self.is_sanctions_and_returns
+            or self.is_super_admin
+        )
+
+    @property
+    def is_preparators(self):
+        return (
+            self.groups.filter(name=ParkingPermitGroups.PREPARATORS).exists()
+            or self.is_customer_service
+            or self.is_sanctions
+            or self.is_sanctions_and_returns
+            or self.is_super_admin
+        )
+
+    @property
+    def is_inspectors(self):
+        return (
+            self.groups.filter(name=ParkingPermitGroups.INSPECTORS).exists()
+            or self.is_preparators
+            or self.is_customer_service
+            or self.is_sanctions
+            or self.is_sanctions_and_returns
+            or self.is_super_admin
+        )
