@@ -1,7 +1,15 @@
 import factory
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from helusers.models import ADGroup
+
+
+class GroupFactory(factory.django.DjangoModelFactory):
+    name = factory.Sequence(lambda n: f"ad-group-{n}")
+
+    class Meta:
+        model = Group
 
 
 class ADGroupFactory(factory.django.DjangoModelFactory):
