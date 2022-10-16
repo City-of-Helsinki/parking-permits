@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .decorators import require_ad_admin
+from .decorators import require_super_admin
 from .exceptions import ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
@@ -238,7 +238,7 @@ class ParkingPermitsGDPRAPIView(GDPRAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@require_ad_admin
+@require_super_admin
 @require_safe
 def csv_export(request, data_type):
     form_class = {
@@ -265,7 +265,7 @@ def csv_export(request, data_type):
     return response
 
 
-@require_ad_admin
+@require_super_admin
 @require_safe
 def pdf_export(request):
     form = PdfExportForm(request.GET)
