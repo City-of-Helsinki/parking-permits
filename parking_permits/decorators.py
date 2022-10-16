@@ -25,7 +25,12 @@ def user_passes_test(test_func):
 
 
 is_authenticated = user_passes_test(lambda u: u.is_authenticated)
-is_ad_admin = user_passes_test(lambda u: u.is_ad_admin)
+is_super_admin = user_passes_test(lambda u: u.is_super_admin)
+is_sanctions_and_returns = user_passes_test(lambda u: u.is_sanctions_and_returns)
+is_sanctions = user_passes_test(lambda u: u.is_sanctions)
+is_customer_service = user_passes_test(lambda u: u.is_customer_service)
+is_preparators = user_passes_test(lambda u: u.is_preparators)
+is_inspectors = user_passes_test(lambda u: u.is_inspectors)
 
 
 def require_user_passes_test(test_func):
@@ -47,4 +52,4 @@ def require_user_passes_test(test_func):
     return decorator
 
 
-require_ad_admin = require_user_passes_test(lambda u: u.is_ad_admin)
+require_super_admin = require_user_passes_test(lambda u: u.is_super_admin)
