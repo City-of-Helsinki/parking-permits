@@ -27,7 +27,7 @@ from parking_permits.models import (
     Vehicle,
 )
 
-from .decorators import is_ad_admin
+from .decorators import is_super_admin
 from .exceptions import (
     CreatePermitError,
     ObjectNotFound,
@@ -70,7 +70,7 @@ schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers
 
 
 @query.field("permits")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -87,7 +87,7 @@ def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
 
 
 @query.field("permitDetail")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_permit_detail(obj, info, permit_id):
     return ParkingPermit.objects.get(id=permit_id)
@@ -99,14 +99,14 @@ def resolve_permit_detail_history(permit, info):
 
 
 @query.field("zones")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_zones(obj, info):
     return ParkingZone.objects.all().order_by("name")
 
 
 @query.field("zoneByLocation")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_zone_by_location(obj, info, location):
     _location = Point(*location, srid=settings.SRID)
@@ -119,7 +119,7 @@ def resolve_zone_by_location(obj, info, location):
 
 
 @query.field("customer")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_customer(obj, info, national_id_number):
     try:
@@ -133,7 +133,7 @@ def resolve_customer(obj, info, national_id_number):
 
 
 @query.field("vehicle")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_vehicle(obj, info, reg_number, national_id_number):
     vehicle = Traficom().fetch_vehicle_details(reg_number)
@@ -213,7 +213,7 @@ def create_permit_address(customer_info):
 
 
 @mutation.field("createResidentPermit")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit):
@@ -269,7 +269,7 @@ def resolve_create_resident_permit(obj, info, permit):
 
 
 @query.field("permitPrices")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_prices(obj, info, permit, is_secondary):
@@ -295,7 +295,7 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
 
 
 @query.field("permitPriceChangeList")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
@@ -320,7 +320,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
 
 
 @mutation.field("updateResidentPermit")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None):
@@ -390,7 +390,7 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
 
 
 @mutation.field("endPermit")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
@@ -426,7 +426,7 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
 
 
 @query.field("products")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_products(obj, info, page_input, order_by=None):
     form_data = {**page_input}
@@ -441,14 +441,14 @@ def resolve_products(obj, info, page_input, order_by=None):
 
 
 @query.field("product")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_product(obj, info, product_id):
     return Product.objects.get(id=product_id)
 
 
 @mutation.field("updateProduct")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_product(obj, info, product_id, product):
@@ -469,7 +469,7 @@ def resolve_update_product(obj, info, product_id, product):
 
 
 @mutation.field("deleteProduct")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_product(obj, info, product_id):
@@ -479,7 +479,7 @@ def resolve_delete_product(obj, info, product_id):
 
 
 @mutation.field("createProduct")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_product(obj, info, product):
@@ -501,7 +501,7 @@ def resolve_create_product(obj, info, product):
 
 
 @query.field("refunds")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -518,7 +518,7 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
 
 
 @mutation.field("requestForApproval")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_request_for_approval(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.OPEN)
@@ -527,7 +527,7 @@ def resolve_request_for_approval(obj, info, ids):
 
 
 @mutation.field("acceptRefunds")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_accept_refunds(obj, info, ids):
     request = info.context["request"]
@@ -546,7 +546,7 @@ def resolve_accept_refunds(obj, info, ids):
 
 
 @query.field("refund")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_refund(obj, info, refund_id):
     try:
@@ -556,7 +556,7 @@ def resolve_refund(obj, info, refund_id):
 
 
 @mutation.field("updateRefund")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_update_refund(obj, info, refund_id, refund):
     request = info.context["request"]
@@ -573,7 +573,7 @@ def resolve_update_refund(obj, info, refund_id, refund):
 
 
 @query.field("orders")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -590,7 +590,7 @@ def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
 
 
 @query.field("addresses")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_addresses(obj, info, page_input, order_by=None):
     form_data = {**page_input}
@@ -605,14 +605,14 @@ def resolve_addresses(obj, info, page_input, order_by=None):
 
 
 @query.field("address")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_address(obj, info, address_id):
     return Address.objects.get(id=address_id)
 
 
 @mutation.field("updateAddress")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_address(obj, info, address_id, address):
@@ -630,7 +630,7 @@ def resolve_update_address(obj, info, address_id, address):
 
 
 @mutation.field("deleteAddress")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_address(obj, info, address_id):
@@ -640,7 +640,7 @@ def resolve_delete_address(obj, info, address_id):
 
 
 @mutation.field("createAddress")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_address(obj, info, address):
@@ -658,7 +658,7 @@ def resolve_create_address(obj, info, address):
 
 
 @query.field("lowEmissionCriteria")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
     form_data = {**page_input}
@@ -673,14 +673,14 @@ def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
 
 
 @query.field("lowEmissionCriterion")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 def resolve_low_emission_criterion(obj, info, criterion_id):
     return LowEmissionCriteria.objects.get(id=criterion_id)
 
 
 @mutation.field("updateLowEmissionCriterion")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
@@ -696,7 +696,7 @@ def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
 
 
 @mutation.field("deleteLowEmissionCriterion")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_low_emission_criterion(obj, info, criterion_id):
@@ -706,7 +706,7 @@ def resolve_delete_low_emission_criterion(obj, info, criterion_id):
 
 
 @mutation.field("createLowEmissionCriterion")
-@is_ad_admin
+@is_super_admin
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_low_emission_criterion(obj, info, criterion):
