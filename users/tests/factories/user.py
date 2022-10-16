@@ -1,5 +1,4 @@
 import factory
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from helusers.models import ADGroup
@@ -29,11 +28,3 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = get_user_model()
-
-
-class ADAdminFactory(UserFactory):
-    @factory.post_generation
-    def groups(self, create, extracted, **kwargs):
-        group_name = settings.ALLOWED_ADMIN_AD_GROUPS[0]
-        group = ADGroupFactory(name=group_name)
-        self.ad_groups.add(group)
