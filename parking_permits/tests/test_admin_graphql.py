@@ -1,14 +1,14 @@
 import json
 from unittest.mock import patch
 
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 from helusers.authz import UserAuthorization
 from helusers.oidc import AuthenticationError
 
 import parking_permits.decorators
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
-from users.tests.factories.user import ADAdminFactory, UserFactory
+from users.tests.factories.user import GroupFactory, UserFactory
 
 permits_query = """
     query GetPermits($pageInput: PageInput!) {
@@ -37,10 +37,11 @@ class PermitsQueryTestCase(TestCase):
         ParkingPermitFactory()
         ParkingPermitFactory()
 
-    @override_settings(ALLOWED_ADMIN_AD_GROUPS=["ad-group-0"])
     @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
-    def test_return_parking_permits_list_for_ad_admin(self, mock_authenticate):
-        mock_admin = ADAdminFactory()
+    def test_return_parking_permits_list_for_super_admin(self, mock_authenticate):
+        group = GroupFactory(name="super_admin")
+        mock_admin = UserFactory()
+        mock_admin.groups.add(group)
         mock_authenticate.return_value = UserAuthorization(mock_admin, {})
         url = reverse("parking_permits:admin-graphql")
         data = {
@@ -57,9 +58,8 @@ class PermitsQueryTestCase(TestCase):
             response_data["data"]["permits"]["pageInfo"], expected_page_info
         )
 
-    @override_settings(ALLOWED_ADMIN_AD_GROUPS=None)
     @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
-    def test_return_forbidden_for_non_ad_admin(self, mock_authenticate):
+    def test_return_forbidden_for_non_super_admin(self, mock_authenticate):
         mock_admin = UserFactory()
         mock_authenticate.return_value = UserAuthorization(mock_admin, {})
         url = reverse("parking_permits:admin-graphql")
