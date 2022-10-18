@@ -251,7 +251,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         data = {"consent_low_emission_accepted": True}
         self.assertEqual(self.c_a_draft.consent_low_emission_accepted, False)
         res = CustomerPermit(self.cus_a.id).update(data, self.c_a_draft.id)
-        self.assertEqual(res.consent_low_emission_accepted, True)
+        self.assertEqual(res[0].consent_low_emission_accepted, True)
 
     def test_can_not_update_consent_low_emission_accepted_for_closed(
         self,
