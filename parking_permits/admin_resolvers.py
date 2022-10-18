@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 
 import reversion
 from ariadne import (
@@ -57,6 +58,7 @@ from .services.mail import (
     RefundEmailType,
     send_permit_email,
     send_refund_email,
+    send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
 from .utils import get_end_time, get_permit_prices
@@ -261,10 +263,17 @@ def resolve_create_resident_permit(obj, info, permit):
     # and the order status should be confirmed
     Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
     try:
-        permit.update_parkkihubi_permit()
+        parking_permit.update_parkkihubi_permit()
     except ParkkihubiPermitError:
-        permit.create_parkkihubi_permit()
+        parking_permit.create_parkkihubi_permit()
     send_permit_email(PermitEmailType.CREATED, parking_permit)
+    if (
+        parking_permit.consent_low_emission_accepted
+        and parking_permit.vehicle.is_low_emission
+    ):
+        send_vehicle_low_emission_discount_email(
+            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, parking_permit
+        )
     return {"success": True, "permit": parking_permit}
 
 
@@ -333,6 +342,14 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
     if permit.customer.national_id_number != customer_info["national_id_number"]:
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
     vehicle_info = permit_info["vehicle"]
+
+    vehicle_changed = False
+    previous_vehicle_registration_number = permit.vehicle.registration_number
+    new_vehicle_registration_number = vehicle_info["registration_number"]
+    if new_vehicle_registration_number != previous_vehicle_registration_number:
+        previous_permit = deepcopy(permit)
+        vehicle_changed = True
+
     is_low_emission = is_low_emission_vehicle(
         vehicle_info["power_type"],
         vehicle_info["euro_class"],
@@ -386,6 +403,17 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
     permit = ParkingPermit.objects.get(id=permit_id)
     permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.UPDATED, permit)
+    if vehicle_changed:
+        if previous_permit.vehicle.is_low_emission:
+            previous_permit.end_time = permit.start_time
+            send_vehicle_low_emission_discount_email(
+                PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
+                previous_permit,
+            )
+        if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+            send_vehicle_low_emission_discount_email(
+                PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
+            )
     return {"success": True}
 
 
@@ -422,6 +450,10 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
     permit = ParkingPermit.objects.get(id=permit_id)
     permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.ENDED, permit)
+    if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+        send_vehicle_low_emission_discount_email(
+            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, permit
+        )
     return {"success": True}
 
 

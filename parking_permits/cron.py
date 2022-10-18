@@ -21,6 +21,10 @@ def automatic_expiration_of_permits():
         permit.status = ParkingPermitStatus.CLOSED
         permit.save()
         send_permit_email(PermitEmailType.ENDED, permit)
+        if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+            send_permit_email(
+                PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, permit
+            )
     logger.info("Automatically ending permits completed.")
 
 

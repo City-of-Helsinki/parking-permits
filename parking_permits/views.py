@@ -200,6 +200,13 @@ class OrderView(APIView):
                 permit.status = ParkingPermitStatus.VALID
                 permit.save()
                 send_permit_email(PermitEmailType.CREATED, permit)
+                if (
+                    permit.consent_low_emission_accepted
+                    and permit.vehicle.is_low_emission
+                ):
+                    send_permit_email(
+                        PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
+                    )
                 if not settings.DEBUG:
                     try:
                         permit.update_parkkihubi_permit()
