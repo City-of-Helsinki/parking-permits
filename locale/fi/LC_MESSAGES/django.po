@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-12 14:48+0300\n"
+"POT-Creation-Date: 2022-10-18 09:14+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -643,6 +643,12 @@ msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
 msgid "Your parking permit will expire soon"
 msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy pian"
 
+msgid "The vehicle is entitled to a discount"
+msgstr "Ajoneuvo oikeutettu alennukseen"
+
+msgid "Vehicle discount right expired"
+msgstr "Ajoneuvon alennusoikeus päättynyt"
+
 msgid "Your refund has been registered"
 msgstr "Palautus otettu käsittelyyn"
 
@@ -765,3 +771,23 @@ msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
 
 msgid "Original vehicle has been restored to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
+
+#, python-format
+msgid ""
+"The attached vehicle is entitled to a 50%% discount in street parking when "
+"paying with parking applications."
+msgstr ""
+"Oheinen ajoneuvo on oikeutettu 50%% alennukseen kadunvarsipysäköinnissä "
+"pysäköintisovelluksilla maksettaessa."
+
+msgid "Discount: Low-emission vehicle"
+msgstr "Alennus: Vähäpäästöinen ajoneuvo"
+
+msgid "Discount valid from"
+msgstr "Alennusoikeus voimassa alkaen"
+
+msgid "The right to a discount has been removed from the vehicle."
+msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
+
+msgid "Discount right ends"
+msgstr "Alennusoikeus päättyy"
