@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.utils import translation
@@ -12,6 +13,10 @@ class PermitEmailType:
     TEMP_VEHICLE_ACTIVATED = "temp_vehicle_activated"
     TEMP_VEHICLE_DEACTIVATED = "temp_vehicle_deactivated"
     EXPIRATION_REMIND = "expiration_remind"
+    VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED = "vehicle_low_emission_discount_activated"
+    VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED = (
+        "vehicle_low_emission_discount_deactivated"
+    )
 
 
 SUBJECT_PREFIX = _("Parking permits")
@@ -28,6 +33,10 @@ permit_email_subjects = {
     % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
     PermitEmailType.EXPIRATION_REMIND: "%s: %s"
     % (SUBJECT_PREFIX, _("Your parking permit will expire soon")),
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("The vehicle is entitled to a discount")),
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Vehicle discount right expired")),
 }
 
 permit_email_templates = {
@@ -37,6 +46,8 @@ permit_email_templates = {
     PermitEmailType.TEMP_VEHICLE_ACTIVATED: "emails/temporary_vehicle_activated.html",
     PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "emails/temporary_vehicle_deactivated.html",
     PermitEmailType.EXPIRATION_REMIND: "emails/expiration_remind.html",
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "emails/vehicle_low_emission_discount_activated.html",
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "emails/vehicle_low_emission_discount_deactivated.html",
 }
 
 
@@ -54,6 +65,23 @@ def send_permit_email(action, permit):
             recipient_list,
             html_message=html_message,
         )
+
+
+def send_vehicle_low_emission_discount_email(action, permit):
+    with translation.override("fi"):
+        subject = permit_email_subjects[action]
+        template = permit_email_templates[action]
+        html_message = render_to_string(template, context={"permit": permit})
+        plain_message = strip_tags(html_message)
+        recipient_list = settings.THIRD_PARTY_PARKING_PROVIDER_EMAILS
+        for recipient in recipient_list:
+            mail.send_mail(
+                subject,
+                plain_message,
+                None,
+                [recipient],
+                html_message=html_message,
+            )
 
 
 class RefundEmailType:
