@@ -1,5 +1,6 @@
 import logging
 from collections import Counter
+from copy import deepcopy
 
 from ariadne import (
     MutationType,
@@ -33,6 +34,7 @@ from .services.mail import (
     RefundEmailType,
     send_permit_email,
     send_refund_email,
+    send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
@@ -243,6 +245,8 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
     new_vehicle = Vehicle.objects.get(id=vehicle_id)
     checkout_url = None
 
+    previous_permit = deepcopy(permit)
+
     if (
         permit.contract_type == ContractType.FIXED_PERIOD
         and permit.vehicle.is_low_emission != new_vehicle.is_low_emission
@@ -280,6 +284,16 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
     permit.save()
 
     send_permit_email(PermitEmailType.UPDATED, permit)
+
+    if previous_permit.vehicle.is_low_emission:
+        previous_permit.end_time = permit.start_time
+        send_vehicle_low_emission_discount_email(
+            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, previous_permit
+        )
+    if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+        send_vehicle_low_emission_discount_email(
+            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
+        )
     return {"checkout_url": checkout_url}
 
 

@@ -324,6 +324,14 @@ class CustomerPermit:
                 send_permit_email(
                     PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
                 )
+                if (
+                    permit.consent_low_emission_accepted
+                    and permit.vehicle.is_low_emission
+                ):
+                    send_vehicle_low_emission_discount_email(
+                        PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
+                        permit,
+                    )
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
