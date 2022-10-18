@@ -409,6 +409,16 @@ input LowEmissionCriterionInput {
   endDate: String
 }
 
+input AnnouncementInput {
+  subjectFi: String!
+  contentFi: String!
+  subjectSv: String!
+  contentSv: String!
+  subjectEn: String!
+  contentEn: String!
+  parkingZones: [String]
+}
+
 type MutationResponse {
   success: Boolean
 }
@@ -439,4 +449,5 @@ type Mutation {
   createLowEmissionCriterion(criterion: LowEmissionCriterionInput!): MutationResponse
   requestForApproval(ids: [ID]!): Int
   acceptRefunds(ids: [ID]!): Int
+  createAnnouncement(announcement: AnnouncementInput!): MutationResponse
 }

@@ -778,3 +778,26 @@ def resolve_announcement(obj, info, announcement_id):
         return Announcement.objects.get(id=announcement_id)
     except Announcement.DoesNotExist:
         raise ObjectNotFound("Announcement not found")
+
+
+@mutation.field("createAnnouncement")
+@is_super_admin
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def resolve_create_announcement(obj, info, announcement):
+    request = info.context["request"]
+    new_announcement = Announcement.objects.create(
+        created_by=request.user,
+        content_fi=announcement["content_fi"],
+        content_en=announcement["content_en"],
+        content_sv=announcement["content_sv"],
+        subject_en=announcement["subject_en"],
+        subject_fi=announcement["subject_fi"],
+        subject_sv=announcement["subject_sv"],
+    )
+    if announcement.get("parking_zones"):
+        new_announcement._parking_zones.set(
+            ParkingZone.objects.filter(name__in=announcement["parking_zones"])
+        )
+
+    return {"success": True}
