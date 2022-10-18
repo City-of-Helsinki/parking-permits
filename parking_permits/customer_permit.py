@@ -39,6 +39,7 @@ from .services.mail import (
     RefundEmailType,
     send_permit_email,
     send_refund_email,
+    send_vehicle_low_emission_discount_email,
 )
 from .utils import diff_months_floor, get_end_time
 
@@ -218,7 +219,7 @@ class CustomerPermit:
                 "consent_low_emission_accepted", False
             )
             permit.vehicle.save(update_fields=["consent_low_emission_accepted"])
-            return permit
+            return [permit]
 
         if "primary_vehicle" in keys:
             return self._toggle_primary_permit()
