@@ -117,3 +117,27 @@ def send_refund_email(action, customer, refund):
             recipient_list,
             html_message=html_message,
         )
+
+
+def send_announcement_email(customers, announcement):
+    subject = f"{announcement.subject_fi} | {announcement.subject_sv} | {announcement.subject_en}"
+    template = "emails/announcement.html"
+
+    # Generate the messages
+    messages = []
+    for customer in customers:
+        with translation.override(customer.language):
+            html_message = render_to_string(
+                template, context={"announcement": announcement}
+            )
+        plain_message = strip_tags(html_message)
+        message = mail.EmailMultiAlternatives(
+            subject, plain_message, to=[customer.email]
+        )
+        message.attach_alternative(html_message, "text/html")
+        messages.append(message)
+
+    # Send the messages
+    if messages:
+        with mail.get_connection() as connection:
+            connection.send_messages(messages)

@@ -1,0 +1,11 @@
+{% extends "emails/base_multilingual.html" %}
+{% load i18n %}
+
+{% block title_fi %}{{ announcement.subject_fi }}{% endblock %}
+{% block content_fi %}{{ announcement.content_fi }}{% endblock %}
+
+{% block title_sv %}{{ announcement.subject_sv }}{% endblock %}
+{% block content_sv %}{{ announcement.content_sv }}{% endblock %}
+
+{% block title_en %}{{ announcement.subject_en }}{% endblock %}
+{% block content_en %}{{ announcement.content_en }}{% endblock %}
