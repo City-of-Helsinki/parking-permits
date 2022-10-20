@@ -58,6 +58,7 @@ from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
+    send_announcement_email,
     send_permit_email,
     send_refund_email,
     send_vehicle_low_emission_discount_email,
@@ -780,6 +781,11 @@ def resolve_announcement(obj, info, announcement_id):
         raise ObjectNotFound("Announcement not found")
 
 
+def post_create_announcement(announcement: Announcement):
+    customers = Customer.objects.filter(zone__in=announcement.parking_zones)
+    send_announcement_email(customers, announcement)
+
+
 @mutation.field("createAnnouncement")
 @is_super_admin
 @convert_kwargs_to_snake_case
@@ -799,5 +805,7 @@ def resolve_create_announcement(obj, info, announcement):
         new_announcement._parking_zones.set(
             ParkingZone.objects.filter(name__in=announcement["parking_zones"])
         )
+
+    post_create_announcement(new_announcement)
 
     return {"success": True}
