@@ -1,10 +1,12 @@
+import pytest
 from django.test import TestCase
 from django.utils import timezone
 
-from parking_permits.forms import OrderSearchForm, PdfExportForm
+from parking_permits.forms import CustomerSearchForm, OrderSearchForm, PdfExportForm
 from parking_permits.models.parking_permit import ContractType, ParkingPermitType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.address import AddressFactory
+from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 
@@ -308,3 +310,24 @@ class OrderSearchFormDateRangeTestCase(TestCase):
                 },
             ],
         )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("doe", id="last-name"),
+        pytest.param("john", id="first-name"),
+        pytest.param("john doe", id="full-name"),
+        pytest.param("doe john", id="full-name-reverse"),
+    ],
+)
+def test_customer_search_form_search_by_name(name):
+    CustomerFactory(first_name="Foo", last_name="Bar")
+    customer = CustomerFactory(first_name="John", last_name="Doe")
+    form = CustomerSearchForm({"name": name})
+
+    assert form.is_valid()
+    qs = form.get_queryset()
+    assert len(qs) == 1
+    assert qs.first() == customer

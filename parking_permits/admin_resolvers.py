@@ -43,6 +43,7 @@ from .exceptions import (
 from .forms import (
     AddressSearchForm,
     AnnouncementSearchForm,
+    CustomerSearchForm,
     LowEmissionCriteriaSearchForm,
     OrderSearchForm,
     PermitSearchForm,
@@ -135,6 +136,23 @@ def resolve_customer(obj, info, national_id_number):
         if not customer:
             raise ObjectNotFound(_("Person not found"))
     return customer
+
+
+@query.field("customers")
+@is_super_admin
+@convert_kwargs_to_snake_case
+def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
+    form_data = {**page_input}
+    if order_by:
+        form_data.update(order_by)
+    if search_params:
+        form_data.update(search_params)
+
+    form = CustomerSearchForm(form_data)
+    if not form.is_valid():
+        logger.error(f"Customer search error: {form.errors}")
+        raise SearchError("Customer search error")
+    return form.get_paged_queryset()
 
 
 @query.field("vehicle")

@@ -1,9 +1,16 @@
 from django import forms
 from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
-from django.db.models import OuterRef, Q, Subquery
+from django.db.models import OuterRef, Q, Subquery, Value
+from django.db.models.functions import Concat
 
-from parking_permits.models import Address, Announcement, LowEmissionCriteria, Product
+from parking_permits.models import (
+    Address,
+    Announcement,
+    Customer,
+    LowEmissionCriteria,
+    Product,
+)
 from parking_permits.models.order import Order, OrderPaymentType
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -336,3 +343,39 @@ class AnnouncementSearchForm(SearchFormBase):
             "createdAt": ["created_at"],
             "createdBy": ["created_by"],
         }
+
+
+class CustomerSearchForm(SearchFormBase):
+    name = forms.CharField(required=False)
+    national_id_number = forms.CharField(required=False)
+
+    def get_model_class(self):
+        return Customer
+
+    def get_order_fields_mapping(self):
+        return {
+            "name": ["last_name", "first_name"],
+            "email": ["email"],
+            "phoneNumber": ["phone_number"],
+            "nationalIdNumber": ["national_id_number"],
+        }
+
+    def filter_queryset(self, qs):
+        name = self.cleaned_data.get("name")
+        national_id_number = self.cleaned_data.get("national_id_number")
+
+        if name:
+            qs = qs.annotate(full_name=Concat("first_name", Value(" "), "last_name"))
+            qs = qs.annotate(
+                full_name_reverse=Concat("last_name", Value(" "), "first_name")
+            )
+            qs = qs.filter(
+                Q(first_name__icontains=name)
+                | Q(last_name__icontains=name)
+                | Q(full_name__icontains=name)
+                | Q(full_name_reverse__icontains=name)
+            )
+        if national_id_number:
+            qs = qs.filter(national_id_number=national_id_number)
+
+        return qs
