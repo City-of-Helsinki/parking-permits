@@ -40,6 +40,7 @@ type CustomerActivePermit {
 
 type CustomerNode {
   id: ID
+  sourceId: String
   firstName: String
   lastName: String
   nationalIdNumber: String
