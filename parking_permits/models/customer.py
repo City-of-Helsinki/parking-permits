@@ -86,8 +86,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         {"name": "national_id_number"},
         {"name": "email"},
         {"name": "phone_number"},
-        {"name": "primary_address", "accessor": lambda a: a.serialize()},
-        {"name": "other_address", "accessor": lambda a: a.serialize()},
+        {"name": "primary_address", "accessor": lambda a: a.serialize() if a else None},
+        {"name": "other_address", "accessor": lambda a: a.serialize() if a else None},
         {"name": "orders"},
         {"name": "permits"},
     )
