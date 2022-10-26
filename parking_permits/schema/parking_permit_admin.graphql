@@ -169,6 +169,11 @@ type PagedAnnouncements {
   pageInfo: PageInfo
 }
 
+type PagedCustomers {
+  objects: [CustomerNode]
+  pageInfo: PageInfo
+}
+
 enum OrderDirection {
   ASC,
   DESC
@@ -275,6 +280,11 @@ input PermitSearchParamsInput {
   status: String!
 }
 
+input CustomerSearchParamsInput {
+  name: String!
+  nationalIdNumber: String!
+}
+
 input RefundSearchParamsInput {
   q: String!
   startDate: String!
@@ -291,6 +301,11 @@ type Query {
    ): PagedPermits!
   permitDetail(permitId: ID!): PermitDetailNode!
   zones: [ZoneNode]
+  customers(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+    searchParams: CustomerSearchParamsInput
+  ): PagedCustomers!
   customer(nationalIdNumber: String!): CustomerNode!
   vehicle(regNumber: String!, nationalIdNumber: String!): VehicleNode!
   products(
