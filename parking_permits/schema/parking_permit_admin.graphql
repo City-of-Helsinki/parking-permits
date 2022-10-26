@@ -39,6 +39,7 @@ type CustomerActivePermit {
 }
 
 type CustomerNode {
+  id: ID
   firstName: String
   lastName: String
   nationalIdNumber: String
@@ -50,6 +51,7 @@ type CustomerNode {
   addressSecurityBan: Boolean
   driverLicenseChecked: Boolean
   activePermits: [CustomerActivePermit]
+  language: String
 }
 
 type VehicleNode {
@@ -293,6 +295,11 @@ input RefundSearchParamsInput {
   paymentTypes: String!
 }
 
+input CustomerRetrieveInput {
+  id: ID
+  nationalIdNumber: String
+}
+
 type Query {
   permits(
     pageInput: PageInput!
@@ -306,7 +313,7 @@ type Query {
     orderBy: OrderByInput
     searchParams: CustomerSearchParamsInput
   ): PagedCustomers!
-  customer(nationalIdNumber: String!): CustomerNode!
+  customer(query: CustomerRetrieveInput!): CustomerNode!
   vehicle(regNumber: String!, nationalIdNumber: String!): VehicleNode!
   products(
     pageInput: PageInput!

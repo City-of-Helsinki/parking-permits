@@ -127,12 +127,15 @@ def resolve_zone_by_location(obj, info, location):
 @query.field("customer")
 @is_super_admin
 @convert_kwargs_to_snake_case
-def resolve_customer(obj, info, national_id_number):
+def resolve_customer(obj, info, **data):
+    query_params = data.get("query")
     try:
-        customer = Customer.objects.get(national_id_number=national_id_number)
+        customer = Customer.objects.get(**query_params)
     except Customer.DoesNotExist:
-        logger.info("Customer does not exist, searching from DVV...")
-        customer = get_person_info(national_id_number)
+        customer = None
+        if query_params.get("national_id_number"):
+            logger.info("Customer does not exist, searching from DVV...")
+            customer = get_person_info(query_params.get("national_id_number"))
         if not customer:
             raise ObjectNotFound(_("Person not found"))
     return customer
