@@ -7,12 +7,19 @@ from helusers.authz import UserAuthorization
 from helusers.oidc import AuthenticationError
 
 import parking_permits.decorators
+from parking_permits.models.parking_permit import ParkingPermitStatus
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from users.tests.factories.user import GroupFactory, UserFactory
 
 permits_query = """
-    query GetPermits($pageInput: PageInput!) {
-        permits(pageInput: $pageInput) {
+    query GetPermits(
+        $pageInput: PageInput!
+        $searchParams: PermitSearchParamsInput!
+    ) {
+        permits(
+            pageInput: $pageInput
+            searchParams: $searchParams
+        ) {
             objects {
                 customer {
                     firstName
@@ -33,6 +40,10 @@ class PermitsQueryTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.client = Client()
+        cls.default_variables = {
+            "pageInput": {"page": 1},
+            "searchParams": {"q": "", "status": ParkingPermitStatus.DRAFT},
+        }
         ParkingPermitFactory()
         ParkingPermitFactory()
         ParkingPermitFactory()
@@ -47,7 +58,7 @@ class PermitsQueryTestCase(TestCase):
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
@@ -66,7 +77,7 @@ class PermitsQueryTestCase(TestCase):
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
@@ -80,7 +91,7 @@ class PermitsQueryTestCase(TestCase):
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
