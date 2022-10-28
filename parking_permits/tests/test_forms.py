@@ -2,13 +2,21 @@ import pytest
 from django.test import TestCase
 from django.utils import timezone
 
-from parking_permits.forms import CustomerSearchForm, OrderSearchForm, PdfExportForm
+from parking_permits.forms import (
+    CustomerSearchForm,
+    OrderSearchForm,
+    PdfExportForm,
+    PermitSearchForm,
+    RefundSearchForm,
+)
+from parking_permits.models.order import OrderPaymentType
 from parking_permits.models.parking_permit import ContractType, ParkingPermitType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.refund import RefundFactory
 
 
 class PdfExportFormTestCase(TestCase):
@@ -98,7 +106,13 @@ class OrderSearchFormSortTestCase(TestCase):
             ParkingPermitFactory(orders=[order], address=address)
 
         # Find open-ended orders and sort by parking zone name.
-        form = OrderSearchForm({"order_direction": "ASC", "order_field": "address"})
+        form = OrderSearchForm(
+            {
+                "order_direction": "ASC",
+                "order_field": "address",
+                "payment_types": OrderPaymentType.CASHIER_PAYMENT,
+            }
+        )
         self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
@@ -119,7 +133,13 @@ class OrderSearchFormSortTestCase(TestCase):
             ParkingPermitFactory(orders=[OrderFactory()], type=permit_type)
 
         # Find open-ended orders and sort by parking zone name.
-        form = OrderSearchForm({"order_direction": "ASC", "order_field": "permitType"})
+        form = OrderSearchForm(
+            {
+                "order_direction": "ASC",
+                "order_field": "permitType",
+                "payment_types": OrderPaymentType.CASHIER_PAYMENT,
+            }
+        )
         self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
@@ -140,7 +160,13 @@ class OrderSearchFormSortTestCase(TestCase):
                 orders=[OrderFactory()], parking_zone=ParkingZoneFactory(name=name)
             )
 
-        form = OrderSearchForm({"order_direction": "ASC", "order_field": "parkingZone"})
+        form = OrderSearchForm(
+            {
+                "order_direction": "ASC",
+                "order_field": "parkingZone",
+                "payment_types": OrderPaymentType.CASHIER_PAYMENT,
+            }
+        )
         self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
@@ -156,7 +182,13 @@ class OrderSearchFormSortTestCase(TestCase):
         # Create the parking permits and store their IDs. This is the expected order of the order search as well.
         permit_ids = [ParkingPermitFactory(orders=[order]).pk for order in orders]
 
-        form = OrderSearchForm({"order_direction": "ASC", "order_field": "permits"})
+        form = OrderSearchForm(
+            {
+                "order_direction": "ASC",
+                "order_field": "permits",
+                "payment_types": OrderPaymentType.CASHIER_PAYMENT,
+            }
+        )
         self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
@@ -322,6 +354,7 @@ class OrderSearchFormDateRangeTestCase(TestCase):
         pytest.param("doe john", id="full-name-reverse"),
     ],
 )
+@pytest.mark.django_db
 def test_customer_search_form_search_by_name(name):
     CustomerFactory(first_name="Foo", last_name="Bar")
     customer = CustomerFactory(first_name="John", last_name="Doe")
@@ -331,3 +364,43 @@ def test_customer_search_form_search_by_name(name):
     qs = form.get_queryset()
     assert len(qs) == 1
     assert qs.first() == customer
+
+
+@pytest.mark.django_db
+def test_customer_search_form_should_return_empty_by_default():
+    CustomerFactory()
+    form = CustomerSearchForm({})
+
+    assert form.is_valid()
+    qs = form.get_queryset()
+    assert len(qs) == 0
+
+
+@pytest.mark.django_db
+def test_order_search_form_should_return_empty_by_default():
+    OrderFactory()
+    form = OrderSearchForm({})
+
+    assert form.is_valid()
+    qs = form.get_queryset()
+    assert len(qs) == 0
+
+
+@pytest.mark.django_db
+def test_refund_search_form_should_return_empty_by_default():
+    RefundFactory()
+    form = RefundSearchForm({})
+
+    assert form.is_valid()
+    qs = form.get_queryset()
+    assert len(qs) == 0
+
+
+@pytest.mark.django_db
+def test_permit_search_form_should_return_empty_by_default():
+    ParkingPermitFactory()
+    form = PermitSearchForm({})
+
+    assert form.is_valid()
+    qs = form.get_queryset()
+    assert len(qs) == 0

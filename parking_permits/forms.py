@@ -84,6 +84,10 @@ class SearchFormBase(forms.Form):
     def get_paged_queryset(self):
         return self.page_queryset(self.get_queryset())
 
+    def get_empty_queryset(self):
+        model_class = self.get_model_class()
+        return model_class.objects.none()
+
 
 class PermitSearchForm(SearchFormBase):
     q = forms.CharField(required=False)
@@ -115,10 +119,13 @@ class PermitSearchForm(SearchFormBase):
         }
 
     def filter_queryset(self, qs):
+        has_filters = False
         q = self.cleaned_data.get("q")
         status = self.cleaned_data.get("status")
+
         if status and status != "ALL":
             qs = qs.filter(status=status)
+            has_filters = True
         if q:
             if q.isdigit():
                 query = Q(id=int(q))
@@ -130,7 +137,9 @@ class PermitSearchForm(SearchFormBase):
                     | Q(vehicle__registration_number=q)
                 )
             qs = qs.filter(query)
-        return qs
+            has_filters = True
+
+        return qs if has_filters else self.get_empty_queryset()
 
 
 class RefundSearchForm(SearchFormBase):
@@ -161,11 +170,13 @@ class RefundSearchForm(SearchFormBase):
         }
 
     def filter_queryset(self, qs):
+        has_filters = False
         q = self.cleaned_data.get("q")
         start_date = self.cleaned_data.get("start_date")
         end_date = self.cleaned_data.get("end_date")
         status = self.cleaned_data.get("status")
         payment_types = self.cleaned_data.get("payment_types")
+
         if q:
             text_filters = (
                 Q(name__icontains=q)
@@ -173,15 +184,21 @@ class RefundSearchForm(SearchFormBase):
                 | Q(iban__icontains=q)
             )
             qs = qs.filter(text_filters)
+            has_filters = True
         if start_date:
             qs = qs.filter(created_at__gte=start_date)
+            has_filters = True
         if end_date:
             qs = qs.filter(created_at__lte=end_date)
+            has_filters = True
         if status and status != "ALL":
             qs = qs.filter(status=status)
+            has_filters = True
         if payment_types:
             qs = qs.filter(order__payment_type__in=payment_types)
-        return qs
+            has_filters = True
+
+        return qs if has_filters else self.get_empty_queryset()
 
 
 class OrderSearchForm(SearchFormBase):
@@ -240,6 +257,7 @@ class OrderSearchForm(SearchFormBase):
         )
 
     def filter_queryset(self, qs):
+        has_filters = False
         q = self.cleaned_data.get("q")
         contract_types = self.cleaned_data.get("contract_types")
         payment_types = self.cleaned_data.get("payment_types")
@@ -259,6 +277,7 @@ class OrderSearchForm(SearchFormBase):
                     | Q(customer__national_id_number=q)
                 )
             qs = qs.filter(query)
+            has_filters = True
 
         if start_date:
             # Find all orders with permits that are or will be valid after the given start date.
@@ -267,25 +286,33 @@ class OrderSearchForm(SearchFormBase):
                 | Q(permits__end_time__isnull=True)
                 | Q(permits__end_time__gte=start_date)
             )
+            has_filters = True
 
         if end_date:
             # Find all orders with permits that are or have been valid before the given end date.
             qs = qs.filter(permits__start_time__lte=end_date)
+            has_filters = True
 
         if parking_zone:
             qs = qs.filter(permits__parking_zone__name=parking_zone)
+            has_filters = True
 
         if contract_types:
             qs = qs.filter(permits__contract_type__in=contract_types)
+            has_filters = True
 
         if payment_types:
             qs = qs.filter(payment_type__in=payment_types)
+            has_filters = True
 
         if "LOW_EMISSION" in price_discounts:
             qs = qs.filter(permits__vehicle___is_low_emission=True)
+            has_filters = True
 
-        model_class = self.get_model_class()
-        return model_class.objects.filter(id__in=qs.distinct("id"))
+        if has_filters:
+            model_class = self.get_model_class()
+            return model_class.objects.filter(id__in=qs.distinct("id"))
+        return self.get_empty_queryset()
 
 
 class ProductSearchForm(SearchFormBase):
@@ -361,6 +388,7 @@ class CustomerSearchForm(SearchFormBase):
         }
 
     def filter_queryset(self, qs):
+        has_filters = False
         name = self.cleaned_data.get("name")
         national_id_number = self.cleaned_data.get("national_id_number")
 
@@ -375,7 +403,9 @@ class CustomerSearchForm(SearchFormBase):
                 | Q(full_name__icontains=name)
                 | Q(full_name_reverse__icontains=name)
             )
+            has_filters = True
         if national_id_number:
             qs = qs.filter(national_id_number=national_id_number)
+            has_filters = True
 
-        return qs
+        return qs if has_filters else self.get_empty_queryset()
