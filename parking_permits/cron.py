@@ -6,7 +6,11 @@ from django.utils import timezone as tz
 from parking_permits.exceptions import ParkkihubiPermitError
 from parking_permits.models import Customer, ParkingPermit
 from parking_permits.models.parking_permit import ParkingPermitStatus
-from parking_permits.services.mail import PermitEmailType, send_permit_email
+from parking_permits.services.mail import (
+    PermitEmailType,
+    send_permit_email,
+    send_vehicle_low_emission_discount_email,
+)
 
 logger = logging.getLogger("django")
 db_logger = logging.getLogger("db")
@@ -22,7 +26,7 @@ def automatic_expiration_of_permits():
         permit.save()
         send_permit_email(PermitEmailType.ENDED, permit)
         if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
-            send_permit_email(
+            send_vehicle_low_emission_discount_email(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, permit
             )
     logger.info("Automatically ending permits completed.")

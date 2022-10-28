@@ -41,7 +41,11 @@ from .serializers import (
     RightOfPurchaseResponseSerializer,
     TalpaPayloadSerializer,
 )
-from .services.mail import PermitEmailType, send_permit_email
+from .services.mail import (
+    PermitEmailType,
+    send_permit_email,
+    send_vehicle_low_emission_discount_email,
+)
 from .utils import get_meta_value, snake_to_camel_dict
 
 logger = logging.getLogger("db")
@@ -204,7 +208,7 @@ class OrderView(APIView):
                     permit.consent_low_emission_accepted
                     and permit.vehicle.is_low_emission
                 ):
-                    send_permit_email(
+                    send_vehicle_low_emission_discount_email(
                         PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
                     )
                 if not settings.DEBUG:
