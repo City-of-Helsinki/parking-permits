@@ -5,7 +5,6 @@ from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import LocationDoesNotExist
 from .mixins import TimestampedModelMixin
 from .parking_zone import ParkingZone
 
@@ -52,7 +51,7 @@ class Address(SerializableMixin, TimestampedModelMixin):
     @property
     def zone(self):
         if not self.location:
-            raise LocationDoesNotExist("Location is not set")
+            return
         try:
             self._zone = ParkingZone.objects.get_for_location(self.location)
             self.save()
