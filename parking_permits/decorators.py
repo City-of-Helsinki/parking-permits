@@ -53,3 +53,4 @@ def require_user_passes_test(test_func):
 
 
 require_super_admin = require_user_passes_test(lambda u: u.is_super_admin)
+require_inspectors = require_user_passes_test(lambda u: u.is_inspectors)
