@@ -34,7 +34,7 @@ GROUPS = [
         ],
     },
     {
-        "name": ParkingPermitGroups.SANCTIONS_AND_RETURNS,
+        "name": ParkingPermitGroups.SANCTIONS_AND_REFUNDS,
         "ad_group": "sg_kymp_pyva_asukpt_maksuseuraamukset_palautukset",
         "permissions": [
             "add_parkingpermit",

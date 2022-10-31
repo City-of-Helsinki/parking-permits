@@ -34,7 +34,7 @@ from .decorators import (
     is_inspectors,
     is_preparators,
     is_sanctions,
-    is_sanctions_and_returns,
+    is_sanctions_and_refunds,
     is_super_admin,
 )
 from .exceptions import (
@@ -601,7 +601,7 @@ def resolve_request_for_approval(obj, info, ids):
 
 
 @mutation.field("acceptRefunds")
-@is_sanctions_and_returns
+@is_sanctions_and_refunds
 @convert_kwargs_to_snake_case
 def resolve_accept_refunds(obj, info, ids):
     request = info.context["request"]
