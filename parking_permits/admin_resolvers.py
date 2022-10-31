@@ -30,6 +30,8 @@ from parking_permits.models import (
 )
 
 from .decorators import is_super_admin
+    is_inspectors,
+    is_preparators,
 from .exceptions import (
     CreatePermitError,
     ObjectNotFound,
@@ -75,10 +77,7 @@ PermitDetail = ObjectType("PermitDetailNode")
 schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers]
 
 
-@query.field("permits")
-@is_super_admin
-@convert_kwargs_to_snake_case
-def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
+def get_permits(page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
         form_data.update(order_by)
@@ -90,6 +89,20 @@ def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
         logger.error(f"Permit Search Error: {form.errors}")
         raise SearchError("Permit search error")
     return form.get_paged_queryset()
+
+
+@query.field("permits")
+@is_preparators
+@convert_kwargs_to_snake_case
+def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
+    return get_permits(page_input, order_by, search_params)
+
+
+@query.field("limitedPermits")
+@is_inspectors
+@convert_kwargs_to_snake_case
+def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=None):
+    return get_permits(page_input, order_by, search_params)
 
 
 @query.field("permitDetail")
