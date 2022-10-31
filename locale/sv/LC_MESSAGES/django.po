@@ -681,12 +681,12 @@ msgid ""
 "registration number"
 msgstr ""
 "Kunde inte hitta fordonsdetaljer med angivet registreringsnummer "
-"%(registration_number)"
+"%(registration_number)s"
 
 #, python-format
 msgid "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
 msgstr ""
-"Ej stödd fordonsklass %(vehicle_class) för registreringsskylt "
+"Ej stödd fordonsklass %(vehicle_class)s för registreringsskylt "
 "%(registration_number)s"
 
 msgid ""
@@ -802,7 +802,7 @@ msgid ""
 "The attached vehicle is entitled to a 50%% discount in street parking when "
 "paying with parking applications."
 msgstr ""
-"Det bifogade fordonet har rätt till 50 % rabatt på gatuparkering när betala "
+"Det bifogade fordonet har rätt till 50%% rabatt på gatuparkering när betala "
 "med parkeringsansökningar."
 
 msgid "Discount: Low-emission vehicle"
