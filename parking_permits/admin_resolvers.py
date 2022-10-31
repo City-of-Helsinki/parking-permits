@@ -29,9 +29,14 @@ from parking_permits.models import (
     Vehicle,
 )
 
-from .decorators import is_super_admin
+from .decorators import (
+    is_customer_service,
     is_inspectors,
     is_preparators,
+    is_sanctions,
+    is_sanctions_and_returns,
+    is_super_admin,
+)
 from .exceptions import (
     CreatePermitError,
     ObjectNotFound,
@@ -106,7 +111,7 @@ def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=
 
 
 @query.field("permitDetail")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_permit_detail(obj, info, permit_id):
     return ParkingPermit.objects.get(id=permit_id)
@@ -252,7 +257,7 @@ def create_permit_address(customer_info):
 
 
 @mutation.field("createResidentPermit")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit):
@@ -570,7 +575,7 @@ def resolve_create_product(obj, info, product):
 
 
 @query.field("refunds")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -587,7 +592,7 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
 
 
 @mutation.field("requestForApproval")
-@is_super_admin
+@is_sanctions
 @convert_kwargs_to_snake_case
 def resolve_request_for_approval(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.OPEN)
@@ -596,7 +601,7 @@ def resolve_request_for_approval(obj, info, ids):
 
 
 @mutation.field("acceptRefunds")
-@is_super_admin
+@is_sanctions_and_returns
 @convert_kwargs_to_snake_case
 def resolve_accept_refunds(obj, info, ids):
     request = info.context["request"]
@@ -625,7 +630,7 @@ def resolve_refund(obj, info, refund_id):
 
 
 @mutation.field("updateRefund")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_update_refund(obj, info, refund_id, refund):
     request = info.context["request"]
@@ -642,7 +647,7 @@ def resolve_update_refund(obj, info, refund_id, refund):
 
 
 @query.field("orders")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
