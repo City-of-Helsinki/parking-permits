@@ -107,6 +107,19 @@ type PermitNode {
   primaryVehicle: Boolean!
 }
 
+type LimitedPermitNode {
+  id: ID!
+  vehicle: VehicleNode
+  parkingZone: ZoneNode
+  status: ParkingPermitStatus!
+  address: AddressNode
+  startTime: String
+  endTime: String
+  description: String
+  type: String
+  primaryVehicle: Boolean!
+}
+
 type RefundNode {
   id: ID!
   name: String
@@ -144,6 +157,11 @@ type PageInfo {
 
 type PagedPermits {
   objects: [PermitNode]
+  pageInfo: PageInfo
+}
+
+type LimitedPagedPermits {
+  objects: [LimitedPermitNode]
   pageInfo: PageInfo
 }
 
@@ -308,6 +326,11 @@ type Query {
     searchParams: PermitSearchParamsInput
    ): PagedPermits!
   permitDetail(permitId: ID!): PermitDetailNode!
+  limitedPermits(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+    searchParams: PermitSearchParamsInput
+  ): LimitedPagedPermits!
   zones: [ZoneNode]
   customers(
     pageInput: PageInput!
