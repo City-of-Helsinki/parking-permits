@@ -332,6 +332,11 @@ class ProductSearchForm(SearchFormBase):
 
 
 class AddressSearchForm(SearchFormBase):
+    street_name = forms.CharField(required=False)
+    street_number = forms.CharField(required=False)
+    postal_code = forms.CharField(required=False)
+    parking_zone = forms.CharField(required=False)
+
     def get_model_class(self):
         return Address
 
@@ -345,6 +350,29 @@ class AddressSearchForm(SearchFormBase):
             "citySv": ["city_sv"],
             "zone": ["_zone__name"],
         }
+
+    def filter_queryset(self, qs):
+        street_name = self.cleaned_data.get("street_name")
+        street_number = self.cleaned_data.get("street_number")
+        postal_code = self.cleaned_data.get("postal_code")
+        parking_zone = self.cleaned_data.get("parking_zone")
+
+        if street_name:
+            qs = qs.filter(
+                Q(street_name__icontains=street_name)
+                | Q(street_name_sv__icontains=street_name)
+            )
+
+        if street_number:
+            qs = qs.filter(street_number=street_number)
+
+        if postal_code:
+            qs = qs.filter(postal_code=postal_code)
+
+        if parking_zone:
+            qs = qs.filter(_zone__name=parking_zone)
+
+        return qs
 
 
 class LowEmissionCriteriaSearchForm(SearchFormBase):
