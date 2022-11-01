@@ -14,7 +14,12 @@ from django.http import (
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from helsinki_gdpr.views import DeletionNotAllowed, DryRunSerializer, GDPRAPIView
+from helsinki_gdpr.views import (
+    DeletionNotAllowed,
+    DryRunSerializer,
+    GDPRAPIView,
+    GDPRScopesPermission,
+)
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -222,7 +227,18 @@ class OrderView(APIView):
         return Response({"message": "Order received"}, status=200)
 
 
-class ParkingPermitsGDPRAPIView(GDPRAPIView):
+class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_super_admin:
+            return True
+        return super().has_object_permission(request, view, obj)
+
+
+class ParkingPermitGDPRAPIView(GDPRAPIView):
+    permission_classes = [ParkingPermitGDPRScopesPermission]
+
+
+class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
     def get_object(self) -> Customer:
         try:
             customer = Customer.objects.get(
