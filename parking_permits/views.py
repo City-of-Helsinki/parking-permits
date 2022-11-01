@@ -2,6 +2,7 @@ import csv
 import json
 import logging
 
+from ariadne import convert_camel_case_to_snake
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -261,7 +262,10 @@ def csv_export(request, data_type):
     if not form_class:
         raise Http404
 
-    form = form_class(request.GET)
+    converted_params = {
+        convert_camel_case_to_snake(k): v for k, v in request.GET.items()
+    }
+    form = form_class(converted_params)
     if not form.is_valid():
         return HttpResponseBadRequest()
 
