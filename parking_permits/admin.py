@@ -18,6 +18,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
+from parking_permits.models.vehicle import VehicleUser
 
 
 @admin.register(Address)
@@ -189,3 +190,8 @@ class TemporaryVehicleAdmin(admin.ModelAdmin):
         "end_time",
         "is_active",
     )
+
+
+@admin.register(VehicleUser)
+class VehicleUserAdmin(admin.ModelAdmin):
+    list_display = ("national_id_number",)
