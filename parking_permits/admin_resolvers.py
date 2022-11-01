@@ -29,7 +29,14 @@ from parking_permits.models import (
     Vehicle,
 )
 
-from .decorators import is_super_admin
+from .decorators import (
+    is_customer_service,
+    is_inspectors,
+    is_preparators,
+    is_sanctions,
+    is_sanctions_and_refunds,
+    is_super_admin,
+)
 from .exceptions import (
     CreatePermitError,
     ObjectNotFound,
@@ -75,10 +82,7 @@ PermitDetail = ObjectType("PermitDetailNode")
 schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers]
 
 
-@query.field("permits")
-@is_super_admin
-@convert_kwargs_to_snake_case
-def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
+def get_permits(page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
         form_data.update(order_by)
@@ -92,8 +96,22 @@ def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
     return form.get_paged_queryset()
 
 
+@query.field("permits")
+@is_preparators
+@convert_kwargs_to_snake_case
+def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
+    return get_permits(page_input, order_by, search_params)
+
+
+@query.field("limitedPermits")
+@is_inspectors
+@convert_kwargs_to_snake_case
+def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=None):
+    return get_permits(page_input, order_by, search_params)
+
+
 @query.field("permitDetail")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_permit_detail(obj, info, permit_id):
     return ParkingPermit.objects.get(id=permit_id)
@@ -241,7 +259,7 @@ def create_permit_address(customer_info):
 
 
 @mutation.field("createResidentPermit")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit):
@@ -559,7 +577,7 @@ def resolve_create_product(obj, info, product):
 
 
 @query.field("refunds")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -576,7 +594,7 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
 
 
 @mutation.field("requestForApproval")
-@is_super_admin
+@is_sanctions
 @convert_kwargs_to_snake_case
 def resolve_request_for_approval(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.OPEN)
@@ -585,7 +603,7 @@ def resolve_request_for_approval(obj, info, ids):
 
 
 @mutation.field("acceptRefunds")
-@is_super_admin
+@is_sanctions_and_refunds
 @convert_kwargs_to_snake_case
 def resolve_accept_refunds(obj, info, ids):
     request = info.context["request"]
@@ -614,7 +632,7 @@ def resolve_refund(obj, info, refund_id):
 
 
 @mutation.field("updateRefund")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_update_refund(obj, info, refund_id, refund):
     request = info.context["request"]
@@ -631,7 +649,7 @@ def resolve_update_refund(obj, info, refund_id, refund):
 
 
 @query.field("orders")
-@is_super_admin
+@is_preparators
 @convert_kwargs_to_snake_case
 def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}

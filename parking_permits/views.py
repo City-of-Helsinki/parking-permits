@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .decorators import require_super_admin
+from .decorators import require_inspectors, require_super_admin
 from .exceptions import ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
@@ -249,7 +249,7 @@ class ParkingPermitsGDPRAPIView(GDPRAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@require_super_admin
+@require_inspectors
 @require_safe
 def csv_export(request, data_type):
     form_class = {
@@ -269,6 +269,12 @@ def csv_export(request, data_type):
         content_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{data_type}.csv"'},
     )
+
+    # Needs to be at least preparators in order to download full permits data
+    # with customer information.
+    if data_type == "permits" and not request.user.is_preparators:
+        data_type = "limited_permits"
+
     data_exporter = DataExporter(data_type, form.get_queryset())
     writer = csv.writer(response)
     writer.writerow(data_exporter.get_headers())

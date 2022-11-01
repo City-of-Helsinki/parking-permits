@@ -108,6 +108,15 @@ PERMIT_HEADERS = [
     _("Status"),
 ]
 
+
+LIMITED_PERMIT_HEADERS = [
+    _("Registration number"),
+    _("Parking zone"),
+    _("Start time"),
+    _("End time"),
+    _("Status"),
+]
+
 ORDER_HEADERS = [
     _("Name"),
     _("Registration number"),
@@ -138,6 +147,7 @@ PRODUCT_HEADERS = [
 
 HEADERS_MAPPING = {
     "permits": PERMIT_HEADERS,
+    "limited_permits": LIMITED_PERMIT_HEADERS,
     "orders": ORDER_HEADERS,
     "refunds": REFUND_HEADERS,
     "products": PRODUCT_HEADERS,
