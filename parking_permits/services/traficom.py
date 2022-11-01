@@ -105,7 +105,7 @@ class Traficom:
         mass = et.find(".//massa")
         module_weight = mass.find("modulinKokonaismassa")
         technical_weight = mass.find("teknSuurSallKokmassa")
-        weight = module_weight if module_weight else technical_weight
+        weight = module_weight if module_weight is not None else technical_weight
 
         vehicle_power_type = motor.find("kayttovoima")
         vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
@@ -113,7 +113,7 @@ class Traficom:
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
         user_ssns = [
             owner_et.find("omistajanTunnus").text
-            if owner_et.find("omistajanTunnus")
+            if owner_et.find("omistajanTunnus") is not None
             else ""
             for owner_et in owners_et
         ]
@@ -146,7 +146,7 @@ class Traficom:
     def fetch_driving_licence_details(self, hetu):
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
-        if not driving_licence_et.find("ajooikeusluokat"):
+        if driving_licence_et.find("ajooikeusluokat") is None:
             raise TraficomFetchVehicleError(
                 _(
                     "Could not find any driving license information for given customer from Traficom"
