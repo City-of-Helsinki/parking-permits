@@ -288,6 +288,13 @@ input CustomerSearchParamsInput {
   nationalIdNumber: String!
 }
 
+input AddressSearchParamsInput {
+  streetName: String!
+  streetNumber: String!
+  postalCode: String!
+  parkingZone: String!
+}
+
 input RefundSearchParamsInput {
   q: String!
   startDate: String!
@@ -337,6 +344,7 @@ type Query {
   addresses(
     pageInput: PageInput!
     orderBy: OrderByInput
+    searchParams: AddressSearchParamsInput
   ): PagedAddresses!
   address(addressId: ID!): AddressNode!
   lowEmissionCriteria(

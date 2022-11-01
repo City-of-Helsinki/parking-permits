@@ -650,10 +650,12 @@ def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
 @query.field("addresses")
 @is_super_admin
 @convert_kwargs_to_snake_case
-def resolve_addresses(obj, info, page_input, order_by=None):
+def resolve_addresses(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
         form_data.update(order_by)
+    if search_params:
+        form_data.update(search_params)
 
     form = AddressSearchForm(form_data)
     if not form.is_valid():
