@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "reversion",
     "django_db_logger",
+    "audit_logger",
     "drf_yasg",
     "django_crontab",
     "encrypted_fields",
