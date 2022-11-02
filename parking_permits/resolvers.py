@@ -239,7 +239,9 @@ def resolve_get_vehicle_information(_, info, registration):
 @mutation.field("updatePermitVehicle")
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
+def resolve_update_permit_vehicle(
+    _, info, permit_id, vehicle_id, consent_low_emission_accepted=False, iban=None
+):
     customer = info.context["request"].user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
     new_vehicle = Vehicle.objects.get(id=vehicle_id)
@@ -278,6 +280,9 @@ def resolve_update_permit_vehicle(_, info, permit_id, vehicle_id, iban=None):
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
     else:
         permit.vehicle = new_vehicle
+
+    new_vehicle.consent_low_emission_accepted = consent_low_emission_accepted
+    new_vehicle.save()
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
