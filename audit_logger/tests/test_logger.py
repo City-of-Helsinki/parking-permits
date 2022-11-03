@@ -15,7 +15,9 @@ from audit_logger import (
     Status,
 )
 from audit_logger.models import AuditLog
-from audit_logger.tests.utils_test import MockModel
+from audit_logger.tests.utils import make_mock_model
+
+MockModel = make_mock_model()
 
 
 class AuditLoggerTest(TestCase):

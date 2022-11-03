@@ -6,7 +6,10 @@ from audit_logger import enums
 from audit_logger.data import AuditMessage
 from audit_logger.db_log_handler import AuditLogHandler
 from audit_logger.models import AuditLog
-from audit_logger.tests.utils_test import MockLogRecord, MockModel
+from audit_logger.tests.utils import MockLogRecord, make_mock_model
+
+Actor = make_mock_model(name="Actor")
+Target = make_mock_model(name="Target")
 
 
 @pytest.fixture
@@ -14,8 +17,8 @@ def make_audit_msg():
     def _make_audit_msg(**kwargs):
         default_kwargs = dict(
             message="message",
-            actor=MockModel(),
-            target=MockModel(),
+            actor=Actor(),
+            target=Target(),
             reason=enums.Reason.SELF_SERVICE,
             operation=enums.Operation.READ,
         )
@@ -55,11 +58,10 @@ class TestMakeAuditMessage:
 
 @pytest.mark.django_db
 def test_should_create_audit_log_from_record(make_audit_msg):
-    audit_msg = make_audit_msg()
+    audit_msg = make_audit_msg(actor=Actor(), target=Target())
     record = MockLogRecord(msg=audit_msg, levelno=logging.DEBUG)
     record.name = "audit_logger"
 
     created_audit_log = AuditLogHandler.createAuditLogFromRecord(record)
-
     assert len(AuditLog.objects.all()) == 1
     assert AuditLog.objects.first() == created_audit_log
