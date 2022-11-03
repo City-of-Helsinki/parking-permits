@@ -3,6 +3,8 @@ import logging
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from audit_logger.data import AuditMessageEncoder
+
 LOG_LEVELS = (
     (logging.NOTSET, _("NotSet")),
     (logging.INFO, _("Info")),
@@ -13,18 +15,21 @@ LOG_LEVELS = (
 )
 
 
-class StatusLog(models.Model):
-    logger_name = models.CharField(max_length=100)
+class AuditLog(models.Model):
+    logger_name = models.CharField(max_length=100, verbose_name=_("Logger name"))
     level = models.PositiveSmallIntegerField(
-        choices=LOG_LEVELS, default=logging.ERROR, db_index=True
+        choices=LOG_LEVELS,
+        default=logging.ERROR,
+        db_index=True,
+        verbose_name=_("Logging level"),
     )
-    msg = models.TextField()
-    trace = models.TextField(blank=True, null=True)
-    create_datetime = models.DateTimeField(auto_now_add=True, verbose_name="Created at")
+    is_sent = models.BooleanField(default=False, verbose_name=_("Is sent"))
+    message = models.JSONField(verbose_name=_("Message"), encoder=AuditMessageEncoder)
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created at"))
 
     def __str__(self):
-        return self.msg
+        return AuditMessageEncoder().encode(self.message)
 
     class Meta:
-        ordering = ("-create_datetime",)
-        verbose_name_plural = verbose_name = "Logging"
+        ordering = ("-created_at",)
+        verbose_name_plural = verbose_name = "Audit logging"

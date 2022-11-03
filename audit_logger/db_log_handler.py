@@ -1,47 +1,42 @@
+import copy
 import logging
 
-from django_db_logger.config import DJANGO_DB_LOGGER_ENABLE_FORMATTER
+from audit_logger.data import AuditMessage
+from audit_logger.utils import get_audit_log_level
 
 db_default_formatter = logging.Formatter()
 
 
-class DatabaseLogHandler(logging.Handler):
-    def emit(self, record):
-        from .models import StatusLog
+class AuditLogHandler(logging.Handler):
+    @staticmethod
+    def makeAuditMessage(record) -> AuditMessage:
+        msg = record.msg
 
-        trace = None
-
-        if record.exc_info:
-            trace = db_default_formatter.formatException(record.exc_info)
-
-        if DJANGO_DB_LOGGER_ENABLE_FORMATTER:
-            msg = self.format(record)
+        if isinstance(msg, AuditMessage):
+            audit_msg = copy.copy(msg)
         else:
-            msg = record.getMessage()
+            raise TypeError(f"Message must be an AuditMessage (was: {type(msg)})")
+
+        audit_msg.log_level = audit_msg.log_level or get_audit_log_level(record.levelno)
+
+        return audit_msg
+
+    @staticmethod
+    def createAuditLogFromRecord(record):
+        from .models import AuditLog
+
+        msg = AuditLogHandler.makeAuditMessage(record)
 
         kwargs = {
             "logger_name": record.name,
             "level": record.levelno,
-            "msg": msg,
-            "trace": trace,
+            "message": msg.asdict(),
         }
 
-        StatusLog.objects.create(**kwargs)
+        return AuditLog.objects.create(**kwargs)
 
-    def format(self, record):
-        if self.formatter:
-            fmt = self.formatter
-        else:
-            fmt = db_default_formatter
-
-        if type(fmt) == logging.Formatter:
-            record.message = record.getMessage()
-
-            if fmt.usesTime():
-                record.asctime = fmt.formatTime(record, fmt.datefmt)
-
-            # ignore exception traceback and stack info
-
-            return fmt.formatMessage(record)
-        else:
-            return fmt.format(record)
+    def emit(self, record):
+        try:
+            self.createAuditLogFromRecord(record)
+        except Exception:
+            self.handleError(record)
