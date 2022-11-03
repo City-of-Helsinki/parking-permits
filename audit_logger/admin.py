@@ -4,16 +4,15 @@ import logging
 
 from django.contrib import admin
 from django.utils.html import format_html
-from django_db_logger.config import DJANGO_DB_LOGGER_ADMIN_LIST_PER_PAGE
 
-from .models import StatusLog
+from .models import AuditLog
 
 
-class StatusLogAdmin(admin.ModelAdmin):
+class AuditLogAdmin(admin.ModelAdmin):
     list_display = ("colored_msg", "traceback", "create_datetime_format")
     list_display_links = ("colored_msg",)
     list_filter = ("level",)
-    list_per_page = DJANGO_DB_LOGGER_ADMIN_LIST_PER_PAGE
+    list_per_page = 10
 
     def colored_msg(self, instance):
         if instance.level in [logging.NOTSET, logging.INFO]:
@@ -40,4 +39,4 @@ class StatusLogAdmin(admin.ModelAdmin):
     create_datetime_format.short_description = "Created at"
 
 
-admin.site.register(StatusLog, StatusLogAdmin)
+admin.site.register(AuditLog, AuditLogAdmin)
