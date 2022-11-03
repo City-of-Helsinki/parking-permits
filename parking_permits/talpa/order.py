@@ -1,6 +1,5 @@
 import json
 import logging
-from collections import defaultdict
 
 import requests
 from django.conf import settings
@@ -9,7 +8,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from parking_permits.exceptions import OrderCreationFailed
-from parking_permits.utils import date_time_to_utc
+from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
 
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
@@ -25,13 +24,12 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def _get_label(cls, permit, permit_index, has_multiple_permit):
+    def _get_label(cls, permit):
         registration_number = permit.vehicle.registration_number
         manufacturer = permit.vehicle.manufacturer
         model = permit.vehicle.model
-        car_info = f"{registration_number} {manufacturer} {model}"
-        permit_info = f"{permit_index + 1}. Ajoneuvo, "
-        return (permit_info + car_info) if has_multiple_permit else car_info
+        car_info = f"Ajoneuvo: {registration_number} {manufacturer} {model}"
+        return car_info
 
     @classmethod
     def _get_product_description(cls, order_item):
@@ -128,25 +126,29 @@ class TalpaOrderManager:
     @classmethod
     def _create_order_data(cls, order):
         items = []
-        order_items = order.order_items.all().select_related("product", "permit")
-        order_items_by_permit = defaultdict(list)
+        order_items = (
+            order.order_items.all()
+            .order_by("permit", "pk")
+            .select_related("product", "permit")
+        )
+        order_items_by_permit = DefaultOrderedDict(list)
         for order_item in order_items:
             order_items_by_permit[order_item.permit].append(order_item)
 
-        for permit in set([item.permit for item in order_items]):
+        for permit in sorted(
+            set([item.permit for item in order_items]),
+            key=lambda p: p.is_secondary_vehicle,
+        ):
             order_items_of_single_permit = []
             for index, order_item in enumerate(order_items_by_permit[permit]):
                 if order_item.quantity:
                     item = cls._create_item_data(order, order_item)
-                    item.update(
-                        {
-                            "productLabel": cls._get_label(
-                                order_item.permit,
-                                index,
-                                len(order_items_by_permit[permit]) > 1,
-                            ),
-                        }
-                    )
+                    if index == 0:
+                        item.update(
+                            {
+                                "productLabel": cls._get_label(order_item.permit),
+                            }
+                        )
                     order_items_of_single_permit.append(item)
 
             # Append details of permit only to the last order item of permit.
