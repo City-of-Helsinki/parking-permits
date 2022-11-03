@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from audit_logger import enums
+from audit_logger.utils import generate_model_identifier_string
 
 
 class AuditMessageEncoder(json.JSONEncoder):
@@ -14,7 +15,7 @@ class AuditMessageEncoder(json.JSONEncoder):
         if isinstance(o, datetime.datetime):
             return o.isoformat(timespec="milliseconds")
         elif isinstance(o, models.Model):
-            return str(o)
+            return generate_model_identifier_string(o)
         elif isinstance(o, enum.Enum):
             return o.value
         return super().default(o)
