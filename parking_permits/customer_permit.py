@@ -180,7 +180,7 @@ class CustomerPermit:
                     parking_zone=address.zone,
                     primary_vehicle=primary_vehicle,
                     contract_type=contract_type,
-                    start_time=next_day(),
+                    start_time=tz.now(),
                     end_time=end_time,
                     vehicle=Vehicle.objects.get(registration_number=registration),
                 )
