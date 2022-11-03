@@ -1,5 +1,6 @@
 import calendar
-from collections import Callable, OrderedDict
+from collections import OrderedDict
+from collections.abc import Callable
 from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
