@@ -23,13 +23,12 @@ MockModel = make_mock_model()
 class AuditLoggerTest(TestCase):
     def test_usage(self):
         """Doesn't really test much, more of a showcase of how it works."""
+        with self.assertLogs("audit_logger", logging.DEBUG) as cm, transaction.atomic():
+            # Setup the logger.
+            logger = logging.getLogger("audit_logger")
+            logger.addHandler(AuditLogHandler())
+            logger.setLevel(logging.DEBUG)
 
-        # Setup the logger.
-        logger = logging.getLogger("audit_logger")
-        logger.addHandler(AuditLogHandler())
-        logger.setLevel(logging.DEBUG)
-
-        with self.assertLogs() as cm, transaction.atomic():
             # Let's make some log records!
             logger.debug(
                 AuditMsg(
