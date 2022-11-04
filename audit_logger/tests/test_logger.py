@@ -38,6 +38,7 @@ class AuditLoggerTest(TestCase):
                     target=MockModel(),
                     reason=Reason.SELF_SERVICE,
                     operation=Operation.READ,
+                    status=Status.SUCCESS,
                 )
             )
             logger.info(
@@ -81,6 +82,7 @@ class AuditLoggerTest(TestCase):
                     target=MockModel(),
                     reason=Reason.MAINTENANCE,
                     operation=Operation.UPDATE,
+                    status=Status.SUCCESS,
                 )
             )
 

@@ -29,9 +29,9 @@ class AuditMessage:
     target: models.Model
     reason: enums.Reason
     operation: enums.Operation
+    status: enums.Status
 
-    # Optional params/params with default values (for convenience)
-    status: enums.Status = None
+    # Kwargs/params with default values (for convenience)
     event_type: enums.EventType = enums.EventType.APP
     audit_type: enums.AuditType = enums.AuditType.AUDIT
     origin: str = None
