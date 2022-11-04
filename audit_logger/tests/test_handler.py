@@ -62,7 +62,12 @@ def test_should_create_audit_log_from_record(make_audit_msg):
     audit_msg = make_audit_msg(actor=Actor(), target=Target())
     record = MockLogRecord(msg=audit_msg, levelno=logging.DEBUG)
     record.name = "audit_logger"
+    try:
+        1 / 0
+    except Exception as exc_info:
+        record.exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
 
     created_audit_log = AuditLogHandler.createAuditLogFromRecord(record)
     assert len(AuditLog.objects.all()) == 1
     assert AuditLog.objects.first() == created_audit_log
+    assert "ZeroDivisionError" in created_audit_log.trace

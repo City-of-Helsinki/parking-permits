@@ -26,6 +26,7 @@ class AuditLog(models.Model):
     is_sent = models.BooleanField(default=False, verbose_name=_("Is sent"))
     message = models.JSONField(verbose_name=_("Message"), encoder=AuditMessageEncoder)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Created at"))
+    trace = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return AuditMessageEncoder().encode(self.message)

@@ -27,10 +27,16 @@ class AuditLogHandler(logging.Handler):
 
         msg = AuditLogHandler.makeAuditMessage(record)
 
+        trace = None
+
+        if record.exc_info:
+            trace = db_default_formatter.formatException(record.exc_info)
+
         kwargs = {
             "logger_name": record.name,
             "level": record.levelno,
             "message": msg.asdict(),
+            "trace": trace,
         }
 
         return AuditLog.objects.create(**kwargs)
