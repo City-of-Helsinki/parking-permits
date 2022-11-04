@@ -389,7 +389,7 @@ class CustomerPermit:
         # multiple zone.
         if self.customer_permit_query.count():
             primary, _ = self._get_primary_and_secondary_permit()
-            if str(primary.address_id) != address_id and primary.status != DRAFT:
+            if primary.address_id != address_id and primary.status != DRAFT:
                 raise InvalidUserAddress(
                     f"You can buy permit only for address {primary.address}"
                 )
