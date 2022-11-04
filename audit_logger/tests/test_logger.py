@@ -75,18 +75,32 @@ class AuditLoggerTest(TestCase):
                     status=Status.FAILURE,
                 )
             )
-            logger.critical(
-                AuditMsg(
-                    "This is also an error message",
-                    actor=MockModel(),
-                    target=MockModel(),
-                    reason=Reason.MAINTENANCE,
-                    operation=Operation.UPDATE,
-                    status=Status.SUCCESS,
+            try:
+                1 / 0
+            except Exception as e:
+                logger.critical(
+                    AuditMsg(
+                        "This is an error message with traceback",
+                        actor=MockModel(),
+                        target=MockModel(),
+                        reason=Reason.MAINTENANCE,
+                        operation=Operation.UPDATE,
+                        status=Status.SUCCESS,
+                    ),
+                    exc_info=e,
                 )
-            )
+                logger.exception(
+                    AuditMsg(
+                        "This is an error message with traceback",
+                        actor=MockModel(),
+                        target=MockModel(),
+                        reason=Reason.MAINTENANCE,
+                        operation=Operation.UPDATE,
+                        status=Status.SUCCESS,
+                    )
+                )
 
-        assert len(cm.records) == 5
-        assert len(AuditLog.objects.all()) == 5
-        assert len(AuditLog.objects.filter(message__log_level=AuditLogLevel.ERROR)) == 3
-        assert len(AuditLog.objects.filter(level__gte=logging.WARNING)) == 3
+        assert len(cm.records) == 6
+        assert len(AuditLog.objects.all()) == 6
+        assert len(AuditLog.objects.filter(message__log_level=AuditLogLevel.ERROR)) == 4
+        assert len(AuditLog.objects.filter(level__gte=logging.WARNING)) == 4
