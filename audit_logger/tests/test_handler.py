@@ -21,6 +21,7 @@ def make_audit_msg():
             target=Target(),
             reason=enums.Reason.SELF_SERVICE,
             operation=enums.Operation.READ,
+            status=enums.Status.SUCCESS,
         )
         return AuditMessage(**default_kwargs | kwargs)
 
