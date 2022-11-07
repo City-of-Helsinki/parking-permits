@@ -26,9 +26,9 @@ VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
 
 POWER_TYPE_MAPPER = {
-    "01": VehiclePowerType.BENSIN.value,
-    "02": VehiclePowerType.DIESEL.value,
-    "04": VehiclePowerType.ELECTRIC.value,
+    "01": "BENSIN",
+    "02": "DIESEL",
+    "04": "ELECTRIC",
 }
 
 VEHICLE_SUB_CLASS_MAPPER = {
@@ -117,9 +117,13 @@ class Traficom:
             else ""
             for owner_et in owners_et
         ]
+        power_type = VehiclePowerType.objects.get_or_create(
+            identifier=vehicle_power_type.text,
+            defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
+        )
         vehicle_details = {
             "updated_from_traficom_on": str(tz.now().date()),
-            "power_type": POWER_TYPE_MAPPER.get(vehicle_power_type.text),
+            "power_type": power_type[0],
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
             "model": vehicle_model.text if vehicle_model is not None else "",
