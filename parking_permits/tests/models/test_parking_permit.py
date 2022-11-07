@@ -17,7 +17,7 @@ from parking_permits.models import Order
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import EmissionType, VehiclePowerType
+from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
@@ -26,6 +26,7 @@ from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
     VehicleFactory,
+    VehiclePowerTypeFactory,
 )
 from parking_permits.tests.models.test_product import MockResponse
 from parking_permits.utils import get_end_time
@@ -474,7 +475,7 @@ class ParkingZoneTestCase(TestCase):
         end_time = get_end_time(start_time, 12)
 
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerType.BENSIN,
+            power_type=VehiclePowerTypeFactory(identifier="01", name="BENSIN"),
             emission=70,
             euro_class=6,
             emission_type=EmissionType.WLTP,
@@ -485,7 +486,6 @@ class ParkingZoneTestCase(TestCase):
             nedc_max_emission_limit=None,
             wltp_max_emission_limit=80,
             euro_min_class_limit=6,
-            power_type=low_emission_vehicle.power_type,
         )
 
         permit = ParkingPermitFactory(

@@ -21,7 +21,6 @@ from parking_permits.models.parking_permit import (
     ParkingPermitStatus,
 )
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import VehiclePowerType
 from parking_permits.tests.factories import (
     LowEmissionCriteriaFactory,
     ParkingZoneFactory,
@@ -30,7 +29,10 @@ from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    VehicleFactory,
+    VehiclePowerTypeFactory,
+)
 
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
@@ -40,7 +42,6 @@ IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 FROM = ParkingPermitStartType.FROM
 OPEN_ENDED = ContractType.OPEN_ENDED
 FIXED_PERIOD = ContractType.FIXED_PERIOD
-BENSIN = VehiclePowerType.BENSIN
 
 
 def previous_day():
@@ -69,16 +70,17 @@ class GetCustomerPermitTestCase(TestCase):
             first_name="Firstname B", last_name="Lastname B"
         )
         self.zone = ParkingZoneFactory()
-        self.vehicle_a = VehicleFactory(power_type=VehiclePowerType.BENSIN)
-        self.vehicle_b = VehicleFactory(power_type=VehiclePowerType.BENSIN)
-        self.vehicle_c = VehicleFactory(power_type=VehiclePowerType.BENSIN)
+        power_type = VehiclePowerTypeFactory(identifier="01", name="BENSIN")
+        self.vehicle_a = VehicleFactory(power_type=power_type)
+        self.vehicle_b = VehicleFactory(power_type=power_type)
+        self.vehicle_c = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory(power_type=VehiclePowerType.BENSIN)
+        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,
@@ -149,7 +151,8 @@ class CreateCustomerPermitTestCase(TestCase):
         )
         self.customer_a_zone = self.customer_a.primary_address.zone
         self.zone = ParkingZoneFactory()
-        self.vehicle_a = VehicleFactory(power_type=BENSIN)
+        power_type = VehiclePowerTypeFactory(identifier="01", name="BENSIN")
+        self.vehicle_a = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
@@ -162,7 +165,7 @@ class CreateCustomerPermitTestCase(TestCase):
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory(power_type=BENSIN)
+        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,
