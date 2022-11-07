@@ -60,7 +60,6 @@ from .forms import (
 from .models.order import OrderStatus
 from .models.parking_permit import ContractType
 from .models.refund import RefundStatus
-from .models.vehicle import is_low_emission_vehicle
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.mail import (
@@ -328,12 +327,10 @@ def resolve_create_resident_permit(obj, info, permit):
 def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["customer"]["zone"])
     vehicle_info = permit["vehicle"]
-    is_low_emission = is_low_emission_vehicle(
-        vehicle_info["power_type"],
-        vehicle_info["euro_class"],
-        vehicle_info["emission_type"],
-        vehicle_info["emission"],
+    vehicle = Vehicle.objects.get(
+        registration_number=vehicle_info["registration_number"]
     )
+    is_low_emission = vehicle.is_low_emission
     start_time = isoparse(permit["start_time"])
     permit_start_date = start_time.date()
     end_time = get_end_time(start_time, permit["month_count"])
@@ -362,12 +359,10 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
 
     vehicle_info = permit_info["vehicle"]
-    is_low_emission = is_low_emission_vehicle(
-        vehicle_info["power_type"],
-        vehicle_info["euro_class"],
-        vehicle_info["emission_type"],
-        vehicle_info["emission"],
+    vehicle = Vehicle.objects.get(
+        registration_number=vehicle_info["registration_number"]
     )
+    is_low_emission = vehicle.is_low_emission
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
     return permit.get_price_change_list(parking_zone, is_low_emission)
 
@@ -394,12 +389,10 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         previous_permit = deepcopy(permit)
         vehicle_changed = True
 
-    is_low_emission = is_low_emission_vehicle(
-        vehicle_info["power_type"],
-        vehicle_info["euro_class"],
-        vehicle_info["emission_type"],
-        vehicle_info["emission"],
+    new_vehicle = Vehicle.objects.get(
+        registration_number=new_vehicle_registration_number
     )
+    is_low_emission = new_vehicle.is_low_emission
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
 
@@ -763,7 +756,6 @@ def resolve_low_emission_criterion(obj, info, criterion_id):
 @transaction.atomic
 def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
     _criterion = LowEmissionCriteria.objects.get(id=criterion_id)
-    _criterion.power_type = criterion["power_type"]
     _criterion.nedc_max_emission_limit = criterion["nedc_max_emission_limit"]
     _criterion.wltp_max_emission_limit = criterion["wltp_max_emission_limit"]
     _criterion.euro_min_class_limit = criterion["euro_min_class_limit"]
@@ -789,7 +781,6 @@ def resolve_delete_low_emission_criterion(obj, info, criterion_id):
 @transaction.atomic
 def resolve_create_low_emission_criterion(obj, info, criterion):
     LowEmissionCriteria.objects.create(
-        power_type=criterion["power_type"],
         nedc_max_emission_limit=criterion["nedc_max_emission_limit"],
         wltp_max_emission_limit=criterion["wltp_max_emission_limit"],
         euro_min_class_limit=criterion["euro_min_class_limit"],
