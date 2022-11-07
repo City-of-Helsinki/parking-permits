@@ -455,7 +455,6 @@ input RefundInput {
 }
 
 input LowEmissionCriterionInput {
-  powerType: String!
   nedcMaxEmissionLimit: Int
   wltpMaxEmissionLimit: Int
   euroMinClassLimit: Int
