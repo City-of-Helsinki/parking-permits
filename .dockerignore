@@ -11,6 +11,7 @@
 !users*
 !locale*
 !etc-pki-entitlement*
+!audit_logger*
 
 #################################################
 # Allowed files
