@@ -33,7 +33,6 @@ type CustomerNode {
 
 type VehicleNode {
   id: ID!
-  powerType: String
   manufacturer: String
   model: String
   productionYear: Int
