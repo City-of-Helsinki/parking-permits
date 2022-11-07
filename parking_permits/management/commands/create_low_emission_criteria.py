@@ -7,8 +7,8 @@ from django.db import transaction
 from parking_permits.models.vehicle import EmissionType, LowEmissionCriteria
 
 LOW_EMISSION_CRITERIA = {
-    EmissionType.NEDC: 95,
-    EmissionType.WLTP: 126,
+    EmissionType.NEDC: 37,
+    EmissionType.WLTP: 50,
 }
 
 
