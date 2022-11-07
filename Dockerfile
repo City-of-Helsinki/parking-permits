@@ -1,4 +1,4 @@
-FROM ubuntu:20.04
+FROM ubuntu:20.04 as base
 
 WORKDIR /app
 
@@ -6,6 +6,8 @@ RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false upd
     TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive apt-get install -y nano apt-transport-https python3-pip gdal-bin uwsgi uwsgi-plugin-python3 libgdal26 git-core postgresql-client netcat gettext libpq-dev unzip && \
     ln -s /usr/bin/pip3 /usr/local/bin/pip && \
     ln -s /usr/bin/python3 /usr/local/bin/python
+
+FROM base
 
 COPY requirements.txt .
 
@@ -17,7 +19,7 @@ ENV STATIC_ROOT /srv/app/static
 RUN mkdir -p /srv/app/static
 
 RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
-    python /app/manage.py collectstatic --noinput
+    python manage.py collectstatic --noinput
 
 
 RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
