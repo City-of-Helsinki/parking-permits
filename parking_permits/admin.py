@@ -18,7 +18,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
-from parking_permits.models.vehicle import VehicleUser
+from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 
 @admin.register(Address)
@@ -76,11 +76,18 @@ class DrivingLicenceAdmin(admin.ModelAdmin):
     list_select_related = ("customer",)
 
 
+@admin.register(VehiclePowerType)
+class VehiclePowerTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        "identifier",
+        "name",
+    )
+
+
 @admin.register(LowEmissionCriteria)
 class LowEmissionCriteriaAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "power_type",
         "nedc_max_emission_limit",
         "wltp_max_emission_limit",
         "euro_min_class_limit",

@@ -7,13 +7,6 @@ from encrypted_fields import fields
 from .mixins import TimestampedModelMixin
 
 
-class VehiclePowerType(models.TextChoices):
-    ELECTRIC = "ELECTRIC", _("Electric")
-    BENSIN = "BENSIN", _("Bensin")
-    DIESEL = "DIESEL", _("Diesel")
-    BIFUEL = "BIFUEL", _("Bifuel")
-
-
 class VehicleClass(models.TextChoices):
     M1 = "M1", _("M1")
     M2 = "M2", _("M2")
@@ -43,12 +36,11 @@ class EmissionType(models.TextChoices):
 
 
 def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
-    if power_type == VehiclePowerType.ELECTRIC:
+    if power_type.is_electric:
         return True
     try:
         now = tz.now()
         le_criteria = LowEmissionCriteria.objects.get(
-            power_type=power_type,
             start_date__lte=now,
             end_date__gte=now,
         )
@@ -71,10 +63,26 @@ def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
     return False
 
 
+class VehiclePowerType(models.Model):
+    name = models.CharField(_("Name"), max_length=100, null=True, blank=True)
+    identifier = models.CharField(_("Identifier"), max_length=10)
+
+    class Meta:
+        verbose_name = _("Vehicle power type")
+        verbose_name_plural = _("Vehicle power types")
+
+    def __str__(self):
+        return "Identifier: %s, Name: %s" % (
+            self.identifier,
+            self.name,
+        )
+
+    @property
+    def is_electric(self):
+        return self.identifier == "04"
+
+
 class LowEmissionCriteria(TimestampedModelMixin):
-    power_type = models.CharField(
-        _("Power type"), max_length=50, choices=VehiclePowerType.choices
-    )
     nedc_max_emission_limit = models.IntegerField(
         _("NEDC maximum emission limit"), blank=True, null=True
     )
@@ -92,8 +100,7 @@ class LowEmissionCriteria(TimestampedModelMixin):
         verbose_name_plural = _("Low-emission criterias")
 
     def __str__(self):
-        return "%s, NEDC: %s, WLTP: %s, EURO: %s" % (
-            self.power_type,
+        return "NEDC: %s, WLTP: %s, EURO: %s" % (
             self.nedc_max_emission_limit,
             self.wltp_max_emission_limit,
             self.euro_min_class_limit,
@@ -115,8 +122,11 @@ class VehicleUser(models.Model):
 
 
 class Vehicle(TimestampedModelMixin):
-    power_type = models.CharField(
-        _("Power type"), max_length=50, choices=VehiclePowerType.choices, blank=True
+    power_type = models.ForeignKey(
+        VehiclePowerType,
+        verbose_name=_("power_type"),
+        related_name="vehicles",
+        on_delete=models.PROTECT,
     )
     vehicle_class = models.CharField(
         _("VehicleClass"), max_length=16, choices=VehicleClass.choices, blank=True
