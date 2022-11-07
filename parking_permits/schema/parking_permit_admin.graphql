@@ -55,6 +55,11 @@ type CustomerNode {
   language: String
 }
 
+type VehiclePowerTypeNode {
+  name: String!
+  identifier: CustomerNode!
+}
+
 type VehicleNode {
   manufacturer: String!
   model: String!
@@ -66,7 +71,7 @@ type VehicleNode {
   euroClass: Int
   emission: Int
   emissionType: String
-  powerType: String
+  powerType: VehiclePowerTypeNode
 }
 
 type AnnouncementNode {
@@ -265,7 +270,6 @@ type PermitPriceChange {
 
 type LowEmissionCriterionNode {
   id: ID!
-  powerType: String!
   nedcMaxEmissionLimit: Int
   wltpMaxEmissionLimit: Int
   euroMinClassLimit: Int
@@ -414,6 +418,11 @@ input CustomerInput {
   driverLicenseChecked: Boolean
 }
 
+input PowerTypeInput {
+  name: String
+  identifier: String!
+}
+
 input VehicleInput {
   manufacturer: String!
   model: String!
@@ -424,7 +433,7 @@ input VehicleInput {
   euroClass: Int!
   emission: Int!
   emissionType: String!
-  powerType: String!
+  powerType: PowerTypeInput!
 }
 
 input ResidentPermitInput {
