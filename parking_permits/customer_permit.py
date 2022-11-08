@@ -425,9 +425,19 @@ class CustomerPermit:
         if not secondary:
             return [primary]
         primary.primary_vehicle = secondary.primary_vehicle
-        primary.save(update_fields=["primary_vehicle"])
+
+        update_fields = ["primary_vehicle"]
+        if primary.contract_type == ContractType.FIXED_PERIOD:
+            primary.end_time = get_end_time(primary.start_time, 1)
+            secondary.end_time = get_end_time(primary.start_time, 1)
+            primary.month_count = 1
+            secondary.month_count = 1
+            update_fields.append("end_time")
+            update_fields.append("month_count")
+
+        primary.save(update_fields=update_fields)
         secondary.primary_vehicle = not secondary.primary_vehicle
-        secondary.save(update_fields=["primary_vehicle"])
+        secondary.save(update_fields=update_fields)
         return primary, secondary
 
     # Start time will be next day by default if the type is immediately
