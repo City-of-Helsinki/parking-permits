@@ -20,14 +20,12 @@ from .exceptions import (
 from .models import (
     Address,
     Customer,
-    Order,
     OrderItem,
     ParkingPermit,
     Refund,
     TemporaryVehicle,
     Vehicle,
 )
-from .models.order import OrderStatus
 from .models.parking_permit import (
     ContractType,
     ParkingPermitStartType,
@@ -307,9 +305,7 @@ class CustomerPermit:
                 description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
             )
             send_refund_email(RefundEmailType.CREATED, self.customer, refund)
-        Order.objects.create_renewal_order(
-            customer=self.customer, status=OrderStatus.CONFIRMED
-        )
+
         for permit in permits:
             with reversion.create_revision():
                 active_temporary_vehicle = permit.active_temporary_vehicle
@@ -318,13 +314,6 @@ class CustomerPermit:
                     active_temporary_vehicle.save()
                 if not settings.DEBUG:
                     permit.update_parkkihubi_permit()
-                permit.end_permit(end_type)
-                reversion.set_user(self.customer.user)
-                comment = get_reversion_comment(EventType.CHANGED, permit)
-                reversion.set_comment(comment)
-                send_permit_email(
-                    PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
-                )
                 if (
                     permit.consent_low_emission_accepted
                     and permit.vehicle.is_low_emission
@@ -333,6 +322,13 @@ class CustomerPermit:
                         PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
                         permit,
                     )
+                permit.end_permit(end_type)
+                reversion.set_user(self.customer.user)
+                comment = get_reversion_comment(EventType.CHANGED, permit)
+                reversion.set_comment(comment)
+                send_permit_email(
+                    PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
+                )
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
