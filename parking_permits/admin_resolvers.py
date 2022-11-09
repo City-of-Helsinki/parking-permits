@@ -258,7 +258,7 @@ def create_permit_address(customer_info):
 
 
 @mutation.field("createResidentPermit")
-@is_preparators
+@is_customer_service
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit):
