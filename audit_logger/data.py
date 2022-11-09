@@ -2,6 +2,7 @@ import datetime
 import enum
 import json
 from dataclasses import asdict, dataclass, field
+from typing import Optional
 
 from django.db import models
 from django.utils import timezone
@@ -23,20 +24,17 @@ class AuditMessageEncoder(json.JSONEncoder):
 
 @dataclass
 class AuditMessage:
-    # Required params
-    message: str
-    actor: models.Model
-    target: models.Model
-    reason: enums.Reason
-    operation: enums.Operation
-    status: enums.Status
-
-    # Kwargs/params with default values (for convenience)
+    message: str = ""
+    actor: models.Model = None
+    target: Optional[models.Model] = None
+    operation: enums.Operation = None
+    status: enums.Status = None
+    reason: enums.Reason = None
     event_type: enums.EventType = enums.EventType.APP
     audit_type: enums.AuditType = enums.AuditType.AUDIT
-    origin: str = None
+    origin: str = ""
     version: str = "v1"
-    log_level: enums.AuditLogLevel = None
+    log_level: Optional[enums.AuditLogLevel] = None
 
     # "Do not touch" params
     date_time: datetime.datetime = field(init=False, default_factory=timezone.now)
