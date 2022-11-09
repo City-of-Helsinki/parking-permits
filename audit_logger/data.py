@@ -1,7 +1,7 @@
 import datetime
 import enum
 import json
-from dataclasses import asdict, dataclass, field
+from dataclasses import Field, asdict, dataclass, field, fields, replace
 from typing import Optional
 
 from django.db import models
@@ -41,6 +41,21 @@ class AuditMessage:
 
     def asdict(self):
         return asdict(self)
+
+    def replace(self, **changes):
+        return replace(self, **changes)
+
+    def set_defaults(self, **defaults):
+        name_to_field: dict[str, Field] = {f.name: f for f in fields(self)}
+
+        for k, v in defaults.items():
+            if k not in name_to_field:
+                continue
+            f = name_to_field[k]
+            if not f.init:
+                continue
+            if f.default == getattr(self, k):
+                setattr(self, k, v)
 
     def __str__(self):
         s = AuditMessageEncoder().encode(self.asdict())
