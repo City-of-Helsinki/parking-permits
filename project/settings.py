@@ -228,11 +228,16 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
+        "audit_log": {
+            "class": "audit_logger.db_log_handler.AuditLogHandler",
+            "level": "DEBUG",
+        },
     },
     "loggers": {
         "db": {"handlers": ["db_log"], "level": "DEBUG"},
         "django": {"handlers": ["console"], "level": "INFO"},
         "helusers": {"handlers": ["console"], "level": "DEBUG"},
+        "audit": {"handlers": ["audit_log"], "level": "DEBUG"},
     },
 }
 
