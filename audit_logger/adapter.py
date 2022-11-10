@@ -137,9 +137,9 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
 
-def getAuditLoggerAdapter(name, extra) -> AuditLoggerAdapter:
+def getAuditLoggerAdapter(name, extra, **kwargs) -> AuditLoggerAdapter:
     """
     Gets a logger and creates an AuditLoggerAdapter that uses that logger.
     """
     logger = logging.getLogger(name)
-    return AuditLoggerAdapter(logger, extra)
+    return AuditLoggerAdapter(logger, extra, **kwargs)
