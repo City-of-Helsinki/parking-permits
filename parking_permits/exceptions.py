@@ -30,7 +30,7 @@ class NonDraftPermitUpdateError(ParkingPermitBaseException):
     pass
 
 
-class PermitCanNotBeDelete(ParkingPermitBaseException):
+class PermitCanNotBeDeleted(ParkingPermitBaseException):
     pass
 
 
