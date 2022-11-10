@@ -81,7 +81,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
             kwarg_name, self.autolog_config.get("kwarg_name", "audit_msg")
         )
         autostatus = _value_or_missing(
-            autostatus, self.autolog_config.get(autostatus, False)
+            autostatus, self.autolog_config.get("autostatus", False)
         )
 
         def _autostatus(msg, status: Status):
