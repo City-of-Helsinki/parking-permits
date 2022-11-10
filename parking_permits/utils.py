@@ -6,6 +6,7 @@ from itertools import chain
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.utils import timezone
+from graphql import GraphQLResolveInfo
 from pytz import utc
 
 
@@ -189,3 +190,11 @@ def to_dict(instance):
     for f in opts.many_to_many:
         data[f.name] = [i.id for i in f.value_from_object(instance)]
     return data
+
+
+def get_user_from_resolver_args(*args, **__):
+    try:
+        info: GraphQLResolveInfo = args[1]
+        return info.context["request"].user
+    except (KeyError, AttributeError, IndexError):
+        return None
