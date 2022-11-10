@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-18 09:14+0300\n"
+"POT-Creation-Date: 2022-11-10 14:29+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,6 +17,39 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "NotSet"
+msgstr "Ei asetettu"
+
+msgid "Info"
+msgstr "Info"
+
+msgid "Warning"
+msgstr "Varoitus"
+
+msgid "Debug"
+msgstr "Debug"
+
+msgid "Error"
+msgstr "Virhe"
+
+msgid "Fatal"
+msgstr "Virhe"
+
+msgid "Logger name"
+msgstr "Lokin nimi"
+
+msgid "Logging level"
+msgstr "Lokitaso"
+
+msgid "Is sent"
+msgstr "Lähetetty"
+
+msgid "Message"
+msgstr "Viesti"
+
+msgid "Created at"
+msgstr "Luotu"
 
 msgid "No parking zone found for the location"
 msgstr "Pysäköintialuetta ei löytynyt tälle sijainnille"
@@ -41,6 +74,47 @@ msgstr "Pysäköintitunnusta ei löytynyt"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
+
+msgid "You already have a valid permit for a given vehicle."
+msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
+msgstr ""
+"Tilapäisten ajoneuvojen lukumäärä on rajoitettu kahteen 365 päivän aikana."
+
+msgid "Permit for a given vehicle already exist."
+msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
+
+#, python-brace-format
+msgid "Customer is not an owner or holder of a vehicle {registration}"
+msgstr "Et ole ajoneuvon {registration} omistaja tai haltija"
+
+msgid "Customer does not have a valid driving licence"
+msgstr "Puutteelliset ajokorttitiedot"
+
+msgid "Non draft permit can not be deleted"
+msgstr "Pysäköintitunnusta ei voida poistaa"
+
+msgid "Contract type is required"
+msgstr "Sopimustyyppi on pakollinen"
+
+#, python-brace-format
+msgid "Only {FIXED_PERIOD} is allowed"
+msgstr "Vain  {FIXED_PERIOD} on sallittu"
+
+msgid "This is not a draft permit and can not be edited"
+msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"
+
+msgid "Invalid user address."
+msgstr "Epäkelpo asiakkaan osoite"
+
+#, python-brace-format
+msgid "You can have a max of {max_allowed_permit} permits."
+msgstr "Sinulla voi olla enimmillään {max_allowed_permit} pysäköintitunnusta."
+
+#, python-brace-format
+msgid "You can buy permit only for address {primary.address}"
+msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle {primary.address}"
 
 msgid "Name"
 msgstr "Nimi"
@@ -80,9 +154,6 @@ msgstr "Maksuaika"
 
 msgid "Amount"
 msgstr "Määrä"
-
-msgid "Created at"
-msgstr "Luotu"
 
 msgid "Product type"
 msgstr "Tuotteen tyyppi"
@@ -203,6 +274,24 @@ msgstr "Alue"
 
 msgid "Addresses"
 msgstr "Osoitteet"
+
+msgid "Subject (EN)"
+msgstr "Otsikko (EN)"
+
+msgid "Content (EN)"
+msgstr "Sisältö (EN)"
+
+msgid "Subject (FI)"
+msgstr "Otsikko (FI)"
+
+msgid "Content (FI)"
+msgstr "Sisältö (FI)"
+
+msgid "Subject (SV)"
+msgstr "Otsikko (SV)"
+
+msgid "Content (SV)"
+msgstr "Sisältö (SV)"
 
 msgid "Company name"
 msgstr "Yrityksen nimi"
@@ -481,18 +570,6 @@ msgstr "Väliaikainen ajoneuvo"
 msgid "Temporary vehicles"
 msgstr "Väliaikaiset ajoneuvot"
 
-msgid "Electric"
-msgstr "Sähkö"
-
-msgid "Bensin"
-msgstr "Bensiini"
-
-msgid "Diesel"
-msgstr "Diesel"
-
-msgid "Bifuel"
-msgstr "Kaasu"
-
 msgid "M1"
 msgstr "M1"
 
@@ -559,8 +636,11 @@ msgstr "NEDC"
 msgid "WLTP"
 msgstr "WLTP"
 
-msgid "Power type"
-msgstr "Käyttövoima"
+msgid "Vehicle power type"
+msgstr "Ajoneuvon käyttövoima"
+
+msgid "Vehicle power types"
+msgstr "Ajoneuvon käyttövoimat"
 
 msgid "NEDC maximum emission limit"
 msgstr "NEDC maksimipäästöraja"
@@ -582,6 +662,9 @@ msgstr "Ajoneuvon käyttäjä"
 
 msgid "Vehicle users"
 msgstr "Ajoneuvon käyttäjät"
+
+msgid "power_type"
+msgstr "Käyttövoima"
 
 msgid "VehicleClass"
 msgstr "Ajoneuvoluokka"
@@ -791,6 +874,3 @@ msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
 
 msgid "Discount right ends"
 msgstr "Alennusoikeus päättyy"
-
-msgid "Announcement not found"
-msgstr "Ilmoitusta ei löytynyt"
