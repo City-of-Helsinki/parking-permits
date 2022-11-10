@@ -7,6 +7,20 @@ from audit_logger.data import AuditMessage
 from audit_logger.enums import Status
 
 
+class _MISSING_TYPE:
+    """Sentinel object."""
+
+
+MISSING = _MISSING_TYPE()
+
+
+def _value_or_missing(val, default=None):
+    """Return the given value or, if MISSING, the given default."""
+    if val is MISSING:
+        return default
+    return val
+
+
 def TARGET_RETURN(return_val, *_, **__):
     return return_val
 
@@ -30,11 +44,11 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         self,
         base_msg: AuditMessage,
         *,
-        autoactor: Callable = None,
-        autotarget: Callable = None,
-        autostatus: bool = False,
-        add_kwarg: Union[bool, str] = None,
-        kwarg_name: str = None,
+        autoactor: Callable = MISSING,
+        autotarget: Callable = MISSING,
+        autostatus: bool = MISSING,
+        add_kwarg: Union[bool, str] = MISSING,
+        kwarg_name: str = MISSING,
     ):
         """
         Decorator that automatically creates an audit log record after the wrapped
@@ -49,20 +63,26 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                            exception (failure) or not (success). Won't override
                            existing values.
         :param add_kwarg: If True, adds the audit message as a kwarg (either as
-                          kwarg_name's value or "audit_msg"). If an str, it uses the
+                          kwarg_name's value or "audit_msg"). If a str, it uses the
                           supplied str as the kwarg name.
         :param kwarg_name: Determines the name of the added kwarg if add_kwarg is True.
         :return:
         """
-        autoactor = autoactor or self.autolog_config.get("autoactor", None)
-        autotarget = autotarget or self.autolog_config.get("autotarget", None)
-        add_kwarg = (
-            add_kwarg
-            if add_kwarg is not None
-            else self.autolog_config.get("add_kwarg", False)
+        autoactor = _value_or_missing(
+            autoactor, self.autolog_config.get("autoactor", None)
         )
-        kwarg_name = kwarg_name or self.autolog_config.get("kwarg_name", "audit_msg")
-        autostatus = autostatus or self.autolog_config.get(autostatus, False)
+        autotarget = _value_or_missing(
+            autotarget, self.autolog_config.get("autotarget", None)
+        )
+        add_kwarg = _value_or_missing(
+            add_kwarg, self.autolog_config.get("add_kwarg", False)
+        )
+        kwarg_name = _value_or_missing(
+            kwarg_name, self.autolog_config.get("kwarg_name", "audit_msg")
+        )
+        autostatus = _value_or_missing(
+            autostatus, self.autolog_config.get(autostatus, False)
+        )
 
         def _autostatus(msg, status: Status):
             if msg.status is None and autostatus:
