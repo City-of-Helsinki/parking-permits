@@ -4,7 +4,7 @@ import logging
 
 import requests
 from django.conf import settings
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import ObjectNotFound
 from parking_permits.models import ParkingZone

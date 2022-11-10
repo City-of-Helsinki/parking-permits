@@ -5,7 +5,7 @@ import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed
 from parking_permits.utils import DefaultOrderedDict, date_time_to_utc

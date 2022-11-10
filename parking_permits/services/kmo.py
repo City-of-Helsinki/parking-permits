@@ -5,7 +5,7 @@ import requests
 import xmltodict
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
 from parking_permits.exceptions import AddressError
