@@ -16,6 +16,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+import audit_logger as audit
+from audit_logger import AuditMsg
 from parking_permits.models import (
     Address,
     Announcement,
@@ -29,6 +31,7 @@ from parking_permits.models import (
     Vehicle,
 )
 
+from .constants import Origin
 from .decorators import (
     is_customer_service,
     is_inspectors,
@@ -72,9 +75,22 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
-from .utils import get_end_time, get_permit_prices
+from .utils import get_end_time, get_permit_prices, get_user_from_resolver_args
 
 logger = logging.getLogger("db")
+audit_logger = audit.getAuditLoggerAdapter(
+    "audit",
+    dict(
+        origin=Origin.ADMIN_UI,
+        reason=audit.Reason.ADMIN_SERVICE,
+        event_type=audit.EventType.APP,
+    ),
+    autolog_config={
+        "autoactor": get_user_from_resolver_args,
+        "autostatus": True,
+        "kwarg_name": "audit_msg",
+    },
+)
 
 query = QueryType()
 mutation = MutationType()
@@ -144,18 +160,31 @@ def resolve_zone_by_location(obj, info, location):
 
 @query.field("customer")
 @is_super_admin
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin retrieved customer details.",
+        operation=audit.Operation.READ,
+    ),
+    autotarget=audit.TARGET_RETURN,
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
-def resolve_customer(obj, info, **data):
+def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
     query_params = data.get("query")
+    customer = None
+
     try:
         customer = Customer.objects.get(**query_params)
     except Customer.DoesNotExist:
-        customer = None
         if query_params.get("national_id_number"):
+            # We're searching data from DVV now, so change the event type.
+            audit_msg.event_type = audit.EventType.DVV
             logger.info("Customer does not exist, searching from DVV...")
             customer = get_person_info(query_params.get("national_id_number"))
+
         if not customer:
             raise ObjectNotFound(_("Person not found"))
+
     return customer
 
 
@@ -178,6 +207,14 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("vehicle")
 @is_super_admin
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin retrieved vehicle.",
+        operation=audit.Operation.READ,
+        event_type=audit.EventType.TRAFICOM,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
 @convert_kwargs_to_snake_case
 def resolve_vehicle(obj, info, reg_number, national_id_number):
     vehicle = Traficom().fetch_vehicle_details(reg_number)
@@ -267,9 +304,16 @@ def create_permit_address(customer_info):
 
 @mutation.field("createResidentPermit")
 @is_customer_service
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin created resident permit.",
+        operation=audit.Operation.CREATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 @transaction.atomic
-def resolve_create_resident_permit(obj, info, permit):
+def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None):
     customer_info = permit["customer"]
     customer = update_or_create_customer(customer_info)
     active_permits = customer.active_permits
@@ -305,6 +349,7 @@ def resolve_create_resident_permit(obj, info, permit):
             address=address,
             primary_vehicle=primary_vehicle,
         )
+        audit_msg.target = parking_permit
         request = info.context["request"]
         reversion.set_user(request.user)
         comment = get_reversion_comment(EventType.CREATED, parking_permit)
@@ -377,14 +422,23 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
 
 @mutation.field("updateResidentPermit")
 @is_super_admin
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin updated resident permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 @transaction.atomic
-def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None):
+def resolve_update_resident_permit(
+    obj, info, permit_id, permit_info, iban=None, audit_msg: AuditMsg = None
+):
     try:
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFound(_("Parking permit not found"))
-
+    audit_msg.target = permit
     customer_info = permit_info["customer"]
     if permit.customer.national_id_number != customer_info["national_id_number"]:
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
@@ -464,11 +518,21 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
 
 @mutation.field("endPermit")
 @is_super_admin
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin ended resident permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 @transaction.atomic
-def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
+def resolve_end_permit(
+    obj, info, permit_id, end_type, iban=None, audit_msg: AuditMsg = None
+):
     request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
+    audit_msg.target = permit
     if permit.can_be_refunded:
         if not iban:
             raise RefundError(_("IBAN is not provided"))
