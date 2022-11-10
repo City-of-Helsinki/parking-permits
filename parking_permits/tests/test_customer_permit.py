@@ -12,7 +12,7 @@ from parking_permits.exceptions import (
     InvalidContractType,
     InvalidUserAddress,
     NonDraftPermitUpdateError,
-    PermitCanNotBeDelete,
+    PermitCanNotBeDeleted,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -205,13 +205,13 @@ class DeleteCustomerPermitTestCase(TestCase):
 
     def test_customer_a_can_not_delete_non_draft_permit(self):
         msg = "Non draft permit can not be deleted"
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_closed.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_valid.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_payment_in_progress.id)
 
     def test_customer_a_can_delete_draft_permit(self):
