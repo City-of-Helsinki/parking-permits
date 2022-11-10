@@ -5,6 +5,7 @@ from dateutil.parser import isoparse, parse
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
+from django.utils.translation import gettext_lazy as _
 
 from .constants import LOW_EMISSION_DISCOUNT, SECONDARY_VEHICLE_PRICE_INCREASE
 from .exceptions import (
@@ -12,7 +13,7 @@ from .exceptions import (
     InvalidContractType,
     InvalidUserAddress,
     NonDraftPermitUpdateError,
-    PermitCanNotBeDelete,
+    PermitCanNotBeDeleted,
     PermitLimitExceeded,
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
@@ -76,17 +77,21 @@ class CustomerPermit:
 
         if has_valid_permit:
             raise TemporaryVehicleValidationError(
-                "You already have a valid permit for a given vehicle."
+                _("You already have a valid permit for a given vehicle.")
             )
 
-        permit, _ = self._get_permit(permit_id)
+        permit_details = self._get_permit(permit_id)
+        permit = permit_details[0]
+
         tmp_vehicles = permit.temp_vehicles.filter(
             start_time__gte=get_end_time(tz.now(), -12)
         ).order_by("-start_time")[:2]
 
         if tmp_vehicles.count() == 2:
             raise TemporaryVehicleValidationError(
-                "Can not have more than 2 temporary vehicles in 365 days from first one."
+                _(
+                    "Can not have more than 2 temporary vehicles in 365 days from first one."
+                )
             )
 
         vehicle = TemporaryVehicle.objects.create(
@@ -100,7 +105,8 @@ class CustomerPermit:
         return True
 
     def remove_temporary_vehicle(self, permit_id):
-        permit, _ = self._get_permit(permit_id)
+        permit_details = self._get_permit(permit_id)
+        permit = permit_details[0]
         permit.temp_vehicles.filter(is_active=True).update(is_active=False)
         permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
@@ -143,7 +149,7 @@ class CustomerPermit:
         if self.customer_permit_query.filter(
             vehicle__registration_number=registration
         ).count():
-            raise DuplicatePermit("Permit for a given vehicle already exist.")
+            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
         address = Address.objects.get(id=address_id)
         if self._can_buy_permit_for_address(address.id):
             contract_type = OPEN_ENDED
@@ -161,7 +167,9 @@ class CustomerPermit:
                 is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
                 if not is_user_of_vehicle:
                     raise TraficomFetchVehicleError(
-                        f"Customer is not an owner or holder of a vehicle {registration}"
+                        _(
+                            f"Customer is not an owner or holder of a vehicle {registration}"
+                        )
                     )
 
                 has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
@@ -169,7 +177,7 @@ class CustomerPermit:
                 )
                 if not has_valid_licence:
                     raise TraficomFetchVehicleError(
-                        "Customer does not have a valid driving licence"
+                        _("Customer does not have a valid driving licence")
                     )
 
                 permit = ParkingPermit.objects.create(
@@ -190,7 +198,7 @@ class CustomerPermit:
     def delete(self, permit_id):
         permit = ParkingPermit.objects.get(customer=self.customer, id=permit_id)
         if permit.status != DRAFT:
-            raise PermitCanNotBeDelete("Non draft permit can not be deleted")
+            raise PermitCanNotBeDeleted(_("Non draft permit can not be deleted"))
         OrderItem.objects.filter(permit=permit).delete()
         permit.delete()
 
@@ -242,7 +250,7 @@ class CustomerPermit:
             primary, secondary = self._get_primary_and_secondary_permit()
             end_time = get_end_time(primary.start_time, month_count)
             if not contract_type:
-                raise InvalidContractType("Contract type is required")
+                raise InvalidContractType(_("Contract type is required"))
 
             # Second permit can not be open ended if primary permit valid or processing and is fixed period
             if (
@@ -250,14 +258,14 @@ class CustomerPermit:
                 and primary.contract_type == FIXED_PERIOD
                 and contract_type != FIXED_PERIOD
             ):
-                raise InvalidContractType(f"Only {FIXED_PERIOD} is allowed")
+                raise InvalidContractType(_(f"Only {FIXED_PERIOD} is allowed"))
 
             if permit_id:
                 permit, is_primary = self._get_permit(permit_id)
 
                 if permit.status != DRAFT:
                     raise NonDraftPermitUpdateError(
-                        "This is not a draft permit and can not be edited"
+                        _("This is not a draft permit and can not be edited")
                     )
 
                 if is_primary:
@@ -370,24 +378,24 @@ class CustomerPermit:
 
     def _can_buy_permit_for_address(self, address_id):
         if not self._is_valid_user_address(address_id):
-            raise InvalidUserAddress("Invalid user address.")
+            raise InvalidUserAddress(_("Invalid user address."))
 
         max_allowed_permit = settings.MAX_ALLOWED_USER_PERMIT
 
         # User can not exceed max allowed permit per user
         if self.customer_permit_query.count() > max_allowed_permit:
             raise PermitLimitExceeded(
-                f"You can have a max of {max_allowed_permit} permits."
+                _(f"You can have a max of {max_allowed_permit} permits.")
             )
 
         # If user has existing permit that is in valid or processing state then
         # the zone id from it should be used as he can have multiple permit for
         # multiple zone.
         if self.customer_permit_query.count():
-            primary, _ = self._get_primary_and_secondary_permit()
+            primary, secondary = self._get_primary_and_secondary_permit()
             if primary.address_id != address_id and primary.status != DRAFT:
                 raise InvalidUserAddress(
-                    f"You can buy permit only for address {primary.address}"
+                    _(f"You can buy permit only for address {primary.address}")
                 )
 
         return True

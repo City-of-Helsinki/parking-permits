@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import requests
 from django.conf import settings
 from django.utils import timezone as tz
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models.driving_class import DrivingClass

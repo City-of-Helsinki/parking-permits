@@ -11,7 +11,7 @@ from ariadne import (
 )
 from ariadne.contrib.federation import FederatedObjectType
 from django.db import transaction
-from django.utils.translation import ugettext
+from django.utils.translation import gettext_lazy as _
 
 from project.settings import BASE_DIR
 
@@ -148,13 +148,13 @@ def validate_customer_address(customer, address_id):
     allowed_addr_ids = [str(addr_id) for addr_id in addr_ids if addr_id is not None]
     if address_id not in allowed_addr_ids:
         logger.error("Not a valid customer address")
-        raise AddressError(ugettext("Not a valid customer address"))
+        raise AddressError(_("Not a valid customer address"))
 
     try:
         return Address.objects.get(id=address_id)
     except Address.DoesNotExist:
         logger.error(f"updatePermitsAddress: address with id {address_id} not found")
-        raise ObjectNotFound(ugettext("Address not found"))
+        raise ObjectNotFound(_("Address not found"))
 
 
 @query.field("getUpdateAddressPriceChanges")
@@ -168,7 +168,7 @@ def resolve_get_update_address_price_changes(_, info, address_id):
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
-        raise ObjectNotFound(ugettext("No active permits for the customer"))
+        raise ObjectNotFound(_("No active permits for the customer"))
 
     permit_price_changes = []
     for permit in permits:
@@ -353,7 +353,7 @@ def resolve_change_address(_, info, address_id, iban=None):
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
-        raise ObjectNotFound(ugettext("No active permits for the customer"))
+        raise ObjectNotFound(_("No active permits for the customer"))
 
     # check that active permits are all in the same zone
     permit_zone_ids = [permit.parking_zone_id for permit in permits]
@@ -361,7 +361,7 @@ def resolve_change_address(_, info, address_id, iban=None):
         logger.error(
             f"updatePermitsAddress: active permits have conflict parking zones. Customer: {customer}"
         )
-        raise ParkingZoneError(ugettext("Conflict parking zones for active permits"))
+        raise ParkingZoneError(_("Conflict parking zones for active permits"))
 
     response = {"success": True}
 
