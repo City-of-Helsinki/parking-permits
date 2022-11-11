@@ -168,8 +168,11 @@ class CustomerPermit:
                 if not is_user_of_vehicle:
                     raise TraficomFetchVehicleError(
                         _(
-                            f"Customer is not an owner or holder of a vehicle {registration}"
+                            "Customer is not an owner or holder of a vehicle %(registration)s"
                         )
+                        % {
+                            "registration": registration,
+                        }
                     )
 
                 has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
@@ -258,7 +261,10 @@ class CustomerPermit:
                 and primary.contract_type == FIXED_PERIOD
                 and contract_type != FIXED_PERIOD
             ):
-                raise InvalidContractType(_(f"Only {FIXED_PERIOD} is allowed"))
+                raise InvalidContractType(
+                    _("Only %(fixed_period)s is allowed")
+                    % {"fixed_period": FIXED_PERIOD}
+                )
 
             if permit_id:
                 permit, is_primary = self._get_permit(permit_id)
@@ -385,7 +391,8 @@ class CustomerPermit:
         # User can not exceed max allowed permit per user
         if self.customer_permit_query.count() > max_allowed_permit:
             raise PermitLimitExceeded(
-                _(f"You can have a max of {max_allowed_permit} permits.")
+                _("You can have a max of %(max_allowed_permit)s permits.")
+                % {"max_allowed_permit": max_allowed_permit}
             )
 
         # If user has existing permit that is in valid or processing state then
@@ -395,7 +402,8 @@ class CustomerPermit:
             primary, secondary = self._get_primary_and_secondary_permit()
             if primary.address_id != address_id and primary.status != DRAFT:
                 raise InvalidUserAddress(
-                    _(f"You can buy permit only for address {primary.address}")
+                    _("You can buy permit only for address %(primary_address)s.")
+                    % {"primary_address": primary.address}
                 )
 
         return True
