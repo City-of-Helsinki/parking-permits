@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-11 09:19+0200\n"
+"POT-Creation-Date: 2022-11-11 09:45+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -115,9 +115,9 @@ msgstr ""
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
 
-#, python-brace-format
-msgid "Customer is not an owner or holder of a vehicle {registration}"
-msgstr "Et ole ajoneuvon {registration} omistaja tai haltija"
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr "Et ole ajoneuvon %(registration)s omistaja tai haltija"
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Puutteelliset ajokorttitiedot"
@@ -128,9 +128,9 @@ msgstr "Pysäköintitunnusta ei voida poistaa"
 msgid "Contract type is required"
 msgstr "Sopimustyyppi on pakollinen"
 
-#, python-brace-format
-msgid "Only {FIXED_PERIOD} is allowed"
-msgstr "Vain {FIXED_PERIOD} on sallittu"
+#, python-format
+msgid "Only %(fixed_period)s is allowed"
+msgstr "Vain %(fixed_period)s on sallittu"
 
 msgid "This is not a draft permit and can not be edited"
 msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"
@@ -138,13 +138,14 @@ msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"
 msgid "Invalid user address."
 msgstr "Epäkelpo asiakkaan osoite"
 
-#, python-brace-format
-msgid "You can have a max of {max_allowed_permit} permits."
-msgstr "Sinulla voi olla enimmillään {max_allowed_permit} pysäköintitunnusta."
+#, python-format
+msgid "You can have a max of %(max_allowed_permit)s permits."
+msgstr ""
+"Sinulla voi olla enimmillään %(max_allowed_permit)s pysäköintitunnusta."
 
-#, python-brace-format
-msgid "You can buy permit only for address {primary.address}"
-msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle {primary.address}"
+#, python-format
+msgid "You can buy permit only for address %(primary_address)s."
+msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle %(primary_address)s."
 
 msgid "Name"
 msgstr "Nimi"
