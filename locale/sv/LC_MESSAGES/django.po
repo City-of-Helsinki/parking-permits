@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-10-31 13:52+0200\n"
+"POT-Creation-Date: 2022-11-11 09:52+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,6 +18,44 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "NotSet"
+msgstr ""
+
+msgid "Info"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Fatal"
+msgstr ""
+
+#, fuzzy
+#| msgid "Last name"
+msgid "Logger name"
+msgstr "Efternamn"
+
+msgid "Logging level"
+msgstr ""
+
+msgid "Is sent"
+msgstr ""
+
+msgid "Message"
+msgstr ""
+
+msgid "Created at"
+msgstr "Skapad kl"
+
+msgid "Permit search error"
+msgstr ""
+
 msgid "No parking zone found for the location"
 msgstr "Det finns inte parkering zon för det plats"
 
@@ -26,6 +64,11 @@ msgstr "Flera parkerings zon till denna plats"
 
 msgid "Person not found"
 msgstr "Ingen kund hittas"
+
+#, fuzzy
+#| msgid "Customer service contact info"
+msgid "Customer search error"
+msgstr "Kundtjänst kontaktuppgifter"
 
 msgid "Vehicle not found for the customer"
 msgstr "Fordonet hjittasdes inte för kunden"
@@ -43,6 +86,80 @@ msgstr "Parkeringtecken hittades inte"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Kunden kan inte bytas till detta parkeringstecken"
+
+msgid "IBAN is not provided"
+msgstr ""
+
+msgid "Product search error"
+msgstr ""
+
+msgid "Refund search error"
+msgstr ""
+
+#, fuzzy
+#| msgid "Person not found"
+msgid "Refund not found"
+msgstr "Ingen kund hittas"
+
+msgid "Order search error"
+msgstr ""
+
+#, fuzzy
+#| msgid "Address security ban"
+msgid "Address search error"
+msgstr "Spärrmarkering"
+
+msgid "Announcement search error"
+msgstr ""
+
+#, fuzzy
+#| msgid "Person not found"
+msgid "Announcement not found"
+msgstr "Ingen kund hittas"
+
+msgid "You already have a valid permit for a given vehicle."
+msgstr ""
+
+msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
+msgstr ""
+
+msgid "Permit for a given vehicle already exist."
+msgstr ""
+
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr ""
+
+msgid "Customer does not have a valid driving licence"
+msgstr ""
+
+msgid "Non draft permit can not be deleted"
+msgstr ""
+
+#, fuzzy
+#| msgid "Contract type"
+msgid "Contract type is required"
+msgstr "Kontraktstyp"
+
+#, python-format
+msgid "Only %(fixed_period)s is allowed"
+msgstr ""
+
+msgid "This is not a draft permit and can not be edited"
+msgstr ""
+
+#, fuzzy
+#| msgid "Not a valid customer address"
+msgid "Invalid user address."
+msgstr "Inte en giltig kundadress"
+
+#, python-format
+msgid "You can have a max of %(max_allowed_permit)s permits."
+msgstr ""
+
+#, python-format
+msgid "You can buy permit only for address %(primary_address)s."
+msgstr ""
 
 msgid "Name"
 msgstr "Namn"
@@ -82,9 +199,6 @@ msgstr "Betalningstid"
 
 msgid "Amount"
 msgstr "Sum"
-
-msgid "Created at"
-msgstr "Skapad kl"
 
 msgid "Product type"
 msgstr "Produkttyp"
@@ -501,18 +615,6 @@ msgstr "Tillfällig fordon"
 msgid "Temporary vehicles"
 msgstr "Tillfälliga fordon"
 
-msgid "Electric"
-msgstr "El"
-
-msgid "Bensin"
-msgstr "Bensin"
-
-msgid "Diesel"
-msgstr "Diesel"
-
-msgid "Bifuel"
-msgstr "Bifuel"
-
 msgid "M1"
 msgstr "M1"
 
@@ -579,8 +681,15 @@ msgstr "NEDC"
 msgid "WLTP"
 msgstr "WLTP"
 
-msgid "Power type"
-msgstr "Drivkraft"
+#, fuzzy
+#| msgid "Vehicle user"
+msgid "Vehicle power type"
+msgstr "Fordonsanvändare"
+
+#, fuzzy
+#| msgid "Vehicle users"
+msgid "Vehicle power types"
+msgstr "Fordonsanvändarer"
 
 msgid "NEDC maximum emission limit"
 msgstr "NEDC maximera"
@@ -602,6 +711,11 @@ msgstr "Fordonsanvändare"
 
 msgid "Vehicle users"
 msgstr "Fordonsanvändarer"
+
+#, fuzzy
+#| msgid "Power type"
+msgid "power_type"
+msgstr "Drivkraft"
 
 msgid "VehicleClass"
 msgstr "Fordonskategorier"
@@ -816,3 +930,15 @@ msgstr "Rätten till rabatt har tagits bort från fordonet."
 
 msgid "Discount right ends"
 msgstr "Rabatten till höger upphör"
+
+#~ msgid "Electric"
+#~ msgstr "El"
+
+#~ msgid "Bensin"
+#~ msgstr "Bensin"
+
+#~ msgid "Diesel"
+#~ msgstr "Diesel"
+
+#~ msgid "Bifuel"
+#~ msgstr "Bifuel"
