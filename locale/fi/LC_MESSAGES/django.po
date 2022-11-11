@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-10 14:29+0200\n"
+"POT-Creation-Date: 2022-11-11 09:19+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,6 +51,9 @@ msgstr "Viesti"
 msgid "Created at"
 msgstr "Luotu"
 
+msgid "Permit search error"
+msgstr "Tunnuksen hakuvirhe"
+
 msgid "No parking zone found for the location"
 msgstr "Pysäköintialuetta ei löytynyt tälle sijainnille"
 
@@ -59,6 +62,9 @@ msgstr "Useita pysäköintialueita löytyi tälle sijainnille"
 
 msgid "Person not found"
 msgstr "Henkilöä ei löytynyt"
+
+msgid "Customer search error"
+msgstr "Asiakkaan hakuvirhe"
 
 msgid "Vehicle not found for the customer"
 msgstr "Asiakkaan ajoneuvoa ei löytynyt"
@@ -74,6 +80,30 @@ msgstr "Pysäköintitunnusta ei löytynyt"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
+
+msgid "IBAN is not provided"
+msgstr "IBAN-tietoa ei annettu"
+
+msgid "Product search error"
+msgstr "Tuotteen hakuvirhe"
+
+msgid "Refund search error"
+msgstr "Palautteen hakuvirhe"
+
+msgid "Refund not found"
+msgstr "Palautetta ei löytynyt"
+
+msgid "Order search error"
+msgstr "Tilauksen hakuvirhe"
+
+msgid "Address search error"
+msgstr "Osoitteen hakuvirhe"
+
+msgid "Announcement search error"
+msgstr "Ilmoituksen hakuvirhe"
+
+msgid "Announcement not found"
+msgstr "Ilmoitusta ei löytynyt"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
@@ -100,7 +130,7 @@ msgstr "Sopimustyyppi on pakollinen"
 
 #, python-brace-format
 msgid "Only {FIXED_PERIOD} is allowed"
-msgstr "Vain  {FIXED_PERIOD} on sallittu"
+msgstr "Vain {FIXED_PERIOD} on sallittu"
 
 msgid "This is not a draft permit and can not be edited"
 msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"

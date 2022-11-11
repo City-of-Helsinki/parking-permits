@@ -91,7 +91,7 @@ def get_permits(page_input, order_by=None, search_params=None):
     form = PermitSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Permit Search Error: {form.errors}")
-        raise SearchError("Permit search error")
+        raise SearchError(_("Permit search error"))
     return form.get_paged_queryset()
 
 
@@ -171,7 +171,7 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     form = CustomerSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Customer search error: {form.errors}")
-        raise SearchError("Customer search error")
+        raise SearchError(_("Customer search error"))
     return form.get_paged_queryset()
 
 
@@ -463,7 +463,7 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
     permit = ParkingPermit.objects.get(id=permit_id)
     if permit.can_be_refunded:
         if not iban:
-            raise RefundError("IBAN is not provided")
+            raise RefundError(_("IBAN is not provided"))
         description = f"Refund for ending permit #{permit.id}"
         refund = Refund.objects.create(
             name=str(permit.customer),
@@ -505,7 +505,7 @@ def resolve_products(obj, info, page_input, order_by=None):
     form = ProductSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Product Search Error: {form.errors}")
-        raise SearchError("Product search error")
+        raise SearchError(_("Product search error"))
     return form.get_paged_queryset()
 
 
@@ -582,7 +582,7 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
     form = RefundSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Refund Search Error: {form.errors}")
-        raise SearchError("Refund search error")
+        raise SearchError(_("Refund search error"))
     return form.get_paged_queryset()
 
 
@@ -621,7 +621,7 @@ def resolve_refund(obj, info, refund_id):
     try:
         return Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
-        raise ObjectNotFound("Refund not found")
+        raise ObjectNotFound(_("Refund not found"))
 
 
 @mutation.field("updateRefund")
@@ -632,7 +632,7 @@ def resolve_update_refund(obj, info, refund_id, refund):
     try:
         r = Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
-        raise ObjectNotFound("Refund not found")
+        raise ObjectNotFound(_("Refund not found"))
 
     r.name = refund["name"]
     r.iban = refund["iban"]
@@ -654,7 +654,7 @@ def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form = OrderSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Order Search Error: {form.errors}")
-        raise SearchError("Order search error")
+        raise SearchError(_("Order search error"))
     return form.get_paged_queryset()
 
 
@@ -671,7 +671,7 @@ def resolve_addresses(obj, info, page_input, order_by=None, search_params=None):
     form = AddressSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Address Search Error: {form.errors}")
-        raise SearchError("Address search error")
+        raise SearchError(_("Address search error"))
     return form.get_paged_queryset()
 
 
@@ -801,7 +801,7 @@ def resolve_announcements(obj, info, page_input, order_by=None):
     form = AnnouncementSearchForm(form_data)
     if not form.is_valid():
         logger.error(f"Announcement search error: {form.errors}")
-        raise SearchError("Announcement search error")
+        raise SearchError(_("Announcement search error"))
     return form.get_paged_queryset()
 
 
@@ -812,7 +812,7 @@ def resolve_announcement(obj, info, announcement_id):
     try:
         return Announcement.objects.get(id=announcement_id)
     except Announcement.DoesNotExist:
-        raise ObjectNotFound("Announcement not found")
+        raise ObjectNotFound(_("Announcement not found"))
 
 
 def post_create_announcement(announcement: Announcement):
