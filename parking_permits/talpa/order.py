@@ -169,10 +169,9 @@ class TalpaOrderManager:
     @classmethod
     def send_to_talpa(cls, order):
         order_data = cls._create_order_data(order)
-        logger.info(f"Order data sent to talpa: {json.dumps(order_data)}")
-        response = requests.post(
-            cls.url, data=json.dumps(order_data), headers=cls.headers
-        )
+        order_data_raw = json.dumps(order_data, default=str)
+        logger.info(f"Order data sent to talpa: {order_data_raw}")
+        response = requests.post(cls.url, data=order_data_raw, headers=cls.headers)
         if response.status_code >= 300:
             logger.error(
                 f"Create talpa order failed for order {order}. Error: {response.text}"
