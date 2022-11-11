@@ -60,6 +60,7 @@ from .forms import (
 from .models.order import OrderStatus
 from .models.parking_permit import ContractType
 from .models.refund import RefundStatus
+from .models.vehicle import VehiclePowerType
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.mail import (
@@ -230,6 +231,13 @@ def update_or_create_customer(customer_info):
 
 
 def update_or_create_vehicle(vehicle_info):
+    try:
+        power_type = VehiclePowerType.objects.get(
+            identifier=vehicle_info["power_type"]["identifier"]
+        )
+    except VehiclePowerType.DoesNotExist:
+        raise ObjectNotFound(_("Vehicle power type not found"))
+
     vehicle_data = {
         "registration_number": vehicle_info["registration_number"],
         "manufacturer": vehicle_info["manufacturer"],
@@ -240,7 +248,7 @@ def update_or_create_vehicle(vehicle_info):
         "euro_class": vehicle_info["euro_class"],
         "emission": vehicle_info["emission"],
         "emission_type": vehicle_info["emission_type"],
-        "power_type": vehicle_info["power_type"],
+        "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(
         registration_number=vehicle_info["registration_number"], defaults=vehicle_data
