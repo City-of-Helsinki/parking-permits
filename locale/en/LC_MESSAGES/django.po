@@ -1,0 +1,888 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-11-11 14:52+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "NotSet"
+msgstr ""
+
+msgid "Info"
+msgstr ""
+
+msgid "Warning"
+msgstr ""
+
+msgid "Debug"
+msgstr ""
+
+msgid "Error"
+msgstr ""
+
+msgid "Fatal"
+msgstr ""
+
+msgid "Logger name"
+msgstr ""
+
+msgid "Logging level"
+msgstr ""
+
+msgid "Is sent"
+msgstr ""
+
+msgid "Message"
+msgstr ""
+
+msgid "Created at"
+msgstr ""
+
+msgid "Permit search error"
+msgstr ""
+
+msgid "No parking zone found for the location"
+msgstr ""
+
+msgid "Multiple parking zones found for the location"
+msgstr ""
+
+msgid "Person not found"
+msgstr ""
+
+msgid "Customer search error"
+msgstr ""
+
+msgid "Vehicle not found for the customer"
+msgstr ""
+
+msgid "Vehicle power type not found"
+msgstr ""
+
+msgid "Cannot create more than 2 permits"
+msgstr ""
+
+msgid "The validity period of secondary permit cannot exceeds the primary one"
+msgstr ""
+
+msgid "Parking permit not found"
+msgstr ""
+
+msgid "Cannot change the customer of the permit"
+msgstr ""
+
+msgid "IBAN is not provided"
+msgstr ""
+
+msgid "Product search error"
+msgstr ""
+
+msgid "Refund search error"
+msgstr ""
+
+msgid "Refund not found"
+msgstr ""
+
+msgid "Order search error"
+msgstr ""
+
+msgid "Address search error"
+msgstr ""
+
+msgid "Announcement search error"
+msgstr ""
+
+msgid "Announcement not found"
+msgstr ""
+
+msgid "You already have a valid permit for a given vehicle."
+msgstr ""
+
+msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
+msgstr ""
+
+msgid "Permit for a given vehicle already exist."
+msgstr ""
+
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr ""
+
+msgid "Customer does not have a valid driving licence"
+msgstr ""
+
+msgid "Non draft permit can not be deleted"
+msgstr ""
+
+msgid "Contract type is required"
+msgstr ""
+
+#, python-format
+msgid "Only %(fixed_period)s is allowed"
+msgstr ""
+
+msgid "This is not a draft permit and can not be edited"
+msgstr ""
+
+msgid "Invalid user address."
+msgstr ""
+
+#, python-format
+msgid "You can have a max of %(max_allowed_permit)s permits."
+msgstr ""
+
+#, python-format
+msgid "You can buy permit only for address %(primary_address)s."
+msgstr ""
+
+msgid "Name"
+msgstr ""
+
+msgid "Registration number"
+msgstr ""
+
+msgid "Permanent address"
+msgstr ""
+
+msgid "Temporary address"
+msgstr ""
+
+msgid "Parking zone"
+msgstr ""
+
+msgid "Start time"
+msgstr ""
+
+msgid "End time"
+msgstr ""
+
+msgid "Status"
+msgstr ""
+
+msgid "Address"
+msgstr ""
+
+msgid "Permit type"
+msgstr ""
+
+msgid "Order number"
+msgstr ""
+
+msgid "Paid time"
+msgstr ""
+
+msgid "Amount"
+msgstr ""
+
+msgid "Product type"
+msgstr ""
+
+msgid "Price"
+msgstr ""
+
+msgid "VAT"
+msgstr ""
+
+msgid "Validity period"
+msgstr ""
+
+msgid "Modified at"
+msgstr ""
+
+msgid "Modified by"
+msgstr ""
+
+msgid "City of Helsinki"
+msgstr ""
+
+msgid "Urban Environment Division"
+msgstr ""
+
+msgid "Parking permits"
+msgstr ""
+
+msgid "Permit ID"
+msgstr ""
+
+msgid "Customer"
+msgstr ""
+
+msgid "Area"
+msgstr ""
+
+msgid "Vehicle"
+msgstr ""
+
+msgid "Type"
+msgstr ""
+
+msgid "Resident permit"
+msgstr ""
+
+msgid "Refunds"
+msgstr ""
+
+msgid "Refund ID"
+msgstr ""
+
+msgid "incl. VAT"
+msgstr ""
+
+msgid "IBAN"
+msgstr ""
+
+msgid "Extra info"
+msgstr ""
+
+msgid "Order ID"
+msgstr ""
+
+msgid "Order payment type"
+msgstr ""
+
+msgid "Order payment time"
+msgstr ""
+
+msgid "Refund"
+msgstr ""
+
+msgid "Order info"
+msgstr ""
+
+msgid "Primary permit"
+msgstr ""
+
+msgid "Secondary permit"
+msgstr ""
+
+msgid "Time created"
+msgstr ""
+
+msgid "Time modified"
+msgstr ""
+
+msgid "Street name"
+msgstr ""
+
+msgid "Street name sv"
+msgstr ""
+
+msgid "Street number"
+msgstr ""
+
+msgid "City"
+msgstr ""
+
+msgid "City sv"
+msgstr ""
+
+msgid "Postal code"
+msgstr ""
+
+msgid "Location (2D)"
+msgstr ""
+
+msgid "Start date"
+msgstr ""
+
+msgid "End date"
+msgstr ""
+
+msgid "Zone"
+msgstr ""
+
+msgid "Addresses"
+msgstr ""
+
+msgid "Subject (EN)"
+msgstr ""
+
+msgid "Content (EN)"
+msgstr ""
+
+msgid "Subject (FI)"
+msgstr ""
+
+msgid "Content (FI)"
+msgstr ""
+
+msgid "Subject (SV)"
+msgstr ""
+
+msgid "Content (SV)"
+msgstr ""
+
+msgid "Company name"
+msgstr ""
+
+msgid "Business Id"
+msgstr ""
+
+msgid "Company owner"
+msgstr ""
+
+msgid "Company"
+msgstr ""
+
+msgid "Companies"
+msgstr ""
+
+msgid "Finnish"
+msgstr ""
+
+msgid "Swedish"
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "Source system"
+msgstr ""
+
+msgid "Source id"
+msgstr ""
+
+msgid "First name"
+msgstr ""
+
+msgid "Last name"
+msgstr ""
+
+msgid "National identification number"
+msgstr ""
+
+msgid "Primary address"
+msgstr ""
+
+msgid "Other address"
+msgstr ""
+
+msgid "Email"
+msgstr ""
+
+msgid "Phone number"
+msgstr ""
+
+msgid "Address security ban"
+msgstr ""
+
+msgid "Driver's license checked"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Customers"
+msgstr ""
+
+msgid "Identifier"
+msgstr ""
+
+msgid "Driving class"
+msgstr ""
+
+msgid "Driving classes"
+msgstr ""
+
+msgid "Driving licence"
+msgstr ""
+
+msgid "Driving licences"
+msgstr ""
+
+msgid "Created by"
+msgstr ""
+
+msgid "Confirmed"
+msgstr ""
+
+msgid "Cancelled"
+msgstr ""
+
+msgid "Talpa subscription id"
+msgstr ""
+
+msgid "Period unit"
+msgstr ""
+
+msgid "Period frequency"
+msgstr ""
+
+msgid "Subscription"
+msgstr ""
+
+msgid "Subscriptions"
+msgstr ""
+
+msgid "Online payment"
+msgstr ""
+
+msgid "Cashier payment"
+msgstr ""
+
+msgid "Draft"
+msgstr ""
+
+msgid "Talpa order id"
+msgstr ""
+
+msgid "Talpa checkout url"
+msgstr ""
+
+msgid "Talpa receipt_url"
+msgstr ""
+
+msgid "Payment type"
+msgstr ""
+
+msgid "Order status"
+msgstr ""
+
+msgid "permits"
+msgstr ""
+
+msgid "Order"
+msgstr ""
+
+msgid "Orders"
+msgstr ""
+
+msgid "Talpa order item id"
+msgstr ""
+
+msgid "Product"
+msgstr ""
+
+msgid "Parking permit"
+msgstr ""
+
+msgid "Unit price"
+msgstr ""
+
+msgid "Payment unit price"
+msgstr ""
+
+msgid "Quantity"
+msgstr ""
+
+msgid "Order item"
+msgstr ""
+
+msgid "Order items"
+msgstr ""
+
+msgid "Company permit"
+msgstr ""
+
+msgid "Fixed period"
+msgstr ""
+
+msgid "Open ended"
+msgstr ""
+
+msgid "Immediately"
+msgstr ""
+
+msgid "From"
+msgstr ""
+
+msgid "Arrived"
+msgstr ""
+
+msgid "Processing"
+msgstr ""
+
+msgid "Accepted"
+msgstr ""
+
+msgid "Rejected"
+msgstr ""
+
+msgid "Payment in progress"
+msgstr ""
+
+msgid "Valid"
+msgstr ""
+
+msgid "Closed"
+msgstr ""
+
+msgid "Vehicle changed date"
+msgstr ""
+
+msgid "Contract type"
+msgstr ""
+
+msgid "Start type"
+msgstr ""
+
+msgid "Month count"
+msgstr ""
+
+msgid "Description"
+msgstr ""
+
+msgid ""
+"Cannot close primary vehicle permit if an active secondary vehicle permit "
+"exists"
+msgstr ""
+
+msgid "Description sv"
+msgstr ""
+
+msgid "Area (2D)"
+msgstr ""
+
+msgid "Parking zones"
+msgstr ""
+
+msgid "Resident"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
+msgid "Prices"
+msgstr ""
+
+msgid "Monthly"
+msgstr ""
+
+msgid "Pieces"
+msgstr ""
+
+msgid "Product catalog error, please report to admin"
+msgstr ""
+
+msgid "Talpa product id"
+msgstr ""
+
+msgid "zone"
+msgstr ""
+
+msgid "Unit"
+msgstr ""
+
+msgid "Low emission discount"
+msgstr ""
+
+msgid "Products"
+msgstr ""
+
+msgid "Open"
+msgstr ""
+
+msgid "Request for approval"
+msgstr ""
+
+msgid "Accepted at"
+msgstr ""
+
+msgid "Accepted by"
+msgstr ""
+
+msgid "Temporary vehicle"
+msgstr ""
+
+msgid "Temporary vehicles"
+msgstr ""
+
+msgid "M1"
+msgstr ""
+
+msgid "M2"
+msgstr ""
+
+msgid "N1"
+msgstr ""
+
+msgid "N2"
+msgstr ""
+
+msgid "L3e-A1"
+msgstr ""
+
+msgid "L3e-A2"
+msgstr ""
+
+msgid "L3e-A3"
+msgstr ""
+
+msgid "L3e-A1E"
+msgstr ""
+
+msgid "L3e-A2E"
+msgstr ""
+
+msgid "L3e-A3E"
+msgstr ""
+
+msgid "L3e-A1T"
+msgstr ""
+
+msgid "L3e-A2T"
+msgstr ""
+
+msgid "L3e-A3T"
+msgstr ""
+
+msgid "L4e"
+msgstr ""
+
+msgid "L5e-A"
+msgstr ""
+
+msgid "L5e-B"
+msgstr ""
+
+msgid "L6e-A"
+msgstr ""
+
+msgid "L6e-B"
+msgstr ""
+
+msgid "L6e-BP"
+msgstr ""
+
+msgid "L6e-BU"
+msgstr ""
+
+msgid "NEDC"
+msgstr ""
+
+msgid "WLTP"
+msgstr ""
+
+msgid "Vehicle power type"
+msgstr ""
+
+msgid "Vehicle power types"
+msgstr ""
+
+msgid "NEDC maximum emission limit"
+msgstr ""
+
+msgid "WLTP maximum emission limit"
+msgstr ""
+
+msgid "Euro minimum class limit"
+msgstr ""
+
+msgid "Low-emission criteria"
+msgstr ""
+
+msgid "Low-emission criterias"
+msgstr ""
+
+msgid "Vehicle user"
+msgstr ""
+
+msgid "Vehicle users"
+msgstr ""
+
+msgid "power_type"
+msgstr ""
+
+msgid "VehicleClass"
+msgstr ""
+
+msgid "Manufacturer"
+msgstr ""
+
+msgid "Model"
+msgstr ""
+
+msgid "Total weigh of vehicle"
+msgstr ""
+
+msgid "Euro class"
+msgstr ""
+
+msgid "Emission"
+msgstr ""
+
+msgid "Emission type"
+msgstr ""
+
+msgid "Serial number"
+msgstr ""
+
+msgid "Last inspection date"
+msgstr ""
+
+msgid "Update from traficom on"
+msgstr ""
+
+msgid "Vehicles"
+msgstr ""
+
+msgid "Not a valid customer address"
+msgstr ""
+
+msgid "Address not found"
+msgstr ""
+
+msgid "No active permits for the customer"
+msgstr ""
+
+msgid "Conflict parking zones for active permits"
+msgstr ""
+
+msgid "New parking permit has been created for you"
+msgstr ""
+
+msgid "Your parking permit information has been updated"
+msgstr ""
+
+msgid "Your order has ended"
+msgstr ""
+
+msgid "Temporary vehicle attached to your permit"
+msgstr ""
+
+msgid "Your parking permit will expire soon"
+msgstr ""
+
+msgid "The vehicle is entitled to a discount"
+msgstr ""
+
+msgid "Vehicle discount right expired"
+msgstr ""
+
+msgid "Your refund has been registered"
+msgstr ""
+
+msgid "Your refund has been accepted"
+msgstr ""
+
+#, python-format
+msgid ""
+"Could not find vehicle detail with given %(registration_number)s "
+"registration number"
+msgstr ""
+
+#, python-format
+msgid "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
+msgstr ""
+
+msgid ""
+"Could not find any driving license information for given customer from "
+"Traficom"
+msgstr ""
+
+msgid "Failed to fetch data from traficom"
+msgstr ""
+
+msgid "Duration of parking permit"
+msgstr ""
+
+#, python-format
+msgid "Fixed period %(month)d kk"
+msgstr ""
+
+msgid "Parking permit start date*"
+msgstr ""
+
+msgid ""
+"* The permit is valid from the selected start date once the payment has been "
+"accepted"
+msgstr ""
+
+msgid "Parking permit expiration date"
+msgstr ""
+
+msgid "Failed to create the order"
+msgstr ""
+
+msgid ""
+"This message has been sent automatically from the system. Please do not "
+"reply to this message as replies will not be processed."
+msgstr ""
+
+msgid "Parking permit terms of usage"
+msgstr ""
+
+msgid "Support"
+msgstr ""
+
+msgid "Feedback"
+msgstr ""
+
+msgid "Customer service contact info"
+msgstr ""
+
+msgid ""
+"Your parking permit will expire soon. You can renew your permit by logging "
+"in to the service again."
+msgstr ""
+
+msgid "Thank you for your order!"
+msgstr ""
+
+msgid ""
+"The parking permit is electronic and parking permit enforcers will identify "
+"permit validity based on your vehicle licence plate number."
+msgstr ""
+
+msgid "Your parking permit validity period will end at"
+msgstr ""
+
+msgid ""
+"If you want to continue permit usage, you will need to make a new order."
+msgstr ""
+
+msgid ""
+"Thank you for your order! The parking permit is electronic and parking "
+"permit enforcers will identify permit validity based on your vehicle licence "
+"plate number."
+msgstr ""
+
+msgid ""
+"Your refund has been accepted and will appear on the account you reported "
+"within about a week"
+msgstr ""
+
+msgid "Total refundable amount"
+msgstr ""
+
+msgid ""
+"You are entitled to a refund and it has been registered. You will receive a "
+"separate notification when the return has been approved."
+msgstr ""
+
+msgid "Temporary vehicle information has been updated to your permit."
+msgstr ""
+
+msgid "Original vehicle has been restored to your permit."
+msgstr ""
+
+#, python-format
+msgid ""
+"The attached vehicle is entitled to a 50%% discount in street parking when "
+"paying with parking applications."
+msgstr ""
+
+msgid "Discount: Low-emission vehicle"
+msgstr ""
+
+msgid "Discount valid from"
+msgstr ""
+
+msgid "The right to a discount has been removed from the vehicle."
+msgstr ""
+
+msgid "Discount right ends"
+msgstr ""
