@@ -3,8 +3,8 @@ from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
-from django.utils import timezone
 from django.utils import timezone as tz
+from django.utils.translation import gettext as _
 from freezegun import freeze_time
 
 from parking_permits.customer_permit import CustomerPermit
@@ -60,7 +60,7 @@ def get_end_time(start, month=0):
     return tz.localtime(start + relativedelta(months=month))
 
 
-@freeze_time(timezone.make_aware(datetime(2022, 1, 7)))
+@freeze_time(tz.make_aware(datetime(2022, 1, 7)))
 class GetCustomerPermitTestCase(TestCase):
     def setUp(self):
         self.customer_a = CustomerFactory(
@@ -137,7 +137,7 @@ class GetCustomerPermitTestCase(TestCase):
         self.assertEqual(len(permits), 0)
 
 
-@freeze_time(timezone.make_aware(datetime(2022, 1, 7)))
+@freeze_time(tz.make_aware(datetime(2022, 1, 7)))
 class CreateCustomerPermitTestCase(TestCase):
     def setUp(self):
         self.customer_a = CustomerFactory(
@@ -184,7 +184,7 @@ class CreateCustomerPermitTestCase(TestCase):
 
     def test_customer_a_can_not_create_permit_in_zone_outside_his_address(self):
         address = AddressFactory()
-        with self.assertRaisesMessage(InvalidUserAddress, "Invalid user address."):
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.customer_a.id).create(address.id, "ABC-123")
 
 
@@ -204,7 +204,7 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.c_b_draft = ParkingPermitFactory(customer=self.customer_b, status=DRAFT)
 
     def test_customer_a_can_not_delete_non_draft_permit(self):
-        msg = "Non draft permit can not be deleted"
+        msg = _("Non draft permit can not be deleted")
         with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_closed.id)
 
@@ -279,12 +279,12 @@ class UpdateCustomerPermitTestCase(TestCase):
     def test_can_not_update_address_id_of_drafts_if_not_in_his_address(self):
         address = AddressFactory()
         data = {"address_id": str(address.id)}
-        with self.assertRaisesMessage(InvalidUserAddress, "Invalid user address."):
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.cus_a.id).update(data)
 
     def test_can_not_update_address_id_of_valid_if_not_in_his_address(self):
         data = {"address_id": str(self.cus_b.other_address.id)}
-        with self.assertRaisesMessage(InvalidUserAddress, "Invalid user address."):
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.cus_a.id).update(data)
 
     def test_can_update_zone_id_of_all_drafts_with_zone_that_either_of_his_address_has(
@@ -306,7 +306,9 @@ class UpdateCustomerPermitTestCase(TestCase):
             self.c_a_draft.status = status
             self.c_a_draft.save(update_fields=["status"])
             data = {"address_id": str(self.cus_a.other_address.id)}
-            msg = f"You can buy permit only for address {self.cus_a.primary_address}"
+            msg = _("You can buy permit only for address %(primary_address)s.") % {
+                "primary_address": self.cus_a.primary_address
+            }
             with self.assertRaisesMessage(InvalidUserAddress, msg):
                 CustomerPermit(self.cus_a.id).update(data)
 
@@ -381,7 +383,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         )
 
         permit_id = str(secondary.id)
-        msg = "Only FIXED_PERIOD is allowed"
+        msg = _("Only %(fixed_period)s is allowed") % {"fixed_period": FIXED_PERIOD}
         with self.assertRaisesMessage(InvalidContractType, msg):
             data = {"contract_type": OPEN_ENDED}
             CustomerPermit(customer.id).update(data, permit_id=permit_id)
@@ -396,12 +398,12 @@ class UpdateCustomerPermitTestCase(TestCase):
         permit = ParkingPermitFactory(customer=customer, status=VALID)
         data = {"contract_type": FIXED_PERIOD}
         permit_id = str(permit.id)
-        msg = "This is not a draft permit and can not be edited"
+        msg = _("This is not a draft permit and can not be edited")
         with self.assertRaisesMessage(NonDraftPermitUpdateError, msg):
             CustomerPermit(customer.id).update(data, permit_id=permit_id)
 
     def test_throw_error_for_missing_contract_type(self):
-        msg = "Contract type is required"
+        msg = _("Contract type is required")
         with self.assertRaisesMessage(InvalidContractType, msg):
             data = {"month_count": 1}
             CustomerPermit(self.cus_a.id).update(data, permit_id=str(self.c_a_draft.id))
