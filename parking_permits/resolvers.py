@@ -264,11 +264,11 @@ def resolve_update_permit_vehicle(
         new_order = Order.objects.create_renewal_order(
             customer, status=OrderStatus.CONFIRMED
         )
-        if permit_total_price_change < 0:
+        if permit_total_price_change > 0:
             refund = Refund.objects.create(
                 name=str(customer),
                 order=new_order,
-                amount=-permit_total_price_change,
+                amount=permit_total_price_change,
                 iban=iban if iban else "",
                 description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
             )
@@ -418,11 +418,11 @@ def resolve_change_address(_, info, address_id, iban=None):
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
-            if order_total_price_change < 0:
+            if order_total_price_change > 0:
                 refund = Refund.objects.create(
                     name=str(customer),
                     order=order,
-                    amount=-order_total_price_change,
+                    amount=order_total_price_change,
                     iban=iban if iban else "",
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
