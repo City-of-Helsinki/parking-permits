@@ -491,7 +491,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def update_parkkihubi_permit(self):
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
-            data=json.dumps(self._get_parkkihubi_data()),
+            data=json.dumps(self._get_parkkihubi_data(), default=str),
             headers=self._get_parkkihubi_headers(),
         )
         self.synced_with_parkkihubi = response.status_code == 200
@@ -513,7 +513,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def create_parkkihubi_permit(self):
         response = requests.post(
             settings.PARKKIHUBI_OPERATOR_ENDPOINT,
-            data=json.dumps(self._get_parkkihubi_data()),
+            data=json.dumps(self._get_parkkihubi_data(), default=str),
             headers=self._get_parkkihubi_headers(),
         )
         self.synced_with_parkkihubi = response.status_code == 201

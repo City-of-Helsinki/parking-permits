@@ -180,7 +180,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         }
         response = requests.post(
             settings.TALPA_PRODUCT_EXPERIENCE_API,
-            data=json.dumps(data),
+            data=json.dumps(data, default=str),
             headers=headers,
         )
         if response.status_code == 201:
