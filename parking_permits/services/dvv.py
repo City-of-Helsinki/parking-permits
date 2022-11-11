@@ -100,7 +100,7 @@ def get_person_info(national_id_number):
     headers = get_request_headers()
     response = requests.post(
         settings.DVV_PERSONAL_INFO_URL,
-        json.dumps(data),
+        json.dumps(data, default=str),
         headers=headers,
     )
     if not response.ok:
