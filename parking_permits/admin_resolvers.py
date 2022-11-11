@@ -419,12 +419,12 @@ def resolve_update_resident_permit(obj, info, permit_id, permit_info, iban=None)
         reversion.set_comment(comment)
 
     if should_create_new_order:
-        if total_price_change < 0:
+        if total_price_change > 0:
             logger.info("Creating refund for current order")
             refund = Refund.objects.create(
                 name=str(customer),
                 order=permit.latest_order,
-                amount=-total_price_change,
+                amount=total_price_change,
                 iban=iban,
                 description=f"Refund for updating permit: {permit.id}",
             )
@@ -464,15 +464,16 @@ def resolve_end_permit(obj, info, permit_id, end_type, iban=None):
     if permit.can_be_refunded:
         if not iban:
             raise RefundError(_("IBAN is not provided"))
-        description = f"Refund for ending permit #{permit.id}"
-        refund = Refund.objects.create(
-            name=str(permit.customer),
-            order=permit.latest_order,
-            amount=permit.get_refund_amount_for_unused_items(),
-            iban=iban,
-            description=description,
-        )
-        send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+        if permit.get_refund_amount_for_unused_items() > 0:
+            description = f"Refund for ending permit #{permit.id}"
+            refund = Refund.objects.create(
+                name=str(permit.customer),
+                order=permit.latest_order,
+                amount=permit.get_refund_amount_for_unused_items(),
+                iban=iban,
+                description=description,
+            )
+            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
     if permit.is_open_ended:
         # TODO: handle open ended. Currently how to handle
         # open ended permit are not defined.

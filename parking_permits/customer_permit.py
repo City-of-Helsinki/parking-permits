@@ -309,16 +309,18 @@ class CustomerPermit:
             "primary_vehicle"
         )
         if all(permit.can_be_refunded for permit in permits):
-            refund = Refund.objects.create(
-                name=str(self.customer),
-                order=permits.first().latest_order,
-                amount=sum(
-                    [permit.get_refund_amount_for_unused_items() for permit in permits]
-                ),
-                iban=iban,
-                description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
+            total_sum = sum(
+                [permit.get_refund_amount_for_unused_items() for permit in permits]
             )
-            send_refund_email(RefundEmailType.CREATED, self.customer, refund)
+            if total_sum > 0:
+                refund = Refund.objects.create(
+                    name=str(self.customer),
+                    order=permits.first().latest_order,
+                    amount=total_sum,
+                    iban=iban,
+                    description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
+                )
+                send_refund_email(RefundEmailType.CREATED, self.customer, refund)
 
         for permit in permits:
             with reversion.create_revision():
