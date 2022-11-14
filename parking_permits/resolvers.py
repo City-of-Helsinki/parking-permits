@@ -83,9 +83,18 @@ def is_valid_address(address):
 
 @query.field("getPermits")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User retrieved parking permits.",
+        operation=audit.Operation.READ,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
 @convert_kwargs_to_snake_case
 def resolve_customer_permits(obj, info):
     request = info.context["request"]
+    # NOTE: get() actually fetches a *list* of items... and more importantly, also
+    # deletes items. And also updates vehicles. So this is not purely a read operation.
     return CustomerPermit(request.user.customer.id).get()
 
 
