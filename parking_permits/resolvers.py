@@ -300,6 +300,13 @@ def resolve_end_permit(
 
 @mutation.field("getVehicleInformation")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User retrieved vehicle information.",
+        operation=audit.Operation.READ,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
 @convert_kwargs_to_snake_case
 def resolve_get_vehicle_information(_, info, registration):
     request = info.context["request"]
