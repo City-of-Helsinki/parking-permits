@@ -328,12 +328,26 @@ def resolve_get_vehicle_information(_, info, registration):
 
 @mutation.field("updatePermitVehicle")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User changed parking permit's vehicle.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 def resolve_update_permit_vehicle(
-    _, info, permit_id, vehicle_id, consent_low_emission_accepted=False, iban=None
+    _,
+    info,
+    permit_id,
+    vehicle_id,
+    consent_low_emission_accepted=False,
+    iban=None,
+    audit_msg: AuditMsg = None,
 ):
     customer = info.context["request"].user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
+    audit_msg.target = permit
     new_vehicle = Vehicle.objects.get(id=vehicle_id)
     checkout_url = None
 
