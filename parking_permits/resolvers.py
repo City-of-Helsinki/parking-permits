@@ -244,6 +244,13 @@ def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = No
 
 @mutation.field("createParkingPermit")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User created parking permit.",
+        operation=audit.Operation.CREATE,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
 @convert_kwargs_to_snake_case
 def resolve_create_parking_permit(obj, info, address_id, registration):
     request = info.context["request"]
