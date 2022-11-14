@@ -441,7 +441,8 @@ def resolve_change_address(_, info, address_id, iban=None):
     open_ended_permits = permits.open_ended()
     open_ended_permits.update(parking_zone=new_zone, address=address)
 
-    permits = ParkingPermit.objects.active().filter(customer=customer)
+    # Get the updated permits.
+    permits = permits.all()
     for permit in permits:
         send_permit_email(PermitEmailType.UPDATED, permit)
 
