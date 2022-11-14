@@ -462,8 +462,17 @@ def resolve_add_temporary_vehicle(
 
 @mutation.field("removeTemporaryVehicle")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User removed a temporary vehicle for a permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
-def resolve_remove_temporary_vehicle(_, info, permit_id):
+def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = None):
+    # To avoid a database hit, we generate the target manually for the audit message.
+    audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).remove_temporary_vehicle(permit_id)
 
