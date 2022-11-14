@@ -226,9 +226,18 @@ def resolve_get_update_address_price_changes(_, info, address_id):
 
 
 @mutation.field("deleteParkingPermit")
+@audit_logger.autolog(
+    AuditMsg(
+        "User deleted parking permit.",
+        operation=audit.Operation.DELETE,
+    ),
+    add_kwarg=True,
+)
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_delete_parking_permit(obj, info, permit_id):
+def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = None):
+    # To avoid a database hit, we generate the target manually for the audit message.
+    audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).delete(permit_id)
 
