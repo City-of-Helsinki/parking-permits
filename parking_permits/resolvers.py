@@ -156,6 +156,13 @@ def resolve_user_profile(_, info, *args, audit_msg: AuditMsg = None):
 
 
 @mutation.field("updateLanguage")
+@audit_logger.autolog(
+    AuditMsg(
+        "User updated language.",
+        operation=audit.Operation.UPDATE,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
 @is_authenticated
 def resolve_update_language(_, info, lang):
     request = info.context["request"]
