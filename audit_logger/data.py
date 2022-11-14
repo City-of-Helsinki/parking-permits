@@ -40,7 +40,18 @@ class AuditMessage:
     date_time: datetime.datetime = field(init=False, default_factory=timezone.now)
 
     def asdict(self):
-        return asdict(self)
+        # asdict seems to use copy.deepcopy for the values, which doesn't work
+        # 100% with Django models. Might be related to reversion.
+        # Either way, we'll grab the models away from the message and add
+        # them back after creating the dict.
+        self_copy = self.replace(target=None, actor=None)
+        d = asdict(self_copy)
+        d["actor"] = self.actor
+        d["target"] = self.target
+        # replace will also reinitialize date_time, so need to add the
+        # original value back as well.
+        d["date_time"] = self.date_time
+        return d
 
     def replace(self, **changes):
         return replace(self, **changes)
