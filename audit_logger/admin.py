@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 import json
 import logging
 
@@ -10,7 +8,7 @@ from .models import AuditLog
 
 
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display = ("colored_msg", "create_datetime_format")
+    list_display = ("colored_msg", "operation", "status", "create_datetime_format")
     list_display_links = ("colored_msg",)
     list_filter = ("level",)
     list_per_page = 10
@@ -19,6 +17,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         "level",
         "is_sent",
         "message_format",
+        "traceback_format",
     )
 
     def colored_msg(self, instance):
@@ -48,6 +47,26 @@ class AuditLogAdmin(admin.ModelAdmin):
         )
 
     message_format.short_description = "Message"
+
+    def traceback_format(self, instance):
+        return format_html(
+            "<pre>{traceback}</pre>",
+            traceback=instance.trace or "",
+        )
+
+    traceback_format.short_description = "Traceback"
+
+    def status(self, instance):
+        status = instance.message.get("status", None)
+        return status or "-"
+
+    status.short_description = "Status"
+
+    def operation(self, instance):
+        operation = instance.message.get("operation", None)
+        return operation or "-"
+
+    operation.short_description = "Operation"
 
     def has_change_permission(self, request, obj=None):
         return False
