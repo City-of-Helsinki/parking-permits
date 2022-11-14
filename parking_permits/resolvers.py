@@ -13,8 +13,11 @@ from ariadne.contrib.federation import FederatedObjectType
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
+import audit_logger as audit
+from audit_logger import AuditMsg
 from project.settings import BASE_DIR
 
+from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
@@ -38,8 +41,22 @@ from .services.mail import (
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
+from .utils import get_user_from_resolver_args
 
 logger = logging.getLogger("db")
+audit_logger = audit.getAuditLoggerAdapter(
+    "audit",
+    dict(
+        origin=Origin.WEBSHOP,
+        reason=audit.Reason.SELF_SERVICE,
+        event_type=audit.EventType.APP,
+    ),
+    autolog_config={
+        "autoactor": get_user_from_resolver_args,
+        "autostatus": True,
+        "kwarg_name": "audit_msg",
+    },
+)
 
 helsinki_profile_query = load_schema_from_path(
     BASE_DIR / "parking_permits" / "schema" / "helsinki_profile.graphql"
@@ -89,7 +106,17 @@ def save_profile_address(address):
 
 @query.field("profile")
 @is_authenticated
-def resolve_user_profile(_, info, *args):
+@audit_logger.autolog(
+    # Note: This resolver either updates or creates a profile,
+    # so it's a read operation until a certain point.
+    AuditMsg(
+        "User retrieved user profile.",
+        operation=audit.Operation.READ,
+    ),
+    autotarget=audit.TARGET_RETURN,
+    add_kwarg=True,
+)
+def resolve_user_profile(_, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
@@ -107,7 +134,7 @@ def resolve_user_profile(_, info, *args):
         else None
     )
 
-    customer_obj, _ = Customer.objects.update_or_create(
+    customer_obj, created = Customer.objects.update_or_create(
         source_system=customer.get("source_system"),
         source_id=customer.get("source_id"),
         defaults={
@@ -116,6 +143,14 @@ def resolve_user_profile(_, info, *args):
             **{"primary_address": primary_address, "other_address": other_address},
         },
     )
+
+    if created:
+        audit_msg.operation = audit.Operation.CREATE
+        audit_msg.message = "User profile was created automatically."
+    else:
+        audit_msg.operation = audit.Operation.UPDATE
+        audit_msg.message = "User profile was updated automatically."
+
     customer_obj.fetch_driving_licence_detail()
     return customer_obj
 
