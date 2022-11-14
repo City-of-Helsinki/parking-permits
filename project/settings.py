@@ -55,6 +55,7 @@ env = environ.Env(
     SENTRY_DSN=(str, ""),
     SENTRY_ENVIRONMENT=(str, ""),
     THIRD_PARTY_PARKING_PROVIDER_EMAILS=(list, []),
+    DEBUG_SKIP_PARKKIHUBI_SYNC=(bool, False),
 )
 
 if path.exists(".env"):
@@ -281,6 +282,11 @@ sentry_sdk.init(
     send_default_pii=True,
     integrations=[DjangoIntegration()],
 )
+
+# Debug
+
+# Skip Parkkihubi sync on permit create/update.
+DEBUG_SKIP_PARKKIHUBI_SYNC = DEBUG and env("DEBUG_SKIP_PARKKIHUBI_SYNC")
 
 if DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

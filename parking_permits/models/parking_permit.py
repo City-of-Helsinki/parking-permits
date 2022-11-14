@@ -489,6 +489,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
 
     def update_parkkihubi_permit(self):
+        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
+            logger.debug("Skipped Parkkihubi sync in permit update.")
+            return
+
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
             data=json.dumps(self._get_parkkihubi_data(), default=str),
@@ -501,7 +505,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             logger.info("Parkkihubi update permit")
         else:
             logger.error(
-                "Failed to update permit to pakkihubi."
+                "Failed to update permit to Parkkihubi."
                 f"Error: {response.status_code} {response.reason}. "
                 f"Detail: {response.text}"
             )
@@ -511,6 +515,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             )
 
     def create_parkkihubi_permit(self):
+        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
+            logger.debug("Skipped Parkkihubi sync in permit creation.")
+            return
+
         response = requests.post(
             settings.PARKKIHUBI_OPERATOR_ENDPOINT,
             data=json.dumps(self._get_parkkihubi_data(), default=str),
@@ -523,7 +531,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             logger.info("Parkkihubi permit created")
         else:
             logger.error(
-                "Failed to create permit to pakkihubi."
+                "Failed to create permit to Parkkihubi."
                 f"Error: {response.status_code} {response.reason}. "
                 f"Detail: {response.text}"
             )
