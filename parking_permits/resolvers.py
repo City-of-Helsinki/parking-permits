@@ -479,9 +479,16 @@ def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = N
 
 @mutation.field("changeAddress")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User changed address.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 @transaction.atomic
-def resolve_change_address(_, info, address_id, iban=None):
+def resolve_change_address(_, info, address_id, iban=None, audit_msg: AuditMsg = None):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
     new_zone = address.zone
@@ -490,6 +497,8 @@ def resolve_change_address(_, info, address_id, iban=None):
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
         raise ObjectNotFound(_("No active permits for the customer"))
+
+    audit_msg.target = permits
 
     # check that active permits are all in the same zone
     permit_zone_ids = [permit.parking_zone_id for permit in permits]
