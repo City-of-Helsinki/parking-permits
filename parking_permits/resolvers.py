@@ -427,10 +427,25 @@ def resolve_create_order(_, info, audit_msg: AuditMsg = None):
 
 @mutation.field("addTemporaryVehicle")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User added a temporary vehicle for a permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
 def resolve_add_temporary_vehicle(
-    _, info, permit_id, registration, start_time, end_time
+    _,
+    info,
+    permit_id,
+    registration,
+    start_time,
+    end_time,
+    audit_msg: AuditMsg = None,
 ):
+    # To avoid a database hit, we generate the target manually for the audit message.
+    audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
     customer = request.user.customer
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
