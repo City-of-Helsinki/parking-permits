@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -542,6 +542,7 @@ class TestParkingPermit(TestCase):
     def test_should_return_correct_product_name(self):
         self.assertIsNotNone(self.permit.parking_zone.name)
 
+    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(201))
     def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(
         self, mock_post
@@ -550,6 +551,7 @@ class TestParkingPermit(TestCase):
         mock_post.assert_called_once()
         self.assertEqual(mock_post.return_value.status_code, 201)
 
+    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(400))
     def test_should_raise_error_when_creating_talpa_product_failed(self, mock_post):
         self.permit.vehicle.registration_number = ""
