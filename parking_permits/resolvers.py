@@ -280,8 +280,20 @@ def resolve_update_parking_permit(
 
 @mutation.field("endParkingPermit")
 @is_authenticated
+@audit_logger.autolog(
+    AuditMsg(
+        "User ended parking permits.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @convert_kwargs_to_snake_case
-def resolve_end_permit(_, info, permit_ids, end_type, iban=None):
+def resolve_end_permit(
+    _, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
+):
+    audit_msg.target = [
+        audit.ModelWithId(ParkingPermit, permit_id) for permit_id in permit_ids
+    ]
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).end(permit_ids, end_type, iban)
 
