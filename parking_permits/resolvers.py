@@ -408,12 +408,20 @@ def resolve_update_permit_vehicle(
 
 @mutation.field("createOrder")
 @is_authenticated
-def resolve_create_order(_, info):
+@audit_logger.autolog(
+    AuditMsg(
+        "User created an order for permits.",
+        operation=audit.Operation.CREATE,
+    ),
+    add_kwarg=True,
+)
+def resolve_create_order(_, info, audit_msg: AuditMsg = None):
     customer = info.context["request"].user.customer
     permits = ParkingPermit.objects.filter(
         customer=customer, status=ParkingPermitStatus.DRAFT
     )
     order = Order.objects.create_for_permits(permits)
+    audit_msg.target = order
     return {"checkout_url": TalpaOrderManager.send_to_talpa(order)}
 
 
