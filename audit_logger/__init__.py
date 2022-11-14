@@ -14,5 +14,9 @@ from audit_logger.enums import (  # noqa: F401
     Reason,
     Status,
 )
+from audit_logger.utils import (  # noqa: F401
+    generate_model_id_string_from_class,
+    generate_model_id_string_from_instance,
+)
 
 AuditMsg = AuditMessage
