@@ -411,7 +411,7 @@ def resolve_change_address(_, info, address_id, iban=None):
         # update permit to the new zone before creating
         # new order as the price is determined by the
         # new zone
-        fixed_period_permits.update(parking_zone=new_zone)
+        fixed_period_permits.update(parking_zone=new_zone, address=address)
 
         new_order = Order.objects.create_renewal_order(
             customer, status=new_order_status
@@ -439,8 +439,9 @@ def resolve_change_address(_, info, address_id, iban=None):
     # as talpa will get the updated price based on new zone when
     # asking permit price for next month
     open_ended_permits = permits.open_ended()
-    open_ended_permits.update(parking_zone=new_zone)
+    open_ended_permits.update(parking_zone=new_zone, address=address)
 
+    permits = ParkingPermit.objects.active().filter(customer=customer)
     for permit in permits:
         send_permit_email(PermitEmailType.UPDATED, permit)
 
