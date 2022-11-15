@@ -83,6 +83,7 @@ def is_valid_address(address):
 
 @query.field("getPermits")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User retrieved parking permits.",
@@ -90,7 +91,6 @@ def is_valid_address(address):
     ),
     autotarget=audit.TARGET_RETURN,
 )
-@convert_kwargs_to_snake_case
 def resolve_customer_permits(obj, info):
     request = info.context["request"]
     # NOTE: get() actually fetches a *list* of items... and more importantly, also
@@ -165,6 +165,7 @@ def resolve_user_profile(_, info, *args, audit_msg: AuditMsg = None):
 
 
 @mutation.field("updateLanguage")
+@is_authenticated
 @audit_logger.autolog(
     AuditMsg(
         "User updated language.",
@@ -172,7 +173,6 @@ def resolve_user_profile(_, info, *args, audit_msg: AuditMsg = None):
     ),
     autotarget=audit.TARGET_RETURN,
 )
-@is_authenticated
 def resolve_update_language(_, info, lang):
     request = info.context["request"]
     customer = request.user.customer
@@ -235,6 +235,8 @@ def resolve_get_update_address_price_changes(_, info, address_id):
 
 
 @mutation.field("deleteParkingPermit")
+@is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User deleted parking permit.",
@@ -242,8 +244,6 @@ def resolve_get_update_address_price_changes(_, info, address_id):
     ),
     add_kwarg=True,
 )
-@is_authenticated
-@convert_kwargs_to_snake_case
 def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
@@ -253,6 +253,7 @@ def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = No
 
 @mutation.field("createParkingPermit")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User created parking permit.",
@@ -260,7 +261,6 @@ def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = No
     ),
     autotarget=audit.TARGET_RETURN,
 )
-@convert_kwargs_to_snake_case
 def resolve_create_parking_permit(obj, info, address_id, registration):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
@@ -268,6 +268,7 @@ def resolve_create_parking_permit(obj, info, address_id, registration):
 
 @mutation.field("updateParkingPermit")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User updated parking permit.",
@@ -275,7 +276,6 @@ def resolve_create_parking_permit(obj, info, address_id, registration):
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_update_parking_permit(
     obj, info, input, permit_id=None, audit_msg: AuditMsg = None
 ):
@@ -291,6 +291,7 @@ def resolve_update_parking_permit(
 
 @mutation.field("endParkingPermit")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User ended parking permits.",
@@ -298,7 +299,6 @@ def resolve_update_parking_permit(
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_end_permit(
     _, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
 ):
@@ -311,6 +311,7 @@ def resolve_end_permit(
 
 @mutation.field("getVehicleInformation")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User retrieved vehicle information.",
@@ -318,7 +319,6 @@ def resolve_end_permit(
     ),
     autotarget=audit.TARGET_RETURN,
 )
-@convert_kwargs_to_snake_case
 def resolve_get_vehicle_information(_, info, registration):
     request = info.context["request"]
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
@@ -339,6 +339,7 @@ def resolve_get_vehicle_information(_, info, registration):
 
 @mutation.field("updatePermitVehicle")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User changed parking permit's vehicle.",
@@ -346,7 +347,6 @@ def resolve_get_vehicle_information(_, info, registration):
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_update_permit_vehicle(
     _,
     info,
@@ -438,6 +438,7 @@ def resolve_create_order(_, info, audit_msg: AuditMsg = None):
 
 @mutation.field("addTemporaryVehicle")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User added a temporary vehicle for a permit.",
@@ -445,7 +446,6 @@ def resolve_create_order(_, info, audit_msg: AuditMsg = None):
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_add_temporary_vehicle(
     _,
     info,
@@ -473,6 +473,7 @@ def resolve_add_temporary_vehicle(
 
 @mutation.field("removeTemporaryVehicle")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User removed a temporary vehicle for a permit.",
@@ -480,7 +481,6 @@ def resolve_add_temporary_vehicle(
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
@@ -490,6 +490,7 @@ def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = N
 
 @mutation.field("changeAddress")
 @is_authenticated
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User changed address.",
@@ -497,7 +498,6 @@ def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = N
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_change_address(_, info, address_id, iban=None, audit_msg: AuditMsg = None):
     customer = info.context["request"].user.customer

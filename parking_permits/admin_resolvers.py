@@ -196,6 +196,7 @@ def resolve_zone_by_location(obj, info, location):
 
 @query.field("customer")
 @is_super_admin
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin retrieved customer details.",
@@ -204,7 +205,6 @@ def resolve_zone_by_location(obj, info, location):
     autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
     query_params = data.get("query")
     customer = None
@@ -243,6 +243,7 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("vehicle")
 @is_super_admin
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin retrieved vehicle.",
@@ -251,7 +252,6 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     ),
     autotarget=audit.TARGET_RETURN,
 )
-@convert_kwargs_to_snake_case
 def resolve_vehicle(obj, info, reg_number, national_id_number):
     vehicle = Traficom().fetch_vehicle_details(reg_number)
     if not settings.TRAFICOM_CHECK:
@@ -340,6 +340,7 @@ def create_permit_address(customer_info):
 
 @mutation.field("createResidentPermit")
 @is_customer_service
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin created resident permit.",
@@ -347,7 +348,6 @@ def create_permit_address(customer_info):
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None):
     customer_info = permit["customer"]
@@ -458,6 +458,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
 
 @mutation.field("updateResidentPermit")
 @is_super_admin
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin updated resident permit.",
@@ -465,7 +466,6 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_resident_permit(
     obj, info, permit_id, permit_info, iban=None, audit_msg: AuditMsg = None
@@ -554,6 +554,7 @@ def resolve_update_resident_permit(
 
 @mutation.field("endPermit")
 @is_super_admin
+@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin ended resident permit.",
@@ -561,7 +562,6 @@ def resolve_update_resident_permit(
     ),
     add_kwarg=True,
 )
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_end_permit(
     obj, info, permit_id, end_type, iban=None, audit_msg: AuditMsg = None
