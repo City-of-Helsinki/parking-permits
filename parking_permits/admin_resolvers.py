@@ -416,9 +416,19 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["customer"]["zone"])
     vehicle_info = permit["vehicle"]
-    vehicle = Vehicle.objects.get(
+    vehicle_qs = Vehicle.objects.filter(
         registration_number=vehicle_info["registration_number"]
     )
+    if not vehicle_qs.exists():
+        return []
+    vehicle = vehicle_qs.first()
+    # update using form data
+    vehicle.__dict__.update(vehicle_info)
+    vehicle.power_type = VehiclePowerType.objects.get_or_create(
+        **vehicle_info["power_type"]
+    )[0]
+    vehicle.save()
+
     is_low_emission = vehicle.is_low_emission
     start_time = isoparse(permit["start_time"])
     permit_start_date = start_time.date()

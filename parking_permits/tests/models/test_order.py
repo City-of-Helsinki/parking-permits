@@ -70,13 +70,13 @@ class TestOrderManager(TestCase):
         end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
 
         high_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="BENSIN"),
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=100,
             euro_class=6,
             emission_type=EmissionType.WLTP,
         )
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="BENSIN"),
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=70,
             euro_class=6,
             emission_type=EmissionType.WLTP,

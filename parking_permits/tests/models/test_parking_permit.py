@@ -482,7 +482,7 @@ class ParkingZoneTestCase(TestCase):
         end_time = get_end_time(start_time, 12)
 
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="BENSIN"),
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=70,
             euro_class=6,
             emission_type=EmissionType.WLTP,
