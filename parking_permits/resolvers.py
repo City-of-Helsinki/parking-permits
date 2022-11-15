@@ -273,18 +273,20 @@ def resolve_create_parking_permit(obj, info, address_id, registration):
         "User updated parking permit.",
         operation=audit.Operation.UPDATE,
     ),
-    autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
 @convert_kwargs_to_snake_case
 def resolve_update_parking_permit(
     obj, info, input, permit_id=None, audit_msg: AuditMsg = None
 ):
-    # To avoid a database hit, we generate the target manually for the audit message.
     # This will get overwritten on a happy day scenario.
     audit_msg.target = [audit.ModelWithId(ParkingPermit, permit_id)]
+
     request = info.context["request"]
-    return CustomerPermit(request.user.customer.id).update(input, permit_id)
+    results = CustomerPermit(request.user.customer.id).update(input, permit_id)
+    audit_msg.target = results
+
+    return results
 
 
 @mutation.field("endParkingPermit")
