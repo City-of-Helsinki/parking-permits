@@ -98,6 +98,35 @@ PermitDetail = ObjectType("PermitDetailNode")
 schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers]
 
 
+def _audit_post_process_paged_search(
+    msg,
+    return_val,
+    obj,
+    info,
+    page_input,
+    *_,
+    order_by=None,
+    search_params=None,
+    **__,
+):
+    """
+    Custom-tailored audit log post-process hook for resolvers with the following signature:
+    (obj, info, page_input, order_by=None, search_params=None) -> {"page_info": dict, "objects": QuerySet}
+    """
+    try:
+        msg.extra = dict()
+        msg.extra["page_info"] = page_input
+        msg.extra["order_by"] = order_by
+        msg.extra["search_params"] = search_params
+        if return_val:
+            msg.extra["page_info"] = return_val.get("page_info")
+            msg.target = return_val.get("objects")
+    except Exception as e:
+        logger.error(
+            "Something went wrong during audit message post processing", exc_info=e
+        )
+
+
 def get_permits(page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
