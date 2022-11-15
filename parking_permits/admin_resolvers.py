@@ -746,6 +746,13 @@ def resolve_update_refund(obj, info, refund_id, refund):
 @query.field("orders")
 @is_preparators
 @convert_kwargs_to_snake_case
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin searched for orders.",
+        operation=audit.Operation.READ,
+    ),
+    post_process=_audit_post_process_paged_search,
+)
 def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
@@ -757,6 +764,7 @@ def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
     if not form.is_valid():
         logger.error(f"Order Search Error: {form.errors}")
         raise SearchError(_("Order search error"))
+
     return form.get_paged_queryset()
 
 
