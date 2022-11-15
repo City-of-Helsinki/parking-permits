@@ -313,10 +313,12 @@ class CustomerPermit:
             total_sum = sum(
                 [permit.get_refund_amount_for_unused_items() for permit in permits]
             )
-            if total_sum > 0:
+            first_permit = permits.first()
+            refund = Refund.objects.filter(order=first_permit.latest_order)
+            if total_sum > 0 and not refund.exists():
                 refund = Refund.objects.create(
                     name=str(self.customer),
-                    order=permits.first().latest_order,
+                    order=first_permit.latest_order,
                     amount=total_sum,
                     iban=iban,
                     description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",

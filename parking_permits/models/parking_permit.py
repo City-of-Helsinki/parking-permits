@@ -13,12 +13,7 @@ from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
 from ..constants import ParkingPermitEndType
-from ..exceptions import (
-    InvalidContractType,
-    ParkkihubiPermitError,
-    PermitCanNotBeEnded,
-    RefundError,
-)
+from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded, RefundError
 from ..utils import diff_months_ceil, get_end_time, get_permit_prices
 from .mixins import TimestampedModelMixin
 from .parking_zone import ParkingZone
@@ -267,6 +262,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_start_time(self):
+        if self.is_open_ended:
+            return self.start_time
         return self.start_time + relativedelta(months=self.months_used - 1)
 
     @property
@@ -279,7 +276,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def can_be_refunded(self):
-        return self.is_valid and self.is_fixed_period
+        return self.is_valid and (
+            self.is_fixed_period or self.current_period_start_time > timezone.now()
+        )
 
     @property
     def total_refund_amount(self):
@@ -439,15 +438,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return total
 
     def get_unused_order_items(self):
-        if self.is_open_ended:
-            raise InvalidContractType(
-                "Cannot get unused order items for open ended permit"
-            )
-
         unused_start_date = timezone.localdate(self.next_period_start_time)
-        order_items = self.latest_order_items.filter(
-            end_date__gte=unused_start_date
-        ).order_by("start_date")
+        if self.is_fixed_period:
+            order_items = self.latest_order_items.filter(
+                end_date__gte=unused_start_date
+            ).order_by("start_date")
+        else:
+            order_items = self.latest_order_items
+            return [
+                [item, item.quantity, (item.start_date, item.end_date)]
+                for item in order_items
+            ]
 
         if len(order_items) == 0:
             return []
