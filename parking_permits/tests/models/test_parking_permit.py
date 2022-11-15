@@ -8,7 +8,6 @@ from freezegun import freeze_time
 
 from parking_permits.constants import ParkingPermitEndType
 from parking_permits.exceptions import (
-    InvalidContractType,
     ParkkihubiPermitError,
     PermitCanNotBeEnded,
     ProductCatalogError,
@@ -368,7 +367,7 @@ class ParkingZoneTestCase(TestCase):
         with self.assertRaises(ProductCatalogError):
             permit.get_products_with_quantities()
 
-    def test_get_unused_order_items_raise_error_for_open_ended_permit(self):
+    def test_get_unused_order_items_for_open_ended_permit(self):
         product_detail_list = [
             [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("30")],
         ]
@@ -381,7 +380,15 @@ class ParkingZoneTestCase(TestCase):
             start_time=start_time,
             month_count=12,
         )
-        self.assertRaises(InvalidContractType, permit.get_unused_order_items)
+        Order.objects.create_for_permits([permit])
+        permit.refresh_from_db()
+        permit.status = ParkingPermitStatus.VALID
+        permit.save()
+        unused_items = permit.get_unused_order_items()
+
+        self.assertEqual(unused_items[0][0].unit_price, Decimal("30.00"))
+        self.assertEqual(unused_items[0][1], 1)
+        self.assertEqual(unused_items[0][2], (date(2021, 1, 1), None))
 
     def test_get_unused_order_items_return_unused_items(self):
         product_detail_list = [
