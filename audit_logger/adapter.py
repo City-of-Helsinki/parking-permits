@@ -49,6 +49,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         autostatus: bool = MISSING,
         add_kwarg: Union[bool, str] = MISSING,
         kwarg_name: str = MISSING,
+        post_process: Callable = MISSING,
     ):
         """
         Decorator that automatically creates an audit log record after the wrapped
@@ -66,6 +67,10 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                           kwarg_name's value or "audit_msg"). If a str, it uses the
                           supplied str as the kwarg name.
         :param kwarg_name: Determines the name of the added kwarg if add_kwarg is True.
+        :param post_process: Callable for post-processing the audit message. This lets
+                          you edit the audit message as you wish after every other
+                          processing.
+                          Called with audit_msg, func_return_val, *func_args, **func_kwargs.
         :return:
         """
         autoactor = _value_or_missing(
@@ -83,6 +88,9 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         autostatus = _value_or_missing(
             autostatus, self.autolog_config.get("autostatus", False)
         )
+        post_process = _value_or_missing(
+            post_process, self.autolog_config.get("post_process", None)
+        )
 
         def _autostatus(msg, status: Status):
             if msg.status is None and autostatus:
@@ -92,7 +100,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
             @functools.wraps(f)
             def wrapper_autolog(*args, **kwargs):
                 msg = copy.copy(base_msg)
-                value = None
+                return_value = None
                 exc = None
 
                 # Add kwarg to kwargs, if applicable.
@@ -103,7 +111,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                         kwargs[kwarg_name] = msg
 
                 try:
-                    value = f(*args, **kwargs)
+                    return_value = f(*args, **kwargs)
                     _autostatus(msg, Status.SUCCESS)
                 except Exception as e:
                     exc = e
@@ -113,11 +121,17 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                     # Replacing with nothing creates a new AuditMessage, re-initializing date_time.
                     msg = msg.replace()
 
+                    # Perform target processing (if target not set)
                     if msg.target is None and autotarget:
-                        msg.target = autotarget(value, *args, **kwargs)
+                        msg.target = autotarget(return_value, *args, **kwargs)
 
+                    # Perform actor processing (if actor not set)
                     if msg.actor is None and autoactor:
                         msg.actor = autoactor(*args, **kwargs)
+
+                    # Perform additional custom post-processing.
+                    if post_process:
+                        post_process(msg, return_value, *args, **kwargs)
 
                     if exc:
                         self.exception(msg)
@@ -126,7 +140,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                     else:
                         self.info(msg)
 
-                return value
+                return return_value
 
             return wrapper_autolog
 

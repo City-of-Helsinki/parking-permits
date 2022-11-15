@@ -399,3 +399,40 @@ class AdapterAutologTest(TestCase):
         assert msg.target == expected_target
         assert msg.actor == expected_actor
         assert msg.status == expected_status
+
+    def test_post_process(self):
+        base_msg = AuditMessage()
+        expected_message = "Hello, world!"
+
+        def autoactor(*_, **__):
+            return "Actor"
+
+        def autotarget(*_, **__):
+            return "Target"
+
+        def post_process(msg_, return_val, *_, **__):
+            msg_.message = return_val
+            msg_.actor = "overridden"
+            msg_.target = "overridden"
+            msg_.status = "overridden"
+
+        @self.adapter.autolog(
+            base_msg,
+            post_process=post_process,
+            autotarget=autotarget,
+            autoactor=autoactor,
+            autostatus=True,
+        )
+        def decorated_func():
+            return expected_message
+
+        with self.default_cm() as cm:
+            decorated_func()
+
+        assert len(cm.records) == 1
+        record, msg = self._first(cm)
+        assert msg.message == expected_message
+        # Post-processing should override everything, incl. auto-attributes.
+        assert msg.actor == "overridden"
+        assert msg.target == "overridden"
+        assert msg.status == "overridden"
