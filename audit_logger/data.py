@@ -49,6 +49,7 @@ class AuditMessage:
     audit_type: enums.AuditType = enums.AuditType.AUDIT
     origin: str = ""
     version: str = "v1"
+    extra: Optional[dict] = None
     log_level: Optional[enums.AuditLogLevel] = None
 
     # "Do not touch" params
