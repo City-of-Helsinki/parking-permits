@@ -681,6 +681,13 @@ def resolve_create_product(obj, info, product):
 @query.field("refunds")
 @is_preparators
 @convert_kwargs_to_snake_case
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin searched for refunds.",
+        operation=audit.Operation.READ,
+    ),
+    post_process=_audit_post_process_paged_search,
+)
 def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
