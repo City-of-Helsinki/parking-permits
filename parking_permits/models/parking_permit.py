@@ -268,7 +268,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_end_time(self):
-        return get_end_time(self.start_time, self.months_used)
+        end_time = get_end_time(self.start_time, self.months_used)
+        return max(self.start_time, end_time)
 
     @property
     def next_period_start_time(self):
@@ -408,7 +409,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:
-            end_time = timezone.now()
+            end_time = max(self.start_time, timezone.now())
 
         if (
             self.primary_vehicle
