@@ -198,3 +198,7 @@ def get_user_from_resolver_args(*args, **__):
         return info.context["request"].user
     except (KeyError, AttributeError, IndexError):
         return None
+
+
+def get_user_from_api_view_method_args(view, request, *_, **__):
+    return request.user
