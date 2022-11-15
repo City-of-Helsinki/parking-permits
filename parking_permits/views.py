@@ -24,6 +24,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+import audit_logger as audit
+from audit_logger import AuditMsg
+
+from .constants import Origin
 from .decorators import require_preparators
 from .exceptions import ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
@@ -52,9 +56,24 @@ from .services.mail import (
     send_permit_email,
     send_vehicle_low_emission_discount_email,
 )
-from .utils import get_meta_value, snake_to_camel_dict
+from .utils import (
+    get_meta_value,
+    get_user_from_api_view_method_args,
+    snake_to_camel_dict,
+)
 
 logger = logging.getLogger("db")
+
+audit_logger = audit.getAuditLoggerAdapter(
+    "audit",
+    dict(
+        event_type=audit.EventType.APP,
+    ),
+    autolog_config={
+        "autostatus": True,
+        "kwarg_name": "audit_msg",
+    },
+)
 
 
 class TalpaResolveAvailability(APIView):
@@ -243,6 +262,21 @@ class ParkingPermitGDPRAPIView(GDPRAPIView):
 
 
 class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
+    @audit_logger.autolog(
+        AuditMsg(
+            "Admin downloaded customer data from the GDPR API.",
+            origin=Origin.ADMIN_UI,
+            operation=audit.Operation.READ,
+            reason=audit.Reason.ADMIN_SERVICE,
+        ),
+        autoactor=get_user_from_api_view_method_args,
+        add_kwarg=True,
+    )
+    def get(self, request, *args, audit_msg: AuditMsg = None, **kwargs):
+        obj = self.get_object()
+        audit_msg.target = obj
+        return Response(obj.serialize(), status=status.HTTP_200_OK)
+
     def get_object(self) -> Customer:
         try:
             customer = Customer.objects.get(
