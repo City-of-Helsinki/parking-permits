@@ -4,7 +4,7 @@ from audit_logger.adapter import (  # noqa: F401
     AuditLoggerAdapter,
     getAuditLoggerAdapter,
 )
-from audit_logger.data import AuditMessage  # noqa: F401
+from audit_logger.data import AuditMessage, ModelWithId  # noqa: F401
 from audit_logger.db_log_handler import AuditLogHandler  # noqa: F401
 from audit_logger.enums import (  # noqa: F401
     AuditLogLevel,

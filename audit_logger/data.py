@@ -2,13 +2,26 @@ import datetime
 import enum
 import json
 from dataclasses import Field, asdict, dataclass, field, fields, replace
-from typing import Optional
+from typing import Any, Optional, Type, Union
 
 from django.db import models
 from django.utils import timezone
 
 from audit_logger import enums
-from audit_logger.utils import generate_model_id_string_from_instance
+from audit_logger.utils import (
+    generate_model_id_string_from_class,
+    generate_model_id_string_from_instance,
+)
+
+
+@dataclass
+class ModelWithId:
+    """
+    Defines a model instance with a class and an id.
+    """
+
+    model: Type[models.Model]
+    id: Any
 
 
 class AuditMessageEncoder(json.JSONEncoder):
@@ -19,6 +32,8 @@ class AuditMessageEncoder(json.JSONEncoder):
             return generate_model_id_string_from_instance(o)
         elif isinstance(o, enum.Enum):
             return o.value
+        elif isinstance(o, ModelWithId) and issubclass(o.model, models.Model):
+            return generate_model_id_string_from_class(o.model, o.id)
         return super().default(o)
 
 
@@ -26,7 +41,7 @@ class AuditMessageEncoder(json.JSONEncoder):
 class AuditMessage:
     message: str = ""
     actor: models.Model = None
-    target: Optional[models.Model] = None
+    target: Optional[Union[str, models.Model, ModelWithId]] = None
     operation: enums.Operation = None
     status: enums.Status = None
     reason: enums.Reason = None
