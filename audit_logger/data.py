@@ -34,6 +34,8 @@ class AuditMessageEncoder(json.JSONEncoder):
             return o.value
         elif isinstance(o, ModelWithId) and issubclass(o.model, models.Model):
             return generate_model_id_string_from_class(o.model, o.id)
+        elif isinstance(o, models.QuerySet):
+            return [generate_model_id_string_from_instance(obj) for obj in o]
         return super().default(o)
 
 
