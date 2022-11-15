@@ -70,7 +70,7 @@ class GetCustomerPermitTestCase(TestCase):
             first_name="Firstname B", last_name="Lastname B"
         )
         self.zone = ParkingZoneFactory()
-        power_type = VehiclePowerTypeFactory(identifier="01", name="BENSIN")
+        power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
         self.vehicle_a = VehicleFactory(power_type=power_type)
         self.vehicle_b = VehicleFactory(power_type=power_type)
         self.vehicle_c = VehicleFactory(power_type=power_type)
@@ -151,7 +151,7 @@ class CreateCustomerPermitTestCase(TestCase):
         )
         self.customer_a_zone = self.customer_a.primary_address.zone
         self.zone = ParkingZoneFactory()
-        power_type = VehiclePowerTypeFactory(identifier="01", name="BENSIN")
+        power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
         self.vehicle_a = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,

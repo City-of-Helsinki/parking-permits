@@ -26,9 +26,10 @@ VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
 
 POWER_TYPE_MAPPER = {
-    "01": "BENSIN",
-    "02": "DIESEL",
-    "04": "ELECTRIC",
+    "01": "Bensin",
+    "02": "Diesel",
+    "03": "Bifuel",
+    "04": "Electric",
 }
 
 VEHICLE_SUB_CLASS_MAPPER = {

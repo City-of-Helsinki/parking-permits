@@ -18,7 +18,7 @@ from parking_permits.tests.factories.vehicle import (
 @freeze_time(datetime.datetime(2020, 6, 1))
 class TestIsLowEmissionVehicle(TestCase):
     def setUp(self):
-        self.power_type_diesel = VehiclePowerTypeFactory(name="DIESEL", identifier="02")
+        self.power_type_diesel = VehiclePowerTypeFactory(name="Diesel", identifier="02")
         self.lec = LowEmissionCriteriaFactory(
             nedc_max_emission_limit=100,
             wltp_max_emission_limit=100,
@@ -48,7 +48,7 @@ class TestIsLowEmissionVehicle(TestCase):
 
     def test_should_return_true_if_power_type_is_electric(self):
         vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(name="ELECTRIC", identifier="04"),
+            power_type=VehiclePowerTypeFactory(name="Electric", identifier="04"),
         )
 
         self.assertIsLowEmissionVehicle(vehicle, True)
@@ -115,7 +115,7 @@ class TestIsLowEmissionVehicle(TestCase):
 class TestVehicle(TestCase):
     def test_should_update_is_low_emission_field_on_save(self):
         vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(name="DIESEL", identifier="02"),
+            power_type=VehiclePowerTypeFactory(name="Diesel", identifier="02"),
         )
         LowEmissionCriteria.objects.all().delete()
 
@@ -123,7 +123,7 @@ class TestVehicle(TestCase):
         self.assertFalse(vehicle.is_low_emission)
         self.assertFalse(vehicle._is_low_emission)
 
-        vehicle.power_type = VehiclePowerTypeFactory(name="ELECTRIC", identifier="04")
+        vehicle.power_type = VehiclePowerTypeFactory(name="Electric", identifier="04")
 
         # Only the computed property should be true at this point.
         self.assertTrue(vehicle.is_low_emission)
