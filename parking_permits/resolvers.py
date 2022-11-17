@@ -361,6 +361,7 @@ def resolve_update_permit_vehicle(
     audit_msg.target = permit
     new_vehicle = Vehicle.objects.get(id=vehicle_id)
     checkout_url = None
+    created_talpa_order = False
 
     previous_permit = deepcopy(permit)
 
@@ -379,7 +380,8 @@ def resolve_update_permit_vehicle(
         new_order = Order.objects.create_renewal_order(
             customer, status=OrderStatus.CONFIRMED
         )
-        if permit_total_price_change > 0:
+
+        if permit_total_price_change < 0:
             refund = Refund.objects.create(
                 name=str(customer),
                 order=new_order,
@@ -391,6 +393,7 @@ def resolve_update_permit_vehicle(
             send_refund_email(RefundEmailType.CREATED, customer, refund)
 
         if permit_total_price_change > 0:
+            created_talpa_order = True
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
     else:
@@ -403,7 +406,8 @@ def resolve_update_permit_vehicle(
     permit.vehicle_changed_date = None
     permit.save()
 
-    send_permit_email(PermitEmailType.UPDATED, permit)
+    if not created_talpa_order:
+        send_permit_email(PermitEmailType.UPDATED, permit)
 
     if previous_permit.vehicle.is_low_emission:
         previous_permit.end_time = permit.start_time
