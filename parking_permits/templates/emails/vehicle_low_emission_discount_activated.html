@@ -10,6 +10,6 @@
     <p>
         {% translate "Vehicle" %}: {{ permit.vehicle.registration_number }}<br>
         {% translate "Discount: Low-emission vehicle" %} <br>
-        {% translate "Discount valid from" %}: {{ permit.start_time|date:"j.n.Y, H:i" }}
+        {% translate "Discount valid from" %}: {% now "j.n.Y, H:i" %}
     </p>
 {% endblock %}

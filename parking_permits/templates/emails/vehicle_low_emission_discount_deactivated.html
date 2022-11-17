@@ -9,6 +9,6 @@
     </p>
     <p>
         {% translate "Vehicle" %}: {{ permit.vehicle.registration_number }}<br>
-        {% translate "Discount right ends" %}: {{ permit.end_time|date:"j.n.Y, H:i" }}
+        {% translate "Discount right ends" %}: {% now "j.n.Y, H:i" %}
     </p>
 {% endblock %}
