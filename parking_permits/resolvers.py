@@ -385,7 +385,7 @@ def resolve_update_permit_vehicle(
             refund = Refund.objects.create(
                 name=str(customer),
                 order=new_order,
-                amount=permit_total_price_change,
+                amount=-permit_total_price_change,
                 iban=iban if iban else "",
                 description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
             )
