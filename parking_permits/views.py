@@ -232,7 +232,10 @@ class OrderView(APIView):
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
                 permit.save()
-                send_permit_email(PermitEmailType.CREATED, permit)
+                if permit.orders.exists() and permit.orders.count() > 1:
+                    send_permit_email(PermitEmailType.UPDATED, permit)
+                else:
+                    send_permit_email(PermitEmailType.CREATED, permit)
                 if (
                     permit.consent_low_emission_accepted
                     and permit.vehicle.is_low_emission
