@@ -578,11 +578,11 @@ def resolve_change_address(_, info, address_id, iban=None, audit_msg: AuditMsg =
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
-            if order_total_price_change > 0:
+            if order_total_price_change < 0:
                 refund = Refund.objects.create(
                     name=str(customer),
                     order=order,
-                    amount=order_total_price_change,
+                    amount=-order_total_price_change,
                     iban=iban if iban else "",
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
