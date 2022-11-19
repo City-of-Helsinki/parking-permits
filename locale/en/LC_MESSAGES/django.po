@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-11 14:52+0200\n"
+"POT-Creation-Date: 2022-11-19 08:52+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -109,6 +109,9 @@ msgid "Announcement not found"
 msgstr ""
 
 msgid "You already have a valid permit for a given vehicle."
+msgstr ""
+
+msgid "Temporary vehicle start time has to be after permit start time"
 msgstr ""
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
@@ -736,6 +739,12 @@ msgid "Address not found"
 msgstr ""
 
 msgid "No active permits for the customer"
+msgstr ""
+
+msgid "Start time cannot be in the past"
+msgstr ""
+
+msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr ""
 
 msgid "Conflict parking zones for active permits"
