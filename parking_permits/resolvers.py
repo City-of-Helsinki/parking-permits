@@ -10,7 +10,9 @@ from ariadne import (
     snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
+from dateutil.parser import isoparse
 from django.db import transaction
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 import audit_logger as audit
@@ -24,6 +26,7 @@ from .exceptions import (
     AddressError,
     ObjectNotFound,
     ParkingZoneError,
+    TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
 )
 from .models import Address, Customer, Refund, Vehicle
@@ -91,7 +94,7 @@ def is_valid_address(address):
     ),
     autotarget=audit.TARGET_RETURN,
 )
-def resolve_customer_permits(obj, info):
+def resolve_customer_permits(_obj, info):
     request = info.context["request"]
     # NOTE: get() actually fetches a *list* of items... and more importantly, also
     # deletes items. And also updates vehicles. So this is not purely a read operation.
@@ -125,7 +128,7 @@ def save_profile_address(address):
     autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
-def resolve_user_profile(_, info, *args, audit_msg: AuditMsg = None):
+def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
@@ -244,7 +247,7 @@ def resolve_get_update_address_price_changes(_, info, address_id):
     ),
     add_kwarg=True,
 )
-def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = None):
+def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
@@ -261,7 +264,7 @@ def resolve_delete_parking_permit(obj, info, permit_id, audit_msg: AuditMsg = No
     ),
     autotarget=audit.TARGET_RETURN,
 )
-def resolve_create_parking_permit(obj, info, address_id, registration):
+def resolve_create_parking_permit(_obj, info, address_id, registration):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
 
@@ -277,7 +280,7 @@ def resolve_create_parking_permit(obj, info, address_id, registration):
     add_kwarg=True,
 )
 def resolve_update_parking_permit(
-    obj, info, input, permit_id=None, audit_msg: AuditMsg = None
+    _obj, info, input, permit_id=None, audit_msg: AuditMsg = None
 ):
     # This will get overwritten on a happy day scenario.
     audit_msg.target = [audit.ModelWithId(ParkingPermit, permit_id)]
@@ -430,7 +433,7 @@ def resolve_update_permit_vehicle(
     ),
     add_kwarg=True,
 )
-def resolve_create_order(_, info, audit_msg: AuditMsg = None):
+def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     customer = info.context["request"].user.customer
     permits = ParkingPermit.objects.filter(
         customer=customer, status=ParkingPermitStatus.DRAFT
@@ -451,7 +454,7 @@ def resolve_create_order(_, info, audit_msg: AuditMsg = None):
     add_kwarg=True,
 )
 def resolve_add_temporary_vehicle(
-    _,
+    _obj,
     info,
     permit_id,
     registration,
@@ -463,11 +466,13 @@ def resolve_add_temporary_vehicle(
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
     customer = request.user.customer
+    if tz.localtime(isoparse(start_time)) < tz.now():
+        raise TemporaryVehicleValidationError(_("Start time cannot be in the past"))
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
     has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
     if not has_valid_licence:
         raise TraficomFetchVehicleError(
-            "Customer does not have a valid driving licence for this vehicle"
+            _("Customer does not have a valid driving licence for this vehicle")
         )
     CustomerPermit(request.user.customer.id).add_temporary_vehicle(
         permit_id, registration, start_time, end_time
@@ -485,7 +490,7 @@ def resolve_add_temporary_vehicle(
     ),
     add_kwarg=True,
 )
-def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = None):
+def resolve_remove_temporary_vehicle(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
@@ -503,7 +508,9 @@ def resolve_remove_temporary_vehicle(_, info, permit_id, audit_msg: AuditMsg = N
     add_kwarg=True,
 )
 @transaction.atomic
-def resolve_change_address(_, info, address_id, iban=None, audit_msg: AuditMsg = None):
+def resolve_change_address(
+    _obj, info, address_id, iban=None, audit_msg: AuditMsg = None
+):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
     new_zone = address.zone

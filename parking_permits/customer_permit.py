@@ -84,6 +84,11 @@ class CustomerPermit:
         permit_details = self._get_permit(permit_id)
         permit = permit_details[0]
 
+        if tz.localtime(isoparse(start_time)) < permit.start_time:
+            raise TemporaryVehicleValidationError(
+                _("Temporary vehicle start time has to be after permit start time")
+            )
+
         tmp_vehicles = permit.temp_vehicles.filter(
             start_time__gte=get_end_time(tz.now(), -12)
         ).order_by("-start_time")[:2]
