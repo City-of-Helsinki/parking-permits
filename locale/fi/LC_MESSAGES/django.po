@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-11 09:45+0200\n"
+"POT-Creation-Date: 2022-11-19 08:52+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,6 +69,9 @@ msgstr "Asiakkaan hakuvirhe"
 msgid "Vehicle not found for the customer"
 msgstr "Asiakkaan ajoneuvoa ei löytynyt"
 
+msgid "Vehicle power type not found"
+msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
+
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
 
@@ -107,6 +110,9 @@ msgstr "Ilmoitusta ei löytynyt"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+msgid "Temporary vehicle start time has to be after permit start time"
+msgstr "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
 msgstr ""
@@ -738,6 +744,12 @@ msgstr "Osoitetta ei löytynyt"
 
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
+
+msgid "Start time cannot be in the past"
+msgstr "Aloitusaika ei voi olla menneisyydessä"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-11 09:52+0200\n"
+"POT-Creation-Date: 2022-11-19 08:52+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -36,10 +36,8 @@ msgstr ""
 msgid "Fatal"
 msgstr ""
 
-#, fuzzy
-#| msgid "Last name"
 msgid "Logger name"
-msgstr "Efternamn"
+msgstr ""
 
 msgid "Logging level"
 msgstr ""
@@ -54,7 +52,7 @@ msgid "Created at"
 msgstr "Skapad kl"
 
 msgid "Permit search error"
-msgstr ""
+msgstr "Tillåt sökfel"
 
 msgid "No parking zone found for the location"
 msgstr "Det finns inte parkering zon för det plats"
@@ -65,13 +63,14 @@ msgstr "Flera parkerings zon till denna plats"
 msgid "Person not found"
 msgstr "Ingen kund hittas"
 
-#, fuzzy
-#| msgid "Customer service contact info"
 msgid "Customer search error"
-msgstr "Kundtjänst kontaktuppgifter"
+msgstr "Kundsökningsfel"
 
 msgid "Vehicle not found for the customer"
 msgstr "Fordonet hjittasdes inte för kunden"
+
+msgid "Vehicle power type not found"
+msgstr "Fordonskraftstyp hittades inte"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Kan inte skapa mer än 2 boendeparkeringpermit"
@@ -88,78 +87,71 @@ msgid "Cannot change the customer of the permit"
 msgstr "Kunden kan inte bytas till detta parkeringstecken"
 
 msgid "IBAN is not provided"
-msgstr ""
+msgstr "IBAN tillhandahålls inte"
 
 msgid "Product search error"
-msgstr ""
+msgstr "Produktsökningsfel"
 
 msgid "Refund search error"
-msgstr ""
+msgstr "Sökningsfel för återbetalning"
 
-#, fuzzy
-#| msgid "Person not found"
 msgid "Refund not found"
-msgstr "Ingen kund hittas"
+msgstr "Återbetalning hittades inte"
 
 msgid "Order search error"
-msgstr ""
+msgstr "Beställningssökningsfel"
 
-#, fuzzy
-#| msgid "Address security ban"
 msgid "Address search error"
-msgstr "Spärrmarkering"
+msgstr "Adresssökningsfel"
 
 msgid "Announcement search error"
-msgstr ""
+msgstr "Sökningsfel för meddelande"
 
-#, fuzzy
-#| msgid "Person not found"
 msgid "Announcement not found"
-msgstr "Ingen kund hittas"
+msgstr "Meddelandet hittades inte"
 
 msgid "You already have a valid permit for a given vehicle."
-msgstr ""
+msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
+
+msgid "Temporary vehicle start time has to be after permit start time"
+msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
-msgstr ""
+msgstr "Kan inte ha mer än 2 tillfälliga fordon under 365 dagar från det första."
 
 msgid "Permit for a given vehicle already exist."
-msgstr ""
+msgstr "Tillstånd för ett givet fordon finns redan."
 
 #, python-format
 msgid "Customer is not an owner or holder of a vehicle %(registration)s"
-msgstr ""
+msgstr "Kunden är inte ägare eller innehavare av ett fordon %(registration)s"
 
 msgid "Customer does not have a valid driving licence"
-msgstr ""
+msgstr "Kunden har inte giltigt körkort"
 
 msgid "Non draft permit can not be deleted"
-msgstr ""
+msgstr "Icke utkast till tillstånd kan inte raderas"
 
-#, fuzzy
-#| msgid "Contract type"
 msgid "Contract type is required"
-msgstr "Kontraktstyp"
+msgstr "Kontraktstyp krävs"
 
 #, python-format
 msgid "Only %(fixed_period)s is allowed"
-msgstr ""
+msgstr "Endast %(fixed_period)s är tillåtet"
 
 msgid "This is not a draft permit and can not be edited"
-msgstr ""
+msgstr "Detta är inte ett utkast till tillstånd och kan inte redigeras"
 
-#, fuzzy
-#| msgid "Not a valid customer address"
 msgid "Invalid user address."
-msgstr "Inte en giltig kundadress"
+msgstr "Ogiltig användaradress."
 
 #, python-format
 msgid "You can have a max of %(max_allowed_permit)s permits."
-msgstr ""
+msgstr "Du kan ha maximalt %(max_allowed_permit)s tillstånd."
 
 #, python-format
 msgid "You can buy permit only for address %(primary_address)s."
-msgstr ""
+msgstr "Du kan endast köpa tillstånd för adressen %(primary_address)s."
 
 msgid "Name"
 msgstr "Namn"
@@ -681,15 +673,11 @@ msgstr "NEDC"
 msgid "WLTP"
 msgstr "WLTP"
 
-#, fuzzy
-#| msgid "Vehicle user"
 msgid "Vehicle power type"
-msgstr "Fordonsanvändare"
+msgstr "Fordonskraftstyp"
 
-#, fuzzy
-#| msgid "Vehicle users"
 msgid "Vehicle power types"
-msgstr "Fordonsanvändarer"
+msgstr "Fordonskraftstyper"
 
 msgid "NEDC maximum emission limit"
 msgstr "NEDC maximera"
@@ -712,8 +700,6 @@ msgstr "Fordonsanvändare"
 msgid "Vehicle users"
 msgstr "Fordonsanvändarer"
 
-#, fuzzy
-#| msgid "Power type"
 msgid "power_type"
 msgstr "Drivkraft"
 
@@ -758,6 +744,12 @@ msgstr "Adressen hittades inte"
 
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
+
+msgid "Start time cannot be in the past"
+msgstr "Starttiden kan inte ligga i det förflutna"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Kunden har inte ett giltigt körkort för detta fordon"
 
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
@@ -931,14 +923,3 @@ msgstr "Rätten till rabatt har tagits bort från fordonet."
 msgid "Discount right ends"
 msgstr "Rabatten till höger upphör"
 
-#~ msgid "Electric"
-#~ msgstr "El"
-
-#~ msgid "Bensin"
-#~ msgstr "Bensin"
-
-#~ msgid "Diesel"
-#~ msgstr "Diesel"
-
-#~ msgid "Bifuel"
-#~ msgstr "Bifuel"
