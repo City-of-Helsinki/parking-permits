@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-19 08:52+0200\n"
+"POT-Creation-Date: 2022-11-20 11:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -439,6 +439,15 @@ msgstr ""
 msgid "Draft"
 msgstr ""
 
+msgid "Created"
+msgstr ""
+
+msgid "Vehicle changed"
+msgstr ""
+
+msgid "Address changed"
+msgstr ""
+
 msgid "Talpa order id"
 msgstr ""
 
@@ -455,6 +464,9 @@ msgid "Order status"
 msgstr ""
 
 msgid "permits"
+msgstr ""
+
+msgid "Order type"
 msgstr ""
 
 msgid "Order"
@@ -523,6 +535,12 @@ msgstr ""
 msgid "Closed"
 msgstr ""
 
+msgid "Next vehicle"
+msgstr ""
+
+msgid "Next parking zone"
+msgstr ""
+
 msgid "Vehicle changed date"
 msgstr ""
 
@@ -536,6 +554,9 @@ msgid "Month count"
 msgstr ""
 
 msgid "Description"
+msgstr ""
+
+msgid "Next address"
 msgstr ""
 
 msgid ""
