@@ -504,7 +504,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def get_products_with_quantities(self):
         """Return a list of product and quantities for the permit"""
         # TODO: currently, company permit type is not available
-        qs = self.parking_zone.products.for_resident()
+        if self.next_parking_zone:
+            qs = self.next_parking_zone.products.for_resident()
+        else:
+            qs = self.parking_zone.products.for_resident()
 
         if self.is_open_ended:
             permit_start_date = timezone.localdate(self.start_time)

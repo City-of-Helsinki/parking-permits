@@ -131,7 +131,13 @@ class OrderManager(SerializableMixin.SerializableManager):
             )
 
     @transaction.atomic
-    def create_renewal_order(self, customer, status=OrderStatus.DRAFT):
+    def create_renewal_order(
+        self,
+        customer,
+        status=OrderStatus.DRAFT,
+        order_type=OrderType.CREATED,
+        payment_type=OrderPaymentType.ONLINE_PAYMENT,
+    ):
         """
         Create new order for updated permits information that affect
         permit prices, e.g. change address or change vehicle
@@ -142,8 +148,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_customer_permits(customer_permits)
 
         new_order = Order.objects.create(
-            customer=customer,
-            status=status,
+            customer=customer, status=status, type=order_type, payment_type=payment_type
         )
         for permit in customer_permits:
             start_date = timezone.localdate(permit.next_period_start_time)
@@ -181,13 +186,14 @@ class OrderManager(SerializableMixin.SerializableManager):
                         "Error on product date ranges or order item date ranges"
                     )
 
-                is_low_emission = permit.vehicle.is_low_emission
+                vehicle = permit.next_vehicle if permit.next_vehicle else permit.vehicle
+                is_low_emission = vehicle.is_low_emission
                 unit_price = product.get_modified_unit_price(
                     is_low_emission, permit.is_secondary_vehicle
                 )
-                if permit.vehicle._is_low_emission != is_low_emission:
-                    permit.vehicle._is_low_emission = is_low_emission
-                    permit.vehicle.save()
+                if vehicle._is_low_emission != is_low_emission:
+                    vehicle._is_low_emission = is_low_emission
+                    vehicle.save()
 
                 # the price the customer needs to pay after deducting the price
                 # that the customer has already paid in previous order for this

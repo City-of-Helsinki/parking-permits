@@ -60,7 +60,7 @@ from .forms import (
     ProductSearchForm,
     RefundSearchForm,
 )
-from .models.order import OrderStatus
+from .models.order import OrderPaymentType, OrderStatus
 from .models.parking_permit import ContractType
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
@@ -540,7 +540,9 @@ def resolve_update_resident_permit(
             send_refund_email(RefundEmailType.CREATED, customer, refund)
         logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
-            customer, status=OrderStatus.CONFIRMED
+            customer,
+            status=OrderStatus.CONFIRMED,
+            payment_type=OrderPaymentType.CASHIER_PAYMENT,
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
 

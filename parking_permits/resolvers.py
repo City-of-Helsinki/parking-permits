@@ -1,6 +1,5 @@
 import logging
 from collections import Counter
-from copy import deepcopy
 
 from ariadne import (
     MutationType,
@@ -30,7 +29,7 @@ from .exceptions import (
     TraficomFetchVehicleError,
 )
 from .models import Address, Customer, Refund, Vehicle
-from .models.order import Order, OrderStatus
+from .models.order import Order, OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
@@ -40,7 +39,6 @@ from .services.mail import (
     RefundEmailType,
     send_permit_email,
     send_refund_email,
-    send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
@@ -176,7 +174,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     ),
     autotarget=audit.TARGET_RETURN,
 )
-def resolve_update_language(_, info, lang):
+def resolve_update_language(_obj, info, lang):
     request = info.context["request"]
     customer = request.user.customer
     customer.language = lang
@@ -214,7 +212,7 @@ def validate_customer_address(customer, address_id):
 @query.field("getUpdateAddressPriceChanges")
 @is_authenticated
 @convert_kwargs_to_snake_case
-def resolve_get_update_address_price_changes(_, info, address_id):
+def resolve_get_update_address_price_changes(_obj, info, address_id):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
     new_zone = address.zone
@@ -303,7 +301,7 @@ def resolve_update_parking_permit(
     add_kwarg=True,
 )
 def resolve_end_permit(
-    _, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
+    _obj, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
 ):
     audit_msg.target = [
         audit.ModelWithId(ParkingPermit, permit_id) for permit_id in permit_ids
@@ -322,20 +320,23 @@ def resolve_end_permit(
     ),
     autotarget=audit.TARGET_RETURN,
 )
-def resolve_get_vehicle_information(_, info, registration):
+def resolve_get_vehicle_information(_obj, info, registration):
     request = info.context["request"]
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
     customer = request.user.customer
     is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
     if not is_user_of_vehicle:
         raise TraficomFetchVehicleError(
-            f"Customer is not an owner or holder of a vehicle {registration}"
+            _("Customer is not an owner or holder of a vehicle %(registration)s")
+            % {
+                "registration": registration,
+            }
         )
 
     has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
     if not has_valid_licence:
         raise TraficomFetchVehicleError(
-            "Customer does not have a valid driving licence"
+            _("Customer does not have a valid driving licence")
         )
     return vehicle
 
@@ -351,7 +352,7 @@ def resolve_get_vehicle_information(_, info, registration):
     add_kwarg=True,
 )
 def resolve_update_permit_vehicle(
-    _,
+    _obj,
     info,
     permit_id,
     vehicle_id,
@@ -362,11 +363,11 @@ def resolve_update_permit_vehicle(
     customer = info.context["request"].user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
     audit_msg.target = permit
-    new_vehicle = Vehicle.objects.get(id=vehicle_id)
     checkout_url = None
-    created_talpa_order = False
-
-    previous_permit = deepcopy(permit)
+    talpa_order_created = False
+    new_vehicle = Vehicle.objects.get(id=vehicle_id)
+    new_vehicle.consent_low_emission_accepted = consent_low_emission_accepted
+    new_vehicle.save()
 
     if (
         permit.contract_type == ContractType.FIXED_PERIOD
@@ -378,10 +379,19 @@ def resolve_update_permit_vehicle(
         permit_total_price_change = sum(
             [item["price_change"] for item in price_change_list]
         )
-        permit.vehicle = new_vehicle
-        permit.save()
+
+        if permit_total_price_change > 0:
+            permit.next_vehicle = new_vehicle
+            permit.save()
+        else:
+            permit.vehicle = new_vehicle
+            permit.save()
+
         new_order = Order.objects.create_renewal_order(
-            customer, status=OrderStatus.CONFIRMED
+            customer,
+            status=OrderStatus.CONFIRMED,
+            order_type=OrderType.VEHICLE_CHANGED,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
         )
 
         if permit_total_price_change < 0:
@@ -396,31 +406,20 @@ def resolve_update_permit_vehicle(
             send_refund_email(RefundEmailType.CREATED, customer, refund)
 
         if permit_total_price_change > 0:
-            created_talpa_order = True
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+            talpa_order_created = True
     else:
         permit.vehicle = new_vehicle
-
-    new_vehicle.consent_low_emission_accepted = consent_low_emission_accepted
-    new_vehicle.save()
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
 
-    if not created_talpa_order:
+    if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
+        permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.UPDATED, permit)
 
-    if previous_permit.vehicle.is_low_emission:
-        previous_permit.end_time = permit.start_time
-        send_vehicle_low_emission_discount_email(
-            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, previous_permit
-        )
-    if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
-        send_vehicle_low_emission_discount_email(
-            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
-        )
     return {"checkout_url": checkout_url}
 
 
@@ -572,16 +571,19 @@ def resolve_change_address(
             # if price of the permits goes higher, the customer needs to make
             # extra payments through Talpa before the orders can be set to confirmed
             new_order_status = OrderStatus.DRAFT
+            # update permit new zone to next parking zone and use that in price calculation
+            fixed_period_permits.update(
+                next_parking_zone=new_zone, next_address=address
+            )
         else:
             new_order_status = OrderStatus.CONFIRMED
-
-        # update permit to the new zone before creating
-        # new order as the price is determined by the
-        # new zone
-        fixed_period_permits.update(parking_zone=new_zone, address=address)
+            fixed_period_permits.update(parking_zone=new_zone, address=address)
 
         new_order = Order.objects.create_renewal_order(
-            customer, status=new_order_status
+            customer,
+            status=new_order_status,
+            order_type=OrderType.ADDRESS_CHANGED,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
@@ -601,16 +603,22 @@ def resolve_change_address(
             # the permits goes up
             response["checkout_url"] = TalpaOrderManager.send_to_talpa(new_order)
             fixed_period_permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+        else:
+            # Refresh the updated fixed-period permits and send email and update parkkihubi
+            fixed_period_permits = permits.fixed_period().all()
+            for permit in fixed_period_permits:
+                permit.update_parkkihubi_permit()
+                send_permit_email(PermitEmailType.UPDATED, permit)
 
     # For open ended permits, it's enough to update the permit zone
     # as talpa will get the updated price based on new zone when
     # asking permit price for next month
-    open_ended_permits = permits.open_ended()
-    open_ended_permits.update(parking_zone=new_zone, address=address)
-
-    # Get the updated permits.
-    permits = permits.all()
-    for permit in permits:
+    open_ended_permits = permits.open_ended().all()
+    for permit in open_ended_permits:
+        permit.parking_zone = new_zone
+        permit.address = address
+        permit.save()
+        permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.UPDATED, permit)
 
     return response
