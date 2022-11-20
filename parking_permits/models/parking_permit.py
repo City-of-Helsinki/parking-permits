@@ -83,12 +83,30 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         Vehicle,
         verbose_name=_("Vehicle"),
         on_delete=models.PROTECT,
+        related_name="permits",
+    )
+    next_vehicle = models.ForeignKey(
+        Vehicle,
+        verbose_name=_("Next vehicle"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
+        blank=True,
+        null=True,
     )
     temp_vehicles = models.ManyToManyField(TemporaryVehicle, blank=True)
     parking_zone = models.ForeignKey(
         ParkingZone,
         verbose_name=_("Parking zone"),
         on_delete=models.PROTECT,
+        related_name="permits",
+    )
+    next_parking_zone = models.ForeignKey(
+        ParkingZone,
+        verbose_name=_("Next parking zone"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
+        blank=True,
+        null=True,
     )
     type = models.CharField(
         _("Type"),
@@ -129,6 +147,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         verbose_name=_("Address"),
         on_delete=models.PROTECT,
         related_name="permits",
+        null=True,
+        blank=True,
+    )
+    next_address = models.ForeignKey(
+        "Address",
+        verbose_name=_("Next address"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
         null=True,
         blank=True,
     )

@@ -60,6 +60,12 @@ class OrderStatus(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
+class OrderType(models.TextChoices):
+    CREATED = "CREATED", _("Created")
+    VEHICLE_CHANGED = "VEHICLE_CHANGED", _("Vehicle changed")
+    ADDRESS_CHANGED = "ADDRESS_CHANGED", _("Address changed")
+
+
 class OrderManager(SerializableMixin.SerializableManager):
     def _validate_permits(self, permits):
         if len(permits) > 2:
@@ -250,6 +256,12 @@ class Order(SerializableMixin, TimestampedModelMixin):
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
     permits = models.ManyToManyField(
         ParkingPermit, verbose_name=_("permits"), related_name="orders"
+    )
+    type = models.CharField(
+        _("Order type"),
+        max_length=50,
+        choices=OrderType.choices,
+        default=OrderType.CREATED,
     )
     objects = OrderManager()
 
