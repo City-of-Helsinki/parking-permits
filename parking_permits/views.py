@@ -11,6 +11,7 @@ from django.http import (
     HttpResponseBadRequest,
     HttpResponseNotFound,
 )
+from django.utils import timezone as tz
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -40,7 +41,7 @@ from .forms import (
 )
 from .models import Customer, Order
 from .models.common import SourceSystem
-from .models.order import OrderStatus
+from .models.order import OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
@@ -228,14 +229,47 @@ class OrderView(APIView):
         if event_type == "PAYMENT_PAID":
             order = Order.objects.get(talpa_order_id=talpa_order_id)
             order.status = OrderStatus.CONFIRMED
+            order.payment_type = OrderPaymentType.ONLINE_PAYMENT
+            order.paid_time = tz.now()
             order.save()
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
-                permit.save()
-                if permit.orders.exists() and permit.orders.count() > 1:
+
+                if order.type == OrderType.VEHICLE_CHANGED:
+                    if (
+                        permit.consent_low_emission_accepted
+                        and permit.vehicle.is_low_emission
+                    ):
+                        send_vehicle_low_emission_discount_email(
+                            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
+                            permit,
+                        )
+                    if permit.next_vehicle:
+                        permit.vehicle = permit.next_vehicle
+                        permit.next_vehicle = None
+                        permit.save()
+                        send_permit_email(PermitEmailType.UPDATED, permit)
+
+                if order.type == OrderType.ADDRESS_CHANGED:
+                    if (
+                        permit.consent_low_emission_accepted
+                        and permit.vehicle.is_low_emission
+                    ):
+                        send_vehicle_low_emission_discount_email(
+                            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
+                            permit,
+                        )
+                    permit.parking_zone = permit.next_parking_zone
+                    permit.next_parking_zone = None
+                    permit.address = permit.next_address
+                    permit.next_address = None
+                    permit.save()
                     send_permit_email(PermitEmailType.UPDATED, permit)
-                else:
+
+                if order.type == OrderType.CREATED:
+                    permit.save()
                     send_permit_email(PermitEmailType.CREATED, permit)
+
                 if (
                     permit.consent_low_emission_accepted
                     and permit.vehicle.is_low_emission
