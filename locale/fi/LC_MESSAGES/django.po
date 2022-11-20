@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-19 08:52+0200\n"
+"POT-Creation-Date: 2022-11-20 11:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -112,7 +112,8 @@ msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
 msgid "Temporary vehicle start time has to be after permit start time"
-msgstr "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
+msgstr ""
+"Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
 msgstr ""
@@ -441,6 +442,15 @@ msgstr "Kassamaksu"
 msgid "Draft"
 msgstr "Luonnos"
 
+msgid "Created"
+msgstr "Luotu"
+
+msgid "Vehicle changed"
+msgstr "Ajoneuvo vaihtunut"
+
+msgid "Address changed"
+msgstr "Osoite vaihtunut"
+
 msgid "Talpa order id"
 msgstr "Talpan tilauksen tunniste"
 
@@ -458,6 +468,9 @@ msgstr "Tilauksen tila"
 
 msgid "permits"
 msgstr "Pysäköintitunnukset"
+
+msgid "Order type"
+msgstr "Tilaustyyppi"
 
 msgid "Order"
 msgstr "Tilaus"
@@ -525,6 +538,12 @@ msgstr "Voimassa"
 msgid "Closed"
 msgstr "Suljettu"
 
+msgid "Next vehicle"
+msgstr "Tuleva ajoneuvo"
+
+msgid "Next parking zone"
+msgstr "Tuleva pysäköintialue"
+
 msgid "Vehicle changed date"
 msgstr "Ajoneuvon tietojen muuttamispäivä"
 
@@ -539,6 +558,9 @@ msgstr "Kuukaudet (lkm)"
 
 msgid "Description"
 msgstr "Kuvaus"
+
+msgid "Next address"
+msgstr "Tuleva osoite"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-19 08:52+0200\n"
+"POT-Creation-Date: 2022-11-20 11:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,34 +19,34 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "NotSet"
-msgstr ""
+msgstr "Inte inställd"
 
 msgid "Info"
-msgstr ""
+msgstr "Info"
 
 msgid "Warning"
-msgstr ""
+msgstr "Varning"
 
 msgid "Debug"
-msgstr ""
+msgstr "Felsökning"
 
 msgid "Error"
-msgstr ""
+msgstr "Fel"
 
 msgid "Fatal"
-msgstr ""
+msgstr "Dödlig"
 
 msgid "Logger name"
-msgstr ""
+msgstr "Loggernamn"
 
 msgid "Logging level"
-msgstr ""
+msgstr "Loggningsnivå"
 
 msgid "Is sent"
-msgstr ""
+msgstr "Är skickat"
 
 msgid "Message"
-msgstr ""
+msgstr "Meddelande"
 
 msgid "Created at"
 msgstr "Skapad kl"
@@ -117,7 +117,8 @@ msgid "Temporary vehicle start time has to be after permit start time"
 msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
-msgstr "Kan inte ha mer än 2 tillfälliga fordon under 365 dagar från det första."
+msgstr ""
+"Kan inte ha mer än 2 tillfälliga fordon under 365 dagar från det första."
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
@@ -441,6 +442,15 @@ msgstr "Kassabetalning"
 msgid "Draft"
 msgstr "Skiss"
 
+msgid "Created"
+msgstr "Skapad kl"
+
+msgid "Vehicle changed"
+msgstr "Fordon bytt"
+
+msgid "Address changed"
+msgstr "Adress ändrad"
+
 msgid "Talpa order id"
 msgstr "Talpa beställning ID"
 
@@ -458,6 +468,9 @@ msgstr "Beställningens status"
 
 msgid "permits"
 msgstr "Parkeringtecken"
+
+msgid "Order type"
+msgstr "Beställningtyp"
 
 msgid "Order"
 msgstr "Beställning"
@@ -525,6 +538,12 @@ msgstr "I kraftVoimassa"
 msgid "Closed"
 msgstr "Sluten"
 
+msgid "Next vehicle"
+msgstr "Nästa fordon"
+
+msgid "Next parking zone"
+msgstr "Nästa parkering zone"
+
 msgid "Vehicle changed date"
 msgstr "Fordonet ändringdatum"
 
@@ -539,6 +558,9 @@ msgstr "Månad (st)"
 
 msgid "Description"
 msgstr "Beskrivning"
+
+msgid "Next address"
+msgstr "Nästa adress"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
@@ -922,4 +944,3 @@ msgstr "Rätten till rabatt har tagits bort från fordonet."
 
 msgid "Discount right ends"
 msgstr "Rabatten till höger upphör"
-
