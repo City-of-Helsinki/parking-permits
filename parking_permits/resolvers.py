@@ -10,6 +10,7 @@ from ariadne import (
 )
 from ariadne.contrib.federation import FederatedObjectType
 from dateutil.parser import isoparse
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -417,7 +418,8 @@ def resolve_update_permit_vehicle(
     permit.save()
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
-        permit.update_parkkihubi_permit()
+        if not settings.DEBUG:
+            permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.UPDATED, permit)
 
     return {"checkout_url": checkout_url}
@@ -610,7 +612,8 @@ def resolve_change_address(
             # Refresh the updated fixed-period permits and send email and update parkkihubi
             fixed_period_permits = permits.fixed_period().all()
             for permit in fixed_period_permits:
-                permit.update_parkkihubi_permit()
+                if not settings.DEBUG:
+                    permit.update_parkkihubi_permit()
                 send_permit_email(PermitEmailType.UPDATED, permit)
 
     # For open ended permits, it's enough to update the permit zone
@@ -621,7 +624,8 @@ def resolve_change_address(
         permit.parking_zone = new_zone
         permit.address = address
         permit.save()
-        permit.update_parkkihubi_permit()
+        if not settings.DEBUG:
+            permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.UPDATED, permit)
 
     return response
