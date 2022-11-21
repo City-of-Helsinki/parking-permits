@@ -377,7 +377,7 @@ def resolve_update_permit_vehicle(
             permit.parking_zone, new_vehicle.is_low_emission
         )
         permit_total_price_change = sum(
-            [item["price_change"] for item in price_change_list]
+            [item["price_change"] * item["month_count"] for item in price_change_list]
         )
 
         if permit_total_price_change > 0:
@@ -559,7 +559,10 @@ def resolve_change_address(
                 new_zone, permit.vehicle.is_low_emission
             )
             permit_total_price_change = sum(
-                [item["price_change"] for item in price_change_list]
+                [
+                    item["price_change"] * item["month_count"]
+                    for item in price_change_list
+                ]
             )
             total_price_change_by_order.update(
                 {permit.latest_order: permit_total_price_change}
