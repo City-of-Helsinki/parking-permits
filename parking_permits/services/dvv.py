@@ -79,8 +79,8 @@ def format_address(address_data):
         "street_name": street_name,
         "street_name_sv": street_name_sv,
         "street_number": street_number,
-        "city_sv": address_data["PostitoimipaikkaR"],
-        "city": address_data["PostitoimipaikkaS"],
+        "city_sv": address_data["PostitoimipaikkaR"].title(),
+        "city": address_data["PostitoimipaikkaS"].title(),
         "postal_code": address_data["Postinumero"],
         "zone": zone,
     }
