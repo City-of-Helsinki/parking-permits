@@ -41,6 +41,7 @@ from .decorators import (
     is_super_admin,
 )
 from .exceptions import (
+    AddressError,
     CreatePermitError,
     ObjectNotFound,
     ParkingZoneError,
@@ -264,12 +265,13 @@ def resolve_vehicle(obj, info, reg_number, national_id_number):
 
 
 def create_address(address_info):
+    location = Point(*address_info["location"], srid=settings.SRID)
     address_obj = Address.objects.update_or_create(
         street_name=address_info["street_name"],
         street_number=address_info["street_number"],
-        city=address_info["city"],
+        city=address_info["city"].title() if address_info["city"] else "",
         postal_code=address_info["postal_code"],
-        defaults=address_info,
+        location=location,
     )
     return address_obj[0]
 
@@ -297,6 +299,13 @@ def update_or_create_customer(customer_info):
     other_address = customer_info.get("other_address")
     if other_address:
         customer_data["other_address"] = create_address(other_address)
+
+    if not customer_info["address_security_ban"] and (
+        not primary_address and not other_address
+    ):
+        raise AddressError(
+            _("Customer without address security ban must have one address selected")
+        )
 
     return Customer.objects.update_or_create(
         national_id_number=customer_info["national_id_number"], defaults=customer_data
@@ -351,25 +360,56 @@ def create_permit_address(customer_info):
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None):
     customer_info = permit["customer"]
+    national_id_number = customer_info["national_id_number"]
+    if not national_id_number:
+        raise CreatePermitError(
+            _("Customer national id number is mandatory for the permit")
+        )
+
     customer = update_or_create_customer(customer_info)
     active_permits = customer.active_permits
     active_permits_count = active_permits.count()
     if active_permits_count >= 2:
         raise PermitLimitExceeded(_("Cannot create more than 2 permits"))
 
+    vehicle_info = permit["vehicle"]
+    registration_number = vehicle_info["registration_number"]
+    if not registration_number:
+        raise CreatePermitError(
+            _("Vehicle registration number is mandatory for the permit")
+        )
+
+    has_valid_permit = active_permits.filter(
+        vehicle__registration_number=registration_number
+    ).exists()
+    if has_valid_permit:
+        raise CreatePermitError(
+            _("User already has a valid permit for the given vehicle.")
+        )
+
     start_time = isoparse(permit["start_time"])
     end_time = get_end_time(start_time, permit["month_count"])
     if active_permits_count == 1 and end_time > active_permits[0].end_time:
         raise CreatePermitError(
-            _("The validity period of secondary permit cannot exceeds the primary one")
+            _("The validity period of secondary permit cannot exceed the primary one")
         )
 
-    vehicle_info = permit["vehicle"]
     vehicle = update_or_create_vehicle(vehicle_info)
 
     address = create_permit_address(customer_info)
 
     parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
+
+    if active_permits_count == 1:
+        active_parking_zone = active_permits[0].parking_zone
+        if parking_zone != active_parking_zone:
+            raise CreatePermitError(
+                _(
+                    "Cannot create permit. User already has a valid existing permit in zone %(parking_zone)s."
+                )
+                % {"parking_zone": active_parking_zone.name}
+            )
+
     primary_vehicle = active_permits_count == 0
     with reversion.create_revision():
         parking_permit = ParkingPermit.objects.create(
@@ -548,7 +588,8 @@ def resolve_update_resident_permit(
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    permit.update_parkkihubi_permit()
+    if not settings.DEBUG:
+        permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.UPDATED, permit)
     if vehicle_changed:
         if previous_permit.vehicle.is_low_emission:
@@ -606,7 +647,8 @@ def resolve_end_permit(
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    permit.update_parkkihubi_permit()
+    if not settings.DEBUG:
+        permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.ENDED, permit)
     if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
         send_vehicle_low_emission_discount_email(

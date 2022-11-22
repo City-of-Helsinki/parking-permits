@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-20 11:58+0200\n"
+"POT-Creation-Date: 2022-11-22 15:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,14 +69,34 @@ msgstr "Asiakkaan hakuvirhe"
 msgid "Vehicle not found for the customer"
 msgstr "Asiakkaan ajoneuvoa ei löytynyt"
 
+msgid "Customer without address security ban must have one address selected"
+msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
+
 msgid "Vehicle power type not found"
 msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
+
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
 
-msgid "The validity period of secondary permit cannot exceeds the primary one"
+msgid "Vehicle registration number is mandatory for the permit"
+msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
+
+msgid "User already has a valid permit for the given vehicle."
+msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+msgid "The validity period of secondary permit cannot exceed the primary one"
 msgstr "Toissijaisen tunnuksen aikaväli ei voi ylittää ensisijaista"
+
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in zone "
+"%(parking_zone)s."
+msgstr ""
+"Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus alueella "
+"%(parking_zone)s."
 
 msgid "Parking permit not found"
 msgstr "Pysäköintitunnusta ei löytynyt"
@@ -153,6 +173,12 @@ msgstr ""
 #, python-format
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle %(primary_address)s."
+
+msgid "Forbidden"
+msgstr "Lupa evätty"
+
+msgid "Internal Server Error"
+msgstr "Sisäinen virhe"
 
 msgid "Name"
 msgstr "Nimi"

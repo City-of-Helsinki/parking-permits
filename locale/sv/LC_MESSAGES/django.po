@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-20 11:58+0200\n"
+"POT-Creation-Date: 2022-11-22 15:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,16 +69,36 @@ msgstr "Kundsökningsfel"
 msgid "Vehicle not found for the customer"
 msgstr "Fordonet hjittasdes inte för kunden"
 
+msgid "Customer without address security ban must have one address selected"
+msgstr "Kund utan adresssäkerhetsförbud måste ha en adress vald"
+
 msgid "Vehicle power type not found"
 msgstr "Fordonskraftstyp hittades inte"
+
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Kundens personnummer är obligatoriskt för tillståndet"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Kan inte skapa mer än 2 boendeparkeringpermit"
 
-msgid "The validity period of secondary permit cannot exceeds the primary one"
+msgid "Vehicle registration number is mandatory for the permit"
+msgstr "Fordonets registreringsnummer är obligatoriskt för tillståndet"
+
+msgid "User already has a valid permit for the given vehicle."
+msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
+
+msgid "The validity period of secondary permit cannot exceed the primary one"
 msgstr ""
 "Giltighetstiden för det sekundära permit får inte överstiga det primära "
 "permit"
+
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in zone "
+"%(parking_zone)s."
+msgstr ""
+"Kan inte skapa tillstånd. Användaren har redan ett giltigt befintligt tillstånd i zonen "
+"%(parking_zone)s."
 
 msgid "Parking permit not found"
 msgstr "Parkeringtecken hittades inte"
@@ -153,6 +173,12 @@ msgstr "Du kan ha maximalt %(max_allowed_permit)s tillstånd."
 #, python-format
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Du kan endast köpa tillstånd för adressen %(primary_address)s."
+
+msgid "Forbidden"
+msgstr "Förbjuden"
+
+msgid "Internal Server Error"
+msgstr "Internt fel"
 
 msgid "Name"
 msgstr "Namn"
