@@ -72,11 +72,12 @@ def _changed_description_resolver(obj):
 
     old_data = version.field_dict
     new_data = vars(obj)
-    new_data.pop("_state", None)
 
     changes = []
     model_class = type(obj)
     for field_key, new_value in new_data.items():
+        if field_key == "_state":
+            continue
         field = model_class._meta.get_field(field_key)
         old_value = old_data.get(field_key)
         change_resolver = FieldChangeResolver(field, old_value, new_value)
