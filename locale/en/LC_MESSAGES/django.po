@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-20 11:58+0200\n"
+"POT-Creation-Date: 2022-11-22 15:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -69,13 +69,31 @@ msgstr ""
 msgid "Vehicle not found for the customer"
 msgstr ""
 
+msgid "Customer without address security ban must have one address selected"
+msgstr ""
+
 msgid "Vehicle power type not found"
+msgstr ""
+
+msgid "Customer national id number is mandatory for the permit"
 msgstr ""
 
 msgid "Cannot create more than 2 permits"
 msgstr ""
 
-msgid "The validity period of secondary permit cannot exceeds the primary one"
+msgid "Vehicle registration number is mandatory for the permit"
+msgstr ""
+
+msgid "User already has a valid permit for the given vehicle."
+msgstr ""
+
+msgid "The validity period of secondary permit cannot exceed the primary one"
+msgstr ""
+
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in zone "
+"%(parking_zone)s."
 msgstr ""
 
 msgid "Parking permit not found"
@@ -149,6 +167,12 @@ msgstr ""
 
 #, python-format
 msgid "You can buy permit only for address %(primary_address)s."
+msgstr ""
+
+msgid "Forbidden"
+msgstr ""
+
+msgid "Internal Server Error"
 msgstr ""
 
 msgid "Name"
