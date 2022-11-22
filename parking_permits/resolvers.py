@@ -440,6 +440,7 @@ def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
         customer=customer, status=ParkingPermitStatus.DRAFT
     )
     order = Order.objects.create_for_permits(permits)
+    permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
     audit_msg.target = order
     return {"checkout_url": TalpaOrderManager.send_to_talpa(order)}
 
