@@ -90,21 +90,22 @@ class OrderManager(SerializableMixin.SerializableManager):
         for permit in permits:
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
-                unit_price = product.get_modified_unit_price(
-                    permit.vehicle.is_low_emission, permit.is_secondary_vehicle
-                )
-                start_date, end_date = date_range
-                OrderItem.objects.create(
-                    order=order,
-                    product=product,
-                    permit=permit,
-                    unit_price=unit_price,
-                    payment_unit_price=unit_price,
-                    vat=product.vat,
-                    quantity=quantity,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
+                if quantity > 0:
+                    unit_price = product.get_modified_unit_price(
+                        permit.vehicle.is_low_emission, permit.is_secondary_vehicle
+                    )
+                    start_date, end_date = date_range
+                    OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        permit=permit,
+                        unit_price=unit_price,
+                        payment_unit_price=unit_price,
+                        vat=product.vat,
+                        quantity=quantity,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
 
         order.permits.add(*permits)
         return order
