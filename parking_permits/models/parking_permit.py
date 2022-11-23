@@ -6,7 +6,11 @@ import requests
 import reversion
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
+from django.contrib.postgres.fields import DateTimeRangeField
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -15,7 +19,7 @@ from helsinki_gdpr.models import SerializableMixin
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded, RefundError
 from ..utils import diff_months_ceil, get_end_time, get_permit_prices
-from .mixins import TimestampedModelMixin
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
@@ -296,6 +300,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def current_period_end_time(self):
         end_time = get_end_time(self.start_time, self.months_used)
         return max(self.start_time, end_time)
+
+    @property
+    def current_period_range(self):
+        return self.current_period_start_time, self.current_period_end_time
 
     @property
     def next_period_start_time(self):
@@ -633,3 +641,42 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 }
             ],
         }
+
+
+class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
+    class EventType(models.TextChoices):
+        CREATED = "CREATED", _("Created")
+        UPDATED = "UPDATED", _("Updated")
+        RENEWED = "RENEWED", _("Renewed")
+        ENDED = "ENDED", _("Ended")
+
+    class EventKey(models.TextChoices):
+        CREATE_PERMIT = "create_permit"
+        UPDATE_PERMIT = "update_permit"
+        END_PERMIT = "end_permit"
+        CREATE_ORDER = "create_order"
+        RENEW_ORDER = "renew_order"
+        CREATE_REFUND = "create_refund"
+
+    type = models.CharField(
+        max_length=16, choices=EventType.choices, verbose_name=_("Event type")
+    )
+    key = models.CharField(max_length=255, choices=EventKey.choices)
+    message = models.TextField()
+    context = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
+    validity_period = DateTimeRangeField(null=True)
+    parking_permit = models.ForeignKey(
+        ParkingPermit, on_delete=models.CASCADE, related_name="events"
+    )
+
+    # Generic foreign key; see: https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    object_id = models.PositiveBigIntegerField(null=True)
+    related_object = GenericForeignKey("content_type", "object_id")
+
+    @property
+    def translated_message(self):
+        return _(self.message) % self.context
+
+    def __str__(self):
+        return self.translated_message
