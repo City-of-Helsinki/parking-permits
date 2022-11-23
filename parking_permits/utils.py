@@ -1,10 +1,12 @@
 import calendar
+import copy
 from collections import OrderedDict
 from collections.abc import Callable
 from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
+from django.db import models
 from django.utils import timezone
 from graphql import GraphQLResolveInfo
 from pytz import utc
@@ -202,3 +204,70 @@ def get_user_from_resolver_args(*args, **__):
 
 def get_user_from_api_view_method_args(view, request, *_, **__):
     return request.user
+
+
+def get_model_diff(a: models.Model, b: models.Model, fields: list = None) -> dict:
+    if type(a) is not type(b):
+        raise TypeError(f"a and b must have the same type ({type(a)} != {type(b)}))")
+    if not isinstance(a, models.Model):
+        raise TypeError(
+            f"Must be an instance of {type(models.Model)} or its subclass (was: {type(a)}"
+        )
+    difference = dict()
+    a_dict = vars(a)
+    b_dict = vars(b)
+    for field_name in a_dict.keys():
+        if field_name == "_state" or (fields and field_name not in fields):
+            continue
+        a_value = a_dict[field_name]
+        b_value = b_dict[field_name]
+        if a_value != b_value:
+            difference[field_name] = (a_value, b_value)
+    return difference
+
+
+class ModelDiffer:
+    def __init__(self, a: models.Model, fields: list[str] = None):
+        self.a = copy.deepcopy(a)
+        self.b = a
+        self.fields = fields
+        self._finished = False
+        self._result = dict()
+
+    @staticmethod
+    def start(obj: models.Model, fields: list[str] = None):
+        return ModelDiffer(obj, fields=fields)
+
+    def stop(self):
+        if not self._finished:
+            self.b = copy.deepcopy(self.b)
+            self._finished = True
+            self.result.update(self.get_diff(self.a, self.b, fields=self.fields))
+        return self.result
+
+    @property
+    def result(self):
+        return self._result
+
+    def __enter__(self):
+        return self.result
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
+    get_diff = staticmethod(get_model_diff)
+
+
+def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
+    output = dict() if _output_ref is None else _output_ref
+    for k, v in d.items():
+        if isinstance(v, dict):
+            flatten_dict(
+                v,
+                separator=separator,
+                prefix=f"{prefix}{k}{separator}",
+                _output_ref=output,
+            )
+        else:
+            output[f"{prefix}{k}"] = v
+    return output
