@@ -19,7 +19,7 @@ from helsinki_gdpr.models import SerializableMixin
 
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded, RefundError
-from ..utils import diff_months_ceil, get_end_time, get_permit_prices
+from ..utils import diff_months_ceil, flatten_dict, get_end_time, get_permit_prices
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 from .temporary_vehicle import TemporaryVehicle
@@ -697,11 +697,16 @@ class ParkingPermitEventFactory:
         )
 
     @staticmethod
-    def make_update_permit_event(permit: ParkingPermit, created_by=None):
+    def make_update_permit_event(
+        permit: ParkingPermit, created_by=None, changes: dict = None
+    ):
         return ParkingPermitEvent.objects.create(
             parking_permit=permit,
             message=gettext_noop("Permit #%(permit_id)s updated"),
-            context={"permit_id": permit.id},
+            context={
+                "permit_id": permit.id,
+                "changes": flatten_dict(changes or dict()),
+            },
             validity_period=permit.current_period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
             created_by=created_by,
