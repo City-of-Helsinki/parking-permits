@@ -14,7 +14,6 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_noop
 
 import audit_logger as audit
 from audit_logger import AuditMsg
@@ -35,7 +34,7 @@ from .models.order import Order, OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import (
     ContractType,
     ParkingPermit,
-    ParkingPermitEvent,
+    ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
 from .services.dvv import get_addresses
@@ -413,17 +412,8 @@ def resolve_update_permit_vehicle(
             )
             logger.info(f"Refund for updating permits zone created: {refund}")
             send_refund_email(RefundEmailType.CREATED, customer, refund)
-            ParkingPermitEvent.objects.create(
-                parking_permit=permit,
-                message=gettext_noop("Refund #%(refund_id)s created"),
-                context={
-                    "refund_id": refund.id,
-                    "payment_type": "REFUND",
-                    "sum": refund.amount,
-                },
-                validity_period=permit.current_period_range,
-                type=ParkingPermitEvent.EventType.CREATED,
-                created_by=request.user,
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
             )
 
         if permit_total_price_change > 0:
@@ -437,14 +427,7 @@ def resolve_update_permit_vehicle(
     permit.vehicle_changed_date = None
     permit.save()
 
-    ParkingPermitEvent.objects.create(
-        parking_permit=permit,
-        message=gettext_noop("Permit #%(permit_id)s updated"),
-        context={"permit_id": permit.id},
-        validity_period=permit.current_period_range,
-        type=ParkingPermitEvent.EventType.UPDATED,
-        created_by=request.user,
-    )
+    ParkingPermitEventFactory.make_update_permit_event(permit, created_by=request.user)
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
         if not settings.DEBUG:
@@ -636,17 +619,8 @@ def resolve_change_address(
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, refund)
                 for permit in order.permits:
-                    ParkingPermitEvent.objects.create(
-                        parking_permit=permit,
-                        message=gettext_noop("Refund #%(refund_id)s created"),
-                        context={
-                            "refund_id": refund.id,
-                            "payment_type": "REFUND",
-                            "sum": refund.amount,
-                        },
-                        validity_period=permit.current_period_range,
-                        type=ParkingPermitEvent.EventType.CREATED,
-                        created_by=request.user,
+                    ParkingPermitEventFactory.make_create_refund_event(
+                        permit, refund, created_by=request.user
                     )
 
         if customer_total_price_change > 0:

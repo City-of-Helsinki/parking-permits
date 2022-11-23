@@ -13,7 +13,7 @@ from .customer import Customer
 from .parking_permit import (
     ContractType,
     ParkingPermit,
-    ParkingPermitEvent,
+    ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
 from .product import Product
@@ -111,22 +111,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                         start_date=start_date,
                         end_date=end_date,
                     )
-            ParkingPermitEvent.objects.create(
-                parking_permit=permit,
-                message="Order #%(order_id)s created",
-                context={
-                    "order_id": order.id,
-                    "paid_time": order.paid_time,
-                    "payment_type": order.payment_type,
-                    "sum": order.total_price,
-                },
-                validity_period=(
-                    permit.current_period_start_time,
-                    permit.current_period_end_time,
-                ),
-                type=ParkingPermitEvent.EventType.CREATED,
-                created_by=kwargs.get("user", None),
-                related_object=order,
+            ParkingPermitEventFactory.make_create_order_event(
+                permit, order, created_by=kwargs.get("user", None)
             )
 
         order.permits.add(*permits)
@@ -246,22 +232,10 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
-            ParkingPermitEvent.objects.create(
-                parking_permit=permit,
-                message="Order #%(order_id)s renewed",
-                context={
-                    "order_id": new_order.id,
-                    "paid_time": new_order.paid_time,
-                    "payment_type": payment_type,
-                    "sum": new_order.total_price,
-                },
-                validity_period=(
-                    permit.current_period_start_time,
-                    permit.current_period_end_time,
-                ),
-                type=ParkingPermitEvent.EventType.RENEWED,
+            ParkingPermitEventFactory.make_renew_order_event(
+                permit,
+                new_order,
                 created_by=kwargs.get("user", None),
-                related_object=new_order,
             )
 
         # permits should be added to new order after all

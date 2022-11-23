@@ -14,6 +14,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
 from ..constants import ParkingPermitEndType
@@ -680,3 +681,79 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
 
     def __str__(self):
         return self.translated_message
+
+
+class ParkingPermitEventFactory:
+    @staticmethod
+    def make_create_permit_event(permit: ParkingPermit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s created"),
+            context={"permit_id": permit.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.CREATE_PERMIT,
+        )
+
+    @staticmethod
+    def make_update_permit_event(permit: ParkingPermit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s updated"),
+            context={"permit_id": permit.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.UPDATE_PERMIT,
+        )
+
+    @staticmethod
+    def make_end_permit_event(permit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s ended"),
+            context={"permit_id": permit.id},
+            type=ParkingPermitEvent.EventType.ENDED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.END_PERMIT,
+        )
+
+    @staticmethod
+    def make_create_order_event(permit: ParkingPermit, order, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s created",
+            context={"order_id": order.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.CREATE_ORDER,
+        )
+
+    @staticmethod
+    def make_renew_order_event(permit: ParkingPermit, order, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s renewed",
+            context={"order_id": order.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.RENEWED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.RENEW_ORDER,
+        )
+
+    @staticmethod
+    def make_create_refund_event(permit, refund, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Refund #%(refund_id)s created"),
+            context={"refund_id": refund.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=refund,
+            key=ParkingPermitEvent.EventKey.CREATE_REFUND,
+        )

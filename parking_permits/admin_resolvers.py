@@ -15,7 +15,6 @@ from django.contrib.gis.geos import Point
 from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
-from django.utils.translation import gettext_noop
 
 import audit_logger as audit
 from audit_logger import AuditMsg
@@ -65,7 +64,7 @@ from .forms import (
     RefundSearchForm,
 )
 from .models.order import OrderPaymentType, OrderStatus
-from .models.parking_permit import ContractType, ParkingPermitEvent, ParkingPermitStatus
+from .models.parking_permit import ContractType, ParkingPermitEventFactory, ParkingPermitStatus
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
@@ -434,13 +433,8 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         comment = get_reversion_comment(EventType.CREATED, parking_permit)
         reversion.set_comment(comment)
 
-    ParkingPermitEvent.objects.create(
-        parking_permit=parking_permit,
-        message=gettext_noop("Permit #%(permit_id)s created"),
-        context={"permit_id": parking_permit.id},
-        validity_period=parking_permit.current_period_range,
-        type=ParkingPermitEvent.EventType.CREATED,
-        created_by=request.user,
+    ParkingPermitEventFactory.make_create_permit_event(
+        parking_permit, created_by=request.user
     )
 
     # when creating from Admin UI, it's considered the payment is completed
@@ -578,14 +572,7 @@ def resolve_update_resident_permit(
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
 
-    ParkingPermitEvent.objects.create(
-        parking_permit=permit,
-        message=gettext_noop("Permit #%(permit_id)s updated"),
-        context={"permit_id": permit.id},
-        validity_period=permit.current_period_range,
-        type=ParkingPermitEvent.EventType.UPDATED,
-        created_by=request.user,
-    )
+    ParkingPermitEventFactory.make_update_permit_event(permit, created_by=request.user)
 
     if should_create_new_order:
         if total_price_change > 0:
@@ -599,17 +586,8 @@ def resolve_update_resident_permit(
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
             send_refund_email(RefundEmailType.CREATED, customer, refund)
-            ParkingPermitEvent.objects.create(
-                parking_permit=permit,
-                message=gettext_noop("Refund #%(refund_id)s created"),
-                context={
-                    "refund_id": refund.id,
-                    "payment_type": "REFUND",
-                    "sum": refund.amount,
-                },
-                validity_period=permit.current_period_range,
-                type=ParkingPermitEvent.EventType.CREATED,
-                created_by=request.user,
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
             )
         logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
@@ -669,17 +647,8 @@ def resolve_end_permit(
                 description=description,
             )
             send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
-            ParkingPermitEvent.objects.create(
-                parking_permit=permit,
-                message=gettext_noop("Refund #%(refund_id)s created"),
-                context={
-                    "refund_id": refund.id,
-                    "payment_type": "REFUND",
-                    "sum": refund.amount,
-                },
-                validity_period=permit.current_period_range,
-                type=ParkingPermitEvent.EventType.CREATED,
-                created_by=request.user,
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
             )
     if permit.is_open_ended:
         # TODO: handle open ended. Currently how to handle
@@ -691,13 +660,7 @@ def resolve_end_permit(
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
 
-    ParkingPermitEvent.objects.create(
-        parking_permit=permit,
-        message=gettext_noop("Permit #%(permit_id)s ended"),
-        context={"permit_id": permit.id},
-        type=ParkingPermitEvent.EventType.ENDED,
-        created_by=request.user,
-    )
+    ParkingPermitEventFactory.make_end_permit_event(permit, created_by=request.user)
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
