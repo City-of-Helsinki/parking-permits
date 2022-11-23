@@ -7,6 +7,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 
 from .constants import LOW_EMISSION_DISCOUNT, SECONDARY_VEHICLE_PRICE_INCREASE
 from .exceptions import (
@@ -30,6 +31,7 @@ from .models import (
 )
 from .models.parking_permit import (
     ContractType,
+    ParkingPermitEvent,
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
@@ -202,6 +204,14 @@ class CustomerPermit:
                 comment = get_reversion_comment(EventType.CREATED, permit)
                 reversion.set_user(self.customer.user)
                 reversion.set_comment(comment)
+                ParkingPermitEvent.objects.create(
+                    parking_permit=permit,
+                    message=gettext_noop("Permit #%(permit_id)s created"),
+                    context={"permit_id": permit.id},
+                    validity_period=permit.current_period_range,
+                    type=ParkingPermitEvent.EventType.CREATED,
+                    created_by=self.customer.user,
+                )
                 return permit
 
     def delete(self, permit_id):
@@ -329,6 +339,19 @@ class CustomerPermit:
                     description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
                 )
                 send_refund_email(RefundEmailType.CREATED, self.customer, refund)
+                for permit in permits:
+                    ParkingPermitEvent.objects.create(
+                        parking_permit=permit,
+                        message=gettext_noop("Refund #%(refund_id)s created"),
+                        context={
+                            "refund_id": refund.id,
+                            "payment_type": "REFUND",
+                            "sum": refund.amount,
+                        },
+                        validity_period=permit.current_period_range,
+                        type=ParkingPermitEvent.EventType.CREATED,
+                        created_by=self.customer.user,
+                    )
 
         for permit in permits:
             with reversion.create_revision():
@@ -353,6 +376,13 @@ class CustomerPermit:
                 send_permit_email(
                     PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
                 )
+            ParkingPermitEvent.objects.create(
+                parking_permit=permit,
+                message=gettext_noop("Permit #%(permit_id)s ended"),
+                context={"permit_id": permit.id},
+                type=ParkingPermitEvent.EventType.ENDED,
+                created_by=self.customer.user,
+            )
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
@@ -372,6 +402,16 @@ class CustomerPermit:
                 val = data[key]
             setattr(permit, key, val)
         permit.save(update_fields=keys)
+
+        ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s updated"),
+            context={"permit_id": permit.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=self.customer.user,
+        )
+
         return permit
 
     def _calculate_prices(self, permit, product_with_qty):
