@@ -8,7 +8,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from .constants import LOW_EMISSION_DISCOUNT, SECONDARY_VEHICLE_PRICE_INCREASE
+from .constants import (
+    LOW_EMISSION_DISCOUNT,
+    SECONDARY_VEHICLE_PRICE_INCREASE,
+    EventFields,
+)
 from .exceptions import (
     DuplicatePermit,
     InvalidContractType,
@@ -42,7 +46,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
-from .utils import diff_months_floor, get_end_time
+from .utils import ModelDiffer, diff_months_floor, get_end_time
 
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
@@ -377,6 +381,7 @@ class CustomerPermit:
 
     def _update_permit(self, permit: ParkingPermit, data: dict):
         keys = data.keys()
+        permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
         for key in keys:
             if isinstance(data[key], str) and key in ["start_time", "end_time"]:
                 val = isoparse(data[key])
@@ -384,9 +389,10 @@ class CustomerPermit:
                 val = data[key]
             setattr(permit, key, val)
         permit.save(update_fields=keys)
+        permit_diff = permit_differ.stop()
 
         ParkingPermitEventFactory.make_update_permit_event(
-            permit, created_by=self.customer.user
+            permit, created_by=self.customer.user, changes=permit_diff
         )
 
         return permit

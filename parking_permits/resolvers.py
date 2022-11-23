@@ -19,7 +19,7 @@ import audit_logger as audit
 from audit_logger import AuditMsg
 from project.settings import BASE_DIR
 
-from .constants import Origin
+from .constants import EventFields, Origin
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
@@ -48,7 +48,7 @@ from .services.mail import (
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
-from .utils import get_user_from_resolver_args
+from .utils import ModelDiffer, get_user_from_resolver_args
 
 logger = logging.getLogger("db")
 audit_logger = audit.getAuditLoggerAdapter(
@@ -369,6 +369,9 @@ def resolve_update_permit_vehicle(
     request = info.context["request"]
     customer = request.user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
+    permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
+    vehicle_differ = ModelDiffer.start(permit.vehicle, fields=EventFields.VEHICLE)
+
     audit_msg.target = permit
     checkout_url = None
     talpa_order_created = False
@@ -427,7 +430,13 @@ def resolve_update_permit_vehicle(
     permit.vehicle_changed_date = None
     permit.save()
 
-    ParkingPermitEventFactory.make_update_permit_event(permit, created_by=request.user)
+    permit_diff = permit_differ.stop()
+    vehicle_diff = vehicle_differ.stop()
+    ParkingPermitEventFactory.make_update_permit_event(
+        permit,
+        created_by=request.user,
+        changes={**permit_diff, "vehicle": vehicle_diff},
+    )
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
         if not settings.DEBUG:

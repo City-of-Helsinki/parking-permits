@@ -32,7 +32,7 @@ from parking_permits.models import (
     Vehicle,
 )
 
-from .constants import Origin
+from .constants import EventFields, Origin
 from .decorators import (
     is_customer_service,
     is_inspectors,
@@ -78,7 +78,12 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
-from .utils import get_end_time, get_permit_prices, get_user_from_resolver_args
+from .utils import (
+    ModelDiffer,
+    get_end_time,
+    get_permit_prices,
+    get_user_from_resolver_args,
+)
 
 logger = logging.getLogger("db")
 audit_logger = audit.getAuditLoggerAdapter(
@@ -560,19 +565,34 @@ def resolve_update_resident_permit(
     )
 
     customer = update_or_create_customer(customer_info)
+    customer_diff = ModelDiffer.get_diff(
+        permit.customer,
+        customer,
+        fields=EventFields.CUSTOMER,
+    )
     vehicle = update_or_create_vehicle(vehicle_info)
-    with reversion.create_revision():
-        permit.status = permit_info["status"]
-        permit.parking_zone = parking_zone
-        permit.vehicle = vehicle
-        permit.description = permit_info["description"]
-        permit.save()
-        request = info.context["request"]
-        reversion.set_user(request.user)
-        comment = get_reversion_comment(EventType.CHANGED, permit)
-        reversion.set_comment(comment)
+    vehicle_diff = ModelDiffer.get_diff(
+        permit.vehicle,
+        vehicle,
+        fields=EventFields.VEHICLE,
+    )
+    with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
+        with reversion.create_revision():
+            permit.status = permit_info["status"]
+            permit.parking_zone = parking_zone
+            permit.vehicle = vehicle
+            permit.description = permit_info["description"]
+            permit.save()
+            request = info.context["request"]
+            reversion.set_user(request.user)
+            comment = get_reversion_comment(EventType.CHANGED, permit)
+            reversion.set_comment(comment)
 
-    ParkingPermitEventFactory.make_update_permit_event(permit, created_by=request.user)
+    ParkingPermitEventFactory.make_update_permit_event(
+        permit,
+        created_by=request.user,
+        changes={**permit_diff, "customer": customer_diff, "vehicle": vehicle_diff},
+    )
 
     if should_create_new_order:
         if total_price_change > 0:
