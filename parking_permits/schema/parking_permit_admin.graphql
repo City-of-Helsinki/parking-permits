@@ -1,3 +1,7 @@
+scalar DateTimeRange
+
+scalar JSON
+
 type ProductNode {
   id: ID!
   type: String!
@@ -228,12 +232,23 @@ input SearchItem {
   value: String!
 }
 
+union ParkingPermitEventGFK = RefundNode | OrderNode
+
+type ContentTypeNode {
+  id: ID!
+  appLabel: String!
+  model: String!
+}
+
 type ChangeLog {
   id: ID!
-  event: String!
-  description: String!
+  key: String!
+  validityPeriod: DateTimeRange
   createdAt: String!
-  createdBy: String!
+  createdBy: String
+  context: JSON
+  contentType: ContentTypeNode
+  relatedObject: ParkingPermitEventGFK
 }
 
 type TemporaryVehicleNode {

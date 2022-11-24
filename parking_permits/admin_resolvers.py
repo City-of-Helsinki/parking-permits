@@ -6,6 +6,8 @@ from ariadne import (
     MutationType,
     ObjectType,
     QueryType,
+    ScalarType,
+    UnionType,
     convert_kwargs_to_snake_case,
     snake_case_fallback_resolvers,
 )
@@ -64,10 +66,15 @@ from .forms import (
     RefundSearchForm,
 )
 from .models.order import OrderPaymentType, OrderStatus
-from .models.parking_permit import ContractType, ParkingPermitEventFactory, ParkingPermitStatus
+from .models.parking_permit import (
+    ContractType,
+    ParkingPermitEvent,
+    ParkingPermitEventFactory,
+    ParkingPermitStatus,
+)
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .reversion import EventType, get_obj_changelogs, get_reversion_comment
+from .reversion import EventType, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -103,7 +110,16 @@ audit_logger = audit.getAuditLoggerAdapter(
 query = QueryType()
 mutation = MutationType()
 PermitDetail = ObjectType("PermitDetailNode")
-schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers]
+parking_permit_event_gfk = UnionType("ParkingPermitEventGFK")
+datetime_range_scalar = ScalarType("DateTimeRange")
+schema_bindables = [
+    query,
+    mutation,
+    PermitDetail,
+    snake_case_fallback_resolvers,
+    parking_permit_event_gfk,
+    datetime_range_scalar,
+]
 
 
 def _audit_post_process_paged_search(
@@ -149,6 +165,20 @@ def get_permits(page_input, order_by=None, search_params=None):
     return form.get_paged_queryset()
 
 
+@datetime_range_scalar.serializer
+def serialize_datetime_range(value):
+    return value.lower, value.upper
+
+
+@parking_permit_event_gfk.type_resolver
+def resolve_gfk_type(obj, *_):
+    if isinstance(obj, Order):
+        return "OrderNode"
+    if isinstance(obj, Refund):
+        return "RefundNode"
+    return None
+
+
 @query.field("permits")
 @is_preparators
 @convert_kwargs_to_snake_case
@@ -179,7 +209,10 @@ def resolve_permit_detail(obj, info, permit_id):
 
 @PermitDetail.field("changeLogs")
 def resolve_permit_detail_history(permit, info):
-    return get_obj_changelogs(permit)
+    events = ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
+        "-created_at"
+    )[:10]
+    return events
 
 
 @query.field("zones")
