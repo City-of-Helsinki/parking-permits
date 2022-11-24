@@ -13,7 +13,7 @@ from dateutil.parser import isoparse
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 import audit_logger as audit
@@ -28,6 +28,7 @@ from parking_permits.models import (
     ParkingZone,
     Product,
     Refund,
+    TemporaryVehicle,
     Vehicle,
 )
 
@@ -49,6 +50,7 @@ from .exceptions import (
     PermitLimitExceeded,
     RefundError,
     SearchError,
+    TemporaryVehicleValidationError,
     UpdatePermitError,
 )
 from .forms import (
@@ -62,7 +64,7 @@ from .forms import (
     RefundSearchForm,
 )
 from .models.order import OrderPaymentType, OrderStatus
-from .models.parking_permit import ContractType
+from .models.parking_permit import ContractType, ParkingPermitStatus
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
 from .reversion import EventType, get_obj_changelogs, get_reversion_comment
@@ -773,7 +775,7 @@ def resolve_accept_refunds(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.REQUEST_FOR_APPROVAL)
     qs.update(
         status=RefundStatus.ACCEPTED,
-        accepted_at=timezone.now(),
+        accepted_at=tz.now(),
         accepted_by=request.user,
     )
     accepted_refunds = Refund.objects.filter(
@@ -1020,4 +1022,57 @@ def resolve_create_announcement(obj, info, announcement):
 
     post_create_announcement(new_announcement)
 
+    return {"success": True}
+
+
+@mutation.field("addTemporaryVehicle")
+@is_customer_service
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def add_temporary_vehicle(
+    obj, info, permit_id, registration_number, start_time, end_time
+):
+    has_valid_permit = ParkingPermit.objects.filter(
+        vehicle__registration_number=registration_number,
+        status__in=[ParkingPermitStatus.VALID, ParkingPermitStatus.PAYMENT_IN_PROGRESS],
+    ).exists()
+
+    if has_valid_permit:
+        raise TemporaryVehicleValidationError(
+            _("There's already a valid permit for a given vehicle.")
+        )
+
+    permit = ParkingPermit.objects.get(id=permit_id)
+
+    if tz.localtime(isoparse(start_time)) < tz.now():
+        raise TemporaryVehicleValidationError(_("Start time cannot be in the past"))
+
+    if tz.localtime(isoparse(start_time)) < permit.start_time:
+        raise TemporaryVehicleValidationError(
+            _("Temporary vehicle start time has to be after permit start time")
+        )
+
+    tmp_vehicle = Traficom().fetch_vehicle_details(
+        registration_number=registration_number
+    )
+    vehicle = TemporaryVehicle.objects.create(
+        vehicle=tmp_vehicle,
+        end_time=end_time,
+        start_time=start_time,
+    )
+    permit.temp_vehicles.add(vehicle)
+    permit.update_parkkihubi_permit()
+    send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
+    return {"success": True}
+
+
+@mutation.field("removeTemporaryVehicle")
+@is_customer_service
+@convert_kwargs_to_snake_case
+@transaction.atomic
+def remove_temporary_vehicle(obj, info, permit_id):
+    permit = ParkingPermit.objects.get(id=permit_id)
+    permit.temp_vehicles.filter(is_active=True).update(is_active=False)
+    permit.update_parkkihubi_permit()
+    send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
     return {"success": True}
