@@ -150,6 +150,7 @@ type RefundNode {
 type OrderNode {
   id: ID!
   totalPrice: Float!
+  totalPaymentPrice: Float
   customer: CustomerNode!
   paidTime: String
   paymentType: String
