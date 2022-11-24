@@ -102,6 +102,7 @@ type PermitNode {
   id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
   address: AddressNode
@@ -115,6 +116,7 @@ type PermitNode {
 type LimitedPermitNode {
   id: ID!
   vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
   address: AddressNode
@@ -234,10 +236,19 @@ type ChangeLog {
   createdBy: String!
 }
 
+type TemporaryVehicleNode {
+  id: ID!
+  vehicle: VehicleNode!
+  startTime: String!
+  endTime: String!
+  isActive: Boolean!
+}
+
 type PermitDetailNode {
   id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
   primaryVehicle: Boolean!
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
@@ -496,6 +507,8 @@ enum PermitEndType {
 }
 
 type Mutation {
+  addTemporaryVehicle(permitId: ID!, registrationNumber: String!, startTime: String!, endTime: String!): MutationResponse!
+  removeTemporaryVehicle(permitId: ID!): MutationResponse
   createResidentPermit(permit: ResidentPermitInput!): CreatePermitResponse
   endPermit(permitId: ID!, endType: PermitEndType!, iban: String): MutationResponse
   updateResidentPermit(permitId: ID!, permitInfo: ResidentPermitInput!, iban: String): MutationResponse
