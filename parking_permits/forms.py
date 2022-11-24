@@ -78,7 +78,7 @@ class SearchFormBase(forms.Form):
 
     def get_queryset(self):
         model_class = self.get_model_class()
-        qs = self.filter_queryset(model_class.objects.all())
+        qs = self.filter_queryset(model_class.objects.all().distinct())
         return self.order_queryset(qs)
 
     def get_paged_queryset(self):
