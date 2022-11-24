@@ -1,7 +1,7 @@
 import logging
 
 from django.db import models, transaction
-from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
@@ -85,7 +85,7 @@ class OrderManager(SerializableMixin.SerializableManager):
     def create_for_permits(self, permits, status=OrderStatus.DRAFT, **kwargs):
         self._validate_permits(permits)
 
-        paid_time = timezone.now() if status == OrderStatus.CONFIRMED else None
+        paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
         order = Order.objects.create(
             customer=permits[0].customer,
             status=status,
@@ -130,8 +130,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                     "Cannot create renewal order for open ended permits"
                 )
 
-            start_date = timezone.localdate(permit.next_period_start_time)
-            end_date = timezone.localdate(permit.end_time)
+            start_date = tz.localdate(permit.next_period_start_time)
+            end_date = tz.localdate(permit.end_time)
             date_ranges.append([start_date, end_date])
 
         if all([start_date >= end_date for start_date, end_date in date_ranges]):
@@ -158,11 +158,18 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_customer_permits(customer_permits)
 
         new_order = Order.objects.create(
-            customer=customer, status=status, type=order_type, payment_type=payment_type
+            customer=customer,
+            status=status,
+            type=order_type,
+            payment_type=payment_type,
         )
+        if order_type == OrderType.CREATED:
+            new_order.paid_time = tz.now()
+            new_order.save()
+
         for permit in customer_permits:
-            start_date = timezone.localdate(permit.next_period_start_time)
-            end_date = timezone.localdate(permit.end_time)
+            start_date = tz.localdate(permit.next_period_start_time)
+            end_date = tz.localdate(permit.end_time)
             if start_date >= end_date:
                 # permit already ended or will be ended after current month period
                 continue
