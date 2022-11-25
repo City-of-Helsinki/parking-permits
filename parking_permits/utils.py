@@ -227,9 +227,11 @@ def get_model_diff(a: models.Model, b: models.Model, fields: list = None) -> dic
 
 
 class ModelDiffer:
-    def __init__(self, a: models.Model, fields: list[str] = None):
-        self.a = copy.deepcopy(a)
-        self.b = a
+    def __init__(self, instance: models.Model, fields: list[str] = None):
+        # Take a snapshot of the instance.
+        self.a = copy.deepcopy(instance)
+        # Keep a reference to the instance; will be snapshot in the end.
+        self.b = instance
         self.fields = fields
         self._finished = False
         self._result = dict()
@@ -240,6 +242,7 @@ class ModelDiffer:
 
     def stop(self):
         if not self._finished:
+            # End the diff and take a snapshot of the instance's state.
             self.b = copy.deepcopy(self.b)
             self._finished = True
             self.result.update(self.get_diff(self.a, self.b, fields=self.fields))
