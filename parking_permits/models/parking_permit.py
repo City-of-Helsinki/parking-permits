@@ -656,6 +656,8 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
         CREATE_ORDER = "create_order"
         RENEW_ORDER = "renew_order"
         CREATE_REFUND = "create_refund"
+        ADD_TEMPORARY_VEHICLE = "add_temporary_vehicle"
+        REMOVE_TEMPORARY_VEHICLE = "remove_temporary_vehicle"
 
     type = models.CharField(
         max_length=16, choices=EventType.choices, verbose_name=_("Event type")
@@ -759,4 +761,38 @@ class ParkingPermitEventFactory:
             created_by=created_by,
             related_object=refund,
             key=ParkingPermitEvent.EventKey.CREATE_REFUND,
+        )
+
+    @staticmethod
+    def make_add_temporary_vehicle_event(permit, temp_vehicle, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop(
+                "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
+            ),
+            context={
+                "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
+            },
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            related_object=temp_vehicle,
+            key=ParkingPermitEvent.EventKey.ADD_TEMPORARY_VEHICLE,
+        )
+
+    @staticmethod
+    def make_remove_temporary_vehicle_event(permit, temp_vehicle, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop(
+                "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
+            ),
+            context={
+                "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
+            },
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            related_object=temp_vehicle,
+            key=ParkingPermitEvent.EventKey.REMOVE_TEMPORARY_VEHICLE,
         )
