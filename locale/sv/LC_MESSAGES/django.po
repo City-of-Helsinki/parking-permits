@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-22 15:53+0200\n"
+"POT-Creation-Date: 2022-11-25 08:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -75,11 +75,21 @@ msgstr "Kund utan adresssäkerhetsförbud måste ha en adress vald"
 msgid "Vehicle power type not found"
 msgstr "Fordonskraftstyp hittades inte"
 
+msgid "Permit address does not have a valid zone"
+msgstr "Tillståndsadressen har ingen giltig zon"
+
 msgid "Customer national id number is mandatory for the permit"
 msgstr "Kundens personnummer är obligatoriskt för tillståndet"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Kan inte skapa mer än 2 boendeparkeringpermit"
+
+msgid ""
+"Creating a fixed-period permit is not allowed when the first permit is open-"
+"ended"
+msgstr ""
+"Att skapa ett tidsbestämt tillstånd är inte tillåtet när "
+"det första tillståndet är öppet"
 
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Fordonets registreringsnummer är obligatoriskt för tillståndet"
@@ -97,14 +107,24 @@ msgid ""
 "Cannot create permit. User already has a valid existing permit in zone "
 "%(parking_zone)s."
 msgstr ""
-"Kan inte skapa tillstånd. Användaren har redan ett giltigt befintligt tillstånd i zonen "
-"%(parking_zone)s."
+"Kan inte skapa tillstånd. Användaren har redan ett giltigt befintligt "
+"tillstånd i zonen %(parking_zone)s."
 
 msgid "Parking permit not found"
 msgstr "Parkeringtecken hittades inte"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Kunden kan inte bytas till detta parkeringstecken"
+
+msgid "User already has a valid other permit for the given vehicle."
+msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
+
+msgid ""
+"Changing address for different type (fixed-period / open-ended) permits is "
+"not allowed"
+msgstr ""
+"Det är inte tillåtet att byta adress för olika typer av "
+"tillstånd (tidsbegränsad / obestämd tid)."
 
 msgid "IBAN is not provided"
 msgstr "IBAN tillhandahålls inte"
@@ -130,11 +150,17 @@ msgstr "Sökningsfel för meddelande"
 msgid "Announcement not found"
 msgstr "Meddelandet hittades inte"
 
-msgid "You already have a valid permit for a given vehicle."
-msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
+msgid "There's already a valid permit for a given vehicle."
+msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
+
+msgid "Start time cannot be in the past"
+msgstr "Starttiden kan inte ligga i det förflutna"
 
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
+
+msgid "You already have a valid permit for a given vehicle."
+msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
 msgstr ""
@@ -792,9 +818,6 @@ msgstr "Adressen hittades inte"
 
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
-
-msgid "Start time cannot be in the past"
-msgstr "Starttiden kan inte ligga i det förflutna"
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Kunden har inte ett giltigt körkort för detta fordon"

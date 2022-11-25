@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-22 15:53+0200\n"
+"POT-Creation-Date: 2022-11-25 08:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -75,10 +75,18 @@ msgstr ""
 msgid "Vehicle power type not found"
 msgstr ""
 
+msgid "Permit address does not have a valid zone"
+msgstr ""
+
 msgid "Customer national id number is mandatory for the permit"
 msgstr ""
 
 msgid "Cannot create more than 2 permits"
+msgstr ""
+
+msgid ""
+"Creating a fixed-period permit is not allowed when the first permit is open-"
+"ended"
 msgstr ""
 
 msgid "Vehicle registration number is mandatory for the permit"
@@ -100,6 +108,14 @@ msgid "Parking permit not found"
 msgstr ""
 
 msgid "Cannot change the customer of the permit"
+msgstr ""
+
+msgid "User already has a valid other permit for the given vehicle."
+msgstr ""
+
+msgid ""
+"Changing address for different type (fixed-period / open-ended) permits is "
+"not allowed"
 msgstr ""
 
 msgid "IBAN is not provided"
@@ -126,10 +142,16 @@ msgstr ""
 msgid "Announcement not found"
 msgstr ""
 
-msgid "You already have a valid permit for a given vehicle."
+msgid "There's already a valid permit for a given vehicle."
+msgstr ""
+
+msgid "Start time cannot be in the past"
 msgstr ""
 
 msgid "Temporary vehicle start time has to be after permit start time"
+msgstr ""
+
+msgid "You already have a valid permit for a given vehicle."
 msgstr ""
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
@@ -784,9 +806,6 @@ msgid "Address not found"
 msgstr ""
 
 msgid "No active permits for the customer"
-msgstr ""
-
-msgid "Start time cannot be in the past"
 msgstr ""
 
 msgid "Customer does not have a valid driving licence for this vehicle"
