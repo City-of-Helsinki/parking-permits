@@ -8,7 +8,11 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from .constants import LOW_EMISSION_DISCOUNT, SECONDARY_VEHICLE_PRICE_INCREASE
+from .constants import (
+    LOW_EMISSION_DISCOUNT,
+    SECONDARY_VEHICLE_PRICE_INCREASE,
+    EventFields,
+)
 from .exceptions import (
     DuplicatePermit,
     InvalidContractType,
@@ -30,6 +34,7 @@ from .models import (
 )
 from .models.parking_permit import (
     ContractType,
+    ParkingPermitEventFactory,
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
@@ -41,7 +46,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
-from .utils import diff_months_floor, get_end_time
+from .utils import ModelDiffer, diff_months_floor, get_end_time
 
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
@@ -202,6 +207,9 @@ class CustomerPermit:
                 comment = get_reversion_comment(EventType.CREATED, permit)
                 reversion.set_user(self.customer.user)
                 reversion.set_comment(comment)
+                ParkingPermitEventFactory.make_create_permit_event(
+                    permit, created_by=self.customer.user
+                )
                 return permit
 
     def delete(self, permit_id):
@@ -330,6 +338,11 @@ class CustomerPermit:
                 )
                 send_refund_email(RefundEmailType.CREATED, self.customer, refund)
 
+                for permit in permits:
+                    ParkingPermitEventFactory.make_create_refund_event(
+                        permit, refund, created_by=self.customer.user
+                    )
+
         for permit in permits:
             with reversion.create_revision():
                 active_temporary_vehicle = permit.active_temporary_vehicle
@@ -353,6 +366,9 @@ class CustomerPermit:
                 send_permit_email(
                     PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
                 )
+            ParkingPermitEventFactory.make_end_permit_event(
+                permit, created_by=self.customer.user
+            )
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
@@ -365,6 +381,7 @@ class CustomerPermit:
 
     def _update_permit(self, permit: ParkingPermit, data: dict):
         keys = data.keys()
+        permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
         for key in keys:
             if isinstance(data[key], str) and key in ["start_time", "end_time"]:
                 val = isoparse(data[key])
@@ -372,6 +389,12 @@ class CustomerPermit:
                 val = data[key]
             setattr(permit, key, val)
         permit.save(update_fields=keys)
+        permit_diff = permit_differ.stop()
+
+        ParkingPermitEventFactory.make_update_permit_event(
+            permit, created_by=self.customer.user, changes=permit_diff
+        )
+
         return permit
 
     def _calculate_prices(self, permit, product_with_qty):

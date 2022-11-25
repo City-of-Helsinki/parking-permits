@@ -10,7 +10,12 @@ from parking_permits.mixins import TimestampedModelMixin
 from ..exceptions import OrderCreationFailed
 from ..utils import diff_months_ceil
 from .customer import Customer
-from .parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
+from .parking_permit import (
+    ContractType,
+    ParkingPermit,
+    ParkingPermitEventFactory,
+    ParkingPermitStatus,
+)
 from .product import Product
 
 logger = logging.getLogger("db")
@@ -77,7 +82,7 @@ class OrderManager(SerializableMixin.SerializableManager):
                 raise OrderCreationFailed("Permits customer do not match")
 
     @transaction.atomic
-    def create_for_permits(self, permits, status=OrderStatus.DRAFT):
+    def create_for_permits(self, permits, status=OrderStatus.DRAFT, **kwargs):
         self._validate_permits(permits)
 
         paid_time = timezone.now() if status == OrderStatus.CONFIRMED else None
@@ -106,6 +111,9 @@ class OrderManager(SerializableMixin.SerializableManager):
                         start_date=start_date,
                         end_date=end_date,
                     )
+            ParkingPermitEventFactory.make_create_order_event(
+                permit, order, created_by=kwargs.get("user", None)
+            )
 
         order.permits.add(*permits)
         return order
@@ -138,6 +146,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         status=OrderStatus.DRAFT,
         order_type=OrderType.CREATED,
         payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        **kwargs,
     ):
         """
         Create new order for updated permits information that affect
@@ -223,9 +232,16 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
+            ParkingPermitEventFactory.make_renew_order_event(
+                permit,
+                new_order,
+                created_by=kwargs.get("user", None),
+            )
+
         # permits should be added to new order after all
         # calculation and processing are done
         new_order.permits.add(*customer_permits)
+
         return new_order
 
 

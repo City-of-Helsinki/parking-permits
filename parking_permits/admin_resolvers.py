@@ -6,6 +6,8 @@ from ariadne import (
     MutationType,
     ObjectType,
     QueryType,
+    ScalarType,
+    UnionType,
     convert_kwargs_to_snake_case,
     snake_case_fallback_resolvers,
 )
@@ -32,7 +34,7 @@ from parking_permits.models import (
     Vehicle,
 )
 
-from .constants import Origin
+from .constants import EventFields, Origin
 from .decorators import (
     is_customer_service,
     is_inspectors,
@@ -64,10 +66,15 @@ from .forms import (
     RefundSearchForm,
 )
 from .models.order import OrderPaymentType, OrderStatus
-from .models.parking_permit import ContractType, ParkingPermitStatus
+from .models.parking_permit import (
+    ContractType,
+    ParkingPermitEvent,
+    ParkingPermitEventFactory,
+    ParkingPermitStatus,
+)
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .reversion import EventType, get_obj_changelogs, get_reversion_comment
+from .reversion import EventType, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -78,7 +85,12 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .services.traficom import Traficom
-from .utils import get_end_time, get_permit_prices, get_user_from_resolver_args
+from .utils import (
+    ModelDiffer,
+    get_end_time,
+    get_permit_prices,
+    get_user_from_resolver_args,
+)
 
 logger = logging.getLogger("db")
 audit_logger = audit.getAuditLoggerAdapter(
@@ -98,7 +110,16 @@ audit_logger = audit.getAuditLoggerAdapter(
 query = QueryType()
 mutation = MutationType()
 PermitDetail = ObjectType("PermitDetailNode")
-schema_bindables = [query, mutation, PermitDetail, snake_case_fallback_resolvers]
+parking_permit_event_gfk = UnionType("ParkingPermitEventGFK")
+datetime_range_scalar = ScalarType("DateTimeRange")
+schema_bindables = [
+    query,
+    mutation,
+    PermitDetail,
+    snake_case_fallback_resolvers,
+    parking_permit_event_gfk,
+    datetime_range_scalar,
+]
 
 
 def _audit_post_process_paged_search(
@@ -144,6 +165,20 @@ def get_permits(page_input, order_by=None, search_params=None):
     return form.get_paged_queryset()
 
 
+@datetime_range_scalar.serializer
+def serialize_datetime_range(value):
+    return value.lower, value.upper
+
+
+@parking_permit_event_gfk.type_resolver
+def resolve_gfk_type(obj, *_):
+    if isinstance(obj, Order):
+        return "OrderNode"
+    if isinstance(obj, Refund):
+        return "RefundNode"
+    return None
+
+
 @query.field("permits")
 @is_preparators
 @convert_kwargs_to_snake_case
@@ -174,7 +209,10 @@ def resolve_permit_detail(obj, info, permit_id):
 
 @PermitDetail.field("changeLogs")
 def resolve_permit_detail_history(permit, info):
-    return get_obj_changelogs(permit)
+    events = ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
+        "-created_at"
+    )[:10]
+    return events
 
 
 @query.field("zones")
@@ -433,6 +471,10 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         comment = get_reversion_comment(EventType.CREATED, parking_permit)
         reversion.set_comment(comment)
 
+    ParkingPermitEventFactory.make_create_permit_event(
+        parking_permit, created_by=request.user
+    )
+
     # when creating from Admin UI, it's considered the payment is completed
     # and the order status should be confirmed
     Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
@@ -556,17 +598,34 @@ def resolve_update_resident_permit(
     )
 
     customer = update_or_create_customer(customer_info)
+    customer_diff = ModelDiffer.get_diff(
+        permit.customer,
+        customer,
+        fields=EventFields.CUSTOMER,
+    )
     vehicle = update_or_create_vehicle(vehicle_info)
-    with reversion.create_revision():
-        permit.status = permit_info["status"]
-        permit.parking_zone = parking_zone
-        permit.vehicle = vehicle
-        permit.description = permit_info["description"]
-        permit.save()
-        request = info.context["request"]
-        reversion.set_user(request.user)
-        comment = get_reversion_comment(EventType.CHANGED, permit)
-        reversion.set_comment(comment)
+    vehicle_diff = ModelDiffer.get_diff(
+        permit.vehicle,
+        vehicle,
+        fields=EventFields.VEHICLE,
+    )
+    with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
+        with reversion.create_revision():
+            permit.status = permit_info["status"]
+            permit.parking_zone = parking_zone
+            permit.vehicle = vehicle
+            permit.description = permit_info["description"]
+            permit.save()
+            request = info.context["request"]
+            reversion.set_user(request.user)
+            comment = get_reversion_comment(EventType.CHANGED, permit)
+            reversion.set_comment(comment)
+
+    ParkingPermitEventFactory.make_update_permit_event(
+        permit,
+        created_by=request.user,
+        changes={**permit_diff, "customer": customer_diff, "vehicle": vehicle_diff},
+    )
 
     if should_create_new_order:
         if total_price_change > 0:
@@ -580,11 +639,15 @@ def resolve_update_resident_permit(
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
             send_refund_email(RefundEmailType.CREATED, customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
+            )
         logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
             customer,
             status=OrderStatus.CONFIRMED,
             payment_type=OrderPaymentType.CASHIER_PAYMENT,
+            user=request.user,
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
 
@@ -637,6 +700,9 @@ def resolve_end_permit(
                 description=description,
             )
             send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
+            )
     if permit.is_open_ended:
         # TODO: handle open ended. Currently how to handle
         # open ended permit are not defined.
@@ -646,6 +712,8 @@ def resolve_end_permit(
         reversion.set_user(request.user)
         comment = get_reversion_comment(EventType.CHANGED, permit)
         reversion.set_comment(comment)
+
+    ParkingPermitEventFactory.make_end_permit_event(permit, created_by=request.user)
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)

@@ -19,7 +19,7 @@ import audit_logger as audit
 from audit_logger import AuditMsg
 from project.settings import BASE_DIR
 
-from .constants import Origin
+from .constants import EventFields, Origin
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
@@ -31,7 +31,12 @@ from .exceptions import (
 )
 from .models import Address, Customer, Refund, Vehicle
 from .models.order import Order, OrderPaymentType, OrderStatus, OrderType
-from .models.parking_permit import ContractType, ParkingPermit, ParkingPermitStatus
+from .models.parking_permit import (
+    ContractType,
+    ParkingPermit,
+    ParkingPermitEventFactory,
+    ParkingPermitStatus,
+)
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
 from .services.kmo import get_address_details
@@ -43,7 +48,7 @@ from .services.mail import (
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
-from .utils import get_user_from_resolver_args
+from .utils import ModelDiffer, get_user_from_resolver_args
 
 logger = logging.getLogger("db")
 audit_logger = audit.getAuditLoggerAdapter(
@@ -361,8 +366,12 @@ def resolve_update_permit_vehicle(
     iban=None,
     audit_msg: AuditMsg = None,
 ):
-    customer = info.context["request"].user.customer
+    request = info.context["request"]
+    customer = request.user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
+    permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
+    vehicle_differ = ModelDiffer.start(permit.vehicle, fields=EventFields.VEHICLE)
+
     audit_msg.target = permit
     checkout_url = None
     talpa_order_created = False
@@ -393,6 +402,7 @@ def resolve_update_permit_vehicle(
             status=OrderStatus.CONFIRMED,
             order_type=OrderType.VEHICLE_CHANGED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            user=request.user,
         )
 
         if permit_total_price_change < 0:
@@ -405,6 +415,9 @@ def resolve_update_permit_vehicle(
             )
             logger.info(f"Refund for updating permits zone created: {refund}")
             send_refund_email(RefundEmailType.CREATED, customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
+            )
 
         if permit_total_price_change > 0:
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
@@ -416,6 +429,14 @@ def resolve_update_permit_vehicle(
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
+
+    permit_diff = permit_differ.stop()
+    vehicle_diff = vehicle_differ.stop()
+    ParkingPermitEventFactory.make_update_permit_event(
+        permit,
+        created_by=request.user,
+        changes={**permit_diff, "vehicle": vehicle_diff},
+    )
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
         if not settings.DEBUG:
@@ -435,11 +456,12 @@ def resolve_update_permit_vehicle(
     add_kwarg=True,
 )
 def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
-    customer = info.context["request"].user.customer
+    request = info.context["request"]
+    customer = request.user.customer
     permits = ParkingPermit.objects.filter(
         customer=customer, status=ParkingPermitStatus.DRAFT
     )
-    order = Order.objects.create_for_permits(permits)
+    order = Order.objects.create_for_permits(permits, user=request.user)
     permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
     audit_msg.target = order
     return {"checkout_url": TalpaOrderManager.send_to_talpa(order)}
@@ -513,7 +535,8 @@ def resolve_remove_temporary_vehicle(_obj, info, permit_id, audit_msg: AuditMsg 
 def resolve_change_address(
     _obj, info, address_id, iban=None, audit_msg: AuditMsg = None
 ):
-    customer = info.context["request"].user.customer
+    request = info.context["request"]
+    customer = request.user.customer
     address = validate_customer_address(customer, address_id)
     new_zone = address.zone
 
@@ -590,6 +613,7 @@ def resolve_change_address(
             status=new_order_status,
             order_type=OrderType.ADDRESS_CHANGED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            user=request.user,
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
@@ -603,6 +627,10 @@ def resolve_change_address(
                 )
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, refund)
+                for permit in order.permits:
+                    ParkingPermitEventFactory.make_create_refund_event(
+                        permit, refund, created_by=request.user
+                    )
 
         if customer_total_price_change > 0:
             # go through talpa checkout process if the price of
