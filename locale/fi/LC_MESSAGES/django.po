@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-22 15:53+0200\n"
+"POT-Creation-Date: 2022-11-25 08:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -75,11 +75,21 @@ msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
 msgid "Vehicle power type not found"
 msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
 
+msgid "Permit address does not have a valid zone"
+msgstr "Tunnuksen osoitteella ei ole sopivaa aluetta"
+
 msgid "Customer national id number is mandatory for the permit"
 msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
+
+msgid ""
+"Creating a fixed-period permit is not allowed when the first permit is open-"
+"ended"
+msgstr ""
+"Määräaikaisen tunnuksen luont ei ole mahdollista, jos asiakkaalla on jo "
+"voimassa oleva jatkuvavelotteinen tunnus"
 
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
@@ -95,14 +105,24 @@ msgid ""
 "Cannot create permit. User already has a valid existing permit in zone "
 "%(parking_zone)s."
 msgstr ""
-"Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus alueella "
-"%(parking_zone)s."
+"Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus "
+"alueella %(parking_zone)s."
 
 msgid "Parking permit not found"
 msgstr "Pysäköintitunnusta ei löytynyt"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
+
+msgid "User already has a valid other permit for the given vehicle."
+msgstr "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+msgid ""
+"Changing address for different type (fixed-period / open-ended) permits is "
+"not allowed"
+msgstr ""
+"Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
+"(määräaikainen / jatkuvavelotteinen)"
 
 msgid "IBAN is not provided"
 msgstr "IBAN-tietoa ei annettu"
@@ -128,12 +148,18 @@ msgstr "Ilmoituksen hakuvirhe"
 msgid "Announcement not found"
 msgstr "Ilmoitusta ei löytynyt"
 
-msgid "You already have a valid permit for a given vehicle."
-msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+msgid "There's already a valid permit for a given vehicle."
+msgstr "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+msgid "Start time cannot be in the past"
+msgstr "Aloitusaika ei voi olla menneisyydessä"
 
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr ""
 "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
+
+msgid "You already have a valid permit for a given vehicle."
+msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
 msgstr ""
@@ -792,9 +818,6 @@ msgstr "Osoitetta ei löytynyt"
 
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
-
-msgid "Start time cannot be in the past"
-msgstr "Aloitusaika ei voi olla menneisyydessä"
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
