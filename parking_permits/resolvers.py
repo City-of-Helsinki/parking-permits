@@ -151,8 +151,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     )
 
     customer_obj, created = Customer.objects.update_or_create(
-        source_system=customer.get("source_system"),
-        source_id=customer.get("source_id"),
+        national_id_number=customer.get("national_id_number"),
         defaults={
             "user": request.user,
             **customer,
