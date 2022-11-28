@@ -1,7 +1,6 @@
 import decimal
 import typing
 
-import reversion
 from dateutil.parser import isoparse, parse
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
@@ -38,7 +37,6 @@ from .models.parking_permit import (
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
-from .reversion import EventType, get_reversion_comment
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
@@ -173,44 +171,41 @@ class CustomerPermit:
                 if contract_type == FIXED_PERIOD:
                     end_time = primary_permit.end_time
 
-            with reversion.create_revision():
-                vehicle = self.customer.fetch_vehicle_detail(registration)
-                is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
-                if not is_user_of_vehicle:
-                    raise TraficomFetchVehicleError(
-                        _(
-                            "Customer is not an owner or holder of a vehicle %(registration)s"
-                        )
-                        % {
-                            "registration": registration,
-                        }
+            vehicle = self.customer.fetch_vehicle_detail(registration)
+            is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
+            if not is_user_of_vehicle:
+                raise TraficomFetchVehicleError(
+                    _(
+                        "Customer is not an owner or holder of a vehicle %(registration)s"
                     )
+                    % {
+                        "registration": registration,
+                    }
+                )
 
-                has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
-                    vehicle
+            has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
+                vehicle
+            )
+            if not has_valid_licence:
+                raise TraficomFetchVehicleError(
+                    _("Customer does not have a valid driving licence")
                 )
-                if not has_valid_licence:
-                    raise TraficomFetchVehicleError(
-                        _("Customer does not have a valid driving licence")
-                    )
 
-                permit = ParkingPermit.objects.create(
-                    customer=self.customer,
-                    address=address,
-                    parking_zone=address.zone,
-                    primary_vehicle=primary_vehicle,
-                    contract_type=contract_type,
-                    start_time=tz.now(),
-                    end_time=end_time,
-                    vehicle=Vehicle.objects.get(registration_number=registration),
-                )
-                comment = get_reversion_comment(EventType.CREATED, permit)
-                reversion.set_user(self.customer.user)
-                reversion.set_comment(comment)
-                ParkingPermitEventFactory.make_create_permit_event(
-                    permit, created_by=self.customer.user
-                )
-                return permit
+            permit = ParkingPermit.objects.create(
+                customer=self.customer,
+                address=address,
+                parking_zone=address.zone,
+                primary_vehicle=primary_vehicle,
+                contract_type=contract_type,
+                start_time=tz.now(),
+                end_time=end_time,
+                vehicle=Vehicle.objects.get(registration_number=registration),
+            )
+
+            ParkingPermitEventFactory.make_create_permit_event(
+                permit, created_by=self.customer.user
+            )
+            return permit
 
     def delete(self, permit_id):
         permit = ParkingPermit.objects.get(customer=self.customer, id=permit_id)
@@ -344,31 +339,26 @@ class CustomerPermit:
                     )
 
         for permit in permits:
-            with reversion.create_revision():
-                active_temporary_vehicle = permit.active_temporary_vehicle
-                if active_temporary_vehicle:
-                    active_temporary_vehicle.is_active = False
-                    active_temporary_vehicle.save()
-                if not settings.DEBUG:
-                    permit.update_parkkihubi_permit()
-                if (
-                    permit.consent_low_emission_accepted
-                    and permit.vehicle.is_low_emission
-                ):
-                    send_vehicle_low_emission_discount_email(
-                        PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
-                        permit,
-                    )
-                permit.end_permit(end_type)
-                reversion.set_user(self.customer.user)
-                comment = get_reversion_comment(EventType.CHANGED, permit)
-                reversion.set_comment(comment)
-                send_permit_email(
-                    PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
+            active_temporary_vehicle = permit.active_temporary_vehicle
+            if active_temporary_vehicle:
+                active_temporary_vehicle.is_active = False
+                active_temporary_vehicle.save()
+            if not settings.DEBUG:
+                permit.update_parkkihubi_permit()
+            if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+                send_vehicle_low_emission_discount_email(
+                    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
+                    permit,
                 )
+
+            permit.end_permit(end_type)
+            send_permit_email(
+                PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
+            )
             ParkingPermitEventFactory.make_end_permit_event(
                 permit, created_by=self.customer.user
             )
+
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()

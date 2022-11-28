@@ -36,7 +36,6 @@ django==3.2.16
     #   django-db-logger
     #   django-extensions
     #   django-helusers
-    #   django-reversion
     #   django-searchable-encrypted-fields
     #   djangorestframework
     #   drf-oidc-auth
@@ -56,8 +55,6 @@ django-helusers==0.7.1
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
-django-reversion==5.0.2
-    # via -r requirements.in
 django-searchable-encrypted-fields==0.2.0
     # via -r requirements.in
 djangorestframework==3.12.4

@@ -2,7 +2,6 @@ import logging
 from collections import Counter
 from copy import deepcopy
 
-import reversion
 from ariadne import (
     MutationType,
     ObjectType,
@@ -75,7 +74,6 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .reversion import EventType, get_reversion_comment
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -470,26 +468,22 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
             )
 
     primary_vehicle = active_permits_count == 0
-    with reversion.create_revision():
-        parking_permit = ParkingPermit.objects.create(
-            contract_type=ContractType.FIXED_PERIOD,
-            customer=customer,
-            vehicle=vehicle,
-            parking_zone=parking_zone,
-            status=permit["status"],
-            start_time=start_time,
-            month_count=permit["month_count"],
-            end_time=end_time,
-            description=permit["description"],
-            address=address,
-            primary_vehicle=primary_vehicle,
-        )
-        audit_msg.target = parking_permit
-        request = info.context["request"]
-        reversion.set_user(request.user)
-        comment = get_reversion_comment(EventType.CREATED, parking_permit)
-        reversion.set_comment(comment)
+    parking_permit = ParkingPermit.objects.create(
+        contract_type=ContractType.FIXED_PERIOD,
+        customer=customer,
+        vehicle=vehicle,
+        parking_zone=parking_zone,
+        status=permit["status"],
+        start_time=start_time,
+        month_count=permit["month_count"],
+        end_time=end_time,
+        description=permit["description"],
+        address=address,
+        primary_vehicle=primary_vehicle,
+    )
 
+    audit_msg.target = parking_permit
+    request = info.context["request"]
     ParkingPermitEventFactory.make_create_permit_event(
         parking_permit, created_by=request.user
     )
@@ -713,13 +707,9 @@ def resolve_update_resident_permit(
 
     # Update permit address and zone for all active permits
     for permit in active_permits:
-        with reversion.create_revision():
-            permit.parking_zone = new_zone
-            permit.address = address
-            permit.save()
-            reversion.set_user(request.user)
-            comment = get_reversion_comment(EventType.CHANGED, permit)
-            reversion.set_comment(comment)
+        permit.parking_zone = new_zone
+        permit.address = address
+        permit.save()
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
@@ -736,15 +726,10 @@ def resolve_update_resident_permit(
         fields=EventFields.VEHICLE,
     )
     with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
-        with reversion.create_revision():
-            permit.status = permit_info["status"]
-            permit.vehicle = vehicle
-            permit.description = permit_info["description"]
-            permit.save()
-            request = info.context["request"]
-            reversion.set_user(request.user)
-            comment = get_reversion_comment(EventType.CHANGED, permit)
-            reversion.set_comment(comment)
+        permit.status = permit_info["status"]
+        permit.vehicle = vehicle
+        permit.description = permit_info["description"]
+        permit.save()
 
     ParkingPermitEventFactory.make_update_permit_event(
         permit,
@@ -835,11 +820,8 @@ def resolve_end_permit(
         # TODO: handle open ended. Currently how to handle
         # open ended permit are not defined.
         pass
-    with reversion.create_revision():
-        permit.end_permit(end_type)
-        reversion.set_user(request.user)
-        comment = get_reversion_comment(EventType.CHANGED, permit)
-        reversion.set_comment(comment)
+
+    permit.end_permit(end_type)
 
     ParkingPermitEventFactory.make_end_permit_event(permit, created_by=request.user)
 
