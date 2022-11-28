@@ -3,7 +3,6 @@ import logging
 from decimal import Decimal
 
 import requests
-import reversion
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -76,7 +75,6 @@ class ParkingPermitManager(SerializableMixin.SerializableManager):
     pass
 
 
-@reversion.register()
 class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     customer = models.ForeignKey(
         "Customer",

@@ -89,7 +89,6 @@ INSTALLED_APPS = [
     "parking_permits",
     "users",
     "rest_framework",
-    "reversion",
     "django_db_logger",
     "audit_logger",
     "drf_yasg",
