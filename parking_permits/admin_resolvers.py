@@ -1257,7 +1257,8 @@ def add_temporary_vehicle(
         start_time=start_time,
     )
     permit.temp_vehicles.add(vehicle)
-    permit.update_parkkihubi_permit()
+    if not settings.DEBUG:
+        permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
     return {"success": True}
 
@@ -1269,6 +1270,7 @@ def add_temporary_vehicle(
 def remove_temporary_vehicle(obj, info, permit_id):
     permit = ParkingPermit.objects.get(id=permit_id)
     permit.temp_vehicles.filter(is_active=True).update(is_active=False)
-    permit.update_parkkihubi_permit()
+    if not settings.DEBUG:
+        permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
     return {"success": True}
