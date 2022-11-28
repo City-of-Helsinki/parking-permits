@@ -88,7 +88,7 @@ msgid ""
 "Creating a fixed-period permit is not allowed when the first permit is open-"
 "ended"
 msgstr ""
-"Määräaikaisen tunnuksen luont ei ole mahdollista, jos asiakkaalla on jo "
+"Määräaikaisen tunnuksen luonti ei ole mahdollista, jos asiakkaalla on jo "
 "voimassa oleva jatkuvavelotteinen tunnus"
 
 msgid "Vehicle registration number is mandatory for the permit"
