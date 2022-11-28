@@ -624,6 +624,8 @@ def resolve_update_resident_permit(
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFound(_("Parking permit not found"))
+
+    request = info.context["request"]
     audit_msg.target = permit
     customer_info = permit_info["customer"]
 
@@ -715,7 +717,6 @@ def resolve_update_resident_permit(
             permit.parking_zone = new_zone
             permit.address = address
             permit.save()
-            request = info.context["request"]
             reversion.set_user(request.user)
             comment = get_reversion_comment(EventType.CHANGED, permit)
             reversion.set_comment(comment)
@@ -738,12 +739,12 @@ def resolve_update_resident_permit(
         with reversion.create_revision():
             permit.status = permit_info["status"]
             permit.vehicle = vehicle
-        permit.description = permit_info["description"]
-        permit.save()
-        request = info.context["request"]
-        reversion.set_user(request.user)
-        comment = get_reversion_comment(EventType.CHANGED, permit)
-        reversion.set_comment(comment)
+            permit.description = permit_info["description"]
+            permit.save()
+            request = info.context["request"]
+            reversion.set_user(request.user)
+            comment = get_reversion_comment(EventType.CHANGED, permit)
+            reversion.set_comment(comment)
 
     ParkingPermitEventFactory.make_update_permit_event(
         permit,
