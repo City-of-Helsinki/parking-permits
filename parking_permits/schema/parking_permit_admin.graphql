@@ -233,7 +233,7 @@ input SearchItem {
   value: String!
 }
 
-union ParkingPermitEventGFK = RefundNode | OrderNode
+union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode
 
 type ContentTypeNode {
   id: ID!
