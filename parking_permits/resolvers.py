@@ -606,6 +606,10 @@ def resolve_change_address(
         else:
             new_order_status = OrderStatus.CONFIRMED
             fixed_period_permits.update(parking_zone=new_zone, address=address)
+            for permit in fixed_period_permits:
+                ParkingPermitEventFactory.make_update_permit_event(
+                    permit, created_by=request.user, changes={"parking_zone": new_zone}
+                )
 
         new_order = Order.objects.create_renewal_order(
             customer,
@@ -649,9 +653,17 @@ def resolve_change_address(
     # asking permit price for next month
     open_ended_permits = permits.open_ended().all()
     for permit in open_ended_permits:
-        permit.parking_zone = new_zone
-        permit.address = address
-        permit.save()
+        with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
+            permit.parking_zone = new_zone
+            permit.address = address
+            permit.save()
+
+        ParkingPermitEventFactory.make_update_permit_event(
+            permit,
+            created_by=request.user,
+            changes=permit_diff,
+        )
+
         if not settings.DEBUG:
             permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.UPDATED, permit)
