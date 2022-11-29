@@ -1210,6 +1210,7 @@ def resolve_create_announcement(obj, info, announcement):
 def add_temporary_vehicle(
     obj, info, permit_id, registration_number, start_time, end_time
 ):
+    request = info.context["request"]
     has_valid_permit = ParkingPermit.objects.filter(
         vehicle__registration_number=registration_number,
         status__in=[ParkingPermitStatus.VALID, ParkingPermitStatus.PAYMENT_IN_PROGRESS],
@@ -1239,6 +1240,9 @@ def add_temporary_vehicle(
         start_time=start_time,
     )
     permit.temp_vehicles.add(vehicle)
+    ParkingPermitEventFactory.make_add_temporary_vehicle_event(
+        permit, vehicle, request.user
+    )
     permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
     return {"success": True}
@@ -1249,8 +1253,18 @@ def add_temporary_vehicle(
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def remove_temporary_vehicle(obj, info, permit_id):
+    request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
-    permit.temp_vehicles.filter(is_active=True).update(is_active=False)
+    active_temp_vehicles = permit.temp_vehicles.filter(is_active=True)
+
+    active_temp_vehicles.update(is_active=False)
     permit.update_parkkihubi_permit()
+
+    for temp_vehicle in active_temp_vehicles:
+        ParkingPermitEventFactory.make_remove_temporary_vehicle_event(
+            permit, temp_vehicle, request.user
+        )
+
     send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
+
     return {"success": True}

@@ -109,6 +109,9 @@ class CustomerPermit:
             start_time=start_time,
         )
         permit.temp_vehicles.add(vehicle)
+        ParkingPermitEventFactory.make_add_temporary_vehicle_event(
+            permit, vehicle, created_by=self.customer.user
+        )
         permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
         return True
@@ -116,7 +119,12 @@ class CustomerPermit:
     def remove_temporary_vehicle(self, permit_id):
         permit_details = self._get_permit(permit_id)
         permit = permit_details[0]
-        permit.temp_vehicles.filter(is_active=True).update(is_active=False)
+        active_temp_vehicles = permit.temp_vehicles.filter(is_active=True)
+        active_temp_vehicles.update(is_active=False)
+        for temp_vehicle in active_temp_vehicles:
+            ParkingPermitEventFactory.make_add_temporary_vehicle_event(
+                permit, temp_vehicle, created_by=self.customer.user
+            )
         permit.update_parkkihubi_permit()
         send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
         return True
