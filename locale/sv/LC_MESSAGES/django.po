@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-25 08:51+0200\n"
+"POT-Creation-Date: 2022-11-29 09:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -88,8 +88,8 @@ msgid ""
 "Creating a fixed-period permit is not allowed when the first permit is open-"
 "ended"
 msgstr ""
-"Att skapa ett tidsbestämt tillstånd är inte tillåtet när "
-"det första tillståndet är öppet"
+"Att skapa ett tidsbestämt tillstånd är inte tillåtet när det första "
+"tillståndet är öppet"
 
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Fordonets registreringsnummer är obligatoriskt för tillståndet"
@@ -123,8 +123,8 @@ msgid ""
 "Changing address for different type (fixed-period / open-ended) permits is "
 "not allowed"
 msgstr ""
-"Det är inte tillåtet att byta adress för olika typer av "
-"tillstånd (tidsbegränsad / obestämd tid)."
+"Det är inte tillåtet att byta adress för olika typer av tillstånd "
+"(tidsbegränsad / obestämd tid)."
 
 msgid "IBAN is not provided"
 msgstr "IBAN tillhandahålls inte"
@@ -209,6 +209,9 @@ msgstr "Internt fel"
 msgid "Name"
 msgstr "Namn"
 
+msgid "National identification number"
+msgstr "Personnummer"
+
 msgid "Registration number"
 msgstr "Registreringsskylt"
 
@@ -244,6 +247,9 @@ msgstr "Betalningstid"
 
 msgid "Amount"
 msgstr "Sum"
+
+msgid "IBAN"
+msgstr "IBAN-nummer"
 
 msgid "Product type"
 msgstr "Produkttyp"
@@ -298,9 +304,6 @@ msgstr "Återbetalning ID"
 
 msgid "incl. VAT"
 msgstr "ink. MOMS"
-
-msgid "IBAN"
-msgstr "IBAN-nummer"
 
 msgid "Extra info"
 msgstr "Ytterligare uppgifter"
@@ -418,9 +421,6 @@ msgstr "Förnamn"
 
 msgid "Last name"
 msgstr "Efternamn"
-
-msgid "National identification number"
-msgstr "Personnummer"
 
 msgid "Primary address"
 msgstr "Permanent adress"
@@ -620,6 +620,34 @@ msgid ""
 msgstr ""
 "Ett ID som innehåller ett primärt fordon kan inte stängas eftersom ett "
 "sekundärt fordon hittas."
+
+msgid "Updated"
+msgstr "Uppdaterad"
+
+msgid "Renewed"
+msgstr "Förnyad"
+
+msgid "Ended"
+msgstr "Slutade"
+
+msgid "Event type"
+msgstr "Event typ"
+
+#, python-format
+msgid "Permit #%(permit_id)s created"
+msgstr "Tillstånd #%(permit_id)s skapat"
+
+#, python-format
+msgid "Permit #%(permit_id)s updated"
+msgstr "Tillstånd #%(permit_id)s har uppdaterats"
+
+#, python-format
+msgid "Permit #%(permit_id)s ended"
+msgstr "Tillstånd #%(permit_id)s avslutat"
+
+#, python-format
+msgid "Refund #%(refund_id)s created"
+msgstr "Återbetalning #%(refund_id)s skapad"
 
 msgid "Description sv"
 msgstr "Beskrivning (sv)"
