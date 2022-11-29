@@ -1256,11 +1256,12 @@ def remove_temporary_vehicle(obj, info, permit_id):
     request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
     active_temp_vehicles = permit.temp_vehicles.filter(is_active=True)
+    prev_active_temp_vehicles = list(active_temp_vehicles)
 
     active_temp_vehicles.update(is_active=False)
     permit.update_parkkihubi_permit()
 
-    for temp_vehicle in active_temp_vehicles:
+    for temp_vehicle in prev_active_temp_vehicles:
         ParkingPermitEventFactory.make_remove_temporary_vehicle_event(
             permit, temp_vehicle, request.user
         )
