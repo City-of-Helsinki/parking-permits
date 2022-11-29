@@ -51,7 +51,6 @@ from .exceptions import (
     ParkingZoneError,
     ParkkihubiPermitError,
     PermitLimitExceeded,
-    RefundError,
     SearchError,
     TemporaryVehicleValidationError,
     UpdatePermitError,
@@ -804,26 +803,21 @@ def resolve_end_permit(
     request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
     audit_msg.target = permit
-    if permit.can_be_refunded and permit.total_refund_amount > 0:
-        if not iban:
-            raise RefundError(_("IBAN is not provided"))
-        if permit.get_refund_amount_for_unused_items() > 0:
-            description = f"Refund for ending permit #{permit.id}"
-            refund = Refund.objects.create(
-                name=str(permit.customer),
-                order=permit.latest_order,
-                amount=permit.get_refund_amount_for_unused_items(),
-                iban=iban,
-                description=description,
-            )
-            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=request.user
-            )
-    if permit.is_open_ended:
-        # TODO: handle open ended. Currently how to handle
-        # open ended permit are not defined.
-        pass
+    total_refund_amount = permit.total_refund_amount
+    refund = Refund.objects.filter(order=permit.latest_order)
+    if permit.can_be_refunded and total_refund_amount > 0 and not refund.exists():
+        description = f"Refund for ending permit #{permit.id}"
+        refund = Refund.objects.create(
+            name=str(permit.customer),
+            order=permit.latest_order,
+            amount=total_refund_amount,
+            iban=iban,
+            description=description,
+        )
+        send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+        ParkingPermitEventFactory.make_create_refund_event(
+            permit, refund, created_by=request.user
+        )
 
     permit.end_permit(end_type)
 
