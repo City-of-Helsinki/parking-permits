@@ -33,6 +33,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
+from users.models import ParkingPermitGroups
 
 from .constants import EventFields, Origin
 from .decorators import (
@@ -196,6 +197,8 @@ def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
 @is_inspectors
 @convert_kwargs_to_snake_case
 def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=None):
+    # add user role to search params
+    search_params.update({"user_role": ParkingPermitGroups.INSPECTORS})
     return get_permits(page_input, order_by, search_params)
 
 

@@ -19,6 +19,7 @@ from parking_permits.models.parking_permit import (
 )
 from parking_permits.models.refund import Refund, RefundStatus
 from parking_permits.paginator import QuerySetPaginator
+from users.models import ParkingPermitGroups
 
 EXPORT_DATA_TYPE_CHOICES = [
     ("permits", "Permits"),
@@ -95,6 +96,7 @@ class PermitSearchForm(SearchFormBase):
         choices=ParkingPermitStatus.choices + [("ALL", "All")],
         required=False,
     )
+    user_role = forms.ChoiceField(choices=ParkingPermitGroups.choices, required=False)
 
     def get_model_class(self):
         return ParkingPermit
@@ -122,6 +124,7 @@ class PermitSearchForm(SearchFormBase):
         has_filters = False
         q = self.cleaned_data.get("q")
         status = self.cleaned_data.get("status")
+        user_role = self.cleaned_data.get("user_role")
 
         if status and status != "ALL" and q:
             qs = qs.filter(status=status)
@@ -130,12 +133,15 @@ class PermitSearchForm(SearchFormBase):
             if q.isdigit():
                 query = Q(id=int(q))
             else:
-                query = (
-                    Q(customer__first_name__icontains=q)
-                    | Q(customer__last_name__icontains=q)
-                    | Q(customer__national_id_number=q)
-                    | Q(vehicle__registration_number=q)
-                )
+                if user_role == ParkingPermitGroups.INSPECTORS:
+                    query = Q(vehicle__registration_number=q)
+                else:
+                    query = (
+                        Q(customer__first_name__icontains=q)
+                        | Q(customer__last_name__icontains=q)
+                        | Q(customer__national_id_number=q)
+                        | Q(vehicle__registration_number=q)
+                    )
             qs = qs.filter(query)
             has_filters = True
 
