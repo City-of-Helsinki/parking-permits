@@ -3,7 +3,6 @@ import json
 import logging
 
 from ariadne import convert_camel_case_to_snake
-from django.conf import settings
 from django.db import transaction
 from django.http import (
     Http404,
@@ -277,11 +276,10 @@ class OrderView(APIView):
                     send_vehicle_low_emission_discount_email(
                         PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
                     )
-                if not settings.DEBUG:
-                    try:
-                        permit.update_parkkihubi_permit()
-                    except ParkkihubiPermitError:
-                        permit.create_parkkihubi_permit()
+                try:
+                    permit.update_parkkihubi_permit()
+                except ParkkihubiPermitError:
+                    permit.create_parkkihubi_permit()
 
         logger.info(f"{order} is confirmed and order permits are set to VALID ")
         return Response({"message": "Order received"}, status=200)

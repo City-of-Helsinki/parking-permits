@@ -743,8 +743,7 @@ def resolve_update_resident_permit(
     )
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    if not settings.DEBUG:
-        permit.update_parkkihubi_permit()
+    permit.update_parkkihubi_permit()
 
     if address_changed:
         for active_permit in active_permits.all():
@@ -832,8 +831,7 @@ def resolve_end_permit(
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    if not settings.DEBUG:
-        permit.update_parkkihubi_permit()
+    permit.update_parkkihubi_permit()
     send_permit_email(PermitEmailType.ENDED, permit)
     if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
         send_vehicle_low_emission_discount_email(
