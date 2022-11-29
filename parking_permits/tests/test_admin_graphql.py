@@ -8,7 +8,10 @@ from helusers.oidc import AuthenticationError
 
 import parking_permits.decorators
 from parking_permits.models.parking_permit import ParkingPermitStatus
-from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.parking_permit import (
+    CustomerFactory,
+    ParkingPermitFactory,
+)
 from users.tests.factories.user import GroupFactory, UserFactory
 
 permits_query = """
@@ -42,16 +45,17 @@ class PermitsQueryTestCase(TestCase):
         cls.client = Client()
         cls.default_variables = {
             "pageInput": {"page": 1},
-            "searchParams": {"q": "", "status": ParkingPermitStatus.DRAFT},
+            "searchParams": {"q": "John", "status": ParkingPermitStatus.DRAFT},
         }
-        ParkingPermitFactory()
-        ParkingPermitFactory()
-        ParkingPermitFactory()
+        customer = CustomerFactory(first_name="John")
+        ParkingPermitFactory(customer=customer)
+        ParkingPermitFactory(customer=customer)
+        ParkingPermitFactory(customer=customer)
 
     @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
     def test_return_parking_permits_list_for_super_admin(self, mock_authenticate):
         group = GroupFactory(name="super_admin")
-        mock_admin = UserFactory()
+        mock_admin = UserFactory(first_name="John")
         mock_admin.groups.add(group)
         mock_authenticate.return_value = UserAuthorization(mock_admin, {})
         url = reverse("parking_permits:admin-graphql")
