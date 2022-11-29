@@ -98,7 +98,7 @@ ROW_GETTER_MAPPING = {
 
 PERMIT_HEADERS = [
     _("Name"),
-    "Hetu",
+    _("National identification number"),
     _("Registration number"),
     _("Permanent address"),
     _("Temporary address"),
@@ -130,7 +130,7 @@ ORDER_HEADERS = [
 REFUND_HEADERS = [
     _("Name"),
     _("Amount"),
-    "IBAN",
+    _("IBAN"),
     _("Status"),
     _("Created at"),
 ]

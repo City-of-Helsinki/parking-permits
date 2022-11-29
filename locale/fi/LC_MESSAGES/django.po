@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-25 08:51+0200\n"
+"POT-Creation-Date: 2022-11-29 09:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -115,7 +115,8 @@ msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
 
 msgid "User already has a valid other permit for the given vehicle."
-msgstr "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+msgstr ""
+"Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
 msgid ""
 "Changing address for different type (fixed-period / open-ended) permits is "
@@ -149,7 +150,8 @@ msgid "Announcement not found"
 msgstr "Ilmoitusta ei löytynyt"
 
 msgid "There's already a valid permit for a given vehicle."
-msgstr "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+msgstr ""
+"Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
 msgid "Start time cannot be in the past"
 msgstr "Aloitusaika ei voi olla menneisyydessä"
@@ -209,6 +211,9 @@ msgstr "Sisäinen virhe"
 msgid "Name"
 msgstr "Nimi"
 
+msgid "National identification number"
+msgstr "Henkilötunnus"
+
 msgid "Registration number"
 msgstr "Rekisteritunnus"
 
@@ -244,6 +249,9 @@ msgstr "Maksuaika"
 
 msgid "Amount"
 msgstr "Määrä"
+
+msgid "IBAN"
+msgstr "IBAN-tilinumero"
 
 msgid "Product type"
 msgstr "Tuotteen tyyppi"
@@ -298,9 +306,6 @@ msgstr "Palautusnumero"
 
 msgid "incl. VAT"
 msgstr "sis. ALV"
-
-msgid "IBAN"
-msgstr "IBAN-tilinumero"
 
 msgid "Extra info"
 msgstr "Lisätiedot"
@@ -418,9 +423,6 @@ msgstr "Etunimi"
 
 msgid "Last name"
 msgstr "Sukunimi"
-
-msgid "National identification number"
-msgstr "Henkilötunnus"
 
 msgid "Primary address"
 msgstr "Pysyvä osoite"
@@ -620,6 +622,34 @@ msgid ""
 msgstr ""
 "Ensisijaista ajoneuvoa sisältävää tunnusta ei voida sulkea, koska "
 "toissijainen ajoneuvo löytyy"
+
+msgid "Updated"
+msgstr "Päivitetty"
+
+msgid "Renewed"
+msgstr "Uusittu"
+
+msgid "Ended"
+msgstr "Päättynyt"
+
+msgid "Event type"
+msgstr "Tapahtumatyyppi"
+
+#, python-format
+msgid "Permit #%(permit_id)s created"
+msgstr "Tunnus #%(permit_id)s luotu"
+
+#, python-format
+msgid "Permit #%(permit_id)s updated"
+msgstr "Tunnus #%(permit_id)s päivitetty"
+
+#, python-format
+msgid "Permit #%(permit_id)s ended"
+msgstr "Tunnus #%(permit_id)s päättynyt"
+
+#, python-format
+msgid "Refund #%(refund_id)s created"
+msgstr "Palautus #%(refund_id)s luotu"
 
 msgid "Description sv"
 msgstr "Kuvaus (sv)"
