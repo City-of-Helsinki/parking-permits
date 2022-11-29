@@ -175,6 +175,8 @@ def resolve_gfk_type(obj, *_):
         return "OrderNode"
     if isinstance(obj, Refund):
         return "RefundNode"
+    if isinstance(obj, TemporaryVehicle):
+        return "TemporaryVehicleNode"
     return None
 
 
