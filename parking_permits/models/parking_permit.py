@@ -17,10 +17,11 @@ from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
 from ..constants import ParkingPermitEndType
-from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded, RefundError
+from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import diff_months_ceil, flatten_dict, get_end_time, get_permit_prices
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
+from .refund import Refund
 from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
@@ -462,11 +463,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.save()
 
     def get_refund_amount_for_unused_items(self):
-        if not self.can_be_refunded:
-            raise RefundError("This permit cannot be refunded")
+        total = Decimal(0)
+        refund = Refund.objects.filter(order=self.latest_order)
+        if not self.can_be_refunded or refund.exists():
+            return total
 
         unused_order_items = self.get_unused_order_items()
-        total = Decimal(0)
+
         for order_item, quantity, date_range in unused_order_items:
             total += order_item.unit_price * quantity
         return total
