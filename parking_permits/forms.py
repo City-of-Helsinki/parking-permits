@@ -123,7 +123,7 @@ class PermitSearchForm(SearchFormBase):
         q = self.cleaned_data.get("q")
         status = self.cleaned_data.get("status")
 
-        if status and status != "ALL":
+        if status and status != "ALL" and q:
             qs = qs.filter(status=status)
             has_filters = True
         if q:
