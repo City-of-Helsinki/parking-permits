@@ -221,8 +221,8 @@ class ParkingPermitPDF(BasePDF):
             _("Validity period")
             + ": "
             + permit.start_time.strftime(DATETIME_FORMAT)
-            + " - "
-            + permit.end_time.strftime(DATETIME_FORMAT),
+            + " - ",
+            +permit.end_time.strftime(DATETIME_FORMAT) if permit.end_time else "",
         ]
 
     def set_content(self, obj):
