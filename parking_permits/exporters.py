@@ -1,6 +1,7 @@
 import abc
 
 from django.conf import settings
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from fpdf import FPDF
 
@@ -28,8 +29,12 @@ def _get_permit_row(permit):
         str(customer.primary_address),
         str(customer.other_address),
         permit.parking_zone.name,
-        permit.start_time.strftime(DATETIME_FORMAT) if permit.start_time else "",
-        permit.end_time.strftime(DATETIME_FORMAT) if permit.end_time else "",
+        tz.localdate(permit.start_time).strftime(DATETIME_FORMAT)
+        if permit.start_time
+        else "",
+        tz.localdate(permit.end_time).strftime(DATETIME_FORMAT)
+        if permit.end_time
+        else "",
         permit.get_status_display(),
     ]
 
@@ -59,7 +64,9 @@ def _get_order_row(order):
         address,
         permit_type,
         order.id,
-        order.paid_time.strftime(DATETIME_FORMAT) if order.paid_time else "",
+        tz.localdate(order.paid_time).strftime(DATETIME_FORMAT)
+        if order.paid_time
+        else "",
         order.total_price,
     ]
 
@@ -70,7 +77,7 @@ def _get_refund_row(refund):
         refund.amount,
         refund.iban,
         refund.get_status_display(),
-        refund.created_at.strftime(DATETIME_FORMAT),
+        tz.localdate(refund.created_at).strftime(DATETIME_FORMAT),
     ]
 
 
@@ -84,7 +91,7 @@ def _get_product_row(product):
         product.unit_price,
         product.vat,
         valid_period,
-        product.modified_at.strftime(DATETIME_FORMAT),
+        tz.localdate(product.modified_at).strftime(DATETIME_FORMAT),
         product.modified_by,
     ]
 
@@ -207,6 +214,11 @@ class ParkingPermitPDF(BasePDF):
         return permit_qs.first()
 
     def get_permit_content(self, permit):
+        permit_end_time = (
+            tz.localdate(permit.end_time).strftime(DATETIME_FORMAT)
+            if permit.end_time
+            else ""
+        )
         return [
             _("Permit ID") + ": " + f"{permit.id}",
             _("Customer")
@@ -220,9 +232,7 @@ class ParkingPermitPDF(BasePDF):
             _("Type") + ": " + permit.get_contract_type_display(),
             _("Validity period")
             + ": "
-            + permit.start_time.strftime(DATETIME_FORMAT)
-            + " - ",
-            +permit.end_time.strftime(DATETIME_FORMAT) if permit.end_time else "",
+            + f"{tz.localdate(permit.start_time).strftime(DATETIME_FORMAT)} - {permit_end_time}",
         ]
 
     def set_content(self, obj):
@@ -268,7 +278,7 @@ class RefundPDF(ParkingPermitPDF):
             _("Order payment type") + ": " + f"{order.get_payment_type_display()}",
             _("Order payment time")
             + ": "
-            + f"{order.paid_time.strftime(DATETIME_FORMAT) if order.paid_time else ''}",
+            + f"{tz.localdate(order.paid_time).strftime(DATETIME_FORMAT) if order.paid_time else ''}",
         ]
 
     def set_content(self, obj):
