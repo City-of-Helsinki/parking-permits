@@ -63,11 +63,10 @@ def format_address(address_data):
     # building number together in a single string. We only need
     # to use the street name and street number
 
-    parsed_address = parse_street_name_and_number(address_data["LahiosoiteS"])
-    street_name = parsed_address.get("street_name")
-    street_number = parsed_address.get("street_number")
-    parsed_address_sv = parse_street_name_and_number(address_data["LahiosoiteR"])
-    street_name_sv = parsed_address_sv.get("street_name")
+    street_name, street_number = parse_street_name_and_number(
+        address_data["LahiosoiteS"]
+    )
+    street_name_sv, __ = parse_street_name_and_number(address_data["LahiosoiteR"])
     address_detail = get_address_details(street_name, street_number)
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])

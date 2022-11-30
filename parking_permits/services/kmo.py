@@ -75,9 +75,7 @@ def get_wfs_result(street_name="", street_number_token=""):
 def search_address(search_text):
     if not search_text:
         return []
-    parsed_address = parse_street_name_and_number(search_text)
-    street_name = parsed_address.get("street_name")
-    street_number = parsed_address.get("street_number")
+    street_name, street_number = parse_street_name_and_number(search_text)
 
     cql_filter = (
         f"katunimi ILIKE '{street_name}%' AND osoitenumero='{street_number}'"
@@ -145,15 +143,12 @@ def parse_feature(feature):
     )
 
 
-def parse_street_name_and_number(street_address):
+def parse_street_name_and_number(street_address: str) -> tuple[str, str]:
     match = re.search(r"\D+", street_address)
     street_name = match.group().strip() if match else street_address
     street_number = street_address[match.end() :].strip() if match else ""
 
-    return dict(
-        street_name=street_name,
-        street_number=street_number,
-    )
+    return street_name, street_number
 
 
 def get_address_from_db(street_name, street_number):
