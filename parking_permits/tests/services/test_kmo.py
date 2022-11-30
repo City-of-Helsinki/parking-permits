@@ -19,6 +19,4 @@ def test_parse_street_name_and_number_function_returns_correct_result(
     street_name,
     street_number,
 ):
-    assert dict(
-        street_name=street_name, street_number=street_number
-    ) == parse_street_name_and_number(street_address)
+    assert (street_name, street_number) == parse_street_name_and_number(street_address)
