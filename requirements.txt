@@ -28,7 +28,7 @@ deprecation==2.1.0
     # via django-helusers
 dj-database-url==0.5.0
     # via -r requirements.in
-django==3.2.16
+django==3.2.15
     # via
     #   -r requirements.in
     #   django-cors-headers
@@ -55,7 +55,7 @@ django-helusers==0.7.1
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
-django-searchable-encrypted-fields==0.2.0
+django-searchable-encrypted-fields==0.2.1
     # via -r requirements.in
 djangorestframework==3.12.4
     # via
@@ -65,7 +65,7 @@ djangorestframework==3.12.4
     #   helsinki-profile-gdpr-api
 drf-oidc-auth==0.10.0
     # via helsinki-profile-gdpr-api
-drf-yasg==1.21.3
+drf-yasg==1.21.4
     # via -r requirements.in
 ecdsa==0.18.0
     # via python-jose
@@ -89,6 +89,8 @@ jinja2==3.1.2
     # via coreschema
 markupsafe==2.1.1
     # via jinja2
+numpy==1.23.5
+    # via -r requirements.in
 packaging==21.3
     # via
     #   deprecation
@@ -99,9 +101,9 @@ pyasn1==0.4.8
     # via
     #   python-jose
     #   rsa
-pycryptodome==3.15.0
+pycryptodome==3.16.0
     # via django-searchable-encrypted-fields
-pycryptodomex==3.15.0
+pycryptodomex==3.16.0
     # via pyjwkest
 pyjwkest==1.4.2
     # via drf-oidc-auth
@@ -111,7 +113,7 @@ python-dateutil==2.8.2
     # via arrow
 python-jose==3.3.0
     # via django-helusers
-pytz==2022.2.1
+pytz==2022.6
     # via
     #   django
     #   drf-yasg
@@ -123,11 +125,11 @@ requests==2.28.1
     #   pyjwkest
 rsa==4.9
     # via python-jose
-ruamel.yaml==0.17.21
+ruamel-yaml==0.17.21
     # via drf-yasg
-ruamel.yaml.clib==0.2.6
+ruamel-yaml-clib==0.2.7
     # via ruamel-yaml
-sentry-sdk==1.9.8
+sentry-sdk==1.11.1
     # via -r requirements.in
 six==1.16.0
     # via
@@ -139,13 +141,13 @@ sqlparse==0.4.3
     # via django
 starlette==0.14.2
     # via ariadne
-typing-extensions==4.3.0
+typing-extensions==4.4.0
     # via ariadne
 uritemplate==4.1.1
     # via
     #   coreapi
     #   drf-yasg
-urllib3==1.26.12
+urllib3==1.26.13
     # via
     #   requests
     #   sentry-sdk
