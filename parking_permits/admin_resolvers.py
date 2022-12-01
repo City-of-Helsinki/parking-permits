@@ -450,11 +450,14 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         )
 
     start_time = isoparse(permit["start_time"])
-    end_time = get_end_time(start_time, permit["month_count"])
-    if active_permits_count == 1 and end_time > active_permits[0].end_time:
-        raise CreatePermitError(
-            _("The validity period of secondary permit cannot exceed the primary one")
-        )
+    month_count = permit["month_count"]
+    end_time = get_end_time(start_time, month_count)
+    if active_permits_count > 0:
+        active_permit = active_permits[0]
+        active_permit_end_time = active_permit.end_time
+        if end_time > active_permit_end_time:
+            end_time = active_permit_end_time
+            month_count = active_permit.month_count
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
@@ -479,7 +482,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         parking_zone=parking_zone,
         status=permit["status"],
         start_time=start_time,
-        month_count=permit["month_count"],
+        month_count=month_count,
         end_time=end_time,
         description=permit["description"],
         address=address,
@@ -535,6 +538,16 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
     permit_start_date = start_time.date()
     end_time = get_end_time(start_time, permit["month_count"])
     permit_end_date = end_time.date()
+    if is_secondary:
+        active_permits = Customer.objects.get(
+            national_id_number=permit.get("customer").get("national_id_number")
+        ).active_permits
+        active_permits_count = active_permits.count()
+        if active_permits_count > 0:
+            active_permit_end_time = active_permits[0].end_time
+            if end_time > active_permit_end_time:
+                permit_end_date = active_permit_end_time.date()
+
     return get_permit_prices(
         parking_zone,
         is_low_emission,
