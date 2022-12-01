@@ -1,6 +1,7 @@
 import json
 import logging
 
+import numpy as np
 import requests
 from django.conf import settings
 from django.db import transaction
@@ -48,13 +49,13 @@ class TalpaOrderManager:
             "unit": "kk",
             "startDate": date_time_to_utc(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "priceNet": float(order_item.payment_unit_price_net),
-            "priceVat": float(order_item.payment_unit_price_vat),
-            "priceGross": float(order_item.payment_unit_price),
-            "vatPercentage": float(order_item.vat_percentage),
-            "rowPriceNet": float(order_item.total_payment_price_net),
-            "rowPriceVat": float(order_item.total_payment_price_vat),
-            "rowPriceTotal": float(order_item.total_payment_price),
+            "priceNet": cls.roundUp(float(order_item.payment_unit_price_net)),
+            "priceVat": cls.roundUp(float(order_item.payment_unit_price_vat)),
+            "priceGross": cls.roundUp(float(order_item.payment_unit_price)),
+            "vatPercentage": cls.roundUp(float(order_item.vat_percentage)),
+            "rowPriceNet": cls.roundUp(float(order_item.total_payment_price_net)),
+            "rowPriceVat": cls.roundUp(float(order_item.total_payment_price_vat)),
+            "rowPriceTotal": cls.roundUp(float(order_item.total_payment_price)),
             "meta": [
                 {
                     "key": "sourceOrderItemId",
@@ -159,12 +160,16 @@ class TalpaOrderManager:
         return {
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.id),
-            "priceNet": float(order.total_payment_price_net),
-            "priceVat": float(order.total_payment_price_vat),
-            "priceTotal": float(order.total_payment_price),
+            "priceNet": cls.roundUp(float(order.total_payment_price_net)),
+            "priceVat": cls.roundUp(float(order.total_payment_price_vat)),
+            "priceTotal": cls.roundUp(float(order.total_payment_price)),
             "customer": customer,
             "items": items,
         }
+
+    @classmethod
+    def roundUp(cls, v):
+        return "{:0.2f}".format(np.round(v, 3))
 
     @classmethod
     def send_to_talpa(cls, order):
