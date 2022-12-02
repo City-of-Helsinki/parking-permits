@@ -55,23 +55,6 @@ def make_pasi_datetime_property(attr_name):
 
 @dataclass
 class PasiResidentPermit:
-    # Mapping from CSV header names to field names.
-    # NOTE: Order matters here; in case index-based access is required.
-    CSV_HEADER_TO_FIELD = {
-        "Tunnuksen asianumero": "id",
-        "Tunnuksen tyyppi": None,
-        "Voimassaolon alkamispvm": "start_dt",
-        "Voimassaolon päättymispvm": "end_dt",
-        "Liittyvän henkilön / Yrityksen nimi": None,
-        "Hetu": "national_id_number",
-        "Osoite": "address_line",
-        "Postinumero": None,
-        "Postitoimipaikka": None,
-        "Alueen osoite": None,
-        # It's a plural, but actually contains only a single registration number per row.
-        "Rekisterinumerot": "registration_number",
-    }
-
     id: int
     national_id_number: str
     city: str
