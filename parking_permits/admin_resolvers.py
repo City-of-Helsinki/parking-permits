@@ -47,6 +47,7 @@ from .decorators import (
 from .exceptions import (
     AddressError,
     CreatePermitError,
+    EndPermitError,
     ObjectNotFound,
     ParkingZoneError,
     ParkkihubiPermitError,
@@ -65,7 +66,7 @@ from .forms import (
     ProductSearchForm,
     RefundSearchForm,
 )
-from .models.order import OrderPaymentType, OrderStatus
+from .models.order import OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import (
     ContractType,
     ParkingPermitEvent,
@@ -816,21 +817,40 @@ def resolve_end_permit(
     request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
     audit_msg.target = permit
-    total_refund_amount = permit.total_refund_amount
-    refund = Refund.objects.filter(order=permit.latest_order)
-    if permit.can_be_refunded and total_refund_amount > 0 and not refund.exists():
-        description = f"Refund for ending permit #{permit.id}"
-        refund = Refund.objects.create(
-            name=str(permit.customer),
-            order=permit.latest_order,
-            amount=total_refund_amount,
-            iban=iban,
-            description=description,
+
+    if permit.customer.active_permits.count() > 1 and permit.primary_vehicle:
+        raise EndPermitError(
+            _("Primary permit cannot be ended if customer has two permits")
         )
-        send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
-        ParkingPermitEventFactory.make_create_refund_event(
-            permit, refund, created_by=request.user
-        )
+
+    if permit.can_be_refunded:
+        total_sum = permit.total_refund_amount
+        refund = Refund.objects.filter(order=permit.latest_order)
+        if refund.exists():
+            order = Order.objects.create_renewal_order(
+                permit.customer,
+                status=OrderStatus.CONFIRMED,
+                order_type=OrderType.CREATED,
+                payment_type=OrderPaymentType.CASHIER_PAYMENT,
+                user=request.user,
+            )
+            total_sum = order.total_price
+            order.order_items.all().delete()
+        else:
+            order = permit.latest_order
+        if total_sum > 0:
+            description = f"Refund for ending permit #{permit.id}"
+            refund = Refund.objects.create(
+                name=str(permit.customer),
+                order=order,
+                amount=total_sum,
+                iban=iban,
+                description=description,
+            )
+            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
+            )
 
     permit.end_permit(end_type)
 

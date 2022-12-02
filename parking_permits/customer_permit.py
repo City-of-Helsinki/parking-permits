@@ -25,12 +25,14 @@ from .exceptions import (
 from .models import (
     Address,
     Customer,
+    Order,
     OrderItem,
     ParkingPermit,
     Refund,
     TemporaryVehicle,
     Vehicle,
 )
+from .models.order import OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import (
     ContractType,
     ParkingPermitEventFactory,
@@ -322,7 +324,7 @@ class CustomerPermit:
 
         return self._update_fields_to_all_draft(fields_to_update)
 
-    def end(self, permit_ids, end_type, iban=None):
+    def end(self, permit_ids, end_type, iban=None, user=None):
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
@@ -332,10 +334,22 @@ class CustomerPermit:
             )
             first_permit = permits.first()
             refund = Refund.objects.filter(order=first_permit.latest_order)
-            if total_sum > 0 and not refund.exists():
+            if refund.exists():
+                order = Order.objects.create_renewal_order(
+                    first_permit.customer,
+                    status=OrderStatus.CONFIRMED,
+                    order_type=OrderType.CREATED,
+                    payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                    user=user,
+                )
+                total_sum = order.total_price
+                order.order_items.all().delete()
+            else:
+                order = first_permit.latest_order
+            if total_sum > 0:
                 refund = Refund.objects.create(
                     name=str(self.customer),
-                    order=first_permit.latest_order,
+                    order=order,
                     amount=total_sum,
                     iban=iban,
                     description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",

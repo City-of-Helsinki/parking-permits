@@ -150,7 +150,7 @@ class OrderManager(SerializableMixin.SerializableManager):
     ):
         """
         Create new order for updated permits information that affect
-        permit prices, e.g. change address or change vehicle
+        permit prices, e.g. change address or change vehicle.
         """
         customer_permits = ParkingPermit.objects.active().filter(
             contract_type=ContractType.FIXED_PERIOD, customer=customer
