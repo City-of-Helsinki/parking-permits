@@ -93,6 +93,12 @@ class PasiResidentPermit:
         )
 
     @property
+    def language(self):
+        if self.city.upper() == "HELSINGFORS":
+            return "sv"
+        return "fi"
+
+    @property
     def street_name(self):
         return self._street_name
 
