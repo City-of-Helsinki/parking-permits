@@ -105,6 +105,11 @@ class PasiCsvReader:
     def __init__(self, f):
         self.reader = csv.DictReader(f)
         self._header_row = next(self.reader)
+        for header in self.HEADER_FIELD_MAPPING.keys():
+            if header not in self._header_row:
+                raise ValueError(
+                    f'Missing the required column "{header}" in the CSV file.'
+                )
         self._fieldnames = [
             self.HEADER_FIELD_MAPPING.get(header, header) for header in self._header_row
         ]

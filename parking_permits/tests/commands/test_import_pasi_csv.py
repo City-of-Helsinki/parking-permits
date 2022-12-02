@@ -1,6 +1,7 @@
 import os
 import zoneinfo
 from datetime import datetime
+from unittest.mock import patch
 
 import freezegun
 import pytest
@@ -91,6 +92,15 @@ class TestPasiCsvReader:
             if v is None:
                 continue
             assert getattr(pasi_resident_permit, v)
+
+    @patch.object(
+        PasiCsvReader,
+        "HEADER_FIELD_MAPPING",
+        {"required column that shouldn't exist": "foo"},
+    )
+    def test_should_validate_required_columns(self, pasi_permits_csv):
+        with pytest.raises(ValueError):
+            PasiCsvReader(pasi_permits_csv)
 
     def test_smoke_test(self, pasi_permits_csv):
         reader = PasiCsvReader(pasi_permits_csv)
