@@ -70,3 +70,13 @@ class TestPasiResidentPermit:
     )
     def test_parse_pasi_datetime(self, timestamp: str, expected_dt: datetime):
         assert parse_pasi_datetime(timestamp) == expected_dt
+
+    def test_language_should_be_sv_if_city_is_helsingfors(self, pasi_resident_permit):
+        pasi_resident_permit.city = "Helsingfors"
+        assert pasi_resident_permit.language == "sv"
+
+    def test_language_should_be_fi_if_city_is_not_helsingfors(
+        self, pasi_resident_permit
+    ):
+        pasi_resident_permit.city = "Helsinki"
+        assert pasi_resident_permit.language == "fi"
