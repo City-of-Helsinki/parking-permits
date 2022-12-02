@@ -35,12 +35,6 @@ def pasi_permits_csv():
 
 
 class TestPasiResidentPermit:
-    def test_header_mapping_field_names_should_exist(self, pasi_resident_permit):
-        for v in PasiResidentPermit.CSV_HEADER_TO_FIELD.values():
-            if v is None:
-                continue
-            assert getattr(pasi_resident_permit, v)
-
     @pytest.mark.parametrize(
         "address_line, street_name, street_number",
         [
@@ -92,6 +86,12 @@ class TestPasiResidentPermit:
 
 
 class TestPasiCsvReader:
+    def test_header_mapping_field_names_should_exist(self, pasi_resident_permit):
+        for v in PasiCsvReader.HEADER_FIELD_MAPPING.values():
+            if v is None:
+                continue
+            assert getattr(pasi_resident_permit, v)
+
     def test_smoke_test(self, pasi_permits_csv):
         reader = PasiCsvReader(pasi_permits_csv)
         for row in reader:
