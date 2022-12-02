@@ -1,10 +1,14 @@
-import dataclasses
+import zoneinfo
+from datetime import datetime
 
 import freezegun
 import pytest
 from django.utils import timezone
 
-from parking_permits.management.commands.import_pasi_csv import PasiResidentPermit
+from parking_permits.management.commands.import_pasi_csv import (
+    PasiResidentPermit,
+    parse_pasi_datetime,
+)
 
 
 @pytest.fixture
@@ -16,6 +20,7 @@ def pasi_resident_permit():
             end_dt=timezone.now() + timezone.timedelta(days=30),
             national_id_number="123456-XXXX",
             address_line="Street Name 1",
+            city="HELSINKI",
             registration_number="FOO-123",
         )
 
@@ -38,8 +43,30 @@ class TestPasiResidentPermit:
     def test_pasi_street_address_and_number(
         self, pasi_resident_permit, address_line, street_name, street_number
     ):
-        pasi_resident_permit = dataclasses.replace(
-            pasi_resident_permit, address_line=address_line
-        )
+        pasi_resident_permit.address_line = address_line
         assert pasi_resident_permit.street_name == street_name
         assert pasi_resident_permit.street_number == street_number
+
+    @pytest.mark.parametrize(
+        "timestamp, expected_dt",
+        [
+            (
+                "1.1.1999 1:01",
+                datetime(1999, 1, 1, 1, 1, tzinfo=zoneinfo.ZoneInfo("Europe/Helsinki")),
+            ),
+            (
+                "31.12.2021 13:59",
+                datetime(
+                    2021, 12, 31, 13, 59, tzinfo=zoneinfo.ZoneInfo("Europe/Helsinki")
+                ),
+            ),
+            (
+                "13.10.2020 0:00",
+                datetime(
+                    2020, 10, 13, 0, 0, tzinfo=zoneinfo.ZoneInfo("Europe/Helsinki")
+                ),
+            ),
+        ],
+    )
+    def test_parse_pasi_datetime(self, timestamp: str, expected_dt: datetime):
+        assert parse_pasi_datetime(timestamp) == expected_dt
