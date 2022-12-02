@@ -1,3 +1,4 @@
+import os
 import zoneinfo
 from datetime import datetime
 
@@ -6,6 +7,7 @@ import pytest
 from django.utils import timezone
 
 from parking_permits.management.commands.import_pasi_csv import (
+    PasiCsvReader,
     PasiResidentPermit,
     parse_pasi_datetime,
 )
@@ -23,6 +25,13 @@ def pasi_resident_permit():
             city="HELSINKI",
             registration_number="FOO-123",
         )
+
+
+@pytest.fixture
+def pasi_permits_csv():
+    filepath = os.path.join(os.path.dirname(__file__), "data", "example_permits.csv")
+    with open(filepath, "r", encoding="utf-8-sig") as f:
+        yield f
 
 
 class TestPasiResidentPermit:
@@ -80,3 +89,10 @@ class TestPasiResidentPermit:
     ):
         pasi_resident_permit.city = "Helsinki"
         assert pasi_resident_permit.language == "fi"
+
+
+class TestPasiCsvReader:
+    def test_smoke_test(self, pasi_permits_csv):
+        reader = PasiCsvReader(pasi_permits_csv)
+        for row in reader:
+            print(row)

@@ -1,3 +1,4 @@
+import csv
 import dataclasses
 import re
 import typing
@@ -105,3 +106,35 @@ class PasiResidentPermit:
     @property
     def street_number(self):
         return self._street_number
+
+
+class PasiCsvReader:
+    HEADER_FIELD_MAPPING = {
+        "Tunnuksen asianumero": "id",
+        "Voimassaolon alkamispvm": "start_dt",
+        "Voimassaolon päättymispvm": "end_dt",
+        "Hetu": "national_id_number",
+        "Osoite": "address_line",
+        "Postitoimipaikka": "city",
+        "Rekisterinumerot": "registration_number",
+    }
+
+    def __init__(self, f):
+        self.reader = csv.DictReader(f)
+        self._header_row = next(self.reader)
+        self._fieldnames = [
+            self.HEADER_FIELD_MAPPING.get(header, header) for header in self._header_row
+        ]
+        self.reader.fieldnames = self._fieldnames
+
+    def __iter__(self):
+        return self
+
+    def pre_process_row(self, row: dict):
+        fields = self.HEADER_FIELD_MAPPING.values()
+        return {k: v for k, v in row.items() if k in fields}
+
+    def __next__(self):
+        row = self.pre_process_row(next(self.reader))
+        permit = PasiResidentPermit(**row)
+        return permit
