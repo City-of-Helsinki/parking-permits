@@ -60,7 +60,7 @@ type CustomerNode {
 }
 
 type VehiclePowerTypeNode {
-  name: String!
+  name: String
   identifier: String!
 }
 
