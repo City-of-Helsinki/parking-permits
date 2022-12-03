@@ -5,10 +5,12 @@ import requests
 import xmltodict
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 
 from parking_permits.exceptions import AddressError
+from parking_permits.models import ParkingZone
 from parking_permits.models.address import Address
 
 logger = logging.getLogger("db")
@@ -68,6 +70,79 @@ def get_wfs_result(street_name="", street_number_token=""):
     ]
 
     return {**result, "features": result_features}
+
+
+def search_address(search_text):
+    if not search_text:
+        return []
+    parsed_address = parse_street_name_and_number(search_text)
+    street_name = parsed_address.get("street_name")
+    street_number = parsed_address.get("street_number")
+
+    cql_filter = (
+        f"katunimi ILIKE '{street_name}%' AND osoitenumero='{street_number}'"
+        if street_number
+        else f"katunimi ILIKE '{street_name}%'"
+    )
+    params = {
+        "CQL_FILTER": cql_filter,
+        "OUTPUTFORMAT": "json",
+        "REQUEST": "GetFeature",
+        "SERVICE": "WFS",
+        "srsName": "EPSG:4326",
+        "TYPENAMES": "avoindata:Helsinki_osoiteluettelo",
+        "VERSION": "2.0.0",
+        "COUNT": "8",
+    }
+    response = requests.get(settings.KMO_URL, params=params)
+
+    if response.status_code != status.HTTP_200_OK:
+        xml_response = xmltodict.parse(response.content)
+
+        error_message = (
+            xml_response.get("ows:ExceptionReport", dict())
+            .get("ows:Exception", dict())
+            .get("ows:ExceptionText", "Unknown Error")
+        )
+        raise Exception(error_message)
+
+    result = response.json()
+
+    if not result.get("features"):
+        return Address.objects.filter(
+            Q(street_name__icontains=street_name)
+            | Q(street_name_sv__icontains=street_name)
+            | Q(street_number__icontains=street_number)
+        )
+
+    parsed_addresses = []
+    for feature in result.get("features"):
+        if feature.get("geometry").get("type") == "Point":
+            parsed_address = parse_feature(feature)
+            if parsed_address.get("zone"):
+                parsed_addresses.append(parsed_address)
+
+    return parsed_addresses
+
+
+def parse_feature(feature):
+    properties = feature.get("properties", {})
+    geometry = feature.get("geometry", {})
+    location = GEOSGeometry(str(geometry))
+    try:
+        zone = ParkingZone.objects.get_for_location(location)
+    except ParkingZone.DoesNotExist:
+        zone = None
+    return dict(
+        street_name=properties.get("katunimi", ""),
+        street_name_sv=properties.get("gatan", ""),
+        street_number=properties.get("osoitenumero_teksti", ""),
+        postal_code=properties.get("postinumero", ""),
+        city=properties.get("kaupunki", ""),
+        city_sv=properties.get("staden", ""),
+        location=location,
+        zone=zone,
+    )
 
 
 def parse_street_name_and_number(street_address):
