@@ -26,7 +26,7 @@ type ZoneNode {
 }
 
 type AddressNode {
-  id: ID!
+  id: ID
   streetName: String
   streetNumber: String
   streetNameSv: String
