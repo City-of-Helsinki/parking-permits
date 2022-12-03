@@ -21,7 +21,6 @@ from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import diff_months_ceil, flatten_dict, get_end_time, get_permit_prices
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
-from .refund import Refund
 from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
@@ -464,8 +463,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def get_refund_amount_for_unused_items(self):
         total = Decimal(0)
-        refund = Refund.objects.filter(order=self.latest_order)
-        if not self.can_be_refunded or refund.exists():
+        if not self.can_be_refunded:
             return total
 
         unused_order_items = self.get_unused_order_items()

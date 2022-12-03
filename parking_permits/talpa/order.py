@@ -49,13 +49,13 @@ class TalpaOrderManager:
             "unit": "kk",
             "startDate": date_time_to_utc(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "priceNet": cls.roundUp(float(order_item.payment_unit_price_net)),
-            "priceVat": cls.roundUp(float(order_item.payment_unit_price_vat)),
-            "priceGross": cls.roundUp(float(order_item.payment_unit_price)),
-            "vatPercentage": cls.roundUp(float(order_item.vat_percentage)),
-            "rowPriceNet": cls.roundUp(float(order_item.total_payment_price_net)),
-            "rowPriceVat": cls.roundUp(float(order_item.total_payment_price_vat)),
-            "rowPriceTotal": cls.roundUp(float(order_item.total_payment_price)),
+            "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
+            "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
+            "priceGross": cls.round_up(float(order_item.payment_unit_price)),
+            "vatPercentage": cls.round_up(float(order_item.vat_percentage)),
+            "rowPriceNet": cls.round_up(float(order_item.total_payment_price_net)),
+            "rowPriceVat": cls.round_up(float(order_item.total_payment_price_vat)),
+            "rowPriceTotal": cls.round_up(float(order_item.total_payment_price)),
             "meta": [
                 {
                     "key": "sourceOrderItemId",
@@ -160,15 +160,15 @@ class TalpaOrderManager:
         return {
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.id),
-            "priceNet": cls.roundUp(float(order.total_payment_price_net)),
-            "priceVat": cls.roundUp(float(order.total_payment_price_vat)),
-            "priceTotal": cls.roundUp(float(order.total_payment_price)),
+            "priceNet": cls.round_up(float(order.total_payment_price_net)),
+            "priceVat": cls.round_up(float(order.total_payment_price_vat)),
+            "priceTotal": cls.round_up(float(order.total_payment_price)),
             "customer": customer,
             "items": items,
         }
 
     @classmethod
-    def roundUp(cls, v):
+    def round_up(cls, v):
         return "{:0.2f}".format(np.round(v, 3))
 
     @classmethod

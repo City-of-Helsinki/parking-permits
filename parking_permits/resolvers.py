@@ -311,7 +311,9 @@ def resolve_end_permit(
         audit.ModelWithId(ParkingPermit, permit_id) for permit_id in permit_ids
     ]
     request = info.context["request"]
-    return CustomerPermit(request.user.customer.id).end(permit_ids, end_type, iban)
+    return CustomerPermit(request.user.customer.id).end(
+        permit_ids, end_type, iban, request.user
+    )
 
 
 @mutation.field("getVehicleInformation")
