@@ -75,6 +75,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
+from .services import kmo
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -309,6 +310,8 @@ def resolve_vehicle(obj, info, reg_number, national_id_number):
 
 
 def update_or_create_address(address_info):
+    if not address_info:
+        return None
     location = Point(*address_info["location"], srid=settings.SRID)
     address_obj = Address.objects.update_or_create(
         street_name=address_info["street_name"],
@@ -383,7 +386,7 @@ def update_or_create_vehicle(vehicle_info):
     )[0]
 
 
-def update_or_create_permit_address(customer_info):
+def update_or_create_customer_address(customer_info, permit_address):
     primary_address = None
     other_address = None
     primary_address_info = customer_info.get("primary_address")
@@ -394,10 +397,13 @@ def update_or_create_permit_address(customer_info):
     if other_address_info:
         other_address = update_or_create_address(other_address_info)
 
-    zone = customer_info.get("zone")
-    if primary_address and primary_address.zone.name == zone:
+    if (
+        primary_address
+        and permit_address
+        and primary_address.zone == permit_address.zone
+    ):
         return primary_address
-    elif other_address and other_address.zone.name == zone:
+    elif other_address and permit_address and other_address.zone == permit_address.zone:
         return other_address
     else:
         raise AddressError(_("Permit address does not have a valid zone"))
@@ -405,7 +411,7 @@ def update_or_create_permit_address(customer_info):
 
 @query.field("addressSearch")
 @convert_kwargs_to_snake_case
-def resolve_address_earch(obj, info, search_input):
+def resolve_address_search(obj, info, search_input):
     return kmo.search_address(search_text=search_input)
 
 
@@ -422,6 +428,7 @@ def resolve_address_earch(obj, info, search_input):
 @transaction.atomic
 def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None):
     customer_info = permit["customer"]
+    security_ban = customer_info.get("address_security_ban", False)
     national_id_number = customer_info["national_id_number"]
     if not national_id_number:
         raise CreatePermitError(
@@ -468,8 +475,10 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
-    address = update_or_create_permit_address(customer_info)
-    parking_zone = address.zone
+    parking_zone = ParkingZone.objects.get(name=permit["zone"])
+    permit_address = update_or_create_address(permit.get("address", None))
+    if not security_ban:
+        update_or_create_customer_address(customer_info, permit_address=permit_address)
 
     if active_permits_count == 1:
         active_parking_zone = active_permits[0].parking_zone
@@ -492,7 +501,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         month_count=month_count,
         end_time=end_time,
         description=permit["description"],
-        address=address,
+        address=permit_address if not security_ban else None,
         primary_vehicle=primary_vehicle,
     )
 
@@ -525,7 +534,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_prices(obj, info, permit, is_secondary):
-    parking_zone = ParkingZone.objects.get(name=permit["customer"]["zone"])
+    parking_zone = ParkingZone.objects.get(name=permit["zone"])
     vehicle_info = permit["vehicle"]
     vehicle_qs = Vehicle.objects.filter(
         registration_number=vehicle_info["registration_number"]
@@ -575,10 +584,12 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
         raise ObjectNotFound(_("Parking permit not found"))
 
     address_changed = False
-    previous_address_identifier = "%s %s" % (
-        permit.address.street_name,
-        permit.address.street_number,
-    )
+    previous_address_identifier = None
+    if permit.address:
+        previous_address_identifier = "%s %s" % (
+            permit.address.street_name,
+            permit.address.street_number,
+        )
     customer_info = permit_info.get("customer")
     primary_address_info = customer_info.get("primary_address")
     if primary_address_info:
@@ -617,7 +628,7 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
         registration_number=vehicle_info["registration_number"]
     )
     is_low_emission = vehicle.is_low_emission
-    parking_zone = ParkingZone.objects.get(name=customer_info["zone"])
+    parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
     price_change_list.extend(
         permit.get_price_change_list(parking_zone, is_low_emission)
     )
@@ -646,6 +657,7 @@ def resolve_update_resident_permit(
     request = info.context["request"]
     audit_msg.target = permit
     customer_info = permit_info["customer"]
+    security_ban = customer_info.get("address_security_ban", False)
 
     national_id_number = customer_info["national_id_number"]
     if not national_id_number:
@@ -680,10 +692,14 @@ def resolve_update_resident_permit(
         vehicle_changed = True
 
     address_changed = False
-    previous_address_id = permit.address.id
-    address = update_or_create_permit_address(customer_info)
-    new_zone = address.zone
-    if address.id != previous_address_id:
+    previous_address_id = permit.address.id if permit.address else None
+    new_zone = ParkingZone.objects.get(name=permit_info.get("zone"))
+    permit_address = update_or_create_address(permit_info.get("address", None))
+    if not security_ban:
+        update_or_create_customer_address(customer_info, permit_address=permit_address)
+    if (previous_address_id and not permit_address) or (
+        permit_address and permit_address.id != previous_address_id
+    ):
         address_changed = True
 
     if address_changed and active_permits.count() == 2:
@@ -732,7 +748,7 @@ def resolve_update_resident_permit(
     # Update permit address and zone for all active permits
     for permit in active_permits:
         permit.parking_zone = new_zone
-        permit.address = address
+        permit.address = permit_address if not security_ban else None
         permit.save()
 
     # get updated permit info
