@@ -95,7 +95,6 @@ def test_model_differ():
     vehicle.model = "Some other model"
     diff_dict = diff.stop()
     vehicle.registration_number = "BAR-777"
-    print(diff_dict)
     assert len(diff_dict.keys()) == 1
     assert "registration_number" in diff_dict
     assert diff_dict["registration_number"] == ("ABC-123", "FOO-321")
