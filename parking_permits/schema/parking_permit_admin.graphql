@@ -262,6 +262,7 @@ type TemporaryVehicleNode {
 
 type PermitDetailNode {
   id: ID!
+  address: AddressNode
   customer: CustomerNode!
   vehicle: VehicleNode
   activeTemporaryVehicle: TemporaryVehicleNode
@@ -473,6 +474,8 @@ input ResidentPermitInput {
   endTime: String
   monthCount: Int
   description: String
+  address: AddressInput
+  zone: String
 }
 
 input ProductInput {
