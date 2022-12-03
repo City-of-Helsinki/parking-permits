@@ -400,6 +400,7 @@ type Query {
     orderBy: OrderByInput
     searchParams: AddressSearchParamsInput
   ): PagedAddresses!
+  addressSearch(searchInput: String!): [AddressNode]
   address(addressId: ID!): AddressNode!
   lowEmissionCriteria(
     pageInput: PageInput!

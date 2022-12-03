@@ -403,6 +403,12 @@ def update_or_create_permit_address(customer_info):
         raise AddressError(_("Permit address does not have a valid zone"))
 
 
+@query.field("addressSearch")
+@convert_kwargs_to_snake_case
+def resolve_address_earch(obj, info, search_input):
+    return kmo.search_address(search_text=search_input)
+
+
 @mutation.field("createResidentPermit")
 @is_customer_service
 @convert_kwargs_to_snake_case
