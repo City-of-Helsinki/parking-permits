@@ -97,7 +97,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         verbose_name_plural = _("Customers")
 
     def __str__(self):
-        return "%s %s" % (self.first_name, self.last_name)
+        return "%s" % self.national_id_number
 
     @property
     def age(self):
