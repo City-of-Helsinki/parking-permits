@@ -15,9 +15,12 @@ from parking_permits.management.commands.import_pasi_csv import (
     PasiValidationError,
     parse_pasi_datetime,
 )
+from parking_permits.models.vehicle import VehicleUser
+from parking_permits.services.traficom import Traficom
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.vehicle import VehicleFactory
 
 
 @pytest.fixture
@@ -251,3 +254,41 @@ class TestPasiImportCommand:
 
         with pytest.raises(ValueError):
             PasiCommand.get_permit_address_from_customer(customer, "BANANA")
+
+    def test_validate_vehicle_passes(self, pasi_resident_permit):
+        vehicle = VehicleFactory(registration_number="FOO-123")
+        vehicle.users.add(
+            VehicleUser.objects.create(
+                national_id_number=pasi_resident_permit.national_id_number
+            )
+        )
+        vehicle.users.add(VehicleUser.objects.create(national_id_number="foo"))
+        vehicle.users.add(VehicleUser.objects.create(national_id_number="bar"))
+
+        PasiCommand.validate_vehicle(pasi_resident_permit, vehicle)
+
+    def test_validate_vehicle_raises_error_on_failure(self, pasi_resident_permit):
+        vehicle = VehicleFactory(registration_number="FOO-123")
+        vehicle.users.add(VehicleUser.objects.create(national_id_number="foo"))
+
+        with pytest.raises(PasiValidationError):
+            PasiCommand.validate_vehicle(pasi_resident_permit, vehicle)
+
+    @patch.object(Traficom, "fetch_vehicle_details", return_value="Hello, world!")
+    def test_fetch_vehicle_gets_vehicle_from_traficom(self, mock_fetch_vehicle_details):
+        vehicle = PasiCommand.fetch_vehicle("FOO-123")
+
+        mock_fetch_vehicle_details.assert_called_once_with("FOO-123")
+        assert vehicle == "Hello, world!"
+
+    @patch.object(Traficom, "fetch_vehicle_details", return_value="Hello, world!")
+    def test_fetch_vehicle_raises_pasi_error_on_failure(
+        self, mock_fetch_vehicle_details
+    ):
+        def raise_error(*_, **__):
+            raise ValueError
+
+        mock_fetch_vehicle_details.side_effect = raise_error
+
+        with pytest.raises(PasiImportError):
+            PasiCommand.fetch_vehicle("FOO-123")
