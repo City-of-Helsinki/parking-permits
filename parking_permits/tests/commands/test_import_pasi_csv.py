@@ -7,11 +7,17 @@ import freezegun
 import pytest
 from django.utils import timezone
 
+from parking_permits.management.commands.import_pasi_csv import Command as PasiCommand
 from parking_permits.management.commands.import_pasi_csv import (
     PasiCsvReader,
+    PasiImportError,
     PasiResidentPermit,
+    PasiValidationError,
     parse_pasi_datetime,
 )
+from parking_permits.tests.factories.address import AddressFactory
+from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 
 
 @pytest.fixture
@@ -106,3 +112,142 @@ class TestPasiCsvReader:
         reader = PasiCsvReader(pasi_permits_csv)
         for row in reader:
             print(row)
+
+
+@pytest.mark.django_db
+class TestPasiImportCommand:
+    def test_permit_exists_return_false_if_none(self):
+        assert PasiCommand.permit_exists(None) is False
+
+    def test_permit_exists_return_true_if_permit_exists(self):
+        permit = ParkingPermitFactory()
+
+        assert PasiCommand.permit_exists(permit.id) is True
+
+    def test_permit_exists_return_false_if_permit_doesnt_exist(self):
+        permit = ParkingPermitFactory()
+
+        assert PasiCommand.permit_exists(permit.id + 1) is False
+
+    @patch("parking_permits.services.dvv.get_person_info", return_value="Hello, world!")
+    def test_get_person_info_returns_person_info_from_dvv(self, mock_get_person_info):
+        person_info = PasiCommand.get_person_info("112233-123A")
+
+        mock_get_person_info.assert_called_once_with("112233-123A")
+        assert person_info == "Hello, world!"
+
+    @patch("parking_permits.services.dvv.get_person_info")
+    def test_get_person_info_raises_pasi_error_on_error(self, mock_get_person_info):
+        def raise_error(*_, **__):
+            raise ValueError
+
+        mock_get_person_info.side_effect = raise_error
+
+        with pytest.raises(PasiImportError):
+            PasiCommand.get_person_info("112233-123A")
+
+    @patch("parking_permits.services.dvv.get_person_info", return_value=None)
+    def test_get_person_info_raises_pasi_validation_error_on_empty_result(
+        self, mock_get_person_info
+    ):
+        with pytest.raises(PasiValidationError):
+            PasiCommand.get_person_info("112233-123A")
+        mock_get_person_info.assert_called_once_with("112233-123A")
+
+    @pytest.mark.parametrize(
+        "address_line, primary_address, other_address, expected",
+        [
+            ("Mannerheimintie 1 A 2", None, None, "PRIMARY"),
+            ("Jonkuntoisentie 10 B 20", None, None, "OTHER"),
+            ("Mannerheimin 1 A 2", None, None, "PRIMARY"),
+            ("Mannerheimintie 1", None, None, "PRIMARY"),
+            (
+                "Mannerheimintie 1 A 2",
+                dict(
+                    street_name="Mannerheimintie",
+                    street_name_sv="Mannerheimvägen",
+                    street_number="1 A 2",
+                ),
+                dict(
+                    street_name="Mannerheimintie",
+                    street_name_sv="Mannerheimvägen",
+                    street_number="1 A 2",
+                ),
+                "PRIMARY",
+            ),
+            (
+                "Mannerheimvägen 1 A 2",
+                dict(street_name_sv="Mannerheimvägen"),
+                None,
+                "PRIMARY",
+            ),
+        ],
+    )
+    def test_find_permit_address_type_returns_correct_type(
+        self,
+        pasi_resident_permit,
+        address_line,
+        primary_address,
+        other_address,
+        expected,
+    ):
+        primary_address = primary_address or dict()
+        primary_address.setdefault("street_name", "Mannerheimintie")
+        primary_address.setdefault("street_name_sv", "Samma på svenska")
+        primary_address.setdefault("street_number", "1 A 2")
+
+        other_address = other_address or dict()
+        other_address.setdefault("street_name", "Jonkuntoisentie")
+        other_address.setdefault("street_name_sv", "Samma på svenska")
+        other_address.setdefault("street_number", "10 B 20")
+
+        person_info = dict(primary_address=primary_address, other_address=other_address)
+        pasi_resident_permit.address_line = address_line
+        pasi_command = PasiCommand()
+
+        assert (
+            pasi_command.find_permit_address_type(pasi_resident_permit, person_info)
+            == expected
+        )
+
+    def test_find_permit_address_type_raises_validation_error_if_no_match(
+        self, pasi_resident_permit
+    ):
+        primary_address = dict(
+            street_name="Primary Street",
+            street_name_sv="Samma på svenska",
+            street_number="1",
+        )
+        other_address = dict(
+            street_name="Other Street",
+            street_name_sv="Samma på svenska",
+            street_number="2",
+        )
+        person_info = dict(primary_address=primary_address, other_address=other_address)
+        pasi_resident_permit.address_line = "Banana Hammock 666"
+        pasi_command = PasiCommand()
+
+        with pytest.raises(PasiValidationError):
+            pasi_command.find_permit_address_type(pasi_resident_permit, person_info)
+
+    def test_get_permit_address_from_customer_returns_primary(self):
+        primary_address = AddressFactory()
+        customer = CustomerFactory(primary_address=primary_address)
+
+        address = PasiCommand.get_permit_address_from_customer(customer, "PRIMARY")
+
+        assert address is primary_address
+
+    def test_get_permit_address_from_customer_returns_other(self):
+        other_address = AddressFactory()
+        customer = CustomerFactory(other_address=other_address)
+
+        address = PasiCommand.get_permit_address_from_customer(customer, "OTHER")
+
+        assert address is other_address
+
+    def test_get_permit_address_from_customer_raises_error_on_unknown_type(self):
+        customer = CustomerFactory()
+
+        with pytest.raises(ValueError):
+            PasiCommand.get_permit_address_from_customer(customer, "BANANA")
