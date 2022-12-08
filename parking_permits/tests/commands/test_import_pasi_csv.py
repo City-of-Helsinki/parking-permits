@@ -96,6 +96,26 @@ class TestPasiResidentPermit:
         pasi_resident_permit.city = "Helsinki"
         assert pasi_resident_permit.language == "fi"
 
+    @pytest.mark.parametrize(
+        "start_dt, end_dt, expected_count",
+        [
+            ("1.1.2000 0:00", "31.1.2000 23:59", 1),
+            ("1.1.2000 0:00", "1.2.2000 23:59", 1),
+            ("1.1.2000 0:00", "2.2.2000 0:00", 2),
+            ("1.2.2000 0:00", "2.3.2000 0:00", 2),
+            ("1.1.2000 0:00", "2.1.2000 0:00", 1),
+            ("1.1.2000 0:00", "31.1.2000 23:59", 1),
+            ("1.1.2000 0:00", "1.1.2000 23:59", 0),
+            ("1.1.2000 0:00", "31.12.2000 23:59", 12),
+            ("1.1.2000 0:00", "31.12.2001 23:59", 24),
+        ],
+    )
+    def test_month_count(self, pasi_resident_permit, start_dt, end_dt, expected_count):
+        pasi_resident_permit.start_dt = start_dt
+        pasi_resident_permit.end_dt = end_dt
+
+        assert pasi_resident_permit.month_count == expected_count
+
 
 class TestPasiCsvReader:
     def test_header_mapping_field_names_should_exist(self, pasi_resident_permit):
