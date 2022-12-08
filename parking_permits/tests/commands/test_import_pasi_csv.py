@@ -11,10 +11,12 @@ from parking_permits.management.commands.import_pasi_csv import Command as PasiC
 from parking_permits.management.commands.import_pasi_csv import (
     PasiCsvReader,
     PasiImportError,
+    PasiPermitExists,
     PasiResidentPermit,
     PasiValidationError,
     parse_pasi_datetime,
 )
+from parking_permits.models.parking_permit import ParkingPermitStatus
 from parking_permits.models.vehicle import VehicleUser
 from parking_permits.services.traficom import Traficom
 from parking_permits.tests.factories.address import AddressFactory
@@ -233,6 +235,15 @@ class TestPasiImportCommand:
         with pytest.raises(PasiValidationError):
             pasi_command.find_permit_address_type(pasi_resident_permit, person_info)
 
+    def test_find_permit_address_type_raises_validation_error_if_no_match_null_addresses(
+        self, pasi_resident_permit
+    ):
+        person_info = dict(primary_address=None, other_address=None)
+        pasi_command = PasiCommand()
+
+        with pytest.raises(PasiValidationError):
+            pasi_command.find_permit_address_type(pasi_resident_permit, person_info)
+
     def test_get_permit_address_from_customer_returns_primary(self):
         primary_address = AddressFactory()
         customer = CustomerFactory(primary_address=primary_address)
@@ -292,3 +303,38 @@ class TestPasiImportCommand:
 
         with pytest.raises(PasiImportError):
             PasiCommand.fetch_vehicle("FOO-123")
+
+    def test_vehicle_has_active_permits_returns_true_if_has_active_permits(self):
+        vehicle = VehicleFactory(registration_number="FOO-123")
+        ParkingPermitFactory(status=ParkingPermitStatus.VALID, vehicle=vehicle)
+
+        assert (
+            PasiCommand.vehicle_has_active_permit(vehicle.registration_number) is True
+        )
+
+    def test_vehicle_has_active_permits_returns_false_if_no_active_permits(self):
+        vehicle = VehicleFactory(registration_number="FOO-123")
+
+        assert (
+            PasiCommand.vehicle_has_active_permit(vehicle.registration_number) is False
+        )
+
+        ParkingPermitFactory(status=ParkingPermitStatus.CLOSED, vehicle=vehicle)
+
+        assert (
+            PasiCommand.vehicle_has_active_permit(vehicle.registration_number) is False
+        )
+
+    @patch.object(PasiCommand, "permit_exists", lambda *_, **__: True)
+    @patch.object(PasiCommand, "vehicle_has_active_permit", lambda *_, **__: False)
+    def test_pre_process_raise_error_if_permit_exists(self, pasi_resident_permit):
+        pasi_command = PasiCommand()
+        with pytest.raises(PasiPermitExists, match="already exists"):
+            pasi_command.pre_process(pasi_resident_permit)
+
+    @patch.object(PasiCommand, "permit_exists", lambda *_, **__: False)
+    @patch.object(PasiCommand, "vehicle_has_active_permit", lambda *_, **__: True)
+    def test_pre_process_raise_error_if_active_permits(self, pasi_resident_permit):
+        pasi_command = PasiCommand()
+        with pytest.raises(PasiValidationError, match="has at least one active permit"):
+            pasi_command.pre_process(pasi_resident_permit)

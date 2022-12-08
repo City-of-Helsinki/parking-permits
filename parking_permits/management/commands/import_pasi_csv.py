@@ -64,6 +64,8 @@ def make_pasi_datetime_property(attr_name):
 
 @dataclass
 class PasiResidentPermit:
+    """Represents a single row in the CSV exported from PASI."""
+
     id: int
     national_id_number: str
     city: str
@@ -114,11 +116,19 @@ class PasiCsvReader:
     def __init__(self, f):
         self.reader = csv.DictReader(f)
         self._header_row = next(self.reader)
+
+        # Validate that the header row has all the required headers
+        # (i.e. the ones listed in HEADER_FIELD_MAPPING).
         for header in self.HEADER_FIELD_MAPPING.keys():
             if header not in self._header_row:
                 raise ValueError(
                     f'Missing the required column "{header}" in the CSV file.'
                 )
+
+        # DictReader's fieldnames attribute relies on order; however, the order of
+        # the columns is *not* guaranteed in the PASI CSV, but the column names are.
+        # So we generate the field names by mapping what we can and leave the rest
+        # as they are.
         self._fieldnames = [
             self.HEADER_FIELD_MAPPING.get(header, header) for header in self._header_row
         ]
@@ -128,6 +138,8 @@ class PasiCsvReader:
         return self
 
     def pre_process_row(self, row: dict):
+        # Filter out the non-relevant fields (the ones that do not exist
+        # in HEADER_FIELD_MAPPING)
         fields = self.HEADER_FIELD_MAPPING.values()
         return {k: v for k, v in row.items() if k in fields}
 
@@ -145,9 +157,7 @@ class Command(BaseCommand):
         raise NotImplementedError
 
     def process_pasi_permit(self, pasi_permit: PasiResidentPermit):
-        # Skip all permits that already exists in the database.
-        if self.permit_exists(pasi_permit.id):
-            raise PasiPermitExists
+        self.pre_process(pasi_permit)
 
         # Validation & initialization
         person_info = self.get_person_info(pasi_permit.national_id_number)
@@ -162,9 +172,28 @@ class Command(BaseCommand):
         )
         raise NotImplementedError(permit_address_type, customer)
 
+    def pre_process(self, pasi_permit: PasiResidentPermit):
+        """Perform operations before processing a PASI permit, i.e. do all the simple
+        filtering here before moving on to more integration/database heavy stuff."""
+
+        if self.permit_exists(pasi_permit.id):
+            raise PasiPermitExists(f"Permit with ID #{pasi_permit.id} already exists")
+
+        if self.vehicle_has_active_permit(pasi_permit.registration_number):
+            raise PasiValidationError(
+                f"Vehicle {pasi_permit.registration_number} already has at least one active permit"
+            )
+
     @staticmethod
     def permit_exists(id_):
         return bool(id_) and ParkingPermit.objects.filter(id=id_).exists()
+
+    @staticmethod
+    def vehicle_has_active_permit(registration_number: str) -> bool:
+        active_permits_for_vehicle = ParkingPermit.objects.active().filter(
+            vehicle__registration_number=registration_number
+        )
+        return active_permits_for_vehicle.exists()
 
     @staticmethod
     def get_person_info(national_id_number: str) -> dvv.DvvPersonInfo:
