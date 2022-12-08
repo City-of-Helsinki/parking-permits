@@ -6,12 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, NoReturn, Optional
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
 from django.utils import timezone
 
 from parking_permits.models import Address, Customer, ParkingPermit, Vehicle
+from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.services import dvv, kmo
 from parking_permits.services.traficom import Traficom
 
@@ -101,6 +103,17 @@ class PasiResidentPermit:
     def street_number(self):
         return self._street_number
 
+    @property
+    def month_count(self):
+        dt_end_start = relativedelta(self.end_dt, self.start_dt)
+
+        month_count = dt_end_start.years * 12 + dt_end_start.months
+        if dt_end_start.days > 0:
+            # Add a month if there are any remainder days.
+            month_count += 1
+
+        return month_count
+
 
 class PasiCsvReader:
     HEADER_FIELD_MAPPING = {
@@ -165,12 +178,37 @@ class Command(BaseCommand):
         vehicle = self.fetch_vehicle(pasi_permit.registration_number)
         self.validate_vehicle(pasi_permit, vehicle)
 
+        # Create/get all the instances required for a parking permit.
         primary_address = self.update_or_create_address(person_info["primary_address"])
         other_address = self.update_or_create_address(person_info["other_address"])
         customer = self.update_or_create_customer(
             person_info, primary_address, other_address, pasi_permit.language
         )
-        raise NotImplementedError(permit_address_type, customer)
+        permit_address = self.get_permit_address_from_customer(
+            customer, permit_address_type
+        )
+
+        return self.create_parking_permit(
+            pasi_permit, customer, vehicle, permit_address
+        )
+
+    @staticmethod
+    def create_parking_permit(
+        pasi_permit: PasiResidentPermit, customer, vehicle, permit_address
+    ):
+        return ParkingPermit.objects.create(
+            contract_type=ContractType.FIXED_PERIOD,
+            customer=customer,
+            vehicle=vehicle,
+            parking_zone=permit_address.zone,
+            status=ParkingPermitStatus.VALID,
+            start_time=pasi_permit.start_dt,
+            month_count=pasi_permit.month_count,
+            end_time=pasi_permit.end_dt,
+            description="Imported from PASI",
+            address=permit_address,
+            primary_vehicle=True,
+        )
 
     def pre_process(self, pasi_permit: PasiResidentPermit):
         """Perform operations before processing a PASI permit, i.e. do all the simple
