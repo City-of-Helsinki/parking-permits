@@ -4,15 +4,16 @@ import re
 import zoneinfo
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal, NoReturn, Optional
 
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
 from django.utils import timezone
 
-from parking_permits.models import Address, Customer, ParkingPermit
+from parking_permits.models import Address, Customer, ParkingPermit, Vehicle
 from parking_permits.services import dvv, kmo
+from parking_permits.services.traficom import Traficom
 
 # E.g. 1.1.2011 1:01, 31.12.2012 15:50
 PASI_DATETIME_FORMAT = re.compile(
@@ -151,6 +152,8 @@ class Command(BaseCommand):
         # Validation & initialization
         person_info = self.get_person_info(pasi_permit.national_id_number)
         permit_address_type = self.find_permit_address_type(pasi_permit, person_info)
+        vehicle = self.fetch_vehicle(pasi_permit.registration_number)
+        self.validate_vehicle(pasi_permit, vehicle)
 
         primary_address = self.update_or_create_address(person_info["primary_address"])
         other_address = self.update_or_create_address(person_info["other_address"])
@@ -263,3 +266,21 @@ class Command(BaseCommand):
         )
 
         return customer
+
+    @staticmethod
+    def fetch_vehicle(registration_number: str) -> Vehicle:
+        try:
+            return Traficom().fetch_vehicle_details(registration_number)
+        except Exception as e:
+            raise PasiImportError(
+                "Something went wrong during Traficom vehicle fetch"
+            ) from e
+
+    @staticmethod
+    def validate_vehicle(pasi_permit: PasiResidentPermit, vehicle: Vehicle) -> NoReturn:
+        if not vehicle.users.filter(
+            national_id_number=pasi_permit.national_id_number
+        ).exists():
+            raise PasiValidationError(
+                f"Vehicle {vehicle.registration_number} does not belong to customer"
+            )
