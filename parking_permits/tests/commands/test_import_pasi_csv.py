@@ -1,7 +1,7 @@
 import os
 import random
 import zoneinfo
-from datetime import datetime
+from datetime import date, datetime
 from unittest.mock import patch
 
 import freezegun
@@ -19,7 +19,7 @@ from parking_permits.management.commands.import_pasi_csv import (
     parse_pasi_datetime,
 )
 from parking_permits.models import ParkingZone
-from parking_permits.models.parking_permit import ParkingPermitStatus
+from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
 from parking_permits.models.vehicle import Vehicle, VehicleUser
 from parking_permits.services import dvv
 from parking_permits.services.traficom import Traficom
@@ -28,6 +28,7 @@ from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.faker import fake
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
 
 
@@ -378,7 +379,10 @@ def test_pasi_command_smoke_test(pasi_permits_csv):
     # Create parking zones
     zone_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     for letter in zone_letters:
-        ParkingZoneFactory(name=letter)
+        zone = ParkingZoneFactory(name=letter)
+        ProductFactory(
+            zone=zone, start_date=date(1990, 1, 1), end_date=date(2100, 1, 1)
+        )
     parking_zones = ParkingZone.objects.all()
 
     def generate_dvv_address_info() -> dvv.DvvAddressInfo:
@@ -427,3 +431,16 @@ def test_pasi_command_smoke_test(pasi_permits_csv):
         patch.object(PasiCommand, "validate_vehicle", lambda *_, **__: True),
     ):
         call_command("import_pasi_csv", *args, **opts)
+
+    reader = PasiCsvReader(pasi_permits_csv)
+    for pasi_permit in reader:
+        assert ParkingPermit.objects.filter(id=pasi_permit.id).exists()
+        parking_permit = ParkingPermit.objects.get(id=pasi_permit.id)
+        assert (
+            parking_permit.customer.national_id_number == pasi_permit.national_id_number
+        )
+        assert parking_permit.customer.language == pasi_permit.language
+        assert (
+            parking_permit.vehicle.registration_number
+            == pasi_permit.registration_number
+        )
