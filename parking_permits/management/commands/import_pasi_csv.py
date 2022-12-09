@@ -1,6 +1,7 @@
 import csv
 import dataclasses
 import re
+import traceback
 import zoneinfo
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,6 +11,7 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.management import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 
 from parking_permits.models import Address, Customer, ParkingPermit, Vehicle
@@ -32,6 +34,10 @@ class PasiValidationError(PasiImportError):
 
 
 class PasiPermitExists(PasiImportError):
+    pass
+
+
+class PasiDryRun(PasiImportError):
     pass
 
 
@@ -166,8 +172,64 @@ class Command(BaseCommand):
     help = "Import CSV file exported from PASI."
     PermitAddressType = Literal["PRIMARY", "OTHER"]
 
+    def add_arguments(self, parser):
+        parser.add_argument("source_file", help="Path to the CSV file to import.")
+        parser.add_argument(
+            "--encoding",
+            default="utf-8-sig",
+            help="Set the encoding used for reading the CSV file. Defaults to utf-8-sig",
+        )
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="Run the import without actually creating anything.",
+        )
+
     def handle(self, *args, **options):
-        raise NotImplementedError
+        encoding = options["encoding"]
+        with open(options["source_file"], mode="r", encoding=encoding) as f:
+            filename = f.name.split("/")[-1]
+            reader = PasiCsvReader(f)
+            for idx, pasi_permit in enumerate(reader, start=2):
+
+                def prefix(msg):
+                    return f"{filename}:{idx} ID: {pasi_permit.id:9} {msg}"
+
+                exc = None
+                try:
+                    with transaction.atomic():
+                        created_permit = self.process_pasi_permit(pasi_permit)
+                        if options["dry_run"] is True:
+                            raise PasiDryRun
+                except PasiPermitExists:
+                    continue
+                except PasiDryRun:
+                    self.stdout.write(
+                        self.style.SUCCESS(prefix("Success, rolling back"))
+                    )
+                except PasiValidationError as exc:
+                    self.stdout.write(
+                        self.style.NOTICE(prefix(f"Validation error: {exc}"))
+                    )
+                except PasiImportError as exc:
+                    self.stdout.write(
+                        self.style.ERROR(prefix(f"Error while importing: {exc}"))
+                    )
+                    self.stderr.write(traceback.format_exc())
+                except Exception as exc:
+                    self.stdout.write(
+                        self.style.ERROR(prefix(f"Unexpected error: {exc}"))
+                    )
+                    self.stderr.write(traceback.format_exc())
+                else:
+                    self.stdout.write(
+                        self.style.SUCCESS(prefix(f"Created permit {created_permit}"))
+                    )
+                finally:
+                    if exc is not None:
+                        self.stderr.write(traceback.format_exc())
+
+        self.stdout.write(self.style.SUCCESS("Finished!"))
 
     def process_pasi_permit(self, pasi_permit: PasiResidentPermit):
         self.pre_process(pasi_permit)
@@ -197,6 +259,7 @@ class Command(BaseCommand):
         pasi_permit: PasiResidentPermit, customer, vehicle, permit_address
     ):
         return ParkingPermit.objects.create(
+            id=pasi_permit.id,
             contract_type=ContractType.FIXED_PERIOD,
             customer=customer,
             vehicle=vehicle,

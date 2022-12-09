@@ -1,10 +1,12 @@
 import os
+import random
 import zoneinfo
 from datetime import datetime
 from unittest.mock import patch
 
 import freezegun
 import pytest
+from django.core.management import call_command
 from django.utils import timezone
 
 from parking_permits.management.commands.import_pasi_csv import Command as PasiCommand
@@ -16,13 +18,23 @@ from parking_permits.management.commands.import_pasi_csv import (
     PasiValidationError,
     parse_pasi_datetime,
 )
+from parking_permits.models import ParkingZone
 from parking_permits.models.parking_permit import ParkingPermitStatus
-from parking_permits.models.vehicle import VehicleUser
+from parking_permits.models.vehicle import Vehicle, VehicleUser
+from parking_permits.services import dvv
 from parking_permits.services.traficom import Traficom
+from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.faker import fake
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
+
+
+@pytest.fixture(autouse=True)
+def no_requests(monkeypatch):
+    """Remove requests.sessions.Session.request for all tests."""
+    monkeypatch.delattr("requests.sessions.Session.request")
 
 
 @pytest.fixture
@@ -358,3 +370,60 @@ class TestPasiImportCommand:
         pasi_command = PasiCommand()
         with pytest.raises(PasiValidationError, match="has at least one active permit"):
             pasi_command.pre_process(pasi_resident_permit)
+
+
+@pytest.mark.skip(reason="For local testing. Not a reliable test and not a unit test.")
+@pytest.mark.django_db
+def test_pasi_command_smoke_test(pasi_permits_csv):
+    # Create parking zones
+    zone_letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    for letter in zone_letters:
+        ParkingZoneFactory(name=letter)
+    parking_zones = ParkingZone.objects.all()
+
+    def generate_dvv_address_info() -> dvv.DvvAddressInfo:
+        street_name = fake.street_name()
+        street_name_sv = f"{street_name} but in Swedish"
+        zone = random.choice(parking_zones)
+        return dict(
+            street_name=street_name,
+            street_name_sv=street_name_sv,
+            street_number=fake.building_number(),
+            city="Helsinki",
+            city_sv="Helsingfors",
+            postal_code=fake.postcode(),
+            zone=zone,
+            location=zone.location[0][0][0:3],
+        )
+
+    def get_person_info(national_id_number) -> dvv.DvvPersonInfo:
+        return dict(
+            national_id_number=national_id_number,
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
+            primary_address=generate_dvv_address_info(),
+            other_address=generate_dvv_address_info(),
+            phone_number="",
+            email="",
+            address_security_ban=False,
+            driver_license_checked=False,
+        )
+
+    def fetch_vehicle_details(_, registration_number):
+        try:
+            vehicle = Vehicle.objects.get(registration_number=registration_number)
+        except Vehicle.DoesNotExist:
+            vehicle = VehicleFactory(registration_number=registration_number)
+        return vehicle
+
+    args = [os.path.join(os.path.dirname(__file__), "data", "example_permits.csv")]
+    opts = {"dry_run": False}
+    with (
+        patch("parking_permits.services.dvv.get_person_info", get_person_info),
+        patch.object(
+            PasiCommand, "find_permit_address_type", lambda *_, **__: "PRIMARY"
+        ),
+        patch.object(Traficom, "fetch_vehicle_details", fetch_vehicle_details),
+        patch.object(PasiCommand, "validate_vehicle", lambda *_, **__: True),
+    ):
+        call_command("import_pasi_csv", *args, **opts)
