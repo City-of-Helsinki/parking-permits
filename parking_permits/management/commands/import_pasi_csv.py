@@ -14,7 +14,8 @@ from django.core.management import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from parking_permits.models import Address, Customer, ParkingPermit, Vehicle
+from parking_permits.models import Address, Customer, Order, ParkingPermit, Vehicle
+from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.services import dvv, kmo
 from parking_permits.services.traficom import Traficom
@@ -195,7 +196,7 @@ class Command(BaseCommand):
                 def prefix(msg):
                     return f"{filename}:{idx} ID: {pasi_permit.id:9} {msg}"
 
-                exc = None
+                captured_exc = None
                 try:
                     with transaction.atomic():
                         created_permit = self.process_pasi_permit(pasi_permit)
@@ -208,15 +209,18 @@ class Command(BaseCommand):
                         self.style.SUCCESS(prefix("Success, rolling back"))
                     )
                 except PasiValidationError as exc:
+                    captured_exc = exc
                     self.stdout.write(
                         self.style.NOTICE(prefix(f"Validation error: {exc}"))
                     )
                 except PasiImportError as exc:
+                    captured_exc = exc
                     self.stdout.write(
                         self.style.ERROR(prefix(f"Error while importing: {exc}"))
                     )
                     self.stderr.write(traceback.format_exc())
                 except Exception as exc:
+                    captured_exc = exc
                     self.stdout.write(
                         self.style.ERROR(prefix(f"Unexpected error: {exc}"))
                     )
@@ -226,7 +230,7 @@ class Command(BaseCommand):
                         self.style.SUCCESS(prefix(f"Created permit {created_permit}"))
                     )
                 finally:
-                    if exc is not None:
+                    if captured_exc is not None:
                         self.stderr.write(traceback.format_exc())
 
         self.stdout.write(self.style.SUCCESS("Finished!"))
@@ -250,9 +254,13 @@ class Command(BaseCommand):
             customer, permit_address_type
         )
 
-        return self.create_parking_permit(
+        permit = self.create_parking_permit(
             pasi_permit, customer, vehicle, permit_address
         )
+
+        Order.objects.create_for_permits([permit], OrderStatus.CONFIRMED)
+
+        return permit
 
     @staticmethod
     def create_parking_permit(
