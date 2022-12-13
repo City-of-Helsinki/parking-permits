@@ -221,14 +221,14 @@ def resolve_permit_detail_history(permit, info):
 
 
 @query.field("zones")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_zones(obj, info):
     return ParkingZone.objects.all().order_by("name")
 
 
 @query.field("zoneByLocation")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_zone_by_location(obj, info, location):
     _location = Point(*location, srid=settings.SRID)
@@ -241,7 +241,7 @@ def resolve_zone_by_location(obj, info, location):
 
 
 @query.field("customer")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
@@ -271,7 +271,7 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
 
 
 @query.field("customers")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
@@ -288,7 +288,7 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
 
 
 @query.field("vehicle")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
@@ -530,7 +530,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
 
 @query.field("permitPrices")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_prices(obj, info, permit, is_secondary):
@@ -574,7 +574,7 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
 
 
 @query.field("permitPriceChangeList")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
@@ -636,7 +636,7 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
 
 
 @mutation.field("updateResidentPermit")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
@@ -823,7 +823,7 @@ def calculate_total_price_change(
 
 
 @mutation.field("endPermit")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
@@ -1017,7 +1017,7 @@ def resolve_accept_refunds(obj, info, ids):
 
 
 @query.field("refund")
-@is_super_admin
+@is_customer_service
 @convert_kwargs_to_snake_case
 def resolve_refund(obj, info, refund_id):
     try:
