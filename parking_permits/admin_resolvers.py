@@ -33,6 +33,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
+from parking_permits.models.vehicle import is_low_emission_vehicle
 from users.models import ParkingPermitGroups
 
 from .constants import EventFields, Origin
@@ -536,20 +537,16 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["zone"])
     vehicle_info = permit["vehicle"]
-    vehicle_qs = Vehicle.objects.filter(
-        registration_number=vehicle_info["registration_number"]
-    )
-    if not vehicle_qs.exists():
-        return []
-    vehicle = vehicle_qs.first()
-    # update using form data
-    vehicle.__dict__.update(vehicle_info)
-    vehicle.power_type = VehiclePowerType.objects.get_or_create(
-        **vehicle_info["power_type"]
-    )[0]
-    vehicle.save()
 
-    is_low_emission = vehicle.is_low_emission
+    power_type = VehiclePowerType.objects.get_or_create(**vehicle_info["power_type"])[0]
+    euro_class = vehicle_info["euro_class"]
+    emission_type = vehicle_info["emission_type"]
+    emission = vehicle_info["emission"]
+
+    is_low_emission = is_low_emission_vehicle(
+        power_type, euro_class, emission_type, emission
+    )
+
     start_time = isoparse(permit["start_time"])
     permit_start_date = start_time.date()
     end_time = get_end_time(start_time, permit["month_count"])
