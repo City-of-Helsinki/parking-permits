@@ -133,7 +133,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(open_ended_permit_started_two_years_ago.months_left, None)
 
-    @freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 1, 20)))
+    @freeze_time(timezone.make_aware(datetime(2022, 1, 20)))
     def test_should_return_correct_end_time_of_current_time(self):
         start_time = timezone.make_aware(datetime(2021, 11, 15))
         end_time = get_end_time(start_time, 6)
@@ -145,7 +145,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(
             permit.current_period_end_time,
-            timezone.make_aware(datetime(CURRENT_YEAR, 2, 14, 23, 59, 59, 999999)),
+            timezone.make_aware(datetime(2022, 2, 14, 23, 59, 59, 999999)),
         )
 
         start_time = timezone.make_aware(datetime(2021, 11, 20))
@@ -158,7 +158,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(
             permit.current_period_end_time,
-            timezone.make_aware(datetime(CURRENT_YEAR, 2, 19, 23, 59, 59, 999999)),
+            timezone.make_aware(datetime(2022, 2, 19, 23, 59, 59, 999999)),
         )
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
