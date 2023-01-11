@@ -367,6 +367,7 @@ class ParkingZoneTestCase(TestCase):
         with self.assertRaises(ProductCatalogError):
             permit.get_products_with_quantities()
 
+    @freeze_time("2021-01-01")
     def test_get_unused_order_items_for_open_ended_permit(self):
         product_detail_list = [
             [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("30")],
@@ -384,11 +385,14 @@ class ParkingZoneTestCase(TestCase):
         permit.refresh_from_db()
         permit.status = ParkingPermitStatus.VALID
         permit.save()
-        unused_items = permit.get_unused_order_items()
 
-        self.assertEqual(unused_items[0][0].unit_price, Decimal("30.00"))
-        self.assertEqual(unused_items[0][1], 1)
-        self.assertEqual(unused_items[0][2], (date(2021, 1, 1), None))
+        unused_items = permit.get_unused_order_items()
+        unused_item, quantity, (start_date, end_date) = unused_items[0]
+
+        self.assertEqual(unused_item.unit_price, Decimal("30.00"))
+        self.assertEqual(quantity, 1)
+        self.assertEqual(start_date, date(2021, 1, 1))
+        self.assertEqual(end_date, date(2021, 1, 31))
 
     def test_get_unused_order_items_return_unused_items(self):
         product_detail_list = [
