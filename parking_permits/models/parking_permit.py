@@ -239,6 +239,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.order_items.filter(order=self.latest_order)
 
     @property
+    def latest_order_item(self):
+        return self.latest_order_items.first() or None
+
+    @property
     def permit_prices(self):
         if self.is_fixed_period:
             end_time = self.end_time
