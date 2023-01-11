@@ -9,7 +9,7 @@ from helsinki_gdpr.models import SerializableMixin
 from parking_permits.mixins import TimestampedModelMixin
 
 from ..exceptions import OrderCreationFailed
-from ..utils import diff_months_ceil, get_end_time
+from ..utils import diff_months_ceil
 from .customer import Customer
 from .parking_permit import (
     ContractType,
@@ -102,9 +102,7 @@ class OrderManager(SerializableMixin.SerializableManager):
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
-                        end_date = timezone.localdate(
-                            get_end_time(permit.start_time, permit.months_used)
-                        )
+                        end_date = timezone.localdate(permit.current_period_end_time)
                     OrderItem.objects.create(
                         order=order,
                         product=product,
