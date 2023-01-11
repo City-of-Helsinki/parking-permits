@@ -19,12 +19,8 @@ MODEL_MAPPING = {
 
 
 def _get_permit_end_time(permit):
-    if (
-        permit.is_open_ended
-        and permit.latest_order_item
-        and permit.latest_order_item.end_time
-    ):
-        return permit.latest_order_item.end_time
+    if permit.is_open_ended:
+        return permit.current_period_end_time
     return permit.end_time
 
 
