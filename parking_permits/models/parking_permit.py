@@ -213,13 +213,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def latest_order(self):
-        """Get latest order for the permit
+        """Get the latest order for the permit
 
         Multiple orders can be created for the same permit
         when, for example, the vehicle or the address of
         the permit is changed.
         """
-        return self.orders.latest("id") if self.orders.exists() else []
+        return self.orders.latest("id") if self.orders.exists() else None
 
     @property
     def talpa_order_id(self):
