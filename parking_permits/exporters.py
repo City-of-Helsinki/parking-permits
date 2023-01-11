@@ -18,10 +18,25 @@ MODEL_MAPPING = {
 }
 
 
+def _get_permit_end_time(permit):
+    if (
+        permit.is_open_ended
+        and permit.latest_order_item
+        and permit.latest_order_item.end_time
+    ):
+        return permit.latest_order_item.end_time
+    return permit.end_time
+
+
+def _format_datetime(dt, default=""):
+    return tz.localtime(dt).strftime(DATETIME_FORMAT) if dt else default
+
+
 def _get_permit_row(permit):
     customer = permit.customer
     vehicle = permit.vehicle
     name = f"{customer.last_name}, {customer.first_name}"
+    end_time = _get_permit_end_time(permit)
     return [
         name,
         customer.national_id_number,
@@ -29,12 +44,8 @@ def _get_permit_row(permit):
         str(customer.primary_address) if customer.primary_address else "-",
         str(customer.other_address) if customer.other_address else "-",
         permit.parking_zone.name,
-        tz.localtime(permit.start_time).strftime(DATETIME_FORMAT)
-        if permit.start_time
-        else "-",
-        tz.localtime(permit.end_time).strftime(DATETIME_FORMAT)
-        if permit.end_time
-        else "-",
+        _format_datetime(permit.start_time, "-"),
+        _format_datetime(end_time, "-"),
         permit.get_status_display(),
     ]
 
@@ -64,9 +75,7 @@ def _get_order_row(order):
         address,
         permit_type,
         order.id,
-        tz.localtime(order.paid_time).strftime(DATETIME_FORMAT)
-        if order.paid_time
-        else "-",
+        _format_datetime(order.paid_time, "-"),
         order.total_price,
     ]
 
@@ -77,7 +86,7 @@ def _get_refund_row(refund):
         refund.amount,
         refund.iban,
         refund.get_status_display(),
-        tz.localtime(refund.created_at).strftime(DATETIME_FORMAT),
+        _format_datetime(refund.created_at),
     ]
 
 
@@ -91,7 +100,7 @@ def _get_product_row(product):
         product.unit_price,
         product.vat,
         valid_period,
-        tz.localtime(product.modified_at).strftime(DATETIME_FORMAT),
+        _format_datetime(product.modified_at),
         product.modified_by,
     ]
 
@@ -220,11 +229,7 @@ class ParkingPermitPDF(BasePDF):
             else "-"
         )
         address = str(permit.address) if permit.address else "-"
-        permit_end_time = (
-            tz.localtime(permit.end_time).strftime(DATETIME_FORMAT)
-            if permit.end_time
-            else ""
-        )
+        permit_end_time = _get_permit_end_time(permit)
 
         return [
             _("Permit ID") + ": " + f"{permit.id}",
@@ -237,7 +242,7 @@ class ParkingPermitPDF(BasePDF):
             _("Type") + ": " + permit.get_contract_type_display(),
             _("Validity period")
             + ": "
-            + f"{tz.localtime(permit.start_time).strftime(DATETIME_FORMAT)} - {permit_end_time}",
+            + f"{_format_datetime(permit.start_time)} - {_format_datetime(permit_end_time)}",
         ]
 
     def set_content(self, obj):
@@ -281,9 +286,7 @@ class RefundPDF(ParkingPermitPDF):
         return [
             _("Order ID") + ": " + f"{order.id}",
             _("Order payment type") + ": " + f"{order.get_payment_type_display()}",
-            _("Order payment time")
-            + ": "
-            + f"{tz.localtime(order.paid_time).strftime(DATETIME_FORMAT) if order.paid_time else ''}",
+            _("Order payment time") + ": " + f"{_format_datetime(order.paid_time)}",
         ]
 
     def set_content(self, obj):
