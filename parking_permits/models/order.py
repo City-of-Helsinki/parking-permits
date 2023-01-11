@@ -1,6 +1,7 @@
 import logging
 
 from django.db import models, transaction
+from django.utils import timezone
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
@@ -8,7 +9,7 @@ from helsinki_gdpr.models import SerializableMixin
 from parking_permits.mixins import TimestampedModelMixin
 
 from ..exceptions import OrderCreationFailed
-from ..utils import diff_months_ceil
+from ..utils import diff_months_ceil, get_end_time
 from .customer import Customer
 from .parking_permit import (
     ContractType,
@@ -100,6 +101,10 @@ class OrderManager(SerializableMixin.SerializableManager):
                         permit.vehicle.is_low_emission, permit.is_secondary_vehicle
                     )
                     start_date, end_date = date_range
+                    if permit.is_open_ended:
+                        end_date = timezone.localdate(
+                            get_end_time(permit.start_time, permit.months_used)
+                        )
                     OrderItem.objects.create(
                         order=order,
                         product=product,

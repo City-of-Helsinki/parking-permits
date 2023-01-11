@@ -24,6 +24,7 @@ class DiffMonthsFloorTestCase(TestCase):
         self.assertEqual(diff_months_floor(date(2021, 10, 1), date(2021, 10, 15)), 0)
         self.assertEqual(diff_months_floor(date(2021, 10, 15), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_floor(date(2021, 12, 1), date(2021, 10, 1)), 0)
+        self.assertEqual(diff_months_floor(date(2021, 1, 1), date(2021, 1, 1)), 0)
 
 
 class DiffMonthsCeilTestCase(TestCase):
@@ -35,6 +36,7 @@ class DiffMonthsCeilTestCase(TestCase):
         self.assertEqual(diff_months_ceil(date(2021, 10, 1), date(2021, 10, 15)), 1)
         self.assertEqual(diff_months_ceil(date(2021, 10, 15), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_ceil(date(2021, 12, 1), date(2021, 10, 1)), 0)
+        self.assertEqual(diff_months_ceil(date(2021, 1, 1), date(2021, 1, 1)), 1)
 
 
 class FindNextDateTestCase(TestCase):
