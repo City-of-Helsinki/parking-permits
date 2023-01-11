@@ -478,16 +478,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def get_unused_order_items(self):
         unused_start_date = timezone.localdate(self.next_period_start_time)
-        if self.is_fixed_period:
-            order_items = self.latest_order_items.filter(
-                end_date__gte=unused_start_date
-            ).order_by("start_date")
-        else:
+        if not self.is_fixed_period:
             order_items = self.latest_order_items
             return [
                 [item, item.quantity, (item.start_date, item.end_date)]
                 for item in order_items
             ]
+
+        order_items = self.latest_order_items.filter(
+            end_date__gte=unused_start_date
+        ).order_by("start_date")
 
         if len(order_items) == 0:
             return []
