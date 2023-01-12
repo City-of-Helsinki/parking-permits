@@ -52,7 +52,7 @@ class TalpaOrderManager:
             "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
             "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
             "priceGross": cls.round_up(float(order_item.payment_unit_price)),
-            "vatPercentage": cls.round_up(float(order_item.vat_percentage)),
+            "vatPercentage": cls.round_int(float(order_item.vat_percentage)),
             "rowPriceNet": cls.round_up(float(order_item.total_payment_price_net)),
             "rowPriceVat": cls.round_up(float(order_item.total_payment_price_vat)),
             "rowPriceTotal": cls.round_up(float(order_item.total_payment_price)),
@@ -166,6 +166,10 @@ class TalpaOrderManager:
             "customer": customer,
             "items": items,
         }
+
+    @classmethod
+    def round_int(cls, v):
+        return "{:0.0f}".format(np.round(v))
 
     @classmethod
     def round_up(cls, v):
