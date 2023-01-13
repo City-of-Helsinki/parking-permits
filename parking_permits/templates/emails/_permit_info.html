@@ -7,5 +7,11 @@
     {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
     {% translate "Vehicle" %}: {{ permit.vehicle }} <br>
     {{ permit.get_contract_type_display }} <br>
-    {% translate "Validity period" %}: {{ permit.latest_order_item.start_time|date:"j.n.Y, H:i" }} – {{ permit.latest_order_item.end_time|date:"j.n.Y, H:i" }}
+    {% if permit.latest_order_item %}
+        {% translate "Validity period" %}: {{ permit.latest_order_item.start_time|date:"j.n.Y, H:i" }} – {{ permit.latest_order_item.end_time|date:"j.n.Y, H:i" }}
+    {% elif permit.contract_type == "FIXED_PERIOD" %}
+        {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+    {% else %}
+        {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} –
+    {% endif %}
 </p>
