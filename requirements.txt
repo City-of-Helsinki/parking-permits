@@ -71,7 +71,7 @@ ecdsa==0.18.0
     # via python-jose
 fpdf==1.7.2
     # via -r requirements.in
-future==0.18.2
+future==0.18.3
     # via pyjwkest
 graphql-core==3.2.3
     # via ariadne
