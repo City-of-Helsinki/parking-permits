@@ -1,0 +1,15 @@
+{% load i18n %}
+<p>
+    {% translate "Order info" %}: <br>
+    {{ permit.get_type_display }} <br>
+    {{ permit.customer }} <br>
+    {% translate "Address" %}: {{ permit.address }} <br>
+    {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
+    {% translate "Vehicle" %}: {{ permit.vehicle }} <br>
+    {{ permit.get_contract_type_display }} <br>
+    {% if permit.contract_type == "FIXED_PERIOD" %}
+        {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+    {% else %}
+        {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.current_period_end_time|date:"j.n.Y, H:i" }}
+    {% endif %}
+</p>

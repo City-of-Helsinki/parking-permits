@@ -1,97 +1,38 @@
-# Dockerfile for Parking Permits backend
-
-# ==============================
-FROM registry.access.redhat.com/ubi8/python-39 as appbase
-# ==============================
-
-USER root
-
-RUN rm /etc/rhsm-host
-
-ARG LOCAL_REDHAT_USERNAME
-ARG LOCAL_REDHAT_PASSWORD
-ARG BUILD_MODE
-
-# Copy entitlements
-COPY ./etc-pki-entitlement /etc/pki/entitlement
-# Copy subscription manager configurations if required
-#COPY ./rhsm-conf /etc/rhsm
-#COPY ./rhsm-ca /etc/rhsm/ca
-
-RUN if [ "x$BUILD_MODE" = "xlocal" ] ;\
-    then \
-        subscription-manager register --username $LOCAL_REDHAT_USERNAME --password $LOCAL_REDHAT_PASSWORD --auto-attach; \
-    else \
-        # subscription-manager register --username ${REDHAT_USERNAME} --password ${REDHAT_PASSWORD} --auto-attach; \
-        yum repolist --disablerepo=*; \
-    fi
-
-RUN subscription-manager repos --enable codeready-builder-for-rhel-8-x86_64-rpms
-RUN yum -y update
-
-RUN rpm -Uvh https://download.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
-
-RUN yum install -y gdal
-
-RUN if [ "x$BUILD_MODE" != "xlocal" ]; \
-    then \
-        # Remove entitlements and Subscription Manager configs
-        rm -rf /etc/pki/entitlement; \
-        rm -rf /etc/rhsm; \
-    fi;
-
-RUN useradd -ms /bin/bash -d /app parking_permits
-
-RUN chown parking_permits /opt/app-root/lib/python3.9/site-packages
-RUN chown parking_permits /opt/app-root/lib/python3.9/site-packages/*
+FROM ubuntu:20.04 as base
 
 WORKDIR /app
 
-RUN subscription-manager remove --all
+RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update && \
+    apt-get install -y software-properties-common && \
+    add-apt-repository -y ppa:deadsnakes/ppa && \
+    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive apt-get install -y nano python3.9 python3.9-distutils python3.9-venv apt-transport-https gdal-bin uwsgi uwsgi-plugin-python3 libgdal26 git-core postgresql-client netcat gettext libpq-dev unzip && \
+    ln -s /usr/bin/pip3.9 /usr/local/bin/pip && \
+    ln -s /usr/bin/pip3.9 /usr/local/bin/pip3 && \
+    ln -s /usr/bin/python3.9 /usr/local/bin/python && \
+    ln -s /usr/bin/python3.9 /usr/local/bin/python3
 
-# Add tini init system https://github.com/krallin/tini
-ENV TINI_VERSION v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
+RUN python3.9 -m ensurepip
 
-ENV PYTHONDONTWRITEBYTECODE True
-ENV PYTHONUNBUFFERED True
+FROM base
 
-# Copy and install requirements files to image
-COPY requirements.txt /app/
+COPY requirements.txt .
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY docker-entrypoint.sh /app/
-ENTRYPOINT ["/tini", "--", "/app/docker-entrypoint.sh"]
+COPY . .
 
-EXPOSE 8888
-
-# ==============================
-FROM appbase as development_stage
-# ==============================
-
-# git is needed for 'pre-commit install' to work
-RUN yum install git
-
-COPY requirements-dev.txt /app/
-RUN pip install --no-cache-dir -r /app/requirements-dev.txt
-
-COPY requirements-test.txt /app/
-RUN pip install --no-cache-dir -r /app/requirements-test.txt
-
-COPY . /app/
-
-RUN chgrp -R 0 /app
-RUN chmod g=u -R /app
-
-# ==============================
-FROM appbase as production_stage
-# ==============================
-
-COPY . /app/
-
-RUN chgrp -R 0 /app
-RUN chmod g=u -R /app
+ENV STATIC_ROOT /srv/app/static
+RUN mkdir -p /srv/app/static
 
 RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
-    python /app/manage.py collectstatic --noinput
+    python manage.py collectstatic --noinput
+
+
+RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
+    python manage.py compilemessages
+
+# Openshift starts the container process with group zero and random ID
+# we mimic that here with nobody and group zero
+USER nobody:0
+
+ENTRYPOINT ["./docker-entrypoint.sh"]

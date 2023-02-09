@@ -2,13 +2,12 @@ from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone
 from freezegun import freeze_time
 
 from parking_permits.constants import ParkingPermitEndType
 from parking_permits.exceptions import (
-    InvalidContractType,
     ParkkihubiPermitError,
     PermitCanNotBeEnded,
     ProductCatalogError,
@@ -17,14 +16,16 @@ from parking_permits.models import Order
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import EmissionType, VehiclePowerType
+from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
     VehicleFactory,
+    VehiclePowerTypeFactory,
 )
 from parking_permits.tests.models.test_product import MockResponse
 from parking_permits.utils import get_end_time
@@ -132,7 +133,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(open_ended_permit_started_two_years_ago.months_left, None)
 
-    @freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 1, 20)))
+    @freeze_time(timezone.make_aware(datetime(2022, 1, 20)))
     def test_should_return_correct_end_time_of_current_time(self):
         start_time = timezone.make_aware(datetime(2021, 11, 15))
         end_time = get_end_time(start_time, 6)
@@ -144,7 +145,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(
             permit.current_period_end_time,
-            timezone.make_aware(datetime(CURRENT_YEAR, 2, 14, 23, 59, 59, 999999)),
+            timezone.make_aware(datetime(2022, 2, 14, 23, 59, 59, 999999)),
         )
 
         start_time = timezone.make_aware(datetime(2021, 11, 20))
@@ -157,7 +158,7 @@ class ParkingZoneTestCase(TestCase):
         )
         self.assertEqual(
             permit.current_period_end_time,
-            timezone.make_aware(datetime(CURRENT_YEAR, 2, 19, 23, 59, 59, 999999)),
+            timezone.make_aware(datetime(2022, 2, 19, 23, 59, 59, 999999)),
         )
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
@@ -366,7 +367,8 @@ class ParkingZoneTestCase(TestCase):
         with self.assertRaises(ProductCatalogError):
             permit.get_products_with_quantities()
 
-    def test_get_unused_order_items_raise_error_for_open_ended_permit(self):
+    @freeze_time("2021-01-01")
+    def test_get_unused_order_items_for_open_ended_permit(self):
         product_detail_list = [
             [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("30")],
         ]
@@ -379,7 +381,18 @@ class ParkingZoneTestCase(TestCase):
             start_time=start_time,
             month_count=12,
         )
-        self.assertRaises(InvalidContractType, permit.get_unused_order_items)
+        Order.objects.create_for_permits([permit])
+        permit.refresh_from_db()
+        permit.status = ParkingPermitStatus.VALID
+        permit.save()
+
+        unused_items = permit.get_unused_order_items()
+        unused_item, quantity, (start_date, end_date) = unused_items[0]
+
+        self.assertEqual(unused_item.unit_price, Decimal("30.00"))
+        self.assertEqual(quantity, 1)
+        self.assertEqual(start_date, date(2021, 1, 1))
+        self.assertEqual(end_date, date(2021, 1, 31))
 
     def test_get_unused_order_items_return_unused_items(self):
         product_detail_list = [
@@ -473,7 +486,7 @@ class ParkingZoneTestCase(TestCase):
         end_time = get_end_time(start_time, 12)
 
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerType.BENSIN,
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=70,
             euro_class=6,
             emission_type=EmissionType.WLTP,
@@ -484,7 +497,6 @@ class ParkingZoneTestCase(TestCase):
             nedc_max_emission_limit=None,
             wltp_max_emission_limit=80,
             euro_min_class_limit=6,
-            power_type=low_emission_vehicle.power_type,
         )
 
         permit = ParkingPermitFactory(
@@ -530,9 +542,18 @@ class TestParkingPermit(TestCase):
     def setUp(self):
         self.permit = ParkingPermitFactory()
 
+    def test_should_have_is_order_confirmed_property_False(self):
+        assert self.permit.is_order_confirmed is False
+
+    def test_should_have_is_order_confirmed_property_True(self):
+        order = OrderFactory(status=OrderStatus.CONFIRMED)
+        order.permits.add(self.permit)
+        assert self.permit.is_order_confirmed is True
+
     def test_should_return_correct_product_name(self):
         self.assertIsNotNone(self.permit.parking_zone.name)
 
+    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(201))
     def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(
         self, mock_post
@@ -541,6 +562,7 @@ class TestParkingPermit(TestCase):
         mock_post.assert_called_once()
         self.assertEqual(mock_post.return_value.status_code, 201)
 
+    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(400))
     def test_should_raise_error_when_creating_talpa_product_failed(self, mock_post):
         self.permit.vehicle.registration_number = ""

@@ -1,8 +1,8 @@
 from django.contrib.gis import admin
-from django.utils.translation import ugettext_lazy as _
 
 from parking_permits.models import (
     Address,
+    Announcement,
     Company,
     Customer,
     DrivingClass,
@@ -15,8 +15,10 @@ from parking_permits.models import (
     Price,
     Product,
     Refund,
+    TemporaryVehicle,
     Vehicle,
 )
+from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 
 @admin.register(Address)
@@ -33,6 +35,18 @@ class AddressAdmin(admin.OSMGeoAdmin):
     )
 
 
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "subject_en",
+        "subject_fi",
+        "subject_sv",
+        "created_at",
+        "created_by",
+    )
+
+
 @admin.register(Company)
 class CompanyAdmin(admin.ModelAdmin):
     search_fields = ("name", "business_id")
@@ -43,7 +57,8 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
-    list_display = ("__str__", "national_id_number", "email")
+    list_display = ("__str__", "id", "first_name", "last_name", "email")
+    exclude = ("_national_id_number",)
 
     def has_add_permission(self, request):
         return False
@@ -61,11 +76,18 @@ class DrivingLicenceAdmin(admin.ModelAdmin):
     list_select_related = ("customer",)
 
 
+@admin.register(VehiclePowerType)
+class VehiclePowerTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        "identifier",
+        "name",
+    )
+
+
 @admin.register(LowEmissionCriteria)
 class LowEmissionCriteriaAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "power_type",
         "nedc_max_emission_limit",
         "wltp_max_emission_limit",
         "euro_min_class_limit",
@@ -78,7 +100,7 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
 class ParkingPermitAdmin(admin.ModelAdmin):
     search_fields = ("customer__first_name", "customer__last_name")
     list_display = (
-        "identifier",
+        "id",
         "customer",
         "vehicle",
         "parking_zone",
@@ -116,19 +138,15 @@ class VehicleAdmin(admin.ModelAdmin):
 @admin.register(Refund)
 class RefundAdmin(admin.ModelAdmin):
     list_display = (
-        "refund_number",
         "name",
         "iban",
         "order",
         "amount",
+        "status",
+        "created_at",
+        "accepted_at",
     )
-    readonly_fields = ("refund_number",)
-
-    def refund_number(self, obj):
-        return obj.refund_number
-
-    refund_number.admin_order_field = "refund_number"
-    refund_number.short_description = _("Refund number")
+    list_select_related = ("order",)
 
 
 @admin.register(Product)
@@ -147,21 +165,14 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_filter = ("order_type", "status")
+    list_filter = ("status",)
     list_display = (
-        "order_number",
+        "id",
         "customer",
-        "order_type",
         "status",
     )
     list_select_related = ("customer",)
-    readonly_fields = ("order_number", "talpa_order_id", "talpa_subscription_id")
-
-    def order_number(self, obj):
-        return obj.order_number
-
-    order_number.admin_order_field = "order_number"
-    order_number.short_description = _("Order number")
+    readonly_fields = ("talpa_order_id",)
 
 
 @admin.register(OrderItem)
@@ -176,3 +187,18 @@ class OrderItemAdmin(admin.ModelAdmin):
     )
     list_select_related = ("order", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
+
+
+@admin.register(TemporaryVehicle)
+class TemporaryVehicleAdmin(admin.ModelAdmin):
+    list_display = (
+        "vehicle",
+        "start_time",
+        "end_time",
+        "is_active",
+    )
+
+
+@admin.register(VehicleUser)
+class VehicleUserAdmin(admin.ModelAdmin):
+    list_display = ("national_id_number",)

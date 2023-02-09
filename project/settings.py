@@ -3,7 +3,9 @@ from pathlib import Path
 
 import dj_database_url
 import environ
+import sentry_sdk
 from corsheaders.defaults import default_headers
+from sentry_sdk.integrations.django import DjangoIntegration
 
 env = environ.Env(
     DEBUG=(bool, False),
@@ -18,7 +20,6 @@ env = environ.Env(
     TOKEN_AUTH_ACCEPTED_SCOPE_PREFIX=(str, ""),
     TOKEN_AUTH_AUTHSERVER_URL=(str, ""),
     TOKEN_AUTH_REQUIRE_SCOPE_PREFIX=(str, ""),
-    ALLOWED_ADMIN_AD_GROUPS=(list, None),
     TALPA_API_KEY=(str, ""),
     TALPA_NAMESPACE=(str, "asukaspysakointi"),
     GDPR_API_QUERY_SCOPE=(str, ""),
@@ -37,11 +38,24 @@ env = environ.Env(
     TRAFICOM_SOKU_TUNNUS=(str, ""),
     TRAFICOM_PALVELU_TUNNUS=(str, ""),
     TRAFICOM_VERIFY_SSL=(bool, True),
+    TRAFICOM_CHECK=(bool, True),
     DVV_PERSONAL_INFO_URL=(str, ""),
     DVV_USERNAME=(str, ""),
     DVV_PASSWORD=(str, ""),
     DVV_SOSONIMI=(str, ""),
     DVV_LOPPUKAYTTAJA=(str, ""),
+    EMAIL_USE_TLS=(bool, False),
+    EMAIL_HOST=(str, "localhost"),
+    EMAIL_HOST_USER=(str, ""),
+    EMAIL_HOST_PASSWORD=(str, ""),
+    EMAIL_PORT=(int, 25),
+    EMAIL_TIMEOUT=(int, 15),
+    DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <noreply_pysakointitunnus@hel.fi>"),
+    FIELD_ENCRYPTION_KEYS=(str, ""),
+    SENTRY_DSN=(str, ""),
+    SENTRY_ENVIRONMENT=(str, ""),
+    THIRD_PARTY_PARKING_PROVIDER_EMAILS=(list, []),
+    DEBUG_SKIP_PARKKIHUBI_SYNC=(bool, False),
 )
 
 if path.exists(".env"):
@@ -75,10 +89,11 @@ INSTALLED_APPS = [
     "parking_permits",
     "users",
     "rest_framework",
-    "reversion",
     "django_db_logger",
+    "audit_logger",
     "drf_yasg",
     "django_crontab",
+    "encrypted_fields",
 ]
 
 MIDDLEWARE = [
@@ -87,6 +102,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -94,7 +110,11 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+FIELD_ENCRYPTION_KEYS = [env("FIELD_ENCRYPTION_KEYS")]
+
 ROOT_URLCONF = "project.urls"
+
+LOCALE_PATHS = [path.join(BASE_DIR, "locale")]
 
 TEMPLATES = [
     {
@@ -172,6 +192,7 @@ TRAFICOM_ASIAKAS = env("TRAFICOM_ASIAKAS")
 TRAFICOM_SOKU_TUNNUS = env("TRAFICOM_SOKU_TUNNUS")
 TRAFICOM_PALVELU_TUNNUS = env("TRAFICOM_PALVELU_TUNNUS")
 TRAFICOM_VERIFY_SSL = env("TRAFICOM_VERIFY_SSL")
+TRAFICOM_CHECK = env("TRAFICOM_CHECK")
 
 # cors
 CORS_ORIGIN_ALLOW_ALL = True
@@ -188,7 +209,6 @@ OIDC_API_TOKEN_AUTH = {
     "REQUIRE_API_SCOPE_FOR_AUTHENTICATION": env("TOKEN_AUTH_REQUIRE_SCOPE_PREFIX"),
 }
 
-ALLOWED_ADMIN_AD_GROUPS = env.list("ALLOWED_ADMIN_AD_GROUPS")
 MAX_ALLOWED_USER_PERMIT = 2
 LOGGING = {
     "version": 1,
@@ -208,17 +228,27 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple",
         },
+        "audit_log": {
+            "class": "audit_logger.db_log_handler.AuditLogHandler",
+            "level": "DEBUG",
+        },
     },
     "loggers": {
         "db": {"handlers": ["db_log"], "level": "DEBUG"},
         "django": {"handlers": ["console"], "level": "INFO"},
         "helusers": {"handlers": ["console"], "level": "DEBUG"},
+        "audit": {"handlers": ["audit_log"], "level": "DEBUG"},
     },
 }
 
 CRONJOBS = [
     ("22 00 * * *", "parking_permits.cron.automatic_expiration_of_permits"),
     ("59 23 * * *", "parking_permits.cron.automatic_remove_obsolete_customer_data"),
+    ("*/30 * * * *", "parking_permits.cron.automatic_syncing_of_permits_to_parkkihubi"),
+    (
+        "0 8 * * 1",
+        "parking_permits.cron.automatic_expiration_remind_notification_of_permits",
+    ),
 ]
 
 # GDPR API
@@ -233,3 +263,29 @@ DVV_USERNAME = env("DVV_USERNAME")
 DVV_PASSWORD = env("DVV_PASSWORD")
 DVV_SOSONIMI = env("DVV_SOSONIMI")
 DVV_LOPPUKAYTTAJA = env("DVV_LOPPUKAYTTAJA")
+
+# Email configuration
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+THIRD_PARTY_PARKING_PROVIDER_EMAILS = env("THIRD_PARTY_PARKING_PROVIDER_EMAILS")
+
+sentry_sdk.init(
+    dsn=env.str("SENTRY_DSN"),
+    environment=env.str("SENTRY_ENVIRONMENT"),
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+    integrations=[DjangoIntegration()],
+)
+
+# Debug
+
+# Skip Parkkihubi sync on permit create/update.
+DEBUG_SKIP_PARKKIHUBI_SYNC = DEBUG and env("DEBUG_SKIP_PARKKIHUBI_SYNC")
+
+if DEBUG:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

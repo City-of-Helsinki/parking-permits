@@ -1,0 +1,14 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Your refund has been accepted" %}{% endblock %}
+
+{% block content %}
+    <p>
+        {% translate "Your refund has been accepted and will appear on the account you reported within about a week" %}
+    </p>
+    <p>
+        {% translate "Total refundable amount" %}
+        {{ refund.amount }}€ ({% translate "incl. VAT" %} 24%, {{ refund.vat|floatformat:2 }} €)
+    </p>
+{% endblock %}

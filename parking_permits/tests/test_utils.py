@@ -1,115 +1,18 @@
 from datetime import date
 
+import pytest
 from django.test import TestCase
 
-from parking_permits.models import ParkingPermit
-from parking_permits.models.parking_permit import ParkingPermitStatus
-from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.models import Vehicle
+from parking_permits.tests.factories.vehicle import VehicleFactory
 from parking_permits.utils import (
-    apply_filtering,
-    apply_ordering,
+    ModelDiffer,
     diff_months_ceil,
     diff_months_floor,
     find_next_date,
+    flatten_dict,
+    get_model_diff,
 )
-
-
-class ApplyingOrderingTestCase(TestCase):
-    def setUp(self):
-        customer_1 = CustomerFactory(first_name="Firstname B", last_name="Lastname 1")
-        customer_2 = CustomerFactory(first_name="Firstname A", last_name="Lastname 2")
-        customer_3 = CustomerFactory(first_name="Firstname A", last_name="Lastname 3")
-        ParkingPermitFactory(customer=customer_1)
-        ParkingPermitFactory(customer=customer_2)
-        ParkingPermitFactory(customer=customer_3)
-
-    def test_apply_asc_ordering(self):
-        order_by = {
-            "order_fields": ["customer__first_name", "customer__last_name"],
-            "order_direction": "ASC",
-        }
-        qs = ParkingPermit.objects.all()
-        ordered_qs = apply_ordering(qs, order_by)
-        self.assertEqual(ordered_qs[0].customer.first_name, "Firstname A")
-        self.assertEqual(ordered_qs[0].customer.last_name, "Lastname 2")
-        self.assertEqual(ordered_qs[1].customer.first_name, "Firstname A")
-        self.assertEqual(ordered_qs[1].customer.last_name, "Lastname 3")
-        self.assertEqual(ordered_qs[2].customer.first_name, "Firstname B")
-        self.assertEqual(ordered_qs[2].customer.last_name, "Lastname 1")
-
-    def test_apply_desc_ordering(self):
-        order_by = {
-            "order_fields": ["customer__first_name", "customer__last_name"],
-            "order_direction": "DESC",
-        }
-        qs = ParkingPermit.objects.all()
-        ordered_qs = apply_ordering(qs, order_by)
-        self.assertEqual(ordered_qs[0].customer.first_name, "Firstname B")
-        self.assertEqual(ordered_qs[0].customer.last_name, "Lastname 1")
-        self.assertEqual(ordered_qs[1].customer.first_name, "Firstname A")
-        self.assertEqual(ordered_qs[1].customer.last_name, "Lastname 3")
-        self.assertEqual(ordered_qs[2].customer.first_name, "Firstname A")
-        self.assertEqual(ordered_qs[2].customer.last_name, "Lastname 2")
-
-
-class ApplyingFilteringTestCase(TestCase):
-    def setUp(self):
-        customer_1 = CustomerFactory(first_name="Firstname B", last_name="Lastname 1")
-        customer_2 = CustomerFactory(first_name="Firstname A", last_name="Lastname 2")
-        customer_3 = CustomerFactory(first_name="Firstname A", last_name="Lastname 3")
-        ParkingPermitFactory(customer=customer_1, status=ParkingPermitStatus.DRAFT)
-        ParkingPermitFactory(customer=customer_2, status=ParkingPermitStatus.VALID)
-        ParkingPermitFactory(customer=customer_3, status=ParkingPermitStatus.DRAFT)
-
-    def test_search_with_model_fields(self):
-        all_parking_permits = ParkingPermit.objects.all()
-        search_items = [
-            {"match_type": "iexact", "fields": ["status"], "value": "VALID"}
-        ]
-        qs = apply_filtering(all_parking_permits, search_items)
-        self.assertEqual(qs.count(), 1)
-
-        search_items = [
-            {"match_type": "iexact", "fields": ["status"], "value": "DRAFT"}
-        ]
-        qs = apply_filtering(all_parking_permits, search_items)
-        self.assertEqual(qs.count(), 2)
-
-    def test_search_with_related_model_fields(self):
-        all_parking_permits = ParkingPermit.objects.all()
-        search_items = [
-            {
-                "match_type": "istartswith",
-                "fields": ["customer__first_name", "customer__last_name"],
-                "value": "last",
-            }
-        ]
-        qs = apply_filtering(all_parking_permits, search_items)
-        self.assertEqual(qs.count(), 3)
-
-        search_items = [
-            {
-                "match_type": "iexact",
-                "fields": ["customer__first_name", "customer__last_name"],
-                "value": "Firstname A",
-            }
-        ]
-        qs = apply_filtering(all_parking_permits, search_items)
-        self.assertEqual(qs.count(), 2)
-
-    def test_search_with_multiple_search_items(self):
-        all_parking_permits = ParkingPermit.objects.all()
-        search_items = [
-            {
-                "match_type": "iexact",
-                "fields": ["customer__first_name", "customer__last_name"],
-                "value": "firstname a",
-            },
-            {"match_type": "iexact", "fields": ["status"], "value": "DRAFT"},
-        ]
-        qs = apply_filtering(all_parking_permits, search_items)
-        self.assertEqual(qs.count(), 1)
 
 
 class DiffMonthsFloorTestCase(TestCase):
@@ -121,6 +24,7 @@ class DiffMonthsFloorTestCase(TestCase):
         self.assertEqual(diff_months_floor(date(2021, 10, 1), date(2021, 10, 15)), 0)
         self.assertEqual(diff_months_floor(date(2021, 10, 15), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_floor(date(2021, 12, 1), date(2021, 10, 1)), 0)
+        self.assertEqual(diff_months_floor(date(2021, 1, 1), date(2021, 1, 1)), 0)
 
 
 class DiffMonthsCeilTestCase(TestCase):
@@ -132,6 +36,7 @@ class DiffMonthsCeilTestCase(TestCase):
         self.assertEqual(diff_months_ceil(date(2021, 10, 1), date(2021, 10, 15)), 1)
         self.assertEqual(diff_months_ceil(date(2021, 10, 15), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_ceil(date(2021, 12, 1), date(2021, 10, 1)), 0)
+        self.assertEqual(diff_months_ceil(date(2021, 1, 1), date(2021, 1, 1)), 1)
 
 
 class FindNextDateTestCase(TestCase):
@@ -140,3 +45,73 @@ class FindNextDateTestCase(TestCase):
         self.assertEqual(find_next_date(date(2021, 1, 10), 10), date(2021, 1, 10))
         self.assertEqual(find_next_date(date(2021, 1, 10), 20), date(2021, 1, 20))
         self.assertEqual(find_next_date(date(2021, 2, 10), 31), date(2021, 2, 28))
+
+
+@pytest.mark.django_db
+def test_get_model_diff():
+    vehicle1 = VehicleFactory(registration_number="ABC-123", model="Model")
+    vehicle2 = Vehicle.objects.get(id=vehicle1.id)
+    vehicle2.pk = None
+    vehicle2.registration_number = "FOO-321"
+    vehicle2.model = "Some other model"
+    vehicle2.save()
+
+    diff = get_model_diff(vehicle1, vehicle2, fields=["registration_number"])
+
+    assert len(diff.keys()) == 1
+    assert "registration_number" in diff
+    assert diff["registration_number"] == ("ABC-123", "FOO-321")
+
+
+def test_flatten_dict():
+    d = dict(
+        value=1,
+        nested=dict(value=2, nested=dict(value=3)),
+        foo="bar",
+        other_nested=dict(value=4, foo=["a", "list"]),
+    )
+    assert flatten_dict(d) == {
+        "value": 1,
+        "nested__value": 2,
+        "nested__nested__value": 3,
+        "foo": "bar",
+        "other_nested__value": 4,
+        "other_nested__foo": ["a", "list"],
+    }
+    assert flatten_dict(d, separator="/") == {
+        "value": 1,
+        "nested/value": 2,
+        "nested/nested/value": 3,
+        "foo": "bar",
+        "other_nested/value": 4,
+        "other_nested/foo": ["a", "list"],
+    }
+
+
+@pytest.mark.django_db
+def test_model_differ():
+    vehicle: Vehicle = VehicleFactory(registration_number="ABC-123", model="Model")
+
+    diff = ModelDiffer.start(vehicle, fields=["registration_number"])
+    vehicle.registration_number = "FOO-321"
+    vehicle.model = "Some other model"
+    diff_dict = diff.stop()
+    vehicle.registration_number = "BAR-777"
+    assert len(diff_dict.keys()) == 1
+    assert "registration_number" in diff_dict
+    assert diff_dict["registration_number"] == ("ABC-123", "FOO-321")
+
+
+@pytest.mark.django_db
+def test_model_differ_as_context_manager():
+    vehicle: Vehicle = VehicleFactory(registration_number="ABC-123", model="Model")
+
+    with ModelDiffer(vehicle, fields=["registration_number"]) as diff_dict:
+        vehicle.registration_number = "FOO-321"
+        vehicle.model = "Some other model"
+
+    vehicle.registration_number = "BAR-777"
+
+    assert len(diff_dict.keys()) == 1
+    assert "registration_number" in diff_dict
+    assert diff_dict["registration_number"] == ("ABC-123", "FOO-321")

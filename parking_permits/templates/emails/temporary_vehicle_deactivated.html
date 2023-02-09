@@ -1,0 +1,23 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Your parking permit information has been updated" %}{% endblock %}
+
+{% block content %}
+    <p>
+        {% translate "Original vehicle has been restored to your permit." %}
+    </p>
+    <p>
+        {% translate "Order info" %}: <br>
+        {{ permit.get_type_display }} <br>
+        {{ permit.customer }} <br>
+        {% translate "Address" %}: {{ permit.address }} <br>
+        {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
+        {% translate "Vehicle" %}: {{ permit.vehicle }}<br>
+        {{ permit.get_contract_type_display }} <br>
+        {% translate "Validity period" %}: {{ permit.start_time|date:"j.n.Y, H:i" }} – {{ permit.end_time|date:"j.n.Y, H:i" }}
+    </p>
+    <p>
+        {% translate "The parking permit is electronic and parking permit enforcers will identify permit validity based on your vehicle licence plate number." %}
+    </p>
+{% endblock %}

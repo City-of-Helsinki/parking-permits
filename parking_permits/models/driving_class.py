@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .vehicle import VehicleClass
 
 ALLOWED_VEHICLE_CLASSES = {
@@ -24,7 +24,7 @@ ALLOWED_VEHICLE_CLASSES = {
 }
 
 
-class DrivingClass(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class DrivingClass(TimestampedModelMixin):
     identifier = models.CharField(_("Identifier"), max_length=32)
 
     class Meta:
@@ -32,7 +32,7 @@ class DrivingClass(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         verbose_name_plural = _("Driving classes")
 
     def __str__(self):
-        return "%s" % self.identifier
+        return self.identifier
 
     @property
     def vehicle_classes(self):

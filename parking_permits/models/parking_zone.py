@@ -6,9 +6,7 @@ from django.contrib.gis.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from ..exceptions import PriceError
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
-from .price import Price, PriceType
+from .mixins import TimestampedModelMixin
 
 logger = logging.getLogger("db")
 
@@ -18,13 +16,10 @@ class ParkingZoneManager(models.Manager):
         return self.get(location__intersects=location)
 
 
-class ParkingZone(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class ParkingZone(TimestampedModelMixin):
     name = models.CharField(_("Name"), max_length=128, unique=True)
     description = models.TextField(_("Description"), blank=True)
     description_sv = models.TextField(_("Description sv"), blank=True)
-    shared_product_id = models.UUIDField(
-        unique=True, editable=False, blank=True, null=True
-    )
     location = models.MultiPolygonField(_("Area (2D)"), srid=settings.SRID)
 
     objects = ParkingZoneManager()
@@ -43,29 +38,6 @@ class ParkingZone(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     @property
     def label_sv(self):
         return f"{self.name} - {self.description_sv}"
-
-    @property
-    def price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        return self.resident_price
-
-    @property
-    def resident_price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        try:
-            price = self.prices.get(type=PriceType.RESIDENT, year=timezone.now().year)
-        except Price.DoesNotExist:
-            raise PriceError("No resident price available")
-        return price.price
-
-    @property
-    def company_price(self):
-        logger.error("To be removed. This property should not be used anymore.")
-        try:
-            price = self.prices.get(type=PriceType.COMPANY, year=timezone.now().year)
-        except Price.DoesNotExist:
-            raise PriceError("No company price available")
-        return price.price
 
     @property
     def resident_products(self):

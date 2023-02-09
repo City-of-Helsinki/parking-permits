@@ -1,19 +1,10 @@
-from datetime import datetime
-
 import arrow
 from django.contrib.gis.db import models
-from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
+from encrypted_fields import fields
 
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
-
-
-class VehiclePowerType(models.TextChoices):
-    ELECTRIC = "ELECTRIC", _("Electric")
-    BENSIN = "BENSIN", _("Bensin")
-    DIESEL = "DIESEL", _("Diesel")
-    BIFUEL = "BIFUEL", _("Bifuel")
+from .mixins import TimestampedModelMixin
 
 
 class VehicleClass(models.TextChoices):
@@ -44,10 +35,54 @@ class EmissionType(models.TextChoices):
     WLTP = "WLTP", _("WLTP")
 
 
-class LowEmissionCriteria(TimestampedModelMixin, UUIDPrimaryKeyMixin):
-    power_type = models.CharField(
-        _("Power type"), max_length=50, choices=VehiclePowerType.choices
-    )
+def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
+    if power_type.is_electric:
+        return True
+    try:
+        now = tz.now()
+        le_criteria = LowEmissionCriteria.objects.get(
+            start_date__lte=now,
+            end_date__gte=now,
+        )
+    except LowEmissionCriteria.DoesNotExist:
+        return False
+
+    if (
+        not euro_class
+        or emission is None
+        or euro_class < le_criteria.euro_min_class_limit
+    ):
+        return False
+
+    if emission_type == EmissionType.NEDC:
+        return emission <= le_criteria.nedc_max_emission_limit
+
+    if emission_type == EmissionType.WLTP:
+        return emission <= le_criteria.wltp_max_emission_limit
+
+    return False
+
+
+class VehiclePowerType(models.Model):
+    name = models.CharField(_("Name"), max_length=100, null=True, blank=True)
+    identifier = models.CharField(_("Identifier"), max_length=10)
+
+    class Meta:
+        verbose_name = _("Vehicle power type")
+        verbose_name_plural = _("Vehicle power types")
+
+    def __str__(self):
+        return "Identifier: %s, Name: %s" % (
+            self.identifier,
+            self.name,
+        )
+
+    @property
+    def is_electric(self):
+        return self.identifier == "04"
+
+
+class LowEmissionCriteria(TimestampedModelMixin):
     nedc_max_emission_limit = models.IntegerField(
         _("NEDC maximum emission limit"), blank=True, null=True
     )
@@ -65,17 +100,33 @@ class LowEmissionCriteria(TimestampedModelMixin, UUIDPrimaryKeyMixin):
         verbose_name_plural = _("Low-emission criterias")
 
     def __str__(self):
-        return "%s, NEDC: %s, WLTP: %s, EURO: %s" % (
-            self.power_type,
+        return "NEDC: %s, WLTP: %s, EURO: %s" % (
             self.nedc_max_emission_limit,
             self.wltp_max_emission_limit,
             self.euro_min_class_limit,
         )
 
 
-class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
-    power_type = models.CharField(
-        _("Power type"), max_length=50, choices=VehiclePowerType.choices, blank=True
+class VehicleUser(models.Model):
+    _national_id_number = fields.EncryptedCharField(max_length=50, blank=True)
+    national_id_number = fields.SearchField(
+        _("National identification number"), encrypted_field_name="_national_id_number"
+    )
+
+    class Meta:
+        verbose_name = _("Vehicle user")
+        verbose_name_plural = _("Vehicle users")
+
+    def __str__(self):
+        return self.national_id_number
+
+
+class Vehicle(TimestampedModelMixin):
+    power_type = models.ForeignKey(
+        VehiclePowerType,
+        verbose_name=_("power_type"),
+        related_name="vehicles",
+        on_delete=models.PROTECT,
     )
     vehicle_class = models.CharField(
         _("VehicleClass"), max_length=16, choices=VehicleClass.choices, blank=True
@@ -90,6 +141,7 @@ class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     euro_class = models.IntegerField(_("Euro class"), blank=True, null=True)
     emission = models.IntegerField(_("Emission"), blank=True, null=True)
     consent_low_emission_accepted = models.BooleanField(default=False)
+    _is_low_emission = models.BooleanField(default=False, editable=False)
     emission_type = models.CharField(
         _("Emission type"),
         max_length=16,
@@ -103,7 +155,15 @@ class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
     updated_from_traficom_on = models.DateField(
         _("Update from traficom on"), default=tz.now
     )
-    users = ArrayField(models.CharField(max_length=15), default=list)
+    users = models.ManyToManyField(VehicleUser)
+
+    class Meta:
+        verbose_name = _("Vehicle")
+        verbose_name_plural = _("Vehicles")
+
+    def save(self, *args, **kwargs):
+        self._is_low_emission = self.is_low_emission
+        super(Vehicle, self).save(*args, **kwargs)
 
     def is_due_for_inspection(self):
         return (
@@ -113,35 +173,12 @@ class Vehicle(TimestampedModelMixin, UUIDPrimaryKeyMixin):
 
     @property
     def is_low_emission(self):
-        if self.power_type == VehiclePowerType.ELECTRIC:
-            return True
-        try:
-            le_criteria = LowEmissionCriteria.objects.get(
-                power_type=self.power_type,
-                start_date__lte=datetime.today(),
-                end_date__gte=datetime.today(),
-            )
-        except LowEmissionCriteria.DoesNotExist:
-            return False
-
-        if (
-            not self.euro_class
-            or not self.emission
-            or self.euro_class < le_criteria.euro_min_class_limit
-        ):
-            return False
-
-        if self.emission_type == EmissionType.NEDC:
-            return self.emission <= le_criteria.nedc_max_emission_limit
-
-        if self.emission_type == EmissionType.WLTP:
-            return self.emission <= le_criteria.wltp_max_emission_limit
-
-        return False
-
-    class Meta:
-        verbose_name = _("Vehicle")
-        verbose_name_plural = _("Vehicles")
+        return is_low_emission_vehicle(
+            self.power_type,
+            self.euro_class,
+            self.emission_type,
+            self.emission,
+        )
 
     def __str__(self):
         return "%s (%s, %s)" % (

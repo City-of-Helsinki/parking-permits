@@ -2,10 +2,10 @@ from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
 from .driving_class import DrivingClass
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 
 
-class DrivingLicence(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class DrivingLicence(TimestampedModelMixin):
     customer = models.OneToOneField(
         "Customer",
         verbose_name=_("Customer"),

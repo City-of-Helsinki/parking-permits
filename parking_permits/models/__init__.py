@@ -1,4 +1,5 @@
 from .address import Address
+from .announcement import Announcement
 from .company import Company
 from .customer import Customer
 from .driving_class import DrivingClass
@@ -9,10 +10,12 @@ from .parking_zone import ParkingZone
 from .price import Price
 from .product import Product
 from .refund import Refund
+from .temporary_vehicle import TemporaryVehicle
 from .vehicle import LowEmissionCriteria, Vehicle
 
 __all__ = [
     "Address",
+    "Announcement",
     "Company",
     "Customer",
     "DrivingClass",
@@ -26,4 +29,5 @@ __all__ = [
     "Product",
     "Order",
     "OrderItem",
+    "TemporaryVehicle",
 ]

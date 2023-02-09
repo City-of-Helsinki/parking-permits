@@ -7,6 +7,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         call_command("import_parking_zones")
+        call_command("create_test_address")
         call_command(
             "create_parking_zone_products",
             year=2021,
@@ -31,3 +32,4 @@ class Command(BaseCommand):
             "create_low_emission_criteria",
             year=2023,
         )
+        call_command("create_group_mapping")

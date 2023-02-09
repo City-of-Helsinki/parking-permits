@@ -3,37 +3,33 @@ import logging
 from decimal import Decimal
 
 import requests
-import reversion
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
+from django.contrib.postgres.fields import DateTimeRangeField
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..constants import (
-    LOW_EMISSION_DISCOUNT,
-    SECONDARY_VEHICLE_PRICE_INCREASE,
-    ParkingPermitEndType,
-)
-from ..exceptions import (
-    InvalidContractType,
-    ParkkihubiPermitError,
-    PermitCanNotBeEnded,
-    RefundError,
-)
-from ..utils import diff_months_ceil, get_end_time
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from ..constants import ParkingPermitEndType
+from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
+from ..utils import diff_months_ceil, flatten_dict, get_end_time, get_permit_prices
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
+from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
 logger = logging.getLogger("db")
 
 
 class ParkingPermitType(models.TextChoices):
-    RESIDENT = "RESIDENT", _("Resident")
-    COMPANY = "COMPANY", _("Company")
+    RESIDENT = "RESIDENT", _("Resident permit")
+    COMPANY = "COMPANY", _("Company permit")
 
 
 class ContractType(models.TextChoices):
@@ -55,13 +51,6 @@ class ParkingPermitStatus(models.TextChoices):
     PAYMENT_IN_PROGRESS = "PAYMENT_IN_PROGRESS", _("Payment in progress")
     VALID = "VALID", _("Valid")
     CLOSED = "CLOSED", _("Closed")
-
-
-def get_next_identifier():
-    last = ParkingPermit.objects.order_by("-identifier").first()
-    if not last:
-        return 80000000
-    return last.identifier + 1
 
 
 class ParkingPermitQuerySet(models.QuerySet):
@@ -86,8 +75,7 @@ class ParkingPermitManager(SerializableMixin.SerializableManager):
     pass
 
 
-@reversion.register()
-class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     customer = models.ForeignKey(
         "Customer",
         verbose_name=_("Customer"),
@@ -98,11 +86,30 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         Vehicle,
         verbose_name=_("Vehicle"),
         on_delete=models.PROTECT,
+        related_name="permits",
     )
+    next_vehicle = models.ForeignKey(
+        Vehicle,
+        verbose_name=_("Next vehicle"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
+        blank=True,
+        null=True,
+    )
+    temp_vehicles = models.ManyToManyField(TemporaryVehicle, blank=True)
     parking_zone = models.ForeignKey(
         ParkingZone,
         verbose_name=_("Parking zone"),
         on_delete=models.PROTECT,
+        related_name="permits",
+    )
+    next_parking_zone = models.ForeignKey(
+        ParkingZone,
+        verbose_name=_("Next parking zone"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
+        blank=True,
+        null=True,
     )
     type = models.CharField(
         _("Type"),
@@ -116,12 +123,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         choices=ParkingPermitStatus.choices,
         default=ParkingPermitStatus.DRAFT,
     )
-    identifier = models.IntegerField(
-        default=get_next_identifier, editable=False, unique=True, db_index=True
-    )
     start_time = models.DateTimeField(_("Start time"), default=timezone.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
     primary_vehicle = models.BooleanField(default=True)
+    vehicle_changed = models.BooleanField(default=False)
+    synced_with_parkkihubi = models.BooleanField(default=False)
+    vehicle_changed_date = models.DateField(
+        _("Vehicle changed date"), null=True, blank=True
+    )
     contract_type = models.CharField(
         _("Contract type"),
         max_length=16,
@@ -135,14 +144,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         default=ParkingPermitStartType.IMMEDIATELY,
     )
     month_count = models.IntegerField(_("Month count"), default=1)
-    order = models.ForeignKey(
-        "Order",
-        related_name="permits",
-        verbose_name=_("Order"),
-        blank=True,
-        null=True,
-        on_delete=models.PROTECT,
-    )
     description = models.TextField(_("Description"), blank=True)
     address = models.ForeignKey(
         "Address",
@@ -152,9 +153,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         null=True,
         blank=True,
     )
+    next_address = models.ForeignKey(
+        "Address",
+        verbose_name=_("Next address"),
+        on_delete=models.PROTECT,
+        related_name="next_permits",
+        null=True,
+        blank=True,
+    )
 
     serialize_fields = (
-        {"name": "identifier"},
+        {"name": "id"},
         {"name": "vehicle", "accessor": lambda v: str(v)},
         {"name": "status"},
         {"name": "contract_type"},
@@ -168,40 +177,84 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
     objects = ParkingPermitManager.from_queryset(ParkingPermitQuerySet)()
 
     class Meta:
-        ordering = ["-identifier"]
+        ordering = ["-id"]
         verbose_name = _("Parking permit")
         verbose_name_plural = _("Parking permits")
 
     def __str__(self):
-        return "%s" % self.identifier
+        return str(self.id)
 
     @property
     def is_secondary_vehicle(self):
         return not self.primary_vehicle
 
     @property
+    def temporary_vehicles(self):
+        return self.temp_vehicles.all()
+
+    @property
+    def is_order_confirmed(self):
+        from .order import OrderStatus
+
+        if self.orders:
+            recent_order = self.orders.order_by("-paid_time").first()
+            return (
+                recent_order.status == OrderStatus.CONFIRMED if recent_order else False
+            )
+        return False
+
+    @property
+    def active_temporary_vehicle(self):
+        return self.temporary_vehicles.filter(is_active=True).first()
+
+    @property
     def consent_low_emission_accepted(self):
         return self.vehicle.consent_low_emission_accepted
 
-    def get_prices(self):
-        # TODO: account for different prices in different years
-        logger.error(
-            "To be removed. This method is replaced by get_products_with_quantities"
+    @property
+    def latest_order(self):
+        """Get the latest order for the permit
+
+        Multiple orders can be created for the same permit
+        when, for example, the vehicle or the address of
+        the permit is changed.
+        """
+        return self.orders.latest("id") if self.orders.exists() else None
+
+    @property
+    def talpa_order_id(self):
+        if self.latest_order and self.latest_order.talpa_order_id:
+            return self.latest_order.talpa_order_id
+        return None
+
+    @property
+    def receipt_url(self):
+        if self.latest_order and self.latest_order.talpa_receipt_url:
+            return self.latest_order.talpa_receipt_url
+        return None
+
+    @property
+    def latest_order_items(self):
+        """Get latest order items for the permit"""
+        return self.order_items.filter(order=self.latest_order)
+
+    @property
+    def latest_order_item(self):
+        return self.latest_order_items.first() or None
+
+    @property
+    def permit_prices(self):
+        if self.is_fixed_period:
+            end_time = self.end_time
+        else:
+            end_time = get_end_time(self.start_time, 1)
+        return get_permit_prices(
+            self.parking_zone,
+            self.vehicle.is_low_emission,
+            not self.primary_vehicle,
+            self.start_time.date(),
+            end_time.date(),
         )
-        monthly_price = self.parking_zone.resident_price
-        month_count = self.month_count
-
-        if self.contract_type == ContractType.OPEN_ENDED:
-            month_count = 1
-        if self.is_secondary_vehicle:
-            increase = Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
-            monthly_price += increase * monthly_price
-
-        if self.vehicle.is_low_emission:
-            discount = Decimal(LOW_EMISSION_DISCOUNT) / 100
-            monthly_price -= discount * monthly_price
-
-        return monthly_price * month_count, monthly_price
 
     @property
     def is_valid(self):
@@ -242,40 +295,38 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
 
     @property
     def current_period_start_time(self):
+        if self.is_open_ended:
+            return self.start_time
         return self.start_time + relativedelta(months=self.months_used - 1)
 
     @property
     def current_period_end_time(self):
-        return get_end_time(self.start_time, self.months_used)
+        end_time = get_end_time(self.start_time, self.months_used)
+        return max(self.start_time, end_time)
+
+    @property
+    def current_period_range(self):
+        return self.current_period_start_time, self.current_period_end_time
 
     @property
     def next_period_start_time(self):
         return self.start_time + relativedelta(months=self.months_used)
 
     @property
-    def monthly_price(self):
-        """
-        Return the monthly price for current period
-
-        Current monthly price is determined by the start date of current period
-        """
-        period_start_date = timezone.localdate(self.current_period_start_time)
-        product = self.parking_zone.products.for_resident().get_for_date(
-            period_start_date
-        )
-        is_secondary = not self.primary_vehicle
-        return product.get_modified_unit_price(
-            self.vehicle.is_low_emission, is_secondary
+    def can_be_refunded(self):
+        return self.is_valid and (
+            self.is_fixed_period or self.current_period_start_time > timezone.now()
         )
 
     @property
-    def can_be_refunded(self):
-        return (
-            self.is_valid
-            and self.is_fixed_period
-            and self.order
-            and self.order.is_confirmed
-            and not hasattr(self.order, "refund")
+    def total_refund_amount(self):
+        return self.get_refund_amount_for_unused_items()
+
+    @property
+    def zone_changed(self):
+        addresses = [self.customer.primary_address, self.customer.other_address]
+        return not any(
+            address and address.zone == self.parking_zone for address in addresses
         )
 
     def get_price_change_list(self, new_zone, is_low_emission):
@@ -395,7 +446,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         if end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:
-            end_time = timezone.now()
+            end_time = max(self.start_time, timezone.now())
 
         if (
             self.primary_vehicle
@@ -415,25 +466,28 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         self.save()
 
     def get_refund_amount_for_unused_items(self):
+        total = Decimal(0)
         if not self.can_be_refunded:
-            raise RefundError("This permit cannot be refunded")
+            return total
 
         unused_order_items = self.get_unused_order_items()
-        total = Decimal(0)
+
         for order_item, quantity, date_range in unused_order_items:
             total += order_item.unit_price * quantity
         return total
 
     def get_unused_order_items(self):
-        if self.is_open_ended:
-            raise InvalidContractType(
-                "Cannot get unused order items for open ended permit"
-            )
-
         unused_start_date = timezone.localdate(self.next_period_start_time)
-        order_items = self.order_items.filter(end_date__gte=unused_start_date).order_by(
-            "start_date"
-        )
+        if not self.is_fixed_period:
+            order_items = self.latest_order_items
+            return [
+                [item, item.quantity, (item.start_date, item.end_date)]
+                for item in order_items
+            ]
+
+        order_items = self.latest_order_items.filter(
+            end_date__gte=unused_start_date
+        ).order_by("start_date")
 
         if len(order_items) == 0:
             return []
@@ -462,7 +516,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
     def get_products_with_quantities(self):
         """Return a list of product and quantities for the permit"""
         # TODO: currently, company permit type is not available
-        qs = self.parking_zone.products.for_resident()
+        if self.next_parking_zone:
+            qs = self.next_parking_zone.products.for_resident()
+        else:
+            qs = self.parking_zone.products.for_resident()
 
         if self.is_open_ended:
             permit_start_date = timezone.localdate(self.start_time)
@@ -475,17 +532,23 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
 
     def update_parkkihubi_permit(self):
+        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
+            logger.debug("Skipped Parkkihubi sync in permit update.")
+            return
+
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
-            data=json.dumps(self._get_parkkihubi_data()),
+            data=json.dumps(self._get_parkkihubi_data(), default=str),
             headers=self._get_parkkihubi_headers(),
         )
+        self.synced_with_parkkihubi = response.status_code == 200
+        self.save()
 
         if response.status_code == 200:
             logger.info("Parkkihubi update permit")
         else:
             logger.error(
-                "Failed to update permit to pakkihubi."
+                "Failed to update permit to Parkkihubi."
                 f"Error: {response.status_code} {response.reason}. "
                 f"Detail: {response.text}"
             )
@@ -495,16 +558,23 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
             )
 
     def create_parkkihubi_permit(self):
+        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
+            logger.debug("Skipped Parkkihubi sync in permit creation.")
+            return
+
         response = requests.post(
             settings.PARKKIHUBI_OPERATOR_ENDPOINT,
-            data=json.dumps(self._get_parkkihubi_data()),
+            data=json.dumps(self._get_parkkihubi_data(), default=str),
             headers=self._get_parkkihubi_headers(),
         )
+        self.synced_with_parkkihubi = response.status_code == 201
+        self.save()
+
         if response.status_code == 201:
             logger.info("Parkkihubi permit created")
         else:
             logger.error(
-                "Failed to create permit to pakkihubi."
+                "Failed to create permit to Parkkihubi."
                 f"Error: {response.status_code} {response.reason}. "
                 f"Detail: {response.text}"
             )
@@ -520,23 +590,53 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
         }
 
     def _get_parkkihubi_data(self):
+        subjects = []
         start_time = str(self.start_time)
         end_time = (
             str(get_end_time(self.start_time, 30))
             if not self.end_time
             else str(self.end_time)
         )
+        registration_number = self.vehicle.registration_number
+
+        active_temporary_vehicle = self.active_temporary_vehicle
+        if active_temporary_vehicle:
+            subjects.append(
+                {
+                    "start_time": str(start_time),
+                    "end_time": str(self.active_temporary_vehicle.start_time),
+                    "registration_number": registration_number,
+                }
+            )
+            subjects.append(
+                {
+                    "start_time": str(self.active_temporary_vehicle.start_time),
+                    "end_time": str(self.active_temporary_vehicle.end_time),
+                    "registration_number": self.active_temporary_vehicle.vehicle.registration_number,
+                }
+            )
+            subjects.append(
+                {
+                    "start_time": str(self.active_temporary_vehicle.end_time),
+                    "end_time": str(end_time),
+                    "registration_number": registration_number,
+                }
+            )
+        else:
+            subjects.append(
+                {
+                    "start_time": str(start_time),
+                    "end_time": str(end_time),
+                    "registration_number": registration_number,
+                }
+            )
+
         return {
             "series": settings.PARKKIHUBI_PERMIT_SERIES,
             "domain": settings.PARKKIHUBI_DOMAIN,
             "external_id": str(self.id),
-            "subjects": [
-                {
-                    "start_time": start_time,
-                    "end_time": end_time,
-                    "registration_number": self.vehicle.registration_number,
-                }
-            ],
+            "properties": {"permit_type": self.type},
+            "subjects": subjects,
             "areas": [
                 {
                     "start_time": start_time,
@@ -545,3 +645,159 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixi
                 }
             ],
         }
+
+
+class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
+    class EventType(models.TextChoices):
+        CREATED = "CREATED", _("Created")
+        UPDATED = "UPDATED", _("Updated")
+        RENEWED = "RENEWED", _("Renewed")
+        ENDED = "ENDED", _("Ended")
+
+    class EventKey(models.TextChoices):
+        CREATE_PERMIT = "create_permit"
+        UPDATE_PERMIT = "update_permit"
+        END_PERMIT = "end_permit"
+        CREATE_ORDER = "create_order"
+        RENEW_ORDER = "renew_order"
+        CREATE_REFUND = "create_refund"
+        ADD_TEMPORARY_VEHICLE = "add_temporary_vehicle"
+        REMOVE_TEMPORARY_VEHICLE = "remove_temporary_vehicle"
+
+    type = models.CharField(
+        max_length=16, choices=EventType.choices, verbose_name=_("Event type")
+    )
+    key = models.CharField(max_length=255, choices=EventKey.choices)
+    message = models.TextField()
+    context = models.JSONField(default=dict, encoder=DjangoJSONEncoder)
+    validity_period = DateTimeRangeField(null=True)
+    parking_permit = models.ForeignKey(
+        ParkingPermit, on_delete=models.CASCADE, related_name="events"
+    )
+
+    # Generic foreign key; see: https://docs.djangoproject.com/en/3.2/ref/contrib/contenttypes/
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True)
+    object_id = models.PositiveBigIntegerField(null=True)
+    related_object = GenericForeignKey("content_type", "object_id")
+
+    @property
+    def translated_message(self):
+        return _(self.message) % self.context
+
+    def __str__(self):
+        return self.translated_message
+
+
+class ParkingPermitEventFactory:
+    @staticmethod
+    def make_create_permit_event(permit: ParkingPermit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s created"),
+            context={"permit_id": permit.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.CREATE_PERMIT,
+        )
+
+    @staticmethod
+    def make_update_permit_event(
+        permit: ParkingPermit, created_by=None, changes: dict = None
+    ):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s updated"),
+            context={
+                "permit_id": permit.id,
+                "changes": flatten_dict(changes or dict()),
+            },
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.UPDATE_PERMIT,
+        )
+
+    @staticmethod
+    def make_end_permit_event(permit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s ended"),
+            context={"permit_id": permit.id},
+            type=ParkingPermitEvent.EventType.ENDED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.END_PERMIT,
+        )
+
+    @staticmethod
+    def make_create_order_event(permit: ParkingPermit, order, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s created",
+            context={"order_id": order.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.CREATE_ORDER,
+        )
+
+    @staticmethod
+    def make_renew_order_event(permit: ParkingPermit, order, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s renewed",
+            context={"order_id": order.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.RENEWED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.RENEW_ORDER,
+        )
+
+    @staticmethod
+    def make_create_refund_event(permit, refund, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Refund #%(refund_id)s created"),
+            context={"refund_id": refund.id},
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=refund,
+            key=ParkingPermitEvent.EventKey.CREATE_REFUND,
+        )
+
+    @staticmethod
+    def make_add_temporary_vehicle_event(permit, temp_vehicle, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop(
+                "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
+            ),
+            context={
+                "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
+            },
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            related_object=temp_vehicle,
+            key=ParkingPermitEvent.EventKey.ADD_TEMPORARY_VEHICLE,
+        )
+
+    @staticmethod
+    def make_remove_temporary_vehicle_event(permit, temp_vehicle, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop(
+                "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
+            ),
+            context={
+                "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
+            },
+            validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            created_by=created_by,
+            related_object=temp_vehicle,
+            key=ParkingPermitEvent.EventKey.REMOVE_TEMPORARY_VEHICLE,
+        )

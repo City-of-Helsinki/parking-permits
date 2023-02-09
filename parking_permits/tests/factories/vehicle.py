@@ -5,7 +5,7 @@ import factory
 import pytz
 
 from parking_permits.models import Vehicle
-from parking_permits.models.vehicle import LowEmissionCriteria
+from parking_permits.models.vehicle import LowEmissionCriteria, VehiclePowerType
 from parking_permits.tests.factories.faker import fake
 
 
@@ -15,12 +15,21 @@ def generate_random_registration_number():
     return f"{part_1}-{part_2}"
 
 
+class VehiclePowerTypeFactory(factory.django.DjangoModelFactory):
+    name = factory.Faker("name")
+    identifier = factory.Faker("random_int", min=0, max=100)
+
+    class Meta:
+        model = VehiclePowerType
+
+
 class VehicleFactory(factory.django.DjangoModelFactory):
     manufacturer = factory.Faker("name")
     model = factory.Faker("name")
     registration_number = factory.LazyFunction(generate_random_registration_number)
     emission = random.randint(0, 90)
     last_inspection_date = factory.Faker("date")
+    power_type = factory.SubFactory(VehiclePowerTypeFactory)
 
     class Meta:
         model = Vehicle

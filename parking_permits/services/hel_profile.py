@@ -1,10 +1,13 @@
+import logging
+
 import requests
 from ariadne import load_schema_from_path
 from django.conf import settings
 
 from parking_permits.models.common import SourceSystem
-from parking_permits.services.kmo import parse_street_name_and_number
 from project.settings import BASE_DIR
+
+logger = logging.getLogger("db")
 
 helsinki_profile_query = load_schema_from_path(
     BASE_DIR / "parking_permits" / "schema" / "helsinki_profile.graphql"
@@ -38,35 +41,6 @@ class HelsinkiProfile:
                 "verifiedPersonalInformation", {}
             ).get("nationalIdentificationNumber"),
         }
-
-    def get_addresses(self):
-        addresses = self.__profile.get("addresses")
-        if not addresses:
-            return None, None
-        return self._extract_addresses(addresses)
-
-    def _extract_addresses(self, addresses):
-        if not self.__profile:
-            self._get_profile()
-        primary_address = None
-        other_address = None
-        for address in addresses.get("edges"):
-            address_node = address.get("node")
-            if address_node:
-                parsed_address = parse_street_name_and_number(
-                    address_node.get("address")
-                )
-                data = {
-                    "street_name": parsed_address.get("street_name"),
-                    "street_number": parsed_address.get("street_number"),
-                    "city": address_node.get("city"),
-                    "postal_code": address_node.get("postalCode"),
-                }
-                if address_node.get("primary"):
-                    primary_address = data
-                else:
-                    other_address = data
-        return primary_address, other_address
 
     def _get_profile(self):
         api_token = self.request.headers.get("X-Authorization")

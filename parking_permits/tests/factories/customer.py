@@ -1,6 +1,5 @@
 import random
 import string
-import uuid
 
 import factory
 
@@ -15,7 +14,6 @@ def generate_random_national_id():
 
 
 class CustomerFactory(factory.django.DjangoModelFactory):
-    id = factory.LazyFunction(uuid.uuid4)
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
     national_id_number = factory.LazyFunction(generate_random_national_id)

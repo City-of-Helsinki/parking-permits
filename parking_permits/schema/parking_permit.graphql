@@ -1,6 +1,5 @@
 type ZoneNode  {
   id: ID!
-  sharedProductId: String
   name: String
   description: String
   descriptionSv: String
@@ -10,7 +9,7 @@ type ZoneNode  {
 type AddressNode  {
   id: ID!
   streetName: String
-  streetNumber: Int
+  streetNumber: String
   streetNameSv: String
   city: String
   citySv: String
@@ -20,18 +19,12 @@ type AddressNode  {
   primary: Boolean
 }
 
-enum Language {
-  FINNISH
-  ENGLISH
-  SWEDISH
-}
-
 type CustomerNode {
   id: ID!
   age: Int!
   firstName: String!
   lastName: String!
-  language: Language
+  language: String
   email: String
   phoneNumber: String
   primaryAddress: AddressNode
@@ -40,7 +33,6 @@ type CustomerNode {
 
 type VehicleNode {
   id: ID!
-  powerType: String
   manufacturer: String
   model: String
   productionYear: Int
@@ -50,6 +42,7 @@ type VehicleNode {
 }
 
 type ProductNode {
+  name: String!
   vat: Float!
   quantity: Int!
   unitPrice: Float!
@@ -59,12 +52,22 @@ type ProductNode {
   lowEmissionDiscount: Float!
 }
 
+type TemporaryVehicleNode {
+  id: ID!
+  vehicle: VehicleNode!
+  startTime: String!
+  endTime: String!
+  isActive: Boolean!
+}
+
 type PermitNode {
   id: ID!
   zone: ID!
-  orderId: String
+  talpaOrderId: String
+  receiptUrl: String
   subscriptionId: String
   vehicle: VehicleNode!
+  activeTemporaryVehicle: TemporaryVehicleNode
   products: [ProductNode]
   contractType: String
   monthCount: Int
@@ -81,6 +84,8 @@ type PermitNode {
   canEndAfterCurrentPeriod: Boolean
   hasRefund: Boolean
   vehicleChanged: Boolean
+  zoneChanged: Boolean
+  isOrderConfirmed: Boolean
 }
 
 type PermitPriceChangeItem {
@@ -119,13 +124,22 @@ type ChangeAddressResult {
   checkoutUrl: String
 }
 
+type ChangeVehicleResult {
+  checkoutUrl: String
+}
+
 type Mutation {
-  createParkingPermit(zoneId: ID!, registration: String!): PermitNode!
+  createParkingPermit(addressId: ID!, registration: String!): PermitNode!
   createOrder: TalpaOrderNode!
   deleteParkingPermit(permitId: ID!): Boolean!
   endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): Boolean
   updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
+  getVehicleInformation(registration: String!): VehicleNode!
+  updatePermitVehicle(permitId: ID!, vehicleId: ID!, consentLowEmissionAccepted: Boolean, iban: String): ChangeVehicleResult!
+  updateLanguage(lang: String!): CustomerNode!
+  addTemporaryVehicle(permitId: String!, registration: String!, startTime: String!, endTime: String!): Boolean!
+  removeTemporaryVehicle(permitId: String!): Boolean!
 }
 
 input ParkingPermitInput {
@@ -136,5 +150,5 @@ input ParkingPermitInput {
   startType: String
   contractType: String
   monthCount: Int
-  zoneId: String
+  addressId: String
 }

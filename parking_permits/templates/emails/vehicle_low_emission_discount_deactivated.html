@@ -1,0 +1,14 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Vehicle discount right expired" %}{% endblock %}
+
+{% block content %}
+    <p>
+        {% translate "The right to a discount has been removed from the vehicle." %}
+    </p>
+    <p>
+        {% translate "Vehicle" %}: {{ permit.vehicle.registration_number }}<br>
+        {% translate "Discount right ends" %}: {% now "j.n.Y, H:i" %}
+    </p>
+{% endblock %}

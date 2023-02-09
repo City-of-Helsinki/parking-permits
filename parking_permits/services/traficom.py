@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 import requests
 from django.conf import settings
 from django.utils import timezone as tz
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models.driving_class import DrivingClass
@@ -13,6 +13,7 @@ from parking_permits.models.vehicle import (
     Vehicle,
     VehicleClass,
     VehiclePowerType,
+    VehicleUser,
 )
 
 logger = logging.getLogger("db")
@@ -25,9 +26,10 @@ VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
 
 POWER_TYPE_MAPPER = {
-    "01": VehiclePowerType.BENSIN.value,
-    "02": VehiclePowerType.DIESEL.value,
-    "04": VehiclePowerType.ELECTRIC.value,
+    "01": "Bensin",
+    "02": "Diesel",
+    "03": "Bifuel",
+    "04": "Electric",
 }
 
 VEHICLE_SUB_CLASS_MAPPER = {
@@ -58,8 +60,9 @@ class Traficom:
         if not vehicle_detail:
             raise TraficomFetchVehicleError(
                 _(
-                    f"Could not find vehicle detail with given {registration_number} registration number"
+                    "Could not find vehicle detail with given %(registration_number)s registration number"
                 )
+                % {"registration_number": registration_number}
             )
 
         vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
@@ -74,8 +77,12 @@ class Traficom:
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
                 _(
-                    f"Unsupported vehicle class {vehicle_class} for {registration_number}"
+                    "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
                 )
+                % {
+                    "vehicle_class": vehicle_class,
+                    "registration_number": registration_number,
+                }
             )
 
         vehicle_identity = et.find(".//tunnus")
@@ -99,21 +106,29 @@ class Traficom:
         mass = et.find(".//massa")
         module_weight = mass.find("modulinKokonaismassa")
         technical_weight = mass.find("teknSuurSallKokmassa")
-        weight = module_weight if module_weight else technical_weight
+        weight = module_weight if module_weight is not None else technical_weight
 
         vehicle_power_type = motor.find("kayttovoima")
         vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
         vehicle_model = vehicle_detail.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
-        users = [owner_et.find("omistajanTunnus").text for owner_et in owners_et]
+        user_ssns = [
+            owner_et.find("omistajanTunnus").text
+            if owner_et.find("omistajanTunnus") is not None
+            else ""
+            for owner_et in owners_et
+        ]
+        power_type = VehiclePowerType.objects.get_or_create(
+            identifier=vehicle_power_type.text,
+            defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
+        )
         vehicle_details = {
             "updated_from_traficom_on": str(tz.now().date()),
-            "users": users,
-            "power_type": POWER_TYPE_MAPPER.get(vehicle_power_type.text),
+            "power_type": power_type[0],
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
             "model": vehicle_model.text if vehicle_model is not None else "",
-            "weight": int(weight.text),
+            "weight": int(weight.text) if weight else 0,
             "registration_number": registration_number,
             "euro_class": 6,  # It will always be 6 class atm.
             "emission": float(co2emission) if co2emission else None,
@@ -123,17 +138,24 @@ class Traficom:
             if last_inspection_date is not None
             else None,
         }
+        vehicle_users = []
+        for user_nin in user_ssns:
+            user = VehicleUser.objects.get_or_create(national_id_number=user_nin)
+            vehicle_users.append(user[0])
         vehicle = Vehicle.objects.update_or_create(
             registration_number=registration_number, defaults=vehicle_details
         )
+        vehicle[0].users.set(vehicle_users)
         return vehicle[0]
 
     def fetch_driving_licence_details(self, hetu):
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
-        if not driving_licence_et.find("ajooikeusluokat"):
+        if driving_licence_et.find("ajooikeusluokat") is None:
             raise TraficomFetchVehicleError(
-                _("Could not find any driving license information for given customer")
+                _(
+                    "Could not find any driving license information for given customer from Traficom"
+                )
             )
 
         driving_licence_categories_et = driving_licence_et.findall(

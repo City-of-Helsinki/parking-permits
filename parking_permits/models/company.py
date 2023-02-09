@@ -3,10 +3,10 @@ from django.utils.translation import gettext_lazy as _
 
 from .address import Address
 from .customer import Customer
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 
 
-class Company(TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Company(TimestampedModelMixin):
     name = models.CharField(_("Company name"), max_length=128)
     business_id = models.CharField(_("Business Id"), max_length=32)
     address = models.ForeignKey(

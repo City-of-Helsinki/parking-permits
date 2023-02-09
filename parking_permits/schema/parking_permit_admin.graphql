@@ -1,3 +1,7 @@
+scalar DateTimeRange
+
+scalar JSON
+
 type ProductNode {
   id: ID!
   type: String!
@@ -22,17 +26,25 @@ type ZoneNode {
 }
 
 type AddressNode {
-  id: ID!
+  id: ID
   streetName: String
   streetNumber: String
   streetNameSv: String
   city: String
   citySv: String
   postalCode: String
+  location: [Float]
   zone: ZoneNode
 }
 
+type CustomerActivePermit {
+  id: ID!
+  primaryVehicle: Boolean!
+}
+
 type CustomerNode {
+  id: ID
+  sourceId: String
   firstName: String
   lastName: String
   nationalIdNumber: String
@@ -43,6 +55,13 @@ type CustomerNode {
   phoneNumber: String
   addressSecurityBan: Boolean
   driverLicenseChecked: Boolean
+  activePermits: [CustomerActivePermit]
+  language: String
+}
+
+type VehiclePowerTypeNode {
+  name: String
+  identifier: String!
 }
 
 type VehicleNode {
@@ -56,7 +75,20 @@ type VehicleNode {
   euroClass: Int
   emission: Int
   emissionType: String
-  powerType: String
+  powerType: VehiclePowerTypeNode
+}
+
+type AnnouncementNode {
+  id: ID!
+  subjectFi: String!
+  contentFi: String!
+  subjectSv: String!
+  contentSv: String!
+  subjectEn: String!
+  contentEn: String!
+  parkingZones: [ZoneNode]
+  createdAt: String!
+  createdBy: String
 }
 
 enum ParkingPermitStatus {
@@ -71,9 +103,10 @@ enum ParkingPermitStatus {
 }
 
 type PermitNode {
-  identifier: Int!
+  id: ID!
   customer: CustomerNode!
   vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
   address: AddressNode
@@ -81,11 +114,25 @@ type PermitNode {
   endTime: String
   description: String
   type: String
+  primaryVehicle: Boolean!
+}
+
+type LimitedPermitNode {
+  id: ID!
+  vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
+  parkingZone: ZoneNode
+  status: ParkingPermitStatus!
+  address: AddressNode
+  startTime: String
+  endTime: String
+  description: String
+  type: String
+  primaryVehicle: Boolean!
 }
 
 type RefundNode {
   id: ID!
-  refundNumber: Int!
   name: String
   amount: Float!
   iban: String!
@@ -95,13 +142,15 @@ type RefundNode {
   createdBy: String
   modifiedAt: String
   modifiedBy: String
+  acceptedAt: String
+  acceptedBy: String
+  order: OrderNode
 }
 
 type OrderNode {
   id: ID!
-  orderNumber: Int!
-  orderType: String!
   totalPrice: Float!
+  totalPaymentPrice: Float
   customer: CustomerNode!
   paidTime: String
   paymentType: String
@@ -123,6 +172,11 @@ type PagedPermits {
   pageInfo: PageInfo
 }
 
+type LimitedPagedPermits {
+  objects: [LimitedPermitNode]
+  pageInfo: PageInfo
+}
+
 type PagedProducts {
   objects: [ProductNode]
   pageInfo: PageInfo
@@ -138,6 +192,21 @@ type PagedOrders {
   pageInfo: PageInfo
 }
 
+type PagedAddresses {
+  objects: [AddressNode]
+  pageInfo: PageInfo
+}
+
+type PagedAnnouncements {
+  objects: [AnnouncementNode]
+  pageInfo: PageInfo
+}
+
+type PagedCustomers {
+  objects: [CustomerNode]
+  pageInfo: PageInfo
+}
+
 enum OrderDirection {
   ASC,
   DESC
@@ -149,29 +218,55 @@ input PageInput {
 }
 
 input OrderByInput {
-  field: String!
-  orderFields: [String]!
+  orderField: String!
   orderDirection: OrderDirection!
 }
 
-input SearchItem {
+input SearchField {
   matchType: String!
-  fields: [String]!
+  fieldName: String!
+}
+
+input SearchItem {
+  connector: String!
+  fields: [SearchField]!
   value: String!
+}
+
+union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode
+
+type ContentTypeNode {
+  id: ID!
+  appLabel: String!
+  model: String!
 }
 
 type ChangeLog {
   id: ID!
-  event: String!
-  description: String!
+  key: String!
+  validityPeriod: DateTimeRange
   createdAt: String!
-  createdBy: String!
+  createdBy: String
+  context: JSON
+  contentType: ContentTypeNode
+  relatedObject: ParkingPermitEventGFK
+}
+
+type TemporaryVehicleNode {
+  id: ID!
+  vehicle: VehicleNode!
+  startTime: String!
+  endTime: String!
+  isActive: Boolean!
 }
 
 type PermitDetailNode {
-  identifier: Int!
+  id: ID!
+  address: AddressNode
   customer: CustomerNode!
   vehicle: VehicleNode
+  activeTemporaryVehicle: TemporaryVehicleNode
+  primaryVehicle: Boolean!
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
   startTime: String
@@ -181,12 +276,13 @@ type PermitDetailNode {
   contractType: String
   monthCount: Int
   monthsLeft: Int
-  monthlyPrice: Float
+  totalRefundAmount: Float
   currentPeriodEndTime: String
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
   canBeRefunded: Boolean
   changeLogs: [ChangeLog]!
+  permitPrices: [PermitPriceNode]
 }
 
 type PermitPriceChange {
@@ -200,15 +296,87 @@ type PermitPriceChange {
   monthCount: Int!
 }
 
+type LowEmissionCriterionNode {
+  id: ID!
+  nedcMaxEmissionLimit: Int
+  wltpMaxEmissionLimit: Int
+  euroMinClassLimit: Int
+  startDate: String
+  endDate: String
+}
+
+type PagedLowEmissionCriteria {
+  objects: [LowEmissionCriterionNode]
+  pageInfo: PageInfo
+}
+
+type PermitPriceNode {
+  originalUnitPrice: Float!
+  unitPrice: Float!
+  startDate: String!
+  endDate: String!
+  quantity: Int!
+}
+
+input OrderSearchParamsInput {
+  q: String!
+  startDate: String!
+  endDate: String!
+  contractTypes: String!
+  paymentTypes: String!
+  priceDiscounts: String!
+  parkingZone: String!
+}
+
+input PermitSearchParamsInput {
+  q: String!
+  status: String!
+}
+
+input CustomerSearchParamsInput {
+  name: String!
+  nationalIdNumber: String!
+}
+
+input AddressSearchParamsInput {
+  streetName: String!
+  streetNumber: String!
+  postalCode: String!
+  parkingZone: String!
+}
+
+input RefundSearchParamsInput {
+  q: String!
+  startDate: String!
+  endDate: String!
+  status: String!
+  paymentTypes: String!
+}
+
+input CustomerRetrieveInput {
+  id: ID
+  nationalIdNumber: String
+}
+
 type Query {
   permits(
     pageInput: PageInput!
     orderBy: OrderByInput
-    searchItems: [SearchItem]
+    searchParams: PermitSearchParamsInput
    ): PagedPermits!
   permitDetail(permitId: ID!): PermitDetailNode!
+  limitedPermits(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+    searchParams: PermitSearchParamsInput
+  ): LimitedPagedPermits!
   zones: [ZoneNode]
-  customer(nationalIdNumber: String!): CustomerNode!
+  customers(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+    searchParams: CustomerSearchParamsInput
+  ): PagedCustomers!
+  customer(query: CustomerRetrieveInput!): CustomerNode!
   vehicle(regNumber: String!, nationalIdNumber: String!): VehicleNode!
   products(
     pageInput: PageInput!
@@ -219,13 +387,33 @@ type Query {
   refunds(
     pageInput: PageInput!
     orderBy: OrderByInput
+    searchParams: RefundSearchParamsInput
   ): PagedRefunds!
-  refund(refundNumber: Int): RefundNode!
+  refund(refundId: ID!): RefundNode!
   permitPriceChangeList(permitId: ID!, permitInfo: ResidentPermitInput!): [PermitPriceChange]
   orders(
     pageInput: PageInput!
     orderBy: OrderByInput
+    searchParams: OrderSearchParamsInput
   ): PagedOrders!
+  addresses(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+    searchParams: AddressSearchParamsInput
+  ): PagedAddresses!
+  addressSearch(searchInput: String!): [AddressNode]
+  address(addressId: ID!): AddressNode!
+  lowEmissionCriteria(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedLowEmissionCriteria!
+  lowEmissionCriterion(criterionId: ID!): LowEmissionCriterionNode!
+  permitPrices(permit: ResidentPermitInput!, isSecondary: Boolean!): [PermitPriceNode]!
+  announcements(
+    pageInput: PageInput!
+    orderBy: OrderByInput
+  ): PagedAnnouncements!
+  announcement(announcementId: ID!): AnnouncementNode!
 }
 
 input AddressInput {
@@ -259,6 +447,11 @@ input CustomerInput {
   driverLicenseChecked: Boolean
 }
 
+input PowerTypeInput {
+  name: String
+  identifier: String!
+}
+
 input VehicleInput {
   manufacturer: String!
   model: String!
@@ -269,7 +462,7 @@ input VehicleInput {
   euroClass: Int!
   emission: Int!
   emissionType: String!
-  powerType: String!
+  powerType: PowerTypeInput!
 }
 
 input ResidentPermitInput {
@@ -281,6 +474,8 @@ input ResidentPermitInput {
   endTime: String
   monthCount: Int
   description: String
+  address: AddressInput
+  zone: String
 }
 
 input ProductInput {
@@ -299,6 +494,24 @@ input RefundInput {
   iban: String!
 }
 
+input LowEmissionCriterionInput {
+  nedcMaxEmissionLimit: Int
+  wltpMaxEmissionLimit: Int
+  euroMinClassLimit: Int
+  startDate: String
+  endDate: String
+}
+
+input AnnouncementInput {
+  subjectFi: String!
+  contentFi: String!
+  subjectSv: String!
+  contentSv: String!
+  subjectEn: String!
+  contentEn: String!
+  parkingZones: [String]
+}
+
 type MutationResponse {
   success: Boolean
 }
@@ -314,11 +527,22 @@ enum PermitEndType {
 }
 
 type Mutation {
+  addTemporaryVehicle(permitId: ID!, registrationNumber: String!, startTime: String!, endTime: String!): MutationResponse!
+  removeTemporaryVehicle(permitId: ID!): MutationResponse
   createResidentPermit(permit: ResidentPermitInput!): CreatePermitResponse
-  endPermit(permitId: Int!, endType: PermitEndType!, iban: String): MutationResponse
+  endPermit(permitId: ID!, endType: PermitEndType!, iban: String): MutationResponse
   updateResidentPermit(permitId: ID!, permitInfo: ResidentPermitInput!, iban: String): MutationResponse
   updateProduct(productId: ID!, product: ProductInput!): MutationResponse
   deleteProduct(productId: ID!): MutationResponse
   createProduct(product: ProductInput!): MutationResponse
-  updateRefund(refundNumber: Int!, refund: RefundInput!): MutationResponse
+  updateRefund(refundId: ID!, refund: RefundInput!): MutationResponse
+  updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
+  deleteAddress(addressId: ID!): MutationResponse
+  createAddress(address: AddressInput!): MutationResponse
+  updateLowEmissionCriterion(criterionId: ID!, criterion: LowEmissionCriterionInput!): MutationResponse
+  deleteLowEmissionCriterion(criterionId: ID!): MutationResponse
+  createLowEmissionCriterion(criterion: LowEmissionCriterionInput!): MutationResponse
+  requestForApproval(ids: [ID]!): Int
+  acceptRefunds(ids: [ID]!): Int
+  createAnnouncement(announcement: AnnouncementInput!): MutationResponse
 }

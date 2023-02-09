@@ -1,20 +1,28 @@
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from encrypted_fields import fields
 from helsinki_gdpr.models import SerializableMixin
 
 from ..services.traficom import Traficom
 from .common import SourceSystem
 from .driving_licence import DrivingLicence
-from .mixins import TimestampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitStatus
 
 
-class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
+class Languages(models.TextChoices):
+    FINNISH = "fi", _("Finnish")
+    SWEDISH = "sv", _("Swedish")
+    ENGLISH = "en", _("English")
+
+
+class Customer(SerializableMixin, TimestampedModelMixin):
     source_system = models.CharField(
         _("Source system"), max_length=50, choices=SourceSystem.choices, blank=True
     )
@@ -28,8 +36,11 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
     )
     first_name = models.CharField(_("First name"), max_length=32, blank=True)
     last_name = models.CharField(_("Last name"), max_length=32, blank=True)
-    national_id_number = models.CharField(
-        _("National identification number"), max_length=16, unique=True, blank=True
+    _national_id_number = fields.EncryptedCharField(
+        _("National identification number"), max_length=50, blank=True
+    )
+    national_id_number = fields.SearchField(
+        _("National identification number"), encrypted_field_name="_national_id_number"
     )
     primary_address = models.ForeignKey(
         "Address",
@@ -48,7 +59,9 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         null=True,
     )
     email = models.CharField(_("Email"), max_length=128, blank=True)
-    phone_number = models.CharField(_("Phone number"), max_length=32, blank=True)
+    phone_number = models.CharField(
+        _("Phone number"), max_length=32, blank=True, null=True
+    )
     address_security_ban = models.BooleanField(_("Address security ban"), default=False)
     driver_license_checked = models.BooleanField(
         _("Driver's license checked"), default=False
@@ -60,6 +73,12 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         blank=True,
         null=True,
     )
+    language = models.CharField(
+        _("Language"),
+        max_length=10,
+        choices=Languages.choices,
+        default=Languages.FINNISH,
+    )
 
     serialize_fields = (
         {"name": "first_name"},
@@ -67,11 +86,18 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         {"name": "national_id_number"},
         {"name": "email"},
         {"name": "phone_number"},
-        {"name": "primary_address", "accessor": lambda a: a.serialize()},
-        {"name": "other_address", "accessor": lambda a: a.serialize()},
+        {"name": "primary_address", "accessor": lambda a: a.serialize() if a else None},
+        {"name": "other_address", "accessor": lambda a: a.serialize() if a else None},
         {"name": "orders"},
         {"name": "permits"},
     )
+
+    class Meta:
+        verbose_name = _("Customer")
+        verbose_name_plural = _("Customers")
+
+    def __str__(self):
+        return "%s" % self.national_id_number
 
     @property
     def age(self):
@@ -88,7 +114,10 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         return Traficom().fetch_vehicle_details(registration_number)
 
     def is_user_of_vehicle(self, vehicle):
-        return self.national_id_number in vehicle.users
+        if not settings.TRAFICOM_CHECK:
+            return True
+        users_nin = [user._national_id_number for user in vehicle.users.all()]
+        return self.national_id_number in users_nin
 
     def fetch_driving_licence_detail(self):
         licence_details = Traficom().fetch_driving_licence_details(
@@ -105,17 +134,12 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         return driving_licence
 
     def has_valid_driving_licence_for_vehicle(self, vehicle):
+        if not settings.TRAFICOM_CHECK:
+            return True
         return any(
             vehicle.vehicle_class in d_class.vehicle_classes
             for d_class in self.driving_licence.driving_classes.all()
         )
-
-    class Meta:
-        verbose_name = _("Customer")
-        verbose_name_plural = _("Customers")
-
-    def __str__(self):
-        return "%s %s" % (self.first_name, self.last_name)
 
     @property
     def can_be_deleted(self):
@@ -162,3 +186,7 @@ class Customer(SerializableMixin, TimestampedModelMixin, UUIDPrimaryKeyMixin):
         if self.user:
             self.user.delete()
         self.delete()
+
+    @property
+    def active_permits(self):
+        return self.permits.active()

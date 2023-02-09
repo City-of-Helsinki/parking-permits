@@ -10,7 +10,7 @@ from parking_permits.models import Order
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import EmissionType, VehiclePowerType
+from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
@@ -18,6 +18,7 @@ from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
     VehicleFactory,
+    VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
 from parking_permits.utils import get_end_time
@@ -64,18 +65,40 @@ class TestOrderManager(TestCase):
         self.assertEqual(order_items[1].unit_price, Decimal(50))
         self.assertEqual(order_items[1].quantity, 2)
 
-    def test_test_create_renewable_order_should_create_renewal_order(self):
+    @freeze_time("2023-03-15")
+    def test_create_for_permits_should_create_order_items_with_start_end_date_for_open_ended_permits(
+        self,
+    ):
+        start_time = timezone.now()
+        permit = ParkingPermitFactory(
+            parking_zone=self.zone,
+            customer=self.customer,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.DRAFT,
+            start_time=start_time,
+            month_count=6,
+        )
+        order = Order.objects.create_for_permits([permit])
+        order_items = order.order_items.all().order_by("-quantity")
+        self.assertEqual(order_items.count(), 1)
+        order_item = order_items[0]
+        self.assertEqual(order_item.start_date, timezone.localdate(start_time))
+        self.assertEqual(
+            order_item.end_date, timezone.localdate(get_end_time(start_time, 1))
+        )
+
+    def test_create_renewable_order_should_create_renewal_order(self):
         start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
         end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
 
         high_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerType.BENSIN,
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=100,
             euro_class=6,
             emission_type=EmissionType.WLTP,
         )
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerType.BENSIN,
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=70,
             euro_class=6,
             emission_type=EmissionType.WLTP,
@@ -86,7 +109,6 @@ class TestOrderManager(TestCase):
             nedc_max_emission_limit=None,
             wltp_max_emission_limit=80,
             euro_min_class_limit=6,
-            power_type=low_emission_vehicle.power_type,
         )
         permit = ParkingPermitFactory(
             parking_zone=self.zone,

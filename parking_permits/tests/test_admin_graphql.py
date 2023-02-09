@@ -1,18 +1,28 @@
 import json
 from unittest.mock import patch
 
-from django.test import Client, TestCase, override_settings
+from django.test import Client, TestCase
 from django.urls import reverse
 from helusers.authz import UserAuthorization
 from helusers.oidc import AuthenticationError
 
 import parking_permits.decorators
-from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
-from users.tests.factories.user import ADAdminFactory, UserFactory
+from parking_permits.models.parking_permit import ParkingPermitStatus
+from parking_permits.tests.factories.parking_permit import (
+    CustomerFactory,
+    ParkingPermitFactory,
+)
+from users.tests.factories.user import GroupFactory, UserFactory
 
 permits_query = """
-    query GetPermits($pageInput: PageInput!) {
-        permits(pageInput: $pageInput) {
+    query GetPermits(
+        $pageInput: PageInput!
+        $searchParams: PermitSearchParamsInput!
+    ) {
+        permits(
+            pageInput: $pageInput
+            searchParams: $searchParams
+        ) {
             objects {
                 customer {
                     firstName
@@ -33,20 +43,26 @@ class PermitsQueryTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.client = Client()
-        ParkingPermitFactory()
-        ParkingPermitFactory()
-        ParkingPermitFactory()
+        cls.default_variables = {
+            "pageInput": {"page": 1},
+            "searchParams": {"q": "John", "status": ParkingPermitStatus.DRAFT},
+        }
+        customer = CustomerFactory(first_name="John")
+        ParkingPermitFactory(customer=customer)
+        ParkingPermitFactory(customer=customer)
+        ParkingPermitFactory(customer=customer)
 
-    @override_settings(ALLOWED_ADMIN_AD_GROUPS=["ad-group-0"])
     @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
-    def test_return_parking_permits_list_for_ad_admin(self, mock_authenticate):
-        mock_admin = ADAdminFactory()
+    def test_return_parking_permits_list_for_super_admin(self, mock_authenticate):
+        group = GroupFactory(name="super_admin")
+        mock_admin = UserFactory(first_name="John")
+        mock_admin.groups.add(group)
         mock_authenticate.return_value = UserAuthorization(mock_admin, {})
         url = reverse("parking_permits:admin-graphql")
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
@@ -57,16 +73,15 @@ class PermitsQueryTestCase(TestCase):
             response_data["data"]["permits"]["pageInfo"], expected_page_info
         )
 
-    @override_settings(ALLOWED_ADMIN_AD_GROUPS=None)
     @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
-    def test_return_forbidden_for_non_ad_admin(self, mock_authenticate):
+    def test_return_forbidden_for_non_super_admin(self, mock_authenticate):
         mock_admin = UserFactory()
         mock_authenticate.return_value = UserAuthorization(mock_admin, {})
         url = reverse("parking_permits:admin-graphql")
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)
@@ -80,7 +95,7 @@ class PermitsQueryTestCase(TestCase):
         data = {
             "operationName": "GetPermits",
             "query": permits_query,
-            "variables": {"pageInput": {"page": 1}},
+            "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
         self.assertEqual(response.status_code, 200)

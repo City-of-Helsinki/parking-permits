@@ -14,7 +14,7 @@ class PriceError(ParkingPermitBaseException):
     pass
 
 
-class InvalidUserZone(ParkingPermitBaseException):
+class InvalidUserAddress(ParkingPermitBaseException):
     pass
 
 
@@ -30,7 +30,7 @@ class NonDraftPermitUpdateError(ParkingPermitBaseException):
     pass
 
 
-class PermitCanNotBeDelete(ParkingPermitBaseException):
+class PermitCanNotBeDeleted(ParkingPermitBaseException):
     pass
 
 
@@ -51,6 +51,14 @@ class OrderCreationFailed(ParkingPermitBaseException):
 
 
 class UpdatePermitError(ParkingPermitBaseException):
+    pass
+
+
+class CreatePermitError(ParkingPermitBaseException):
+    pass
+
+
+class EndPermitError(ParkingPermitBaseException):
     pass
 
 
@@ -75,4 +83,12 @@ class TraficomFetchVehicleError(ParkingPermitBaseException):
 
 
 class DVVIntegrationError(ParkingPermitBaseException):
+    pass
+
+
+class SearchError(ParkingPermitBaseException):
+    pass
+
+
+class TemporaryVehicleValidationError(ParkingPermitBaseException):
     pass

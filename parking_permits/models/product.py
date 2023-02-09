@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.exceptions import CreateTalpaProductError, ProductCatalogError
 
 from ..utils import diff_months_ceil, find_next_date
-from .mixins import TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
 logger = logging.getLogger("db")
@@ -99,7 +99,7 @@ class ProductQuerySet(models.QuerySet):
         return products_with_quantities
 
 
-class Product(TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin):
+class Product(TimestampedModelMixin, UserStampedModelMixin):
     talpa_product_id = models.UUIDField(
         _("Talpa product id"),
         unique=True,
@@ -180,7 +180,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin, UUIDPrimaryKeyMixin)
         }
         response = requests.post(
             settings.TALPA_PRODUCT_EXPERIENCE_API,
-            data=json.dumps(data),
+            data=json.dumps(data, default=str),
             headers=headers,
         )
         if response.status_code == 201:

@@ -1,16 +1,15 @@
 import json
 import logging
-from collections import defaultdict
 
+import numpy as np
 import requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed
-from parking_permits.models.order import OrderType
-from parking_permits.utils import date_time_to_utc
+from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
 
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
@@ -26,36 +25,37 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def _get_label(cls, permit, permit_index, has_multiple_permit):
+    def _get_label(cls, permit):
         registration_number = permit.vehicle.registration_number
         manufacturer = permit.vehicle.manufacturer
         model = permit.vehicle.model
-        car_info = f"{registration_number} {manufacturer} {model}"
-        permit_info = f"{permit_index + 1}. Ajoneuvo, "
-        return (permit_info + car_info) if has_multiple_permit else car_info
+        car_info = f"Ajoneuvo: {registration_number} {manufacturer} {model}"
+        return car_info
 
     @classmethod
-    def _get_product_description(cls, product):
-        start_time = product.start_date.strftime(DATE_FORMAT)
-        end_time = product.end_date.strftime(DATE_FORMAT)
-        return f"{start_time} - {end_time}"
+    def _get_product_description(cls, order_item):
+        if order_item.start_date and order_item.end_date:
+            start_time = order_item.start_date.strftime(DATE_FORMAT)
+            end_time = order_item.end_date.strftime(DATE_FORMAT)
+            return f"{start_time} - {end_time}"
+        return ""
 
     @classmethod
     def _create_item_data(cls, order, order_item):
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
-            "productDescription": cls._get_product_description(order_item.product),
+            "productDescription": cls._get_product_description(order_item),
             "unit": "kk",
             "startDate": date_time_to_utc(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "priceNet": float(order_item.payment_unit_price_net),
-            "priceVat": float(order_item.payment_unit_price_vat),
-            "priceGross": float(order_item.payment_unit_price),
-            "vatPercentage": float(order_item.vat_percentage),
-            "rowPriceNet": float(order_item.total_payment_price_net),
-            "rowPriceVat": float(order_item.total_payment_price_vat),
-            "rowPriceTotal": float(order_item.total_payment_price),
+            "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
+            "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
+            "priceGross": cls.round_up(float(order_item.payment_unit_price)),
+            "vatPercentage": cls.round_int(float(order_item.vat_percentage)),
+            "rowPriceNet": cls.round_up(float(order_item.total_payment_price_net)),
+            "rowPriceVat": cls.round_up(float(order_item.total_payment_price_vat)),
+            "rowPriceTotal": cls.round_up(float(order_item.total_payment_price)),
             "meta": [
                 {
                     "key": "sourceOrderItemId",
@@ -65,7 +65,7 @@ class TalpaOrderManager:
                 },
             ],
         }
-        if order.order_type == OrderType.SUBSCRIPTION:
+        if order_item.permit.is_open_ended:
             item.update(
                 {
                     "periodUnit": "monthly",
@@ -127,25 +127,29 @@ class TalpaOrderManager:
     @classmethod
     def _create_order_data(cls, order):
         items = []
-        order_items = order.order_items.all().select_related("product", "permit")
-        order_items_by_permit = defaultdict(list)
+        order_items = (
+            order.order_items.all()
+            .order_by("permit", "pk")
+            .select_related("product", "permit")
+        )
+        order_items_by_permit = DefaultOrderedDict(list)
         for order_item in order_items:
             order_items_by_permit[order_item.permit].append(order_item)
 
-        for permit in set([item.permit for item in order_items]):
+        for permit in sorted(
+            set([item.permit for item in order_items]),
+            key=lambda p: p.is_secondary_vehicle,
+        ):
             order_items_of_single_permit = []
             for index, order_item in enumerate(order_items_by_permit[permit]):
                 if order_item.quantity:
                     item = cls._create_item_data(order, order_item)
-                    item.update(
-                        {
-                            "productLabel": cls._get_label(
-                                order_item.permit,
-                                index,
-                                len(order_items_by_permit[permit]) > 1,
-                            ),
-                        }
-                    )
+                    if index == 0:
+                        item.update(
+                            {
+                                "productLabel": cls._get_label(order_item.permit),
+                            }
+                        )
                     order_items_of_single_permit.append(item)
 
             # Append details of permit only to the last order item of permit.
@@ -156,20 +160,27 @@ class TalpaOrderManager:
         return {
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.id),
-            "priceNet": float(order.total_payment_price_net),
-            "priceVat": float(order.total_payment_price_vat),
-            "priceTotal": float(order.total_payment_price),
+            "priceNet": cls.round_up(float(order.total_payment_price_net)),
+            "priceVat": cls.round_up(float(order.total_payment_price_vat)),
+            "priceTotal": cls.round_up(float(order.total_payment_price)),
             "customer": customer,
             "items": items,
         }
 
     @classmethod
+    def round_int(cls, v):
+        return "{:0.0f}".format(np.round(v))
+
+    @classmethod
+    def round_up(cls, v):
+        return "{:0.2f}".format(np.round(v, 3))
+
+    @classmethod
     def send_to_talpa(cls, order):
         order_data = cls._create_order_data(order)
-        logger.info(f"Sending order to talpa, order id: {order.id}")
-        response = requests.post(
-            cls.url, data=json.dumps(order_data), headers=cls.headers
-        )
+        order_data_raw = json.dumps(order_data, default=str)
+        logger.info(f"Order data sent to talpa: {order_data_raw}")
+        response = requests.post(cls.url, data=order_data_raw, headers=cls.headers)
         if response.status_code >= 300:
             logger.error(
                 f"Create talpa order failed for order {order}. Error: {response.text}"

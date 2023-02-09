@@ -3,16 +3,16 @@ from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
-from django.utils import timezone
 from django.utils import timezone as tz
+from django.utils.translation import gettext as _
 from freezegun import freeze_time
 
 from parking_permits.customer_permit import CustomerPermit
 from parking_permits.exceptions import (
     InvalidContractType,
-    InvalidUserZone,
+    InvalidUserAddress,
     NonDraftPermitUpdateError,
-    PermitCanNotBeDelete,
+    PermitCanNotBeDeleted,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -21,25 +21,27 @@ from parking_permits.models.parking_permit import (
     ParkingPermitStatus,
 )
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import VehiclePowerType
 from parking_permits.tests.factories import (
     LowEmissionCriteriaFactory,
     ParkingZoneFactory,
 )
+from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    VehicleFactory,
+    VehiclePowerTypeFactory,
+)
 
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
 CLOSED = ParkingPermitStatus.CLOSED
-PROCESSING = ParkingPermitStatus.PROCESSING
+PAYMENT_IN_PROGRESS = ParkingPermitStatus.PAYMENT_IN_PROGRESS
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 FROM = ParkingPermitStartType.FROM
 OPEN_ENDED = ContractType.OPEN_ENDED
 FIXED_PERIOD = ContractType.FIXED_PERIOD
-BENSIN = VehiclePowerType.BENSIN
 
 
 def previous_day():
@@ -58,7 +60,7 @@ def get_end_time(start, month=0):
     return tz.localtime(start + relativedelta(months=month))
 
 
-@freeze_time(timezone.make_aware(datetime(2022, 1, 7)))
+@freeze_time(tz.make_aware(datetime(2022, 1, 7)))
 class GetCustomerPermitTestCase(TestCase):
     def setUp(self):
         self.customer_a = CustomerFactory(
@@ -68,16 +70,17 @@ class GetCustomerPermitTestCase(TestCase):
             first_name="Firstname B", last_name="Lastname B"
         )
         self.zone = ParkingZoneFactory()
-        self.vehicle_a = VehicleFactory(power_type=VehiclePowerType.BENSIN)
-        self.vehicle_b = VehicleFactory(power_type=VehiclePowerType.BENSIN)
-        self.vehicle_c = VehicleFactory(power_type=VehiclePowerType.BENSIN)
+        power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
+        self.vehicle_a = VehicleFactory(power_type=power_type)
+        self.vehicle_b = VehicleFactory(power_type=power_type)
+        self.vehicle_c = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory(power_type=VehiclePowerType.BENSIN)
+        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,
@@ -106,7 +109,7 @@ class GetCustomerPermitTestCase(TestCase):
 
     def test_customer_b_should_delete_draft_permit_that_is_created_before_today(self):
         query_set = ParkingPermit.objects.filter(
-            customer=self.customer_b, status__in=[VALID, PROCESSING, DRAFT]
+            customer=self.customer_b, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
         )
         self.assertEqual(query_set.count(), 1)
         ParkingPermitFactory(
@@ -134,7 +137,7 @@ class GetCustomerPermitTestCase(TestCase):
         self.assertEqual(len(permits), 0)
 
 
-@freeze_time(timezone.make_aware(datetime(2022, 1, 7)))
+@freeze_time(tz.make_aware(datetime(2022, 1, 7)))
 class CreateCustomerPermitTestCase(TestCase):
     def setUp(self):
         self.customer_a = CustomerFactory(
@@ -148,7 +151,8 @@ class CreateCustomerPermitTestCase(TestCase):
         )
         self.customer_a_zone = self.customer_a.primary_address.zone
         self.zone = ParkingZoneFactory()
-        self.vehicle_a = VehicleFactory(power_type=BENSIN)
+        power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
+        self.vehicle_a = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
@@ -161,7 +165,7 @@ class CreateCustomerPermitTestCase(TestCase):
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory(power_type=BENSIN)
+        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,
@@ -179,8 +183,9 @@ class CreateCustomerPermitTestCase(TestCase):
         )
 
     def test_customer_a_can_not_create_permit_in_zone_outside_his_address(self):
-        with self.assertRaisesMessage(InvalidUserZone, "Invalid user zone."):
-            CustomerPermit(self.customer_a.id).create(self.zone.id, "ABC-123")
+        address = AddressFactory()
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
+            CustomerPermit(self.customer_a.id).create(address.id, "ABC-123")
 
 
 class DeleteCustomerPermitTestCase(TestCase):
@@ -189,8 +194,8 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.customer_b = CustomerFactory(first_name="Firstname B", last_name="")
 
         self.c_a_closed = ParkingPermitFactory(customer=self.customer_a, status=CLOSED)
-        self.c_a_processing = ParkingPermitFactory(
-            customer=self.customer_a, status=PROCESSING
+        self.c_a_payment_in_progress = ParkingPermitFactory(
+            customer=self.customer_a, status=PAYMENT_IN_PROGRESS
         )
         self.c_a_draft = ParkingPermitFactory(
             customer=self.customer_a, status=DRAFT, primary_vehicle=False
@@ -199,15 +204,15 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.c_b_draft = ParkingPermitFactory(customer=self.customer_b, status=DRAFT)
 
     def test_customer_a_can_not_delete_non_draft_permit(self):
-        msg = "Non draft permit can not be deleted"
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
+        msg = _("Non draft permit can not be deleted")
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_closed.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_valid.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDelete, msg):
-            CustomerPermit(self.customer_a.id).delete(self.c_a_processing.id)
+        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
+            CustomerPermit(self.customer_a.id).delete(self.c_a_payment_in_progress.id)
 
     def test_customer_a_can_delete_draft_permit(self):
         result = CustomerPermit(self.customer_a.id).delete(self.c_a_draft.id)
@@ -226,6 +231,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         self.c_a_draft = ParkingPermitFactory(
             customer=self.cus_a,
             status=DRAFT,
+            address=self.cus_a.primary_address,
             parking_zone=self.cus_a.primary_address.zone,
         )
         self.c_a_can = ParkingPermitFactory(customer=self.cus_a, status=CLOSED)
@@ -235,6 +241,7 @@ class UpdateCustomerPermitTestCase(TestCase):
             customer=self.cus_a,
             status=DRAFT,
             primary_vehicle=False,
+            address=self.cus_a.primary_address,
             parking_zone=self.cus_a.primary_address.zone,
         )
 
@@ -247,7 +254,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         data = {"consent_low_emission_accepted": True}
         self.assertEqual(self.c_a_draft.consent_low_emission_accepted, False)
         res = CustomerPermit(self.cus_a.id).update(data, self.c_a_draft.id)
-        self.assertEqual(res.consent_low_emission_accepted, True)
+        self.assertEqual(res[0].consent_low_emission_accepted, True)
 
     def test_can_not_update_consent_low_emission_accepted_for_closed(
         self,
@@ -269,38 +276,40 @@ class UpdateCustomerPermitTestCase(TestCase):
         self.assertEqual(pri.primary_vehicle, False)
         self.assertEqual(sec.primary_vehicle, True)
 
-    def test_can_not_update_zone_id_of_drafts_if_not_in_his_address(self):
-        self.zone = ParkingZoneFactory()
-        data = {"zone_id": str(self.zone.id)}
-        with self.assertRaisesMessage(InvalidUserZone, "Invalid user zone."):
+    def test_can_not_update_address_id_of_drafts_if_not_in_his_address(self):
+        address = AddressFactory()
+        data = {"address_id": str(address.id)}
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.cus_a.id).update(data)
 
-    def test_can_not_update_zone_id_of_valid_if_not_in_his_address(self):
-        data = {"zone_id": str(self.cus_b.other_address.zone.id)}
-        with self.assertRaisesMessage(InvalidUserZone, "Invalid user zone."):
+    def test_can_not_update_address_id_of_valid_if_not_in_his_address(self):
+        data = {"address_id": str(self.cus_b.other_address.id)}
+        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.cus_a.id).update(data)
 
     def test_can_update_zone_id_of_all_drafts_with_zone_that_either_of_his_address_has(
         self,
     ):
-        sec_add_zone = self.cus_a.other_address.zone
-        pri_add_zone = self.cus_a.primary_address.zone
-        data = {"zone_id": str(sec_add_zone.id)}
-        self.assertEqual(self.c_a_draft.parking_zone, pri_add_zone)
-        self.assertEqual(self.c_a_draft_sec.parking_zone, pri_add_zone)
+        sec_add_id = self.cus_a.other_address.id
+        pri_add_id = self.cus_a.primary_address.id
+        data = {"address_id": str(sec_add_id)}
+        self.assertEqual(self.c_a_draft.address_id, pri_add_id)
+        self.assertEqual(self.c_a_draft_sec.address_id, pri_add_id)
         results = CustomerPermit(self.cus_a.id).update(data)
         for result in results:
-            self.assertEqual(result.parking_zone, sec_add_zone)
+            self.assertEqual(result.address_id, str(sec_add_id))
 
-    def test_can_not_update_zone_if_it_has_processing_or_valid_primary_permit(self):
-        for status in [PROCESSING, VALID]:
+    def test_can_not_update_zone_if_it_has_payment_in_progress_or_valid_primary_permit(
+        self,
+    ):
+        for status in [PAYMENT_IN_PROGRESS, VALID]:
             self.c_a_draft.status = status
             self.c_a_draft.save(update_fields=["status"])
-            sec_add_zone = self.cus_a.other_address.zone
-            pri_add_zone = self.cus_a.primary_address.zone
-            data = {"zone_id": str(sec_add_zone.id)}
-            msg = f"You can buy permit only for zone {pri_add_zone.name}"
-            with self.assertRaisesMessage(InvalidUserZone, msg):
+            data = {"address_id": str(self.cus_a.other_address.id)}
+            msg = _("You can buy permit only for address %(primary_address)s.") % {
+                "primary_address": self.cus_a.primary_address
+            }
+            with self.assertRaisesMessage(InvalidUserAddress, msg):
                 CustomerPermit(self.cus_a.id).update(data)
 
     def test_all_draft_permit_to_have_same_immediately_start_type(self):
@@ -374,7 +383,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         )
 
         permit_id = str(secondary.id)
-        msg = "Only FIXED_PERIOD is allowed"
+        msg = _("Only %(fixed_period)s is allowed") % {"fixed_period": FIXED_PERIOD}
         with self.assertRaisesMessage(InvalidContractType, msg):
             data = {"contract_type": OPEN_ENDED}
             CustomerPermit(customer.id).update(data, permit_id=permit_id)
@@ -389,12 +398,12 @@ class UpdateCustomerPermitTestCase(TestCase):
         permit = ParkingPermitFactory(customer=customer, status=VALID)
         data = {"contract_type": FIXED_PERIOD}
         permit_id = str(permit.id)
-        msg = "This is not a draft permit and can not be edited"
+        msg = _("This is not a draft permit and can not be edited")
         with self.assertRaisesMessage(NonDraftPermitUpdateError, msg):
             CustomerPermit(customer.id).update(data, permit_id=permit_id)
 
     def test_throw_error_for_missing_contract_type(self):
-        msg = "Contract type is required"
+        msg = _("Contract type is required")
         with self.assertRaisesMessage(InvalidContractType, msg):
             data = {"month_count": 1}
             CustomerPermit(self.cus_a.id).update(data, permit_id=str(self.c_a_draft.id))

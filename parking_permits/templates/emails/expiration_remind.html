@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Your parking permit will expire soon" %}{% endblock %}
+
+{% block content %}
+    <p>
+        {% translate "Your parking permit will expire soon. You can renew your permit by logging in to the service again." %}
+    </p>
+    {% include "emails/_permit_info.html" %}
+{% endblock %}

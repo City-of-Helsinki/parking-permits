@@ -1,22 +1,22 @@
+[![Build Status](https://dev.azure.com/City-of-Helsinki/pysakoinnin-verkkokauppa/_apis/build/status/parking-permits-backend%20Test?repoName=City-of-Helsinki%2Fparking-permits&branchName=develop)](https://dev.azure.com/City-of-Helsinki/pysakoinnin-verkkokauppa/_build/latest?definitionId=639&repoName=City-of-Helsinki%2Fparking-permits&branchName=develop)
+[![Continuous Integration](https://github.com/City-of-Helsinki/parking-permits/actions/workflows/ci.yml/badge.svg)](https://github.com/City-of-Helsinki/parking-permits/actions/workflows/ci.yml)
+[![SonarCloud Analysis](https://github.com/City-of-Helsinki/parking-permits/actions/workflows/analyze-code.yml/badge.svg)](https://github.com/City-of-Helsinki/parking-permits/actions/workflows/analyze-code.yml)
+
 # Parking Permits API
 
-Backend repository for parking permits service developed by City of Helsinki.
+Backend repository for parking permits service in City of Helsinki.
 
-Instructions in this README.md are written with an experienced Python developer in mind. For example, "docker-compose up" means you already know what docker and docker-compose are and you already have both installed locally. This helps to keep the README.md concise.
+Instructions in this README.md are written with an experienced Python developer in mind. For example,
+"docker-compose up" means you already know what docker and docker-compose are, and you already have both installed locally.
+This helps to keep the README.md concise.
 
 ## Setting up local development environment with Docker
 
-In order to create placeholder for your own environment variables file, copy and rename `.env.example` to `.env`.
+In order to create placeholder for your own environment variables file, make a local `.env.template` copy:
 
-You'll need a redhat developer account to gain access to RedHat subscriptions
-needed to run the docker image.
-
-Register at https://developers.redhat.com/register and confirm your email address.
-
-Set following environment variables in .env file:
-- BUILD_MODE=local
-- REDHAT_USERNAME=your redhat account username
-- REDHAT_PASSWORD=your redhat account password
+```bash
+$ cp .env.template .env
+```
 
 Then you can run docker image with:
 

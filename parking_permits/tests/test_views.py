@@ -36,13 +36,10 @@ class OrderViewTestCase(APITestCase):
     @override_settings(DEBUG=True)
     def test_order_view_should_update_order_and_permits_status(self):
         talpa_order_id = "D86CA61D-97E9-410A-A1E3-4894873B1B35"
+        permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+        permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         order = OrderFactory(talpa_order_id=talpa_order_id, status=OrderStatus.DRAFT)
-        permit_1 = ParkingPermitFactory(
-            order=order, status=ParkingPermitStatus.PAYMENT_IN_PROGRESS
-        )
-        permit_2 = ParkingPermitFactory(
-            order=order, status=ParkingPermitStatus.PAYMENT_IN_PROGRESS
-        )
+        order.permits.add(permit_1, permit_2)
         url = reverse("parking_permits:order-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": talpa_order_id}
         response = self.client.post(url, data)
