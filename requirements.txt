@@ -10,13 +10,13 @@ arrow==1.1.1
     # via -r requirements.in
 asgiref==3.6.0
     # via django
-cachetools==5.2.1
+cachetools==5.3.0
     # via django-helusers
 certifi==2022.12.7
     # via
     #   requests
     #   sentry-sdk
-charset-normalizer==2.1.1
+charset-normalizer==3.0.1
     # via requests
 coreapi==2.3.3
     # via drf-yasg
@@ -28,7 +28,7 @@ deprecation==2.1.0
     # via django-helusers
 dj-database-url==0.5.0
     # via -r requirements.in
-django==3.2.16
+django==3.2.17
     # via
     #   -r requirements.in
     #   django-cors-headers
@@ -71,7 +71,7 @@ ecdsa==0.18.0
     # via python-jose
 fpdf==1.7.2
     # via -r requirements.in
-future==0.18.2
+future==0.18.3
     # via pyjwkest
 graphql-core==3.2.3
     # via ariadne
@@ -87,9 +87,9 @@ itypes==1.2.0
     # via coreapi
 jinja2==3.1.2
     # via coreschema
-markupsafe==2.1.1
+markupsafe==2.1.2
     # via jinja2
-numpy==1.24.1
+numpy==1.24.2
     # via -r requirements.in
 packaging==23.0
     # via
@@ -101,9 +101,9 @@ pyasn1==0.4.8
     # via
     #   python-jose
     #   rsa
-pycryptodome==3.16.0
+pycryptodome==3.17
     # via django-searchable-encrypted-fields
-pycryptodomex==3.16.0
+pycryptodomex==3.17
     # via pyjwkest
 pyjwkest==1.4.2
     # via drf-oidc-auth
@@ -111,11 +111,11 @@ python-dateutil==2.8.2
     # via arrow
 python-jose==3.3.0
     # via django-helusers
-pytz==2022.7
+pytz==2022.7.1
     # via
     #   django
     #   drf-yasg
-requests==2.28.1
+requests==2.28.2
     # via
     #   -r requirements.in
     #   coreapi
@@ -127,7 +127,7 @@ ruamel-yaml==0.17.21
     # via drf-yasg
 ruamel-yaml-clib==0.2.7
     # via ruamel-yaml
-sentry-sdk==1.12.1
+sentry-sdk==1.15.0
     # via -r requirements.in
 six==1.16.0
     # via

@@ -12,7 +12,7 @@ distlib==0.3.6
     # via virtualenv
 filelock==3.9.0
     # via virtualenv
-identify==2.5.13
+identify==2.5.17
     # via pre-commit
 nodeenv==1.7.0
     # via pre-commit
@@ -20,7 +20,7 @@ pep517==0.13.0
     # via pip-tools
 pip-tools==6.5.1
     # via -r requirements-dev.in
-platformdirs==2.6.2
+platformdirs==3.0.0
     # via virtualenv
 pre-commit==2.12.1
     # via -r requirements-dev.in
@@ -30,7 +30,7 @@ toml==0.10.2
     # via pre-commit
 tomli==2.0.1
     # via pep517
-virtualenv==20.17.1
+virtualenv==20.19.0
     # via pre-commit
 wheel==0.38.4
     # via pip-tools
