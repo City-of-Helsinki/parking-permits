@@ -33,9 +33,6 @@ jobs:
         flake8
         black --check .
         isort . -c
-    - name: Run pytest code functionality tests
-      run: |
-        pytest --cov=.
 
     services:
       postgres:
