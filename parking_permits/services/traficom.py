@@ -1,4 +1,5 @@
 import logging
+import ssl
 import xml.etree.ElementTree as ET
 
 import requests
@@ -15,6 +16,8 @@ from parking_permits.models.vehicle import (
     VehiclePowerType,
     VehicleUser,
 )
+
+ssl.match_hostname = lambda cert, hostname: True
 
 logger = logging.getLogger("db")
 
