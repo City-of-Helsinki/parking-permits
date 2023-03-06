@@ -20,7 +20,7 @@ from helsinki_gdpr.views import (
     GDPRAPIView,
     GDPRScopesPermission,
 )
-from rest_framework import status
+from rest_framework import generics, mixins, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -38,13 +38,14 @@ from .forms import (
     ProductSearchForm,
     RefundSearchForm,
 )
-from .models import Customer, Order
+from .models import Customer, Order, Product
 from .models.common import SourceSystem
 from .models.order import OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
+    ProductSerializer,
     ResolveAvailabilityResponseSerializer,
     ResolveAvailabilitySerializer,
     ResolvePriceResponseSerializer,
@@ -74,6 +75,42 @@ audit_logger = audit.getAuditLoggerAdapter(
         "kwarg_name": "audit_msg",
     },
 )
+
+
+class ProductList(mixins.ListModelMixin, generics.GenericAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+    @swagger_auto_schema(
+        operation_description="Retrieve all products.",
+        responses={
+            200: openapi.Response(
+                "Retrieve all products.",
+                ProductSerializer,
+            )
+        },
+        tags=["Product"],
+    )
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)
+
+
+class ProductDetail(mixins.RetrieveModelMixin, generics.GenericAPIView):
+    queryset = Product.objects.all()
+    serializer_class = ProductSerializer
+
+    @swagger_auto_schema(
+        operation_description="Retrieve a single product with id.",
+        responses={
+            200: openapi.Response(
+                "Retrieve a single product with id.",
+                ProductSerializer,
+            )
+        },
+        tags=["Product"],
+    )
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
 
 
 class TalpaResolveAvailability(APIView):

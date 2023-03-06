@@ -7,6 +7,16 @@ urlpatterns = [
     path("graphql/", graphql.view, name="graphql"),
     path("admin-graphql/", graphql.admin_view, name="admin-graphql"),
     path(
+        "api/talpa/product/",
+        views.ProductList.as_view(),
+        name="product-list",
+    ),
+    path(
+        "api/talpa/product/<int:pk>/",
+        views.ProductDetail.as_view(),
+        name="product-details",
+    ),
+    path(
         "api/talpa/resolve-availability/",
         views.TalpaResolveAvailability.as_view(),
         name="talpa-availability",

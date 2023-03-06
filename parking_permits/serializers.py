@@ -1,3 +1,4 @@
+from django.conf import settings
 from rest_framework import serializers
 
 
@@ -35,6 +36,18 @@ class OrderSerializer(serializers.Serializer):
     orderId = serializers.CharField(help_text="Id of a generated order")
     eventType = serializers.ChoiceField(
         help_text="Event types", choices=["PAYMENT_PAID"], default="PAYMENT_PAID"
+    )
+
+
+class ProductSerializer(serializers.Serializer):
+    id = serializers.IntegerField(help_text="Service product id")
+    productId = serializers.CharField(
+        help_text="Shared product id", source="talpa_product_id"
+    )
+    name = serializers.CharField(help_text="Product name")
+    description = serializers.CharField(help_text="Product description")
+    namespace = serializers.CharField(
+        help_text="Product namespace", default=settings.NAMESPACE
     )
 
 

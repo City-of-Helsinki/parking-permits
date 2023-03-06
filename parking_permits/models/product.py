@@ -152,9 +152,11 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def name(self):
-        # the product name is the same for different languages
-        # so no translation needed
-        return f"Pysäköintialue {self.zone.name}"
+        return f"{self.get_type_display()}pysäköintialue {self.zone.name}"
+
+    @property
+    def description(self):
+        return f"{self.get_type_display()}pysäköintialue {self.zone.name}, {self.start_date} - {self.end_date}"
 
     def get_modified_unit_price(self, is_low_emission, is_secondary):
         price = self.unit_price
