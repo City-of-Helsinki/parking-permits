@@ -926,6 +926,7 @@ def resolve_update_product(obj, info, product_id, product):
     _product.low_emission_discount = product["low_emission_discount"]
     _product.modified_by = request.user
     _product.save()
+    _product.create_talpa_product()
     return {"success": True}
 
 
@@ -946,7 +947,7 @@ def resolve_delete_product(obj, info, product_id):
 def resolve_create_product(obj, info, product):
     request = info.context["request"]
     zone = ParkingZone.objects.get(name=product["zone"])
-    Product.objects.create(
+    product = Product.objects.create(
         type=product["type"],
         zone=zone,
         unit_price=product["unit_price"],
@@ -958,6 +959,7 @@ def resolve_create_product(obj, info, product):
         created_by=request.user,
         modified_by=request.user,
     )
+    product.create_talpa_product()
     return {"success": True}
 
 

@@ -152,9 +152,11 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def name(self):
-        # the product name is the same for different languages
-        # so no translation needed
-        return f"Pysäköintialue {self.zone.name}"
+        return f"{self.get_type_display()}pysäköintialue {self.zone.name}"
+
+    @property
+    def description(self):
+        return f"{self.get_type_display()}pysäköintialue {self.zone.name}, {self.start_date} - {self.end_date}"
 
     def get_modified_unit_price(self, is_low_emission, is_secondary):
         price = self.unit_price
@@ -163,6 +165,32 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         if is_secondary:
             price += price * self.secondary_vehicle_increase_rate
         return price
+
+    def get_merchant_id(self):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            f"{settings.TALPA_MERCHANT_EXPERIENCE_API}/list/merchants/{settings.NAMESPACE}/",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info("Talpa merchant id found")
+            data = response.json()
+            if len(data):
+                # we always assume only one merchant to exist here
+                return data["0"]["merchantId"]
+        else:
+            logger.error(
+                "Failed to get Talpa merchant id. "
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise CreateTalpaProductError(
+                "Cannot retrieve Talpa merchant id. "
+                f"Error: {response.status_code} {response.reason}."
+            )
 
     def create_talpa_product(self):
         if self.talpa_product_id:
@@ -173,6 +201,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "namespace": settings.NAMESPACE,
             "namespaceEntityId": str(self.id),
             "name": self.name,
+            "merchantId": self.get_merchant_id(),
         }
         headers = {
             "api-key": settings.TALPA_API_KEY,
