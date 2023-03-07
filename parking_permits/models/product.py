@@ -201,7 +201,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "namespace": settings.NAMESPACE,
             "namespaceEntityId": str(self.id),
             "name": self.name,
-            "merchantId": self.get_merchant_id()
+            "merchantId": self.get_merchant_id(),
         }
         headers = {
             "api-key": settings.TALPA_API_KEY,

@@ -14,6 +14,7 @@ from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
 TIME_FORMAT = "%d.%m.%Y %H:%M"
+TALPA_SUBSCRIPTION_PERIOD_UNIT = settings.TALPA_SUBSCRIPTION_PERIOD_UNIT
 
 
 class TalpaOrderManager:
@@ -68,7 +69,7 @@ class TalpaOrderManager:
         if order_item.permit.is_open_ended:
             item.update(
                 {
-                    "periodUnit": "monthly",
+                    "periodUnit": TALPA_SUBSCRIPTION_PERIOD_UNIT,
                     "periodFrequency": "1",
                 }
             )
