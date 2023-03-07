@@ -166,6 +166,32 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             price += price * self.secondary_vehicle_increase_rate
         return price
 
+    def get_merchant_id(self):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            f"{settings.TALPA_MERCHANT_EXPERIENCE_API}/list/merchants/{settings.NAMESPACE}/",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info("Talpa merchant id found")
+            data = response.json()
+            if len(data):
+                # we always assume only one merchant to exist here
+                return data["0"]["merchantId"]
+        else:
+            logger.error(
+                "Failed to get Talpa merchant id. "
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise CreateTalpaProductError(
+                "Cannot retrieve Talpa merchant id. "
+                f"Error: {response.status_code} {response.reason}."
+            )
+
     def create_talpa_product(self):
         if self.talpa_product_id:
             logger.warning("Talpa product has been created already")
@@ -175,6 +201,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "namespace": settings.NAMESPACE,
             "namespaceEntityId": str(self.id),
             "name": self.name,
+            "merchantId": self.get_merchant_id()
         }
         headers = {
             "api-key": settings.TALPA_API_KEY,
