@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-29 09:14+0200\n"
+"POT-Creation-Date: 2023-03-29 16:15+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -97,9 +97,6 @@ msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
-msgid "The validity period of secondary permit cannot exceed the primary one"
-msgstr "Toissijaisen tunnuksen aikaväli ei voi ylittää ensisijaista"
-
 #, python-format
 msgid ""
 "Cannot create permit. User already has a valid existing permit in zone "
@@ -125,8 +122,8 @@ msgstr ""
 "Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
 "(määräaikainen / jatkuvavelotteinen)"
 
-msgid "IBAN is not provided"
-msgstr "IBAN-tietoa ei annettu"
+msgid "Primary permit cannot be ended if customer has two permits"
+msgstr "Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
 
 msgid "Product search error"
 msgstr "Tuotteen hakuvirhe"
@@ -651,6 +648,14 @@ msgstr "Tunnus #%(permit_id)s päättynyt"
 msgid "Refund #%(refund_id)s created"
 msgstr "Palautus #%(refund_id)s luotu"
 
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
+msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s liitetty tunnukseen"
+
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
+msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s poistettu tunnuksesta"
+
 msgid "Description sv"
 msgstr "Kuvaus (sv)"
 
@@ -896,9 +901,12 @@ msgstr ""
 "%(registration_number)s"
 
 msgid ""
-"Could not find any driving license information for given customer from "
-"Traficom"
-msgstr "Asiakkaan ajokorttitietoja ei löydetty Traficomilta"
+"According to the Digital and Population Data Services Agency, you do not "
+"live in the Resident parking area. If you have just moved to a Resident "
+"parking area, contact Digital and Population Data Services Agency."
+msgstr ""
+"Digi- ja väestörekisteritietojen mukaan et asu pysäköintitunnusalueella. "
+"Jos olet juuri muuttanut pysäköintitunnusalueelle, ole yhteydessä DVV:hen, dvv.fi"
 
 msgid "Failed to fetch data from traficom"
 msgstr "Tietojen haku Traficomilta epäonnistui"

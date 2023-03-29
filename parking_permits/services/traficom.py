@@ -157,7 +157,10 @@ class Traficom:
         if driving_licence_et.find("ajooikeusluokat") is None:
             raise TraficomFetchVehicleError(
                 _(
-                    "Could not find any driving license information for given customer from Traficom"
+                    "According to the Digital and Population Data Services Agency, "
+                    "you do not live in the Resident parking area. "
+                    "If you have just moved to a Resident parking area, "
+                    "contact Digital and Population Data Services Agency."
                 )
             )
 
