@@ -1,6 +1,6 @@
 import logging
 import ssl
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET  # noqa: N817
 
 import requests
 from django.conf import settings

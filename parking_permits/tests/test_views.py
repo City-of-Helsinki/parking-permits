@@ -79,13 +79,13 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         )
         return customer
 
-    def assertCustomerDeleted(self):
+    def assert_customer_deleted(self):
         self.assertFalse(
             Customer.objects.filter(source_id=self.CUSTOMER_SOURCE_ID).exists()
         )
         self.assertFalse(ParkingPermit.objects.exists())
 
-    def assertCustomerNotDeleted(self):
+    def assert_customer_not_deleted(self):
         self.assertTrue(
             Customer.objects.filter(source_id=self.CUSTOMER_SOURCE_ID).exists()
         )

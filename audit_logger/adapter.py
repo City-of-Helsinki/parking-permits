@@ -7,11 +7,11 @@ from audit_logger.data import AuditMessage
 from audit_logger.enums import Status
 
 
-class _MISSING_TYPE:
+class MissingType:
     """Sentinel object."""
 
 
-MISSING = _MISSING_TYPE()
+MISSING = MissingType()
 
 
 def _value_or_missing(val, default=None):
