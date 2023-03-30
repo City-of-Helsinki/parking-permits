@@ -12,7 +12,10 @@ env = environ.Env(
     DJANGO_SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
-    TALPA_MERCHANT_EXPERIENCE_API=(str, ""),
+    TALPA_MERCHANT_EXPERIENCE_API=(
+        str,
+        "https://checkout-test-api.test.hel.ninja/v1/merchant/",
+    ),
     TALPA_PRODUCT_EXPERIENCE_API=(str, ""),
     TALPA_ORDER_EXPERIENCE_API=(str, ""),
     TALPA_SUBSCRIPTION_PERIOD_UNIT=(str, "monthly"),
