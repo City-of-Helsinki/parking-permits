@@ -157,7 +157,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 204)
-            self.assertCustomerDeleted()
+            self.assert_customer_deleted()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_be_forbidden_when_using_wrong_scope(self, req_mock):
@@ -172,7 +172,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 403)
-            self.assertCustomerNotDeleted()
+            self.assert_customer_not_deleted()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_be_forbidden_if_customer_cannot_be_deleted(
@@ -194,7 +194,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 403)
-            self.assertCustomerNotDeleted()
+            self.assert_customer_not_deleted()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_keep_profile_and_related_data_when_dry_run(
@@ -219,4 +219,4 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             for true_value in true_values:
                 response = self.client.delete(url, data={"dry_run": true_value})
                 self.assertEqual(response.status_code, 204)
-                self.assertCustomerNotDeleted()
+                self.assert_customer_not_deleted()

@@ -21,25 +21,26 @@ class CronTestCase(TestCase):
         self.customer = CustomerFactory(first_name="Firstname A", last_name="")
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=1),
+            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=-1),
+            end_time=datetime(2023, 3, 29, tzinfo=tz.utc),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=1),
+            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=-1),
+            end_time=datetime(2023, 3, 29, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
 
+    @freeze_time(tz.make_aware(datetime(2023, 3, 30)))
     def test_automatic_expiration_of_older_permits(self):
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
         draft_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.DRAFT)
@@ -76,30 +77,31 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
         self.customer = CustomerFactory(first_name="Firstname A", last_name="")
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=1),
+            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(weeks=1),
+            end_time=datetime(2023, 4, 6, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=-1),
+            end_time=datetime(2023, 3, 30, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(weeks=2),
+            end_time=datetime(2023, 4, 13, tzinfo=tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=tz.localdate(tz.now()) + tz.timedelta(days=1),
+            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
             status=ParkingPermitStatus.CLOSED,
         )
 
+    @freeze_time(tz.make_aware(datetime(2023, 3, 30)))
     @patch("parking_permits.services.mail.send_permit_email")
     def test_automatic_expiration_remind_targets(self, mock_method):
         mock_method.return_value = None
