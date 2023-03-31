@@ -63,6 +63,7 @@ type TemporaryVehicleNode {
 type PermitNode {
   id: ID!
   zone: ID!
+  address: AddressNode
   talpaOrderId: String
   receiptUrl: String
   subscriptionId: String
