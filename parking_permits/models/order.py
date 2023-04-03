@@ -267,6 +267,9 @@ class Order(SerializableMixin, TimestampedModelMixin):
         _("Talpa order id"), unique=True, editable=False, null=True, blank=True
     )
     talpa_checkout_url = models.URLField(_("Talpa checkout url"), blank=True)
+    talpa_logged_in_checkout_url = models.URLField(
+        _("Talpa logged in checkout url"), blank=True
+    )
     talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
     payment_type = models.CharField(
         _("Payment type"),

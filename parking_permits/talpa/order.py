@@ -160,7 +160,7 @@ class TalpaOrderManager:
         customer = cls._create_customer_data(order.customer)
         return {
             "namespace": settings.NAMESPACE,
-            "user": str(order.customer.id),
+            "user": str(order.customer.user.uuid),
             "priceNet": cls.round_up(float(order.total_payment_price_net)),
             "priceVat": cls.round_up(float(order.total_payment_price_vat)),
             "priceTotal": cls.round_up(float(order.total_payment_price)),
@@ -197,6 +197,9 @@ class TalpaOrderManager:
             order.talpa_order_id = response_data.get("orderId")
             order.talpa_subscription_id = response_data.get("subscriptionId")
             order.talpa_checkout_url = response_data.get("checkoutUrl")
+            order.talpa_logged_in_checkout_url = response_data.get(
+                "loggedInCheckoutUrl"
+            )
             order.talpa_receipt_url = response_data.get("receiptUrl")
             order.save()
             talpa_order_item_id_mapping = {
@@ -208,4 +211,4 @@ class TalpaOrderManager:
                     str(order_item.id)
                 )
                 order_item.save()
-        return response_data.get("checkoutUrl")
+        return response_data.get("loggedInCheckoutUrl")
