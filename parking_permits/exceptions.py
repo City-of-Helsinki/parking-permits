@@ -46,6 +46,10 @@ class CreateTalpaProductError(ParkingPermitBaseException):
     pass
 
 
+class SetTalpaFlowStepsError(ParkingPermitBaseException):
+    pass
+
+
 class OrderCreationFailed(ParkingPermitBaseException):
     pass
 

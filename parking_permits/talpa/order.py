@@ -8,7 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.exceptions import OrderCreationFailed
+from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
 from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
 
 logger = logging.getLogger("db")
@@ -177,6 +177,35 @@ class TalpaOrderManager:
         return "{:0.2f}".format(np.round(v, 3))
 
     @classmethod
+    def set_flow_steps(cls, order_id, user_id):
+        data = {
+            "activeStep": 4,
+            "totalSteps": 7,
+        }
+        headers = {
+            "user": user_id,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}{order_id}/flowSteps",
+            data=json.dumps(data, default=str),
+            headers=headers,
+        )
+
+        if response.status_code == 200:
+            logger.info("Talpa flow steps set successfully")
+        else:
+            logger.error(
+                "Failed to set Talpa flow steps."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise SetTalpaFlowStepsError(
+                "Cannot set Talpa flow steps."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @classmethod
     def send_to_talpa(cls, order):
         order_data = cls._create_order_data(order)
         order_data_raw = json.dumps(order_data, default=str)
@@ -211,4 +240,7 @@ class TalpaOrderManager:
                     str(order_item.id)
                 )
                 order_item.save()
+
+        cls.set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
+
         return response_data.get("loggedInCheckoutUrl")
