@@ -923,7 +923,9 @@ def resolve_update_product(obj, info, product_id, product):
     _product.start_date = product["start_date"]
     _product.end_date = product["end_date"]
     _product.vat_percentage = product["vat_percentage"]
-    _product.low_emission_discount = product["low_emission_discount"]
+    _product.low_emission_discount_percentage = product[
+        "low_emission_discount_percentage"
+    ]
     _product.modified_by = request.user
     _product.save()
     _product.create_talpa_product()
@@ -955,7 +957,7 @@ def resolve_create_product(obj, info, product):
         start_date=product["start_date"],
         end_date=product["end_date"],
         vat=product["vat_percentage"] / 100,
-        low_emission_discount=product["low_emission_discount"],
+        low_emission_discount=product["low_emission_discount_percentage"] / 100,
         created_by=request.user,
         modified_by=request.user,
     )

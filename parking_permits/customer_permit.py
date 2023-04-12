@@ -7,11 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from .constants import (
-    LOW_EMISSION_DISCOUNT,
-    SECONDARY_VEHICLE_PRICE_INCREASE,
-    EventFields,
-)
+from .constants import SECONDARY_VEHICLE_PRICE_INCREASE, EventFields
 from .exceptions import (
     DuplicatePermit,
     InvalidContractType,
@@ -419,7 +415,7 @@ class CustomerPermit:
             unit_price += increase * unit_price
 
         if permit.vehicle.is_low_emission:
-            discount = decimal.Decimal(LOW_EMISSION_DISCOUNT) / 100
+            discount = product.low_emission_discount
             unit_price -= discount * unit_price
 
         product.quantity = quantity

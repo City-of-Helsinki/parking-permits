@@ -13,6 +13,7 @@ type ProductNode {
   vatPercentage: Float!
   zone: String!
   lowEmissionDiscount: Float!
+  lowEmissionDiscountPercentage: Float!
   secondaryVehicleIncreaseRate: Float!
   modifiedAt: String
   modifiedBy: String
@@ -486,7 +487,7 @@ input ProductInput {
   startDate: String!
   endDate: String!
   vatPercentage: Float!
-  lowEmissionDiscount: Float!
+  lowEmissionDiscountPercentage: Float!
 }
 
 input RefundInput {

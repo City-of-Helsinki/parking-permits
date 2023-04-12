@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -16,7 +16,12 @@ class Command(BaseCommand):
     help = "Create test low emission criteria"
 
     def add_arguments(self, parser):
-        parser.add_argument("--year", type=int, default=datetime.now().year)
+        parser.add_argument(
+            "--start_date", type=str, default="%s-01-01" % datetime.now().year
+        )
+        parser.add_argument(
+            "--end_date", type=str, default="%s-12-31" % datetime.now().year
+        )
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -24,8 +29,8 @@ class Command(BaseCommand):
             self.stdout.write("Cannot create test data in production environment")
             return
 
-        start_date = date(options["year"], 1, 1)
-        end_date = date(options["year"], 12, 31)
+        start_date = datetime.strptime(options["start_date"], "%Y-%m-%d").date()
+        end_date = datetime.strptime(options["end_date"], "%Y-%m-%d").date()
         LowEmissionCriteria.objects.get_or_create(
             start_date=start_date,
             end_date=end_date,

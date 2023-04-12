@@ -10,26 +10,45 @@ class Command(BaseCommand):
         call_command("create_test_address")
         call_command(
             "create_parking_zone_products",
-            year=2021,
+            start_date="2023-01-01",
+            end_date="2023-05-31",
         )
         call_command(
             "create_parking_zone_products",
-            year=2022,
+            start_date="2023-06-01",
+            end_date="2023-11-30",
+            price_increment_factor_old_zone=1.5,
+            price_increment_factor_new_zone=2.0,
+            low_emission_discount_old_zone=0.3333,
+            low_emission_discount_new_zone=0.25,
         )
         call_command(
             "create_parking_zone_products",
-            year=2023,
+            start_date="2023-12-01",
+            end_date="2026-12-31",
+            price_increment_factor_old_zone=2.0,
+            price_increment_factor_new_zone=3.0,
+            low_emission_discount_old_zone=0.25,
+            low_emission_discount_new_zone=0.1666,
         )
         call_command(
             "create_low_emission_criteria",
-            year=2021,
+            start_date="2023-01-01",
+            end_date="2023-12-31",
         )
         call_command(
             "create_low_emission_criteria",
-            year=2022,
+            start_date="2024-01-01",
+            end_date="2024-12-31",
         )
         call_command(
             "create_low_emission_criteria",
-            year=2023,
+            start_date="2025-01-01",
+            end_date="2025-12-31",
+        )
+        call_command(
+            "create_low_emission_criteria",
+            start_date="2026-01-01",
+            end_date="2026-12-31",
         )
         call_command("create_group_mapping")
