@@ -40,7 +40,9 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         _("National identification number"), max_length=50, blank=True
     )
     national_id_number = fields.SearchField(
-        _("National identification number"), encrypted_field_name="_national_id_number"
+        _("National identification number"),
+        encrypted_field_name="_national_id_number",
+        unique=True,
     )
     primary_address = models.ForeignKey(
         "Address",
