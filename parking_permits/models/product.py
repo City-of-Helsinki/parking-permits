@@ -127,7 +127,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     low_emission_discount = models.DecimalField(
-        _("Low emission discount"), max_digits=4, decimal_places=2
+        _("Low emission discount"), max_digits=6, decimal_places=4
     )
     objects = ProductQuerySet.as_manager()
 
@@ -149,6 +149,14 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     @vat_percentage.setter
     def vat_percentage(self, value):
         self.vat = value / 100
+
+    @property
+    def low_emission_discount_percentage(self):
+        return self.low_emission_discount * 100
+
+    @low_emission_discount_percentage.setter
+    def low_emission_discount_percentage(self, value):
+        self.low_emission_discount = value / 100
 
     @property
     def name(self):
