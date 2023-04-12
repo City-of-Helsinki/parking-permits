@@ -12,7 +12,6 @@ from parking_permits.models import (
     OrderItem,
     ParkingPermit,
     ParkingZone,
-    Price,
     Product,
     Refund,
     TemporaryVehicle,
@@ -116,12 +115,6 @@ class ParkingPermitAdmin(admin.ModelAdmin):
 class ParkingZoneAdmin(admin.OSMGeoAdmin):
     list_display = ("id", "name", "description", "description_sv")
     ordering = ("name",)
-
-
-@admin.register(Price)
-class PriceAdmin(admin.ModelAdmin):
-    list_display = ("id", "zone", "price", "year", "type")
-    list_select_related = ("zone",)
 
 
 @admin.register(Vehicle)

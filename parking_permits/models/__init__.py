@@ -7,7 +7,6 @@ from .driving_licence import DrivingLicence
 from .order import Order, OrderItem
 from .parking_permit import ParkingPermit
 from .parking_zone import ParkingZone
-from .price import Price
 from .product import Product
 from .refund import Refund
 from .temporary_vehicle import TemporaryVehicle
@@ -23,7 +22,6 @@ __all__ = [
     "LowEmissionCriteria",
     "ParkingPermit",
     "ParkingZone",
-    "Price",
     "Vehicle",
     "Refund",
     "Product",
