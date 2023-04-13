@@ -1,7 +1,7 @@
 import logging
 
+from django.conf import settings
 from django.db import models, transaction
-from django.utils import timezone
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
@@ -87,10 +87,17 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_permits(permits)
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
+        payment_period = settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
+        talpa_last_valid_purchase_time = (
+            tz.localtime(tz.now() + tz.timedelta(minutes=payment_period))
+            if status != OrderStatus.CONFIRMED
+            else None
+        )
         order = Order.objects.create(
             customer=permits[0].customer,
             status=status,
             paid_time=paid_time,
+            talpa_last_valid_purchase_time=talpa_last_valid_purchase_time,
         )
 
         for permit in permits:
@@ -102,7 +109,7 @@ class OrderManager(SerializableMixin.SerializableManager):
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
-                        end_date = timezone.localdate(permit.current_period_end_time)
+                        end_date = tz.localdate(permit.current_period_end_time)
                     OrderItem.objects.create(
                         order=order,
                         product=product,
@@ -271,6 +278,9 @@ class Order(SerializableMixin, TimestampedModelMixin):
         _("Talpa logged in checkout url"), blank=True
     )
     talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
+    talpa_last_valid_purchase_time = models.DateTimeField(
+        _("Talpa last valid purchase time"), blank=True, null=True
+    )
     payment_type = models.CharField(
         _("Payment type"),
         max_length=50,

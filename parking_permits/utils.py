@@ -7,7 +7,7 @@ from itertools import chain
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.db import models
-from django.utils import timezone
+from django.utils import timezone as tz
 from graphql import GraphQLResolveInfo
 from pytz import utc
 
@@ -75,7 +75,7 @@ def diff_months_ceil(start_date, end_date):
 
 def get_end_time(start_time, diff_months):
     end_time = start_time + relativedelta(months=diff_months, days=-1)
-    return timezone.make_aware(
+    return tz.make_aware(
         end_time.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
     )
 
@@ -106,6 +106,12 @@ def find_next_date(dt, day):
 def date_time_to_utc(dt):
     return (
         dt.replace(microsecond=0).astimezone(utc).replace(tzinfo=None).isoformat() + "Z"
+    )
+
+
+def format_local_time(dt):
+    return (
+        tz.localtime(dt).replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
     )
 
 

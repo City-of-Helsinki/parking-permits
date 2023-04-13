@@ -9,7 +9,11 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
-from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
+from parking_permits.utils import (
+    DefaultOrderedDict,
+    date_time_to_utc,
+    format_local_time,
+)
 
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
@@ -158,9 +162,15 @@ class TalpaOrderManager:
             items += order_items_of_single_permit
 
         customer = cls._create_customer_data(order.customer)
+        last_valid_purchase_date_time = (
+            format_local_time(order.talpa_last_valid_purchase_time)
+            if order.talpa_last_valid_purchase_time
+            else ""
+        )
         return {
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.user.uuid),
+            "lastValidPurchaseDateTime": last_valid_purchase_date_time,
             "priceNet": cls.round_up(float(order.total_payment_price_net)),
             "priceVat": cls.round_up(float(order.total_payment_price_vat)),
             "priceTotal": cls.round_up(float(order.total_payment_price)),

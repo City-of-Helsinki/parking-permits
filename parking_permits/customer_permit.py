@@ -158,6 +158,24 @@ class CustomerPermit:
                 if product.quantity:
                     products.append(product)
             permit.products = products
+
+            # automatically change permit status to draft if payment is not completed in configured time
+            # (default 20 minutes)
+            payment_wait_time = (
+                settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
+                + settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
+            )
+            if (
+                permit.status == PAYMENT_IN_PROGRESS
+                and permit.latest_order
+                and tz.localtime(
+                    permit.latest_order.talpa_last_valid_purchase_time
+                    + tz.timedelta(minutes=payment_wait_time)
+                )
+                < tz.now()
+            ):
+                permit.status = DRAFT
+                permit.save()
             permits.append(permit)
         return permits
 
