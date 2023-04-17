@@ -42,6 +42,7 @@ django==3.2.18
     #   django-db-logger
     #   django-extensions
     #   django-helusers
+    #   django-searchable-encrypted-fields
     #   djangorestframework
     #   drf-oidc-auth
     #   drf-yasg
@@ -60,6 +61,8 @@ django-helusers==0.8.1
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
+django-searchable-encrypted-fields==0.2.1
+    # via -r requirements.in
 djangorestframework==3.14.0
     # via
     #   -r requirements.in
@@ -106,6 +109,8 @@ pyasn1==0.4.8
     # via
     #   python-jose
     #   rsa
+pycryptodome==3.17
+    # via django-searchable-encrypted-fields
 pycryptodomex==3.17
     # via pyjwkest
 pyjwkest==1.4.2

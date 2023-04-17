@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from encrypted_fields import fields
 from helsinki_gdpr.models import SerializableMixin
 
 from ..services.traficom import Traficom
@@ -36,12 +35,11 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     )
     first_name = models.CharField(_("First name"), max_length=32, blank=True)
     last_name = models.CharField(_("Last name"), max_length=32, blank=True)
-    _national_id_number = fields.EncryptedCharField(
-        _("National identification number"), max_length=50, blank=True
-    )
-    national_id_number = fields.SearchField(
+    national_id_number = models.CharField(
         _("National identification number"),
-        encrypted_field_name="_national_id_number",
+        max_length=50,
+        null=True,
+        blank=True,
         unique=True,
     )
     primary_address = models.ForeignKey(
@@ -118,7 +116,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     def is_user_of_vehicle(self, vehicle):
         if not settings.TRAFICOM_CHECK:
             return True
-        users_nin = [user._national_id_number for user in vehicle.users.all()]
+        users_nin = [user.national_id_number for user in vehicle.users.all()]
         return self.national_id_number in users_nin
 
     def fetch_driving_licence_detail(self):

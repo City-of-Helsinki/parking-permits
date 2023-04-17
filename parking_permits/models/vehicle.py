@@ -2,7 +2,6 @@ import arrow
 from django.contrib.gis.db import models
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
-from encrypted_fields import fields
 
 from .mixins import TimestampedModelMixin
 
@@ -108,9 +107,12 @@ class LowEmissionCriteria(TimestampedModelMixin):
 
 
 class VehicleUser(models.Model):
-    _national_id_number = fields.EncryptedCharField(max_length=50, blank=True)
-    national_id_number = fields.SearchField(
-        _("National identification number"), encrypted_field_name="_national_id_number"
+    national_id_number = models.CharField(
+        _("National identification number"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
     )
 
     class Meta:
