@@ -5,10 +5,11 @@ import numpy as np
 import requests
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
+from parking_permits.models.order import OrderPaymentType
 from parking_permits.utils import (
     DefaultOrderedDict,
     date_time_to_utc,
@@ -81,7 +82,7 @@ class TalpaOrderManager:
 
     @classmethod
     def _append_detail_meta(cls, item, permit):
-        start_time = timezone.localtime(permit.start_time).strftime(DATE_FORMAT)
+        start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
         item["meta"] += [
             {"key": "permitId", "value": str(permit.id), "visibleInCheckout": False},
             {
@@ -109,7 +110,7 @@ class TalpaOrderManager:
             },
         ]
         if permit.end_time:
-            end_time = timezone.localtime(permit.end_time).strftime(TIME_FORMAT)
+            end_time = tz.localtime(permit.end_time).strftime(TIME_FORMAT)
             item["meta"].append(
                 {
                     "key": "endDate",
@@ -187,7 +188,7 @@ class TalpaOrderManager:
         return "{:0.2f}".format(np.round(v, 3))
 
     @classmethod
-    def set_flow_steps(cls, order_id, user_id):
+    def _set_flow_steps(cls, order_id, user_id):
         data = {
             "activeStep": 4,
             "totalSteps": 7,
@@ -216,7 +217,17 @@ class TalpaOrderManager:
             )
 
     @classmethod
+    def _set_order_details(cls, order):
+        payment_period = settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
+        order.talpa_last_valid_purchase_time = tz.localtime(
+            tz.now() + tz.timedelta(minutes=payment_period)
+        )
+        order.payment_type = OrderPaymentType.ONLINE_PAYMENT
+        order.save(update_fields=["talpa_last_valid_purchase_time", "payment_type"])
+
+    @classmethod
     def send_to_talpa(cls, order):
+        cls._set_order_details(order)
         order_data = cls._create_order_data(order)
         order_data_raw = json.dumps(order_data, default=str)
         logger.info(f"Order data sent to talpa: {order_data_raw}")
@@ -251,6 +262,6 @@ class TalpaOrderManager:
                 )
                 order_item.save()
 
-        cls.set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
+        cls._set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
 
         return response_data.get("loggedInCheckoutUrl")

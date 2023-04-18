@@ -1,6 +1,5 @@
 import logging
 
-from django.conf import settings
 from django.db import models, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -87,17 +86,10 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_permits(permits)
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
-        payment_period = settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
-        talpa_last_valid_purchase_time = (
-            tz.localtime(tz.now() + tz.timedelta(minutes=payment_period))
-            if status != OrderStatus.CONFIRMED
-            else None
-        )
         order = Order.objects.create(
             customer=permits[0].customer,
             status=status,
             paid_time=paid_time,
-            talpa_last_valid_purchase_time=talpa_last_valid_purchase_time,
         )
 
         for permit in permits:
