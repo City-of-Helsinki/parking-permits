@@ -28,6 +28,10 @@ def _format_datetime(dt, default=""):
     return tz.localtime(dt).strftime(DATETIME_FORMAT) if dt else default
 
 
+def _format_percentage(value, default=""):
+    return "%.2f" % value if value else default
+
+
 def _get_permit_row(permit):
     customer = permit.customer
     vehicle = permit.vehicle
@@ -56,23 +60,20 @@ def _get_order_row(order):
             [permit.vehicle.registration_number for permit in permits]
         )
         zone = permits[0].parking_zone.name
-        address = str(permits[0].address)
         permit_type = permits[0].get_type_display()
     else:
         reg_numbers = "-"
         zone = "-"
-        address = "-"
         permit_type = "-"
 
     return [
         name,
         reg_numbers,
         zone,
-        address,
         permit_type,
         order.id,
         _format_datetime(order.paid_time, "-"),
-        order.total_price,
+        order.total_payment_price,
     ]
 
 
@@ -94,7 +95,8 @@ def _get_product_row(product):
         product.get_type_display(),
         product.zone.name,
         product.unit_price,
-        product.vat,
+        _format_percentage(product.low_emission_discount_percentage, "-"),
+        _format_percentage(product.vat_percentage, "-"),
         valid_period,
         _format_datetime(product.modified_at),
         product.modified_by,
@@ -133,10 +135,10 @@ ORDER_HEADERS = [
     _("Name"),
     _("Registration number"),
     _("Parking zone"),
-    _("Address"),
     _("Permit type"),
     _("Order number"),
     _("Paid time"),
+    _("Amount"),
 ]
 
 REFUND_HEADERS = [
@@ -150,8 +152,9 @@ REFUND_HEADERS = [
 PRODUCT_HEADERS = [
     _("Product type"),
     _("Parking zone"),
-    _("Price"),
-    _("VAT"),
+    _("Price") + " (€)",
+    _("Low emission discount") + " (%)",
+    _("VAT") + " (%)",
     _("Validity period"),
     _("Modified at"),
     _("Modified by"),
