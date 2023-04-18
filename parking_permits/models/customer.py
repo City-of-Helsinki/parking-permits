@@ -103,6 +103,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     def full_name(self):
         return "%s %s" % (self.first_name, self.last_name)
 
+    @full_name.setter
+    def full_name(self, value):
+        self._full_name = value
+
     @property
     def age(self):
         ssn = self.national_id_number
