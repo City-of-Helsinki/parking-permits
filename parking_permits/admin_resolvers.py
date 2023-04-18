@@ -730,7 +730,7 @@ def resolve_update_resident_permit(
         if customer_total_price_change < 0:
             logger.info("Creating refund for current order")
             refund = Refund.objects.create(
-                name=str(customer),
+                name=customer.full_name,
                 order=order,
                 amount=-customer_total_price_change,
                 iban=iban,
@@ -860,7 +860,7 @@ def resolve_end_permit(
         if total_sum > 0:
             description = f"Refund for ending permit #{permit.id}"
             refund = Refund.objects.create(
-                name=str(permit.customer),
+                name=permit.customer.full_name,
                 order=order,
                 amount=total_sum,
                 iban=iban,

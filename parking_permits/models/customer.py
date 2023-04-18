@@ -100,6 +100,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         return "%s" % self.national_id_number
 
     @property
+    def full_name(self):
+        return "%s %s" % (self.first_name, self.last_name)
+
+    @property
     def age(self):
         ssn = self.national_id_number
         key_centuries = {"+": "18", "-": "19", "A": "20"}

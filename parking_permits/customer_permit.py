@@ -362,7 +362,7 @@ class CustomerPermit:
                 order = first_permit.latest_order
             if total_sum > 0:
                 refund = Refund.objects.create(
-                    name=str(self.customer),
+                    name=self.customer.full_name,
                     order=order,
                     amount=total_sum,
                     iban=iban,

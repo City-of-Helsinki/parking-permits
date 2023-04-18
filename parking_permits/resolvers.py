@@ -408,13 +408,13 @@ def resolve_update_permit_vehicle(
 
         if permit_total_price_change < 0:
             refund = Refund.objects.create(
-                name=str(customer),
+                name=customer.full_name,
                 order=new_order,
                 amount=-permit_total_price_change,
                 iban=iban if iban else "",
-                description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
+                description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
             )
-            logger.info(f"Refund for updating permits zone created: {refund}")
+            logger.info(f"Refund for updating permits created: {refund}")
             send_refund_email(RefundEmailType.CREATED, customer, refund)
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
@@ -624,7 +624,7 @@ def resolve_change_address(
             # create refund for each order
             if order_total_price_change < 0:
                 refund = Refund.objects.create(
-                    name=str(customer),
+                    name=customer.full_name,
                     order=order,
                     amount=-order_total_price_change,
                     iban=iban if iban else "",
