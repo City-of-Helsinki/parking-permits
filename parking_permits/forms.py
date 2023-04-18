@@ -235,10 +235,6 @@ class OrderSearchForm(SearchFormBase):
             "name": ["customer__first_name", "customer__last_name"],
             "permits": ["_permit_id"],
             "parkingZone": ["_permit_parking_zone_name"],
-            "address": [
-                "_permit_address_street_name",
-                "_permit_address_street_number",
-            ],
             "permitType": ["_permit_type"],
             "id": ["id"],
             "paidTime": ["paid_time"],
@@ -250,12 +246,6 @@ class OrderSearchForm(SearchFormBase):
             qs.annotate(
                 _permit_parking_zone_name=Subquery(
                     permit.values("parking_zone__name")[:1]
-                ),
-                _permit_address_street_name=Subquery(
-                    permit.values("address__street_name")[:1]
-                ),
-                _permit_address_street_number=Subquery(
-                    permit.values("address__street_number")[:1]
                 ),
                 _permit_type=Subquery(permit.values("type")[:1]),
                 _permit_id=Subquery(permit.values("id")[:1]),

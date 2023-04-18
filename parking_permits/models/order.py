@@ -327,6 +327,10 @@ class Order(SerializableMixin, TimestampedModelMixin):
         return self.permits.all()
 
     @property
+    def order_items_content(self):
+        return self.order_items.all()
+
+    @property
     def total_price(self):
         return sum([item.total_price for item in self.order_items.all()])
 

@@ -148,6 +148,11 @@ type RefundNode {
   order: OrderNode
 }
 
+type OrderItemNode {
+  id: ID!
+  product: ProductNode!
+}
+
 type OrderNode {
   id: ID!
   totalPrice: Float!
@@ -156,6 +161,7 @@ type OrderNode {
   paidTime: String
   paymentType: String
   orderPermits: [PermitNode]
+  orderItemsContent: [OrderItemNode]
 }
 
 type PageInfo {
