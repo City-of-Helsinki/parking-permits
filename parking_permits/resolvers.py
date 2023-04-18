@@ -369,8 +369,7 @@ def resolve_update_permit_vehicle(
     request = info.context["request"]
     customer = request.user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
-    permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
-    vehicle_differ = ModelDiffer.start(permit.vehicle, fields=EventFields.VEHICLE)
+    old_registration_number = permit.vehicle.registration_number
 
     audit_msg.target = permit
     checkout_url = None
@@ -431,12 +430,10 @@ def resolve_update_permit_vehicle(
     permit.vehicle_changed_date = None
     permit.save()
 
-    permit_diff = permit_differ.stop()
-    vehicle_diff = vehicle_differ.stop()
     ParkingPermitEventFactory.make_update_permit_event(
         permit,
         created_by=request.user,
-        changes={**permit_diff, "vehicle": vehicle_diff},
+        changes={"vehicle": [old_registration_number, new_vehicle.registration_number]},
     )
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
@@ -606,10 +603,13 @@ def resolve_change_address(
             )
         else:
             new_order_status = OrderStatus.CONFIRMED
+            old_zone_name = fixed_period_permits[0].parking_zone.name
             fixed_period_permits.update(parking_zone=new_zone, address=address)
             for permit in fixed_period_permits:
                 ParkingPermitEventFactory.make_update_permit_event(
-                    permit, created_by=request.user, changes={"parking_zone": new_zone}
+                    permit,
+                    created_by=request.user,
+                    changes={"parking_zone": [old_zone_name, new_zone.name]},
                 )
 
         new_order = Order.objects.create_renewal_order(
