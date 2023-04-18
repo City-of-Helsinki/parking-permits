@@ -417,9 +417,11 @@ class CustomerPermit:
         permit.save(update_fields=keys)
         permit_diff = permit_differ.stop()
 
-        ParkingPermitEventFactory.make_update_permit_event(
-            permit, created_by=self.customer.user, changes=permit_diff
-        )
+        # Only create an event if the permit is not a draft
+        if permit.status != DRAFT:
+            ParkingPermitEventFactory.make_update_permit_event(
+                permit, created_by=self.customer.user, changes=permit_diff
+            )
 
         return permit
 
