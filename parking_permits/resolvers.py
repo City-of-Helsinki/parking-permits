@@ -403,6 +403,7 @@ def resolve_update_permit_vehicle(
             order_type=OrderType.VEHICLE_CHANGED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,
             user=request.user,
+            create_renew_order_event=permit_total_price_change > 0,
         )
 
         if permit_total_price_change < 0:
@@ -617,6 +618,7 @@ def resolve_change_address(
             order_type=OrderType.ADDRESS_CHANGED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,
             user=request.user,
+            create_renew_order_event=customer_total_price_change > 0,
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order

@@ -148,6 +148,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         status=OrderStatus.DRAFT,
         order_type=OrderType.CREATED,
         payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        create_renew_order_event=True,
         **kwargs,
     ):
         """
@@ -241,11 +242,12 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
-            ParkingPermitEventFactory.make_renew_order_event(
-                permit,
-                new_order,
-                created_by=kwargs.get("user", None),
-            )
+            if create_renew_order_event:
+                ParkingPermitEventFactory.make_renew_order_event(
+                    permit,
+                    new_order,
+                    created_by=kwargs.get("user", None),
+                )
 
         # permits should be added to new order after all
         # calculation and processing are done
