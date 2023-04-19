@@ -1,5 +1,6 @@
 import logging
 
+from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -86,13 +87,18 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_permits(permits)
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
+        first_permit = permits[0]
         order = Order.objects.create(
-            customer=permits[0].customer,
+            customer=first_permit.customer,
             status=status,
             paid_time=paid_time,
+            address_text=str(first_permit.address) if first_permit else None,
+            parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
 
         for permit in permits:
+            order.vehicles.append(permit.vehicle.registration_number)
+            order.save()
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
                 if quantity > 0:
@@ -160,17 +166,22 @@ class OrderManager(SerializableMixin.SerializableManager):
         )
         self._validate_customer_permits(customer_permits)
 
+        first_permit = customer_permits.first()
         new_order = Order.objects.create(
             customer=customer,
             status=status,
             type=order_type,
             payment_type=payment_type,
+            address_text=str(first_permit.address) if first_permit else None,
+            parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
         if order_type == OrderType.CREATED:
             new_order.paid_time = tz.now()
             new_order.save()
 
         for permit in customer_permits:
+            new_order.vehicles.append(permit.vehicle.registration_number)
+            new_order.save()
             start_date = tz.localdate(permit.next_period_start_time)
             end_date = tz.localdate(permit.end_time)
             if start_date >= end_date:
@@ -296,6 +307,13 @@ class Order(SerializableMixin, TimestampedModelMixin):
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
     permits = models.ManyToManyField(
         ParkingPermit, verbose_name=_("permits"), related_name="orders"
+    )
+    address_text = models.CharField(_("Address"), max_length=64, blank=True, null=True)
+    parking_zone_name = models.CharField(
+        _("Parking zone"), max_length=32, blank=True, null=True
+    )
+    vehicles = ArrayField(
+        models.CharField(max_length=24), verbose_name=_("Vehicles"), default=list
     )
     type = models.CharField(
         _("Order type"),

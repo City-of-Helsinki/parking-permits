@@ -300,7 +300,7 @@ class OrderSearchForm(SearchFormBase):
             has_filters = True
 
         if parking_zone:
-            qs = qs.filter(permits__parking_zone__name=parking_zone)
+            qs = qs.filter(parking_zone_name=parking_zone)
             has_filters = True
 
         if contract_types:

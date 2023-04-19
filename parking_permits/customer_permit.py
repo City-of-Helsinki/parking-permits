@@ -355,6 +355,7 @@ class CustomerPermit:
                     order_type=OrderType.CREATED,
                     payment_type=OrderPaymentType.ONLINE_PAYMENT,
                     user=user,
+                    create_renew_order_event=False,
                 )
                 total_sum = order.total_price
                 order.order_items.all().delete()

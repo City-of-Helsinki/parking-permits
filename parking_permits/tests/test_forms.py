@@ -47,13 +47,11 @@ class OrderSearchFormDistinctOrdersTestCase(TestCase):
     def test_return_only_distinct_results_on_orders_with_multiple_permits(self):
         order = OrderFactory()
 
-        # We test this by filtering by a value of something that has a many-to-one relation to the order.
-        # In this case, we'll use permits & their parking zone value.
-        parking_zone = ParkingZoneFactory(name="FOO")
-        ParkingPermitFactory(orders=[order], parking_zone=parking_zone)
-        ParkingPermitFactory(orders=[order], parking_zone=parking_zone)
+        # Create two permits for the same order and assert that the queryset returns only one result.
+        ParkingPermitFactory(orders=[order], contract_type=ContractType.OPEN_ENDED)
+        ParkingPermitFactory(orders=[order], contract_type=ContractType.OPEN_ENDED)
 
-        form = OrderSearchForm({"parking_zone": "FOO"})
+        form = OrderSearchForm({"contract_types": "OPEN_ENDED"})
         self.assertTrue(form.is_valid())
         qs = form.get_queryset()
         self.assertEqual(len(qs), 1)

@@ -160,6 +160,9 @@ type OrderNode {
   customer: CustomerNode!
   paidTime: String
   paymentType: String
+  addressText: String
+  parkingZoneName: String
+  vehicles: [String]
   orderPermits: [PermitNode]
   orderItemsContent: [OrderItemNode]
 }
