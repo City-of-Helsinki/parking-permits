@@ -32,6 +32,11 @@ class AddressAdmin(admin.OSMGeoAdmin):
         "city",
         "city_sv",
     )
+    ordering = (
+        "street_name",
+        "street_number",
+        "city",
+    )
 
 
 @admin.register(Announcement)
@@ -44,6 +49,7 @@ class AnnouncementAdmin(admin.ModelAdmin):
         "created_at",
         "created_by",
     )
+    ordering = ("-created_at",)
 
 
 @admin.register(Company)
@@ -58,6 +64,10 @@ class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
     list_display = ("__str__", "id", "first_name", "last_name", "email")
     exclude = ("_national_id_number",)
+    ordering = (
+        "first_name",
+        "last_name",
+    )
 
     def has_add_permission(self, request):
         return False
@@ -93,6 +103,7 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
         "start_date",
         "end_date",
     )
+    ordering = ("start_date",)
 
 
 @admin.register(ParkingPermit)
@@ -103,12 +114,17 @@ class ParkingPermitAdmin(admin.ModelAdmin):
         "customer",
         "vehicle",
         "parking_zone",
+        "address",
         "status",
         "start_time",
         "end_time",
         "contract_type",
     )
     list_select_related = ("customer", "vehicle", "parking_zone")
+    ordering = (
+        "customer__first_name",
+        "customer__last_name",
+    )
 
 
 @admin.register(ParkingZone)
@@ -126,6 +142,7 @@ class VehicleAdmin(admin.ModelAdmin):
         "manufacturer",
         "model",
     )
+    ordering = ("registration_number",)
 
 
 @admin.register(Refund)
@@ -140,6 +157,7 @@ class RefundAdmin(admin.ModelAdmin):
         "accepted_at",
     )
     list_select_related = ("order",)
+    ordering = ("-created_at",)
 
 
 @admin.register(Product)
@@ -150,10 +168,15 @@ class ProductAdmin(admin.ModelAdmin):
         "start_date",
         "end_date",
         "unit_price",
-        "vat_percentage",
+        "low_emission_discount_percentage",
+        "talpa_product_id",
     )
     list_select_related = ("zone",)
     readonly_fields = ("talpa_product_id",)
+    ordering = (
+        "zone__name",
+        "start_date",
+    )
 
 
 @admin.register(Order)
@@ -163,9 +186,17 @@ class OrderAdmin(admin.ModelAdmin):
         "id",
         "customer",
         "status",
+        "total_payment_price",
+        "address_text",
+        "parking_zone_name",
+        "vehicles",
     )
     list_select_related = ("customer",)
-    readonly_fields = ("talpa_order_id",)
+    readonly_fields = (
+        "talpa_order_id",
+        "total_payment_price",
+    )
+    ordering = ("-created_at",)
 
 
 @admin.register(OrderItem)
@@ -175,11 +206,12 @@ class OrderItemAdmin(admin.ModelAdmin):
         "product",
         "permit",
         "unit_price",
-        "vat_percentage",
+        "payment_unit_price",
         "quantity",
     )
     list_select_related = ("order", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
+    ordering = ("-pk",)
 
 
 @admin.register(TemporaryVehicle)
@@ -190,8 +222,10 @@ class TemporaryVehicleAdmin(admin.ModelAdmin):
         "end_time",
         "is_active",
     )
+    ordering = ("vehicle",)
 
 
 @admin.register(VehicleUser)
 class VehicleUserAdmin(admin.ModelAdmin):
     list_display = ("national_id_number",)
+    ordering = ("national_id_number",)
