@@ -146,7 +146,7 @@ six==1.16.0
     #   python-dateutil
 sniffio==1.3.0
     # via anyio
-sqlparse==0.4.3
+sqlparse==0.4.4
     # via django
 starlette==0.26.1
     # via ariadne
