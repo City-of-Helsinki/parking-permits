@@ -143,10 +143,18 @@ def parse_feature(feature):
     )
 
 
+def extract_street_number(input):
+    street_number_regex = re.compile(r"\d+")
+    street_number = street_number_regex.search(input)
+    return street_number.group(0) if street_number else ""
+
+
 def parse_street_name_and_number(street_address: str) -> tuple[str, str]:
     match = re.search(r"\D+", street_address)
     street_name = match.group().strip() if match else street_address
-    street_number = street_address[match.end() :].strip() if match else ""
+    street_number = extract_street_number(
+        street_address[match.end() :].strip() if match else ""
+    )
 
     return street_name, street_number
 

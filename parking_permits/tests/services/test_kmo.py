@@ -9,9 +9,9 @@ from parking_permits.services.kmo import parse_street_name_and_number
         ("", "", ""),
         ("Mannerheimintie", "Mannerheimintie", ""),
         ("Mannerheimintie 2", "Mannerheimintie", "2"),
-        ("Mannerheimintie 4-5", "Mannerheimintie", "4-5"),
-        ("Mannerheimintie 2 A 7", "Mannerheimintie", "2 A 7"),
-        ("Mannerheimintie 30,32", "Mannerheimintie", "30,32"),
+        ("Mannerheimintie 4-5", "Mannerheimintie", "4"),
+        ("Mannerheimintie 2 A 7", "Mannerheimintie", "2"),
+        ("Mannerheimintie 30,32", "Mannerheimintie", "30"),
     ],
 )
 def test_parse_street_name_and_number_function_returns_correct_result(

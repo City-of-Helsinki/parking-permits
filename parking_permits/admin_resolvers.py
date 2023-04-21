@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import Counter
 from copy import deepcopy
 
@@ -410,6 +411,12 @@ def update_or_create_customer_address(customer_info, permit_address):
         raise AddressError(_("Permit address does not have a valid zone"))
 
 
+def extract_street_number(input):
+    street_number_regex = re.compile(r"\d+")
+    street_number = street_number_regex.search(input)
+    return street_number.group(0) if street_number else None
+
+
 @query.field("addressSearch")
 @convert_kwargs_to_snake_case
 def resolve_address_search(obj, info, search_input):
@@ -476,11 +483,29 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
-    parking_zone = ParkingZone.objects.get(name=permit["zone"])
+    if active_permits_count == 1:
+        address_info = permit.get("address", None)
+        if address_info:
+            street_name = address_info["street_name"]
+            street_number = address_info["street_number"]
+            active_permit_address = active_permits[0].address
+            if (
+                street_name != active_permit_address.street_name
+                or extract_street_number(street_number)
+                != extract_street_number(active_permit_address.street_number)
+            ):
+                raise CreatePermitError(
+                    _(
+                        "Cannot create permit. User already has a valid existing permit in other address %(address)s."
+                    )
+                    % {"address": str(active_permit_address)}
+                )
+
     permit_address = update_or_create_address(permit.get("address", None))
     if not security_ban:
         update_or_create_customer_address(customer_info, permit_address=permit_address)
 
+    parking_zone = ParkingZone.objects.get(name=permit["zone"])
     if active_permits_count == 1:
         active_parking_zone = active_permits[0].parking_zone
         if parking_zone != active_parking_zone:
