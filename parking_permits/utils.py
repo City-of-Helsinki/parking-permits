@@ -131,26 +131,30 @@ def convert_to_snake_case(d):
 
 
 def get_permit_prices(
-    zone,
-    is_low_emission,
-    is_secondary,
+    parking_zone,
+    is_low_emission_vehicle,
+    is_secondary_permit,
     permit_start_date,
     permit_end_date,
 ):
-    products = zone.products.for_resident().for_date_range(
+    products = parking_zone.products.for_resident().for_date_range(
         permit_start_date,
         permit_end_date,
     )
+
     permit_prices = []
-    for product in products:
+    product_count = len(products) if len(products) > 1 else 0
+    for index, product in enumerate(products, start=1):
         start_date = max(product.start_date, permit_start_date)
         end_date = min(product.end_date, permit_end_date)
         quantity = diff_months_ceil(start_date, end_date)
+        if index == product_count:
+            quantity -= 1
         permit_prices.append(
             {
                 "original_unit_price": product.unit_price,
                 "unit_price": product.get_modified_unit_price(
-                    is_low_emission, is_secondary
+                    is_low_emission_vehicle, is_secondary_permit
                 ),
                 "start_date": start_date,
                 "end_date": end_date,
