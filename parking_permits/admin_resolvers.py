@@ -514,7 +514,9 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
     # when creating from Admin UI, it's considered the payment is completed
     # and the order status should be confirmed
-    Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
+    Order.objects.create_for_permits(
+        [parking_permit], status=OrderStatus.CONFIRMED, user=request.user
+    )
     try:
         parking_permit.update_parkkihubi_permit()
     except ParkkihubiPermitError:

@@ -6,11 +6,10 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from parking_permits.mixins import TimestampedModelMixin
-
 from ..exceptions import OrderCreationFailed
 from ..utils import diff_months_ceil
 from .customer import Customer
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
     ContractType,
     ParkingPermit,
@@ -27,7 +26,7 @@ class SubscriptionStatus(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
-class Subscription(SerializableMixin, TimestampedModelMixin):
+class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     customer = models.ForeignKey(
         Customer, verbose_name=_("Customer"), on_delete=models.PROTECT
     )
@@ -267,7 +266,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         return new_order
 
 
-class Order(SerializableMixin, TimestampedModelMixin):
+class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     subscription = models.ForeignKey(
         Subscription,
         verbose_name=_("Subscription"),
