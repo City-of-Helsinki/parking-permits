@@ -306,7 +306,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_range(self):
-        return self.current_period_start_time, self.current_period_end_time
+        return self.start_time, self.end_time
 
     @property
     def next_period_start_time(self):
