@@ -1229,7 +1229,13 @@ def resolve_announcement(obj, info, announcement_id):
 
 
 def post_create_announcement(announcement: Announcement):
-    customers = Customer.objects.filter(zone__in=announcement.parking_zones)
+    customer_ids = (
+        ParkingPermit.objects.filter(parking_zone__in=announcement.parking_zones)
+        .values_list("customer_id", flat=True)
+        .order_by("customer")
+        .distinct()
+    )
+    customers = Customer.objects.filter(id__in=customer_ids)
     send_announcement_email(customers, announcement)
 
 
