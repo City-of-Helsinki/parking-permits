@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-20 11:01+0300\n"
+"POT-Creation-Date: 2023-04-21 07:58+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -201,6 +201,18 @@ msgstr "Förbjuden"
 msgid "Internal Server Error"
 msgstr "Internt fel"
 
+msgid "Primary permit"
+msgstr "1. permit"
+
+msgid "Secondary permit"
+msgstr "2. permit"
+
+msgid "Online payment"
+msgstr "Online betalning"
+
+msgid "Cashier payment"
+msgstr "Kassabetalning"
+
 msgid "Name"
 msgstr "Namn"
 
@@ -210,10 +222,10 @@ msgstr "Personnummer"
 msgid "Registration number"
 msgstr "Registreringsnummer"
 
-msgid "Permanent address"
+msgid "Primary address"
 msgstr "Permanent adress"
 
-msgid "Temporary address"
+msgid "Other address"
 msgstr "Tillfällig adress"
 
 msgid "Parking zone"
@@ -224,6 +236,9 @@ msgstr "Starttid"
 
 msgid "End time"
 msgstr "Sluttid"
+
+msgid "Permit order"
+msgstr "Ordning"
 
 msgid "Status"
 msgstr "Status"
@@ -237,11 +252,20 @@ msgstr "Registreringsnummer"
 msgid "Customer"
 msgstr "Kund"
 
+msgid "Area"
+msgstr "Zone"
+
+msgid "Address"
+msgstr "Gatuadress"
+
 msgid "Permit type"
 msgstr "Permit typ"
 
 msgid "Order number"
 msgstr "Ordernummer"
+
+msgid "Order payment type"
+msgstr "Typ av betalning"
 
 msgid "Paid time"
 msgstr "Betalningstid"
@@ -282,12 +306,6 @@ msgstr "Stadsmiljösektorn"
 msgid "Permit ID"
 msgstr "Permit ID"
 
-msgid "Address"
-msgstr "Gatuadress"
-
-msgid "Area"
-msgstr "Zone"
-
 msgid "Vehicle"
 msgstr "Fordon"
 
@@ -312,9 +330,6 @@ msgstr "Ytterligare uppgifter"
 msgid "Order ID"
 msgstr "Ordernummer"
 
-msgid "Order payment type"
-msgstr "Typ av betalning"
-
 msgid "Order payment time"
 msgstr "Betald"
 
@@ -323,12 +338,6 @@ msgstr "Återbetalning"
 
 msgid "Order info"
 msgstr "Beställningsinformation"
-
-msgid "Primary permit"
-msgstr "1. permit"
-
-msgid "Secondary permit"
-msgstr "2. permit"
 
 msgid "Time created"
 msgstr "Tid skapad"
@@ -423,12 +432,6 @@ msgstr "Förnamn"
 msgid "Last name"
 msgstr "Efternamn"
 
-msgid "Primary address"
-msgstr "Permanent adress"
-
-msgid "Other address"
-msgstr "Tillfällig adress"
-
 msgid "Email"
 msgstr "E-post"
 
@@ -485,12 +488,6 @@ msgstr "Avtal"
 
 msgid "Subscriptions"
 msgstr "Avtalet"
-
-msgid "Online payment"
-msgstr "Online betalning"
-
-msgid "Cashier payment"
-msgstr "Kassabetalning"
 
 msgid "Draft"
 msgstr "Skiss"

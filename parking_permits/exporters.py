@@ -46,11 +46,16 @@ def _get_permit_row(permit):
         name,
         customer.national_id_number,
         vehicle.registration_number,
-        str(customer.primary_address) if customer.primary_address else "-",
-        str(customer.other_address) if customer.other_address else "-",
+        str(permit.address)
+        if permit.address and permit.address == customer.primary_address
+        else "-",
+        str(permit.address)
+        if permit.address and permit.address == customer.other_address
+        else "-",
         permit.parking_zone.name,
         _format_datetime(permit.start_time, "-"),
         _format_datetime(end_time, "-"),
+        _("Primary permit") if permit.primary_vehicle else _("Secondary permit"),
         permit.get_status_display(),
     ]
 
@@ -123,18 +128,19 @@ PERMIT_HEADERS = [
     _("Name"),
     _("National identification number"),
     _("Registration number"),
-    _("Permanent address"),
-    _("Temporary address"),
-    _("Parking zone"),
+    _("Primary address"),
+    _("Other address"),
+    _("Area"),
     _("Start time"),
     _("End time"),
+    _("Permit order"),
     _("Status"),
 ]
 
 
 LIMITED_PERMIT_HEADERS = [
     _("Registration number"),
-    _("Parking zone"),
+    _("Area"),
     _("Start time"),
     _("End time"),
     _("Status"),

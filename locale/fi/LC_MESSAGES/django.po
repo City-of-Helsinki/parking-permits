@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-20 11:01+0300\n"
+"POT-Creation-Date: 2023-04-21 07:58+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -206,6 +206,18 @@ msgstr "Lupa evätty"
 msgid "Internal Server Error"
 msgstr "Sisäinen virhe"
 
+msgid "Primary permit"
+msgstr "1. tunnus"
+
+msgid "Secondary permit"
+msgstr "2. tunnus"
+
+msgid "Online payment"
+msgstr "Verkkomaksu"
+
+msgid "Cashier payment"
+msgstr "Kassamaksu"
+
 msgid "Name"
 msgstr "Nimi"
 
@@ -215,11 +227,11 @@ msgstr "Henkilötunnus"
 msgid "Registration number"
 msgstr "Rekisteritunnus"
 
-msgid "Permanent address"
-msgstr "Pysyvä osoite"
+msgid "Primary address"
+msgstr "Vakituinen osoite"
 
-msgid "Temporary address"
-msgstr "Väliaikainen osoite"
+msgid "Other address"
+msgstr "Tilapäinen osoite"
 
 msgid "Parking zone"
 msgstr "Pysäköintialue"
@@ -229,6 +241,9 @@ msgstr "Alkuaika"
 
 msgid "End time"
 msgstr "Loppuaika"
+
+msgid "Permit order"
+msgstr "Järjestys"
 
 msgid "Status"
 msgstr "Tila"
@@ -242,11 +257,20 @@ msgstr "Rekisteritunnukset"
 msgid "Customer"
 msgstr "Asiakas"
 
+msgid "Area"
+msgstr "Alue"
+
+msgid "Address"
+msgstr "Osoite"
+
 msgid "Permit type"
 msgstr "Tunnustyyppi"
 
 msgid "Order number"
 msgstr "Tilausnumero"
+
+msgid "Order payment type"
+msgstr "Maksutapa"
 
 msgid "Paid time"
 msgstr "Maksuaika"
@@ -287,12 +311,6 @@ msgstr "Kaupunkiympäristö"
 msgid "Permit ID"
 msgstr "Tunniste"
 
-msgid "Address"
-msgstr "Osoite"
-
-msgid "Area"
-msgstr "Alue"
-
 msgid "Vehicle"
 msgstr "Ajoneuvo"
 
@@ -317,9 +335,6 @@ msgstr "Lisätiedot"
 msgid "Order ID"
 msgstr "Tilausnumero"
 
-msgid "Order payment type"
-msgstr "Maksutapa"
-
 msgid "Order payment time"
 msgstr "Maksuaika"
 
@@ -328,12 +343,6 @@ msgstr "Palautus"
 
 msgid "Order info"
 msgstr "Tilauksen tiedot"
-
-msgid "Primary permit"
-msgstr "1. tunnus"
-
-msgid "Secondary permit"
-msgstr "2. tunnus"
 
 msgid "Time created"
 msgstr "Luonti-aikaleima"
@@ -428,12 +437,6 @@ msgstr "Etunimi"
 msgid "Last name"
 msgstr "Sukunimi"
 
-msgid "Primary address"
-msgstr "Pysyvä osoite"
-
-msgid "Other address"
-msgstr "Tilapäinen osoite"
-
 msgid "Email"
 msgstr "Sähköposti"
 
@@ -490,12 +493,6 @@ msgstr "Sopimus"
 
 msgid "Subscriptions"
 msgstr "Sopimukset"
-
-msgid "Online payment"
-msgstr "Verkkomaksu"
-
-msgid "Cashier payment"
-msgstr "Kassamaksu"
 
 msgid "Draft"
 msgstr "Luonnos"
