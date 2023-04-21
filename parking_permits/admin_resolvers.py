@@ -303,7 +303,7 @@ def resolve_vehicle(obj, info, reg_number, national_id_number):
     vehicle = Traficom().fetch_vehicle_details(reg_number)
     if not settings.TRAFICOM_CHECK:
         return vehicle
-    users_nin = [user._national_id_number for user in vehicle.users.all()]
+    users_nin = [user.national_id_number for user in vehicle.users.all()]
     if vehicle and national_id_number in users_nin:
         return vehicle
     else:

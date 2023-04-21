@@ -63,7 +63,6 @@ class CompanyAdmin(admin.ModelAdmin):
 class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
     list_display = ("__str__", "id", "first_name", "last_name", "email")
-    exclude = ("_national_id_number",)
     ordering = (
         "first_name",
         "last_name",
