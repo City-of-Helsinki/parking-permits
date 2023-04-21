@@ -6,6 +6,7 @@ from django.utils.translation import gettext_lazy as _
 from fpdf import FPDF
 
 from parking_permits.models import Order, ParkingPermit, Product, Refund
+from parking_permits.models.order import OrderPaymentType
 
 DATETIME_FORMAT = "%-d.%-m.%Y, %H:%M"
 DATE_FORMAT = "%-d.%-m.%Y"
@@ -32,6 +33,10 @@ def _format_percentage(value, default=""):
     return "%.2f" % value if value else default
 
 
+def _format_price(value):
+    return "%.2f" % value
+
+
 def _get_permit_row(permit):
     customer = permit.customer
     vehicle = permit.vehicle
@@ -55,25 +60,29 @@ def _get_order_row(order):
     permit_ids = order.order_items.values_list("permit")
     permits = ParkingPermit.objects.filter(id__in=permit_ids)
     name = f"{customer.last_name}, {customer.first_name}"
+    permit_ids_str = ", ".join([str(permit.id) for permit in permits])
     if len(permits) > 0:
         reg_numbers = ", ".join(
             [permit.vehicle.registration_number for permit in permits]
         )
-        zone = permits[0].parking_zone.name
         permit_type = permits[0].get_type_display()
     else:
         reg_numbers = "-"
-        zone = "-"
         permit_type = "-"
 
     return [
-        name,
+        permit_ids_str,
         reg_numbers,
-        zone,
+        name,
+        order.parking_zone_name or "-",
+        order.address_text or "-",
         permit_type,
         order.id,
+        _("Online payment")
+        if order.payment_type == OrderPaymentType.ONLINE_PAYMENT
+        else _("Cashier payment"),
         _format_datetime(order.paid_time, "-"),
-        order.total_payment_price,
+        _format_price(order.total_payment_price),
     ]
 
 
@@ -132,11 +141,14 @@ LIMITED_PERMIT_HEADERS = [
 ]
 
 ORDER_HEADERS = [
-    _("Name"),
-    _("Registration number"),
-    _("Parking zone"),
+    _("Parking permits"),
+    _("Registration numbers"),
+    _("Customer"),
+    _("Area"),
+    _("Address"),
     _("Permit type"),
     _("Order number"),
+    _("Order payment type"),
     _("Paid time"),
     _("Amount"),
 ]
