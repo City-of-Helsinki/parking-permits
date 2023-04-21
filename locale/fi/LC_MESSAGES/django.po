@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-03-29 16:15+0300\n"
+"POT-Creation-Date: 2023-04-20 11:01+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -123,7 +123,8 @@ msgstr ""
 "(määräaikainen / jatkuvavelotteinen)"
 
 msgid "Primary permit cannot be ended if customer has two permits"
-msgstr "Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
+msgstr ""
+"Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
 
 msgid "Product search error"
 msgstr "Tuotteen hakuvirhe"
@@ -232,14 +233,20 @@ msgstr "Loppuaika"
 msgid "Status"
 msgstr "Tila"
 
-msgid "Address"
-msgstr "Osoite"
+msgid "Parking permits"
+msgstr "Pysäköintitunnukset"
+
+msgid "Registration numbers"
+msgstr "Rekisteritunnukset"
+
+msgid "Customer"
+msgstr "Asiakas"
 
 msgid "Permit type"
-msgstr "Pysäköintitunnuksen tyyppi"
+msgstr "Tunnustyyppi"
 
 msgid "Order number"
-msgstr "Tilauksen numero"
+msgstr "Tilausnumero"
 
 msgid "Paid time"
 msgstr "Maksuaika"
@@ -255,6 +262,9 @@ msgstr "Tuotteen tyyppi"
 
 msgid "Price"
 msgstr "Hinta"
+
+msgid "Low emission discount"
+msgstr "Päästöalennus"
 
 msgid "VAT"
 msgstr "ALV"
@@ -274,14 +284,11 @@ msgstr "Helsingin kaupunki"
 msgid "Urban Environment Division"
 msgstr "Kaupunkiympäristö"
 
-msgid "Parking permits"
-msgstr "Pysäköintitunnukset"
-
 msgid "Permit ID"
 msgstr "Tunniste"
 
-msgid "Customer"
-msgstr "Asiakas"
+msgid "Address"
+msgstr "Osoite"
 
 msgid "Area"
 msgstr "Alue"
@@ -293,7 +300,7 @@ msgid "Type"
 msgstr "Tyyppi"
 
 msgid "Resident permit"
-msgstr "Asukaspysäköintitunnus"
+msgstr "Asukastunnus"
 
 msgid "Refunds"
 msgstr "Palautukset"
@@ -311,7 +318,7 @@ msgid "Order ID"
 msgstr "Tilausnumero"
 
 msgid "Order payment type"
-msgstr "Maksutyyppi"
+msgstr "Maksutapa"
 
 msgid "Order payment time"
 msgstr "Maksuaika"
@@ -508,17 +515,26 @@ msgstr "Talpan tilauksen tunniste"
 msgid "Talpa checkout url"
 msgstr "Talpan checkoutin url"
 
+msgid "Talpa logged in checkout url"
+msgstr "Talpan sisäänkirjautuneen checkoutin url"
+
 msgid "Talpa receipt_url"
 msgstr "Talpan kuitin url"
 
+msgid "Talpa last valid purchase time"
+msgstr "Talpan viimeisin voimassa oleva ostoaika"
+
 msgid "Payment type"
-msgstr "Maksutyyppi"
+msgstr "Maksutapa"
 
 msgid "Order status"
 msgstr "Tilauksen tila"
 
 msgid "permits"
 msgstr "Pysäköintitunnukset"
+
+msgid "Vehicles"
+msgstr "Ajoneuvot"
 
 msgid "Order type"
 msgstr "Tilaustyyppi"
@@ -668,12 +684,6 @@ msgstr "Pysäköintialueet"
 msgid "Resident"
 msgstr "Asukas"
 
-msgid "Year"
-msgstr "Vuosi"
-
-msgid "Prices"
-msgstr "Hinnat"
-
 msgid "Monthly"
 msgstr "Kuukausittainen"
 
@@ -691,9 +701,6 @@ msgstr "alue"
 
 msgid "Unit"
 msgstr "Yksikkö"
-
-msgid "Low emission discount"
-msgstr "Päästöalennus"
 
 msgid "Products"
 msgstr "Tuotteet"
@@ -842,9 +849,6 @@ msgstr "Viimeisin katsastuspäivä"
 msgid "Update from traficom on"
 msgstr "Päivitetty Traficomista"
 
-msgid "Vehicles"
-msgstr "Ajoneuvot"
-
 msgid "Not a valid customer address"
 msgstr "Epäkelpo asiakkaan osoite"
 
@@ -905,8 +909,8 @@ msgid ""
 "live in the Resident parking area. If you have just moved to a Resident "
 "parking area, contact Digital and Population Data Services Agency."
 msgstr ""
-"Digi- ja väestörekisteritietojen mukaan et asu pysäköintitunnusalueella. "
-"Jos olet juuri muuttanut pysäköintitunnusalueelle, ole yhteydessä DVV:hen, dvv.fi"
+"Digi- ja väestörekisteritietojen mukaan et asu pysäköintitunnusalueella. Jos "
+"olet juuri muuttanut pysäköintitunnusalueelle, ole yhteydessä DVV:hen, dvv.fi"
 
 msgid "Failed to fetch data from traficom"
 msgstr "Tietojen haku Traficomilta epäonnistui"
