@@ -372,8 +372,14 @@ def update_or_create_vehicle(vehicle_info):
     except VehiclePowerType.DoesNotExist:
         raise ObjectNotFound(_("Vehicle power type not found"))
 
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
+
     vehicle_data = {
-        "registration_number": vehicle_info["registration_number"],
+        "registration_number": registration_number,
         "manufacturer": vehicle_info["manufacturer"],
         "model": vehicle_info["model"],
         "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
@@ -385,7 +391,7 @@ def update_or_create_vehicle(vehicle_info):
         "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(
-        registration_number=vehicle_info["registration_number"], defaults=vehicle_data
+        registration_number=registration_number, defaults=vehicle_data
     )[0]
 
 
@@ -458,7 +464,11 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         )
 
     vehicle_info = permit["vehicle"]
-    registration_number = vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
     if not registration_number:
         raise CreatePermitError(
             _("Vehicle registration number is mandatory for the permit")
@@ -649,9 +659,7 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
     if permit.customer.national_id_number != customer_info["national_id_number"]:
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
     vehicle_info = permit_info["vehicle"]
-    vehicle = Vehicle.objects.get(
-        registration_number=vehicle_info["registration_number"]
-    )
+    vehicle = update_or_create_vehicle(vehicle_info)
     is_low_emission = vehicle.is_low_emission
     parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
     price_change_list.extend(
@@ -693,7 +701,11 @@ def resolve_update_resident_permit(
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
 
     vehicle_info = permit_info["vehicle"]
-    registration_number = vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
     if not registration_number:
         raise UpdatePermitError(
             _("Vehicle registration number is mandatory for the permit")
@@ -836,9 +848,12 @@ def calculate_total_price_change(
     new_zone, permit, permit_info, total_price_change_by_order
 ):
     vehicle_info = permit_info["vehicle"]
-    vehicle = Vehicle.objects.get(
-        registration_number=vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
     )
+    vehicle = Vehicle.objects.get(registration_number=registration_number)
     is_low_emission = vehicle.is_low_emission
     price_change_list = permit.get_price_change_list(new_zone, is_low_emission)
     permit_total_price_change = sum(
