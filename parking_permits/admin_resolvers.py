@@ -34,7 +34,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
-from parking_permits.models.vehicle import is_low_emission_vehicle
+from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
 from users.models import ParkingPermitGroups
 
 from .constants import EventFields, Origin
@@ -56,6 +56,7 @@ from .exceptions import (
     PermitLimitExceeded,
     SearchError,
     TemporaryVehicleValidationError,
+    TraficomFetchVehicleError,
     UpdatePermitError,
 )
 from .forms import (
@@ -1297,6 +1298,7 @@ def add_temporary_vehicle(
     obj, info, permit_id, registration_number, start_time, end_time
 ):
     request = info.context["request"]
+    registration_number = registration_number.upper()
     has_valid_permit = ParkingPermit.objects.filter(
         vehicle__registration_number=registration_number,
         status__in=[ParkingPermitStatus.VALID, ParkingPermitStatus.PAYMENT_IN_PROGRESS],
@@ -1317,9 +1319,29 @@ def add_temporary_vehicle(
             _("Temporary vehicle start time has to be after permit start time")
         )
 
-    tmp_vehicle = Traficom().fetch_vehicle_details(
-        registration_number=registration_number
-    )
+    try:
+        tmp_vehicle = Traficom().fetch_vehicle_details(
+            registration_number=registration_number
+        )
+    except TraficomFetchVehicleError:
+        power_type, power_type_created = VehiclePowerType.objects.get_or_create(
+            identifier="01",
+            name="Bensin",
+        )
+        vehicle_details = {
+            "registration_number": registration_number,
+            "power_type": power_type,
+        }
+        vehicle_users = []
+        user, user_created = VehicleUser.objects.get_or_create(
+            national_id_number=permit.customer.national_id_number
+        )
+        vehicle_users.append(user)
+        tmp_vehicle, vehicle_created = Vehicle.objects.update_or_create(
+            registration_number=registration_number, defaults=vehicle_details
+        )
+        tmp_vehicle.users.set(vehicle_users)
+
     vehicle = TemporaryVehicle.objects.create(
         vehicle=tmp_vehicle,
         end_time=end_time,
