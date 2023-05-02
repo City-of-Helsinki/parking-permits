@@ -211,7 +211,7 @@ class OrderManager(SerializableMixin.SerializableManager):
                 period_end_date = min(product_end_date, order_item_end_date)
                 period_quantity = diff_months_ceil(period_start_date, period_end_date)
 
-                if period_start_date >= period_end_date:
+                if period_quantity and period_start_date >= period_end_date:
                     raise ValueError(
                         "Error on product date ranges or order item date ranges"
                     )
