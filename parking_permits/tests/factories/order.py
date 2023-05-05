@@ -2,9 +2,9 @@ from decimal import Decimal
 
 import factory
 
-from parking_permits.models import Order, OrderItem
+from parking_permits.models import Order, OrderItem, Subscription
 
-from ...models.order import OrderStatus
+from ...models.order import OrderStatus, SubscriptionStatus
 from .customer import CustomerFactory
 from .parking_permit import ParkingPermitFactory
 from .product import ProductFactory
@@ -32,3 +32,12 @@ class OrderItemFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = OrderItem
+
+
+class SubscriptionFactory(factory.django.DjangoModelFactory):
+    talpa_order_id = factory.Faker("uuid4")
+    talpa_subscription_id = factory.Faker("uuid4")
+    status = SubscriptionStatus.CONFIRMED
+
+    class Meta:
+        model = Subscription

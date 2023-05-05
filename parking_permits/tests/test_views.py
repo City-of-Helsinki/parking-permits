@@ -9,10 +9,10 @@ from helusers.settings import api_token_auth_settings
 from jose import jwt
 from rest_framework.test import APIClient, APITestCase
 
-from parking_permits.models.order import OrderStatus
+from parking_permits.models.order import OrderStatus, Subscription, SubscriptionStatus
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory
+from parking_permits.tests.factories.order import OrderFactory, SubscriptionFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from users.tests.factories.user import UserFactory
 
@@ -35,7 +35,7 @@ class OrderViewTestCase(APITestCase):
 
     @override_settings(DEBUG=True)
     def test_order_view_should_update_order_and_permits_status(self):
-        talpa_order_id = "D86CA61D-97E9-410A-A1E3-4894873B1B35"
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         order = OrderFactory(talpa_order_id=talpa_order_id, status=OrderStatus.DRAFT)
@@ -49,6 +49,101 @@ class OrderViewTestCase(APITestCase):
         permit_2.refresh_from_db()
         self.assertEqual(order.status, OrderStatus.CONFIRMED)
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
+
+
+class SubscriptionViewTestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_subscription_view_should_return_bad_request_if_talpa_order_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "talpaSubscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_subscription_view_should_return_bad_request_if_talpa_subscription_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "talpaOrderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
+    @override_settings(DEBUG=True)
+    def test_subscription_creation(self):
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.VALID)
+        permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.VALID)
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id, status=OrderStatus.CONFIRMED
+        )
+        order.permits.add(permit_1, permit_2)
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        subscription = Subscription.objects.get(
+            talpa_subscription_id=talpa_subscription_id
+        )
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
+        self.assertEqual(subscription.status, SubscriptionStatus.CONFIRMED)
+        order.refresh_from_db()
+        self.assertEqual(order.subscription, subscription)
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
+
+    @override_settings(DEBUG=True)
+    def test_subscription_cancellation(self):
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        permit_1 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID, customer=customer
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        order.permits.add(permit_1)
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            talpa_order_id=talpa_order_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        order.subscription = subscription
+        order.save()
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CANCELLED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
+        self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
+        order.refresh_from_db()
+        self.assertEqual(order.subscription, subscription)
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
 
 
