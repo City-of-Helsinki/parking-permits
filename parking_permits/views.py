@@ -27,7 +27,8 @@ from rest_framework.views import APIView
 import audit_logger as audit
 from audit_logger import AuditMsg
 
-from .constants import Origin
+from .constants import Origin, ParkingPermitEndType
+from .customer_permit import CustomerPermit
 from .decorators import require_preparators
 from .exceptions import ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
@@ -40,7 +41,13 @@ from .forms import (
 )
 from .models import Customer, Order, Product
 from .models.common import SourceSystem
-from .models.order import OrderPaymentType, OrderStatus, OrderType
+from .models.order import (
+    OrderPaymentType,
+    OrderStatus,
+    OrderType,
+    Subscription,
+    SubscriptionStatus,
+)
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
@@ -50,6 +57,7 @@ from .serializers import (
     ResolveAvailabilitySerializer,
     ResolvePriceResponseSerializer,
     RightOfPurchaseResponseSerializer,
+    SubscriptionSerializer,
     TalpaPayloadSerializer,
 )
 from .services.mail import (
@@ -320,6 +328,68 @@ class OrderView(APIView):
 
         logger.info(f"{order} is confirmed and order permits are set to VALID ")
         return Response({"message": "Order received"}, status=200)
+
+
+class SubscriptionView(APIView):
+    @swagger_auto_schema(
+        operation_description="Used as an webhook by Talpa in order to send a subscription notification.",
+        request_body=SubscriptionSerializer,
+        security=[],
+        responses={
+            200: openapi.Response(
+                "Subscription event received response", MessageResponseSerializer
+            )
+        },
+        tags=["Subscription"],
+    )
+    @transaction.atomic
+    def post(self, request, format=None):
+        logger.info(
+            f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
+        )
+        talpa_order_id = request.data.get("orderId")
+        talpa_subscription_id = request.data.get("subscriptionId")
+        event_type = request.data.get("eventType")
+
+        if not talpa_subscription_id:
+            logger.error("Talpa subscription id is missing from request data")
+            return Response({"message": "No subscription id is provided"}, status=400)
+        if not talpa_order_id:
+            logger.error("Talpa order id is missing from request data")
+            return Response({"message": "No order id is provided"}, status=400)
+
+        if event_type == "SUBSCRIPTION_CREATED":
+            subscription = Subscription.objects.create(
+                talpa_subscription_id=talpa_subscription_id,
+                talpa_order_id=talpa_order_id,
+                status=SubscriptionStatus.CONFIRMED,
+            )
+            order = Order.objects.get(talpa_order_id=talpa_order_id)
+            order.subscription = subscription
+            order.save()
+            logger.info(
+                f"Subscription {subscription} created and order {order} updated"
+            )
+            return Response({"message": "Subscription created"}, status=200)
+        elif event_type == "SUBSCRIPTION_CANCELLED":
+            subscription = Subscription.objects.get(
+                talpa_subscription_id=talpa_subscription_id
+            )
+            subscription.status = SubscriptionStatus.CANCELLED
+            subscription.cancel_reason = request.data.get("reason")
+            subscription.save()
+            for order in subscription.orders.all():
+                order.status = OrderStatus.CANCELLED
+                order.save()
+                permit_ids = order.permits.values_list("id", flat=True)
+                CustomerPermit(order.customer_id).end(
+                    permit_ids, ParkingPermitEndType.AFTER_CURRENT_PERIOD
+                )
+            logger.info(f"Subscription {subscription} cancelled")
+            return Response({"message": "Subscription cancelled"}, status=200)
+        else:
+            logger.error(f"Unknown subscription event type {event_type}")
+            return Response({"message": "Unknown subscription event type"}, status=400)
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):

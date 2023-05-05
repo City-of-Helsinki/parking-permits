@@ -37,6 +37,11 @@ urlpatterns = [
         name="order-notify",
     ),
     path(
+        "api/talpa/subscription/",
+        views.SubscriptionView.as_view(),
+        name="subscription-notify",
+    ),
+    path(
         "gdpr-api/v1/profiles/<str:id>",
         views.ParkingPermitsGDPRAPIView.as_view(),
         name="gdpr_v1",
