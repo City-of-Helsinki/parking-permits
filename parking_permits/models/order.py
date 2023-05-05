@@ -26,32 +26,37 @@ class SubscriptionStatus(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
 
 
+class SubscriptionCancelReason(models.TextChoices):
+    RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
+    USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
+
+
 class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
-    customer = models.ForeignKey(
-        Customer, verbose_name=_("Customer"), on_delete=models.PROTECT
-    )
     talpa_subscription_id = models.UUIDField(
         _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
+    )
+    talpa_order_id = models.UUIDField(
+        _("Talpa order id"), unique=True, editable=False, null=True, blank=True
     )
     status = models.CharField(
         _("Status"), max_length=20, choices=SubscriptionStatus.choices
     )
-    start_date = models.DateField(_("Start date"))
-    end_date = models.DateField(_("End date"))
-    period_unit = models.CharField(_("Period unit"), max_length=20)
-    period_frequency = models.IntegerField(_("Period frequency"))
-
-    serialize_fields = (
-        {"name": "customer"},
-        {"name": "status"},
+    cancel_reason = models.CharField(
+        _("Cancel reason"),
+        max_length=20,
+        choices=SubscriptionCancelReason.choices,
+        null=True,
+        blank=True,
     )
+
+    serialize_fields = ({"name": "status"},)
 
     class Meta:
         verbose_name = _("Subscription")
         verbose_name_plural = _("Subscriptions")
 
     def __str__(self):
-        return f"Subscription #{self.id} ({self.status})"
+        return f"Subscription #{self.talpa_subscription_id}"
 
 
 class OrderPaymentType(models.TextChoices):
@@ -272,6 +277,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         verbose_name=_("Subscription"),
         null=True,
         blank=True,
+        related_name="orders",
         on_delete=models.PROTECT,
     )
     talpa_order_id = models.UUIDField(
