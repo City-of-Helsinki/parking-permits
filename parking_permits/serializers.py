@@ -37,6 +37,29 @@ class OrderSerializer(serializers.Serializer):
     eventType = serializers.ChoiceField(
         help_text="Event types", choices=["PAYMENT_PAID"], default="PAYMENT_PAID"
     )
+    namespace = serializers.CharField(
+        help_text="Application namespace", default=settings.NAMESPACE
+    )
+    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")
+
+
+class SubscriptionSerializer(serializers.Serializer):
+    subscriptionId = serializers.CharField(help_text="Id of a generated subscription")
+    orderId = serializers.CharField(help_text="Id of a generated order")
+    namespace = serializers.CharField(
+        help_text="Application namespace", default=settings.NAMESPACE
+    )
+    eventType = serializers.ChoiceField(
+        help_text="Event types",
+        choices=["SUBSCRIPTION_CREATED", "SUBSCRIPTION_CANCELLED"],
+        default="SUBSCRIPTION_CREATED",
+    )
+    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")
+    reason = serializers.ChoiceField(
+        help_text="Reason for cancellation",
+        choices=["RENEWAL_FAILED", "USER_CANCELLED"],
+        default="RENEWAL_FAILED",
+    )
 
 
 class ProductSerializer(serializers.Serializer):
