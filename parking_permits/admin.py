@@ -14,6 +14,7 @@ from parking_permits.models import (
     ParkingZone,
     Product,
     Refund,
+    Subscription,
     TemporaryVehicle,
     Vehicle,
 )
@@ -67,9 +68,6 @@ class CustomerAdmin(admin.ModelAdmin):
         "first_name",
         "last_name",
     )
-
-    def has_add_permission(self, request):
-        return False
 
 
 @admin.register(DrivingClass)
@@ -211,6 +209,25 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_select_related = ("order", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
     ordering = ("-pk",)
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_filter = ("status",)
+    list_display = (
+        "id",
+        "talpa_subscription_id",
+        "talpa_order_id",
+        "status",
+        "cancel_reason",
+        "created_by",
+        "created_at",
+    )
+    readonly_fields = (
+        "talpa_subscription_id",
+        "talpa_order_id",
+    )
+    ordering = ("-created_at",)
 
 
 @admin.register(TemporaryVehicle)
