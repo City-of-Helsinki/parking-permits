@@ -1,4 +1,5 @@
 import datetime
+from unittest.mock import patch
 
 import requests_mock
 from django.conf import settings
@@ -14,6 +15,7 @@ from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitSt
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, SubscriptionFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.views import SubscriptionView
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
@@ -62,7 +64,7 @@ class SubscriptionViewTestCase(APITestCase):
         url = reverse("parking_permits:subscription-notify")
         data = {
             "eventType": "SUBSCRIPTION_CREATED",
-            "talpaSubscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
@@ -73,21 +75,28 @@ class SubscriptionViewTestCase(APITestCase):
         url = reverse("parking_permits:subscription-notify")
         data = {
             "eventType": "SUBSCRIPTION_CREATED",
-            "talpaOrderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
     @override_settings(DEBUG=True)
-    def test_subscription_creation(self):
+    @patch.object(SubscriptionView, "validate_order")
+    def test_subscription_creation(self, mock_method):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
-        permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.VALID)
-        permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.VALID)
+        customer = CustomerFactory()
+        permit_1 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID, customer=customer
+        )
+        permit_2 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID, customer=customer
+        )
         order = OrderFactory(
             talpa_order_id=talpa_order_id, status=OrderStatus.CONFIRMED
         )
         order.permits.add(permit_1, permit_2)
+        order.save()
         url = reverse("parking_permits:subscription-notify")
         data = {
             "eventType": "SUBSCRIPTION_CREATED",
@@ -109,7 +118,8 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
 
     @override_settings(DEBUG=True)
-    def test_subscription_cancellation(self):
+    @patch.object(SubscriptionView, "validate_order")
+    def test_subscription_cancellation(self, mock_method):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()

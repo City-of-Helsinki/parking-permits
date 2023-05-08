@@ -2,7 +2,9 @@ import csv
 import json
 import logging
 
+import requests
 from ariadne import convert_camel_case_to_snake
+from django.conf import settings
 from django.db import transaction
 from django.http import (
     Http404,
@@ -11,6 +13,7 @@ from django.http import (
     HttpResponseNotFound,
 )
 from django.utils import timezone as tz
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -30,7 +33,7 @@ from audit_logger import AuditMsg
 from .constants import Origin, ParkingPermitEndType
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import ParkkihubiPermitError
+from .exceptions import OrderValidationError, ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -350,6 +353,10 @@ class SubscriptionView(APIView):
         talpa_order_id = request.data.get("orderId")
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
+        event_timestamp = request.data.get("eventTimestamp")
+        event_time = None
+        if event_timestamp:
+            event_time = parse_datetime(event_timestamp[:-1])
 
         if not talpa_subscription_id:
             logger.error("Talpa subscription id is missing from request data")
@@ -358,13 +365,22 @@ class SubscriptionView(APIView):
             logger.error("Talpa order id is missing from request data")
             return Response({"message": "No order id is provided"}, status=400)
 
+        order = Order.objects.get(talpa_order_id=talpa_order_id)
+        try:
+            self.validate_order(talpa_order_id, order.customer.user.uuid)
+        except OrderValidationError as e:
+            logger.error(f"Order validation failed. Error = {e}")
+            return Response({"message": str(e)}, status=400)
+
         if event_type == "SUBSCRIPTION_CREATED":
             subscription = Subscription.objects.create(
                 talpa_subscription_id=talpa_subscription_id,
                 talpa_order_id=talpa_order_id,
                 status=SubscriptionStatus.CONFIRMED,
+                created_by=order.customer.user,
             )
-            order = Order.objects.get(talpa_order_id=talpa_order_id)
+            subscription.created_at = event_time or tz.localtime(tz.now())
+            subscription.save()
             order.subscription = subscription
             order.save()
             logger.info(
@@ -390,6 +406,31 @@ class SubscriptionView(APIView):
         else:
             logger.error(f"Unknown subscription event type {event_type}")
             return Response({"message": "Unknown subscription event type"}, status=400)
+
+    def validate_order(cls, order_id, user_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
+            headers=headers,
+        )
+
+        if response.status_code == 200:
+            order = response.json()
+            if order["user"] != str(user_id):
+                logger.error(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+                raise OrderValidationError(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+            logger.info("Talpa order is valid")
+        else:
+            logger.error("Talpa order is not valid")
+            raise OrderValidationError("Talpa order is not valid")
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
