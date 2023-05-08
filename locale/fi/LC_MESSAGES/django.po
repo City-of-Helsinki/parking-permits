@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-21 07:58+0300\n"
+"POT-Creation-Date: 2023-05-08 16:30+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -96,6 +96,14 @@ msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
 
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
+
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in other "
+"address %(address)s."
+msgstr ""
+"Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus "
+"toisessa osoitteessa %(address)s."
 
 #, python-format
 msgid ""
@@ -233,8 +241,8 @@ msgstr "Vakituinen osoite"
 msgid "Other address"
 msgstr "Tilapäinen osoite"
 
-msgid "Parking zone"
-msgstr "Pysäköintialue"
+msgid "Area"
+msgstr "Alue"
 
 msgid "Start time"
 msgstr "Alkuaika"
@@ -256,9 +264,6 @@ msgstr "Rekisteritunnukset"
 
 msgid "Customer"
 msgstr "Asiakas"
-
-msgid "Area"
-msgstr "Alue"
 
 msgid "Address"
 msgstr "Osoite"
@@ -283,6 +288,9 @@ msgstr "IBAN-tilinumero"
 
 msgid "Product type"
 msgstr "Tuotteen tyyppi"
+
+msgid "Parking zone"
+msgstr "Pysäköintialue"
 
 msgid "Price"
 msgstr "Hinta"
@@ -343,12 +351,6 @@ msgstr "Palautus"
 
 msgid "Order info"
 msgstr "Tilauksen tiedot"
-
-msgid "Time created"
-msgstr "Luonti-aikaleima"
-
-msgid "Time modified"
-msgstr "Muokattu-aikaleima"
 
 msgid "Street name"
 msgstr "Kadunnimi"
@@ -469,6 +471,12 @@ msgstr "Ajokortti"
 
 msgid "Driving licences"
 msgstr "Ajokortit"
+
+msgid "Time created"
+msgstr "Luonti-aikaleima"
+
+msgid "Time modified"
+msgstr "Muokattu-aikaleima"
 
 msgid "Created by"
 msgstr "Luotu"
@@ -820,7 +828,7 @@ msgid "VehicleClass"
 msgstr "Ajoneuvoluokka"
 
 msgid "Manufacturer"
-msgstr "Valmistaja"
+msgstr "Merkki"
 
 msgid "Model"
 msgstr "Malli"

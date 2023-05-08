@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-04-21 07:58+0300\n"
+"POT-Creation-Date: 2023-05-08 16:32+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -96,6 +96,14 @@ msgstr "Fordonets registreringsnummer är obligatoriskt för tillståndet"
 
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
+
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in other "
+"address %(address)s."
+msgstr ""
+"Kan inte skapa tillstånd. Användaren har redan ett giltigt befintligt "
+"tillstånd i addressen %(address)s."
 
 #, python-format
 msgid ""
@@ -228,8 +236,8 @@ msgstr "Permanent adress"
 msgid "Other address"
 msgstr "Tillfällig adress"
 
-msgid "Parking zone"
-msgstr "Parkering zone"
+msgid "Area"
+msgstr "Zone"
 
 msgid "Start time"
 msgstr "Starttid"
@@ -251,9 +259,6 @@ msgstr "Registreringsnummer"
 
 msgid "Customer"
 msgstr "Kund"
-
-msgid "Area"
-msgstr "Zone"
 
 msgid "Address"
 msgstr "Gatuadress"
@@ -278,6 +283,9 @@ msgstr "IBAN-nummer"
 
 msgid "Product type"
 msgstr "Produkttyp"
+
+msgid "Parking zone"
+msgstr "Parkering zone"
 
 msgid "Price"
 msgstr "Pris"
@@ -338,12 +346,6 @@ msgstr "Återbetalning"
 
 msgid "Order info"
 msgstr "Beställningsinformation"
-
-msgid "Time created"
-msgstr "Tid skapad"
-
-msgid "Time modified"
-msgstr "Modifierad"
 
 msgid "Street name"
 msgstr "Gatuadress FI"
@@ -464,6 +466,12 @@ msgstr "Körkort"
 
 msgid "Driving licences"
 msgstr "Körkorten"
+
+msgid "Time created"
+msgstr "Tid skapad"
+
+msgid "Time modified"
+msgstr "Modifierad"
 
 msgid "Created by"
 msgstr "Skapad av"
