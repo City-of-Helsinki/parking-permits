@@ -161,7 +161,7 @@ def parse_street_name_and_number(street_address: str) -> tuple[str, str]:
 
 def get_address_from_db(street_name, street_number):
     address_qs = Address.objects.filter(
-        street_name=street_name, street_number=street_number
+        street_name=street_name, street_number__istartswith=street_number
     )
     if address_qs.exists():
         return address_qs.first()
