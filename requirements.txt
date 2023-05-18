@@ -148,7 +148,7 @@ sniffio==1.3.0
     # via anyio
 sqlparse==0.4.4
     # via django
-starlette==0.26.1
+starlette==0.27.0
     # via ariadne
 typing-extensions==4.5.0
     # via
