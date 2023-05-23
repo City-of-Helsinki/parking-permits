@@ -124,7 +124,7 @@ pytz==2023.3
     #   django
     #   djangorestframework
     #   drf-yasg
-requests==2.30.0
+requests==2.31.0
     # via
     #   -r requirements.in
     #   coreapi
