@@ -1,3 +1,4 @@
+from os import environ as os_environ
 from os import path
 from pathlib import Path
 
@@ -6,6 +7,9 @@ import environ
 import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.django import DjangoIntegration
+
+GDAL_LIBRARY_PATH = os_environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
 
 env = environ.Env(
     DEBUG=(bool, False),
@@ -165,8 +169,6 @@ LANGUAGE_CODE = "fi"
 TIME_ZONE = "Europe/Helsinki"
 
 USE_I18N = True
-
-USE_L10N = True
 
 USE_TZ = True
 

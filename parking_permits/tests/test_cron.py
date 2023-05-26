@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone as dt_tz
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -21,22 +22,22 @@ class CronTestCase(TestCase):
         self.customer = CustomerFactory(first_name="Firstname A", last_name="")
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 29, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 29, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 29, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 29, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
 
@@ -77,27 +78,27 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
         self.customer = CustomerFactory(first_name="Firstname A", last_name="")
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 6, tzinfo=tz.utc),
+            end_time=datetime(2023, 4, 6, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 30, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 30, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 13, tzinfo=tz.utc),
+            end_time=datetime(2023, 4, 13, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.CLOSED,
         )
 
