@@ -10,6 +10,7 @@ from helusers.settings import api_token_auth_settings
 from jose import jwt
 from rest_framework.test import APIClient, APITestCase
 
+from parking_permits.exceptions import DeletionNotAllowed
 from parking_permits.models.order import OrderStatus, Subscription, SubscriptionStatus
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
 from parking_permits.tests.factories.customer import CustomerFactory
@@ -297,8 +298,8 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             )
             url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
-            response = self.client.delete(url)
-            self.assertEqual(response.status_code, 403)
+            with self.assertRaises(DeletionNotAllowed):
+                self.client.delete(url)
             self.assert_customer_not_deleted()
 
     @requests_mock.Mocker()

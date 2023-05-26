@@ -100,3 +100,7 @@ class SearchError(ParkingPermitBaseException):
 
 class TemporaryVehicleValidationError(ParkingPermitBaseException):
     pass
+
+
+class DeletionNotAllowed(ParkingPermitBaseException):
+    pass
