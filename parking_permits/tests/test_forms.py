@@ -1,3 +1,5 @@
+from datetime import timezone as dt_tz
+
 import pytest
 from django.test import TestCase
 from django.utils import timezone
@@ -206,12 +208,10 @@ class OrderSearchFormDateRangeTestCase(TestCase):
 
         for sub_test in sub_tests:
             permit_args = sub_test["permit"]
-            start_time = timezone.datetime(
-                *permit_args["start_time"], tzinfo=timezone.utc
-            )
+            start_time = timezone.datetime(*permit_args["start_time"], tzinfo=dt_tz.utc)
             # Set end_time only if its arguments exist in the subtest data.
             end_time = (
-                timezone.datetime(*args, tzinfo=timezone.utc)
+                timezone.datetime(*args, tzinfo=dt_tz.utc)
                 if (args := permit_args.get("end_time"))
                 else None
             )
