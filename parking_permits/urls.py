@@ -32,6 +32,11 @@ urlpatterns = [
         name="talpa-right-of-purchase",
     ),
     path(
+        "api/talpa/payment/",
+        views.PaymentView.as_view(),
+        name="payment-notify",
+    ),
+    path(
         "api/talpa/order/",
         views.OrderView.as_view(),
         name="order-notify",

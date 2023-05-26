@@ -24,12 +24,12 @@ from ..models.common import SourceSystem
 from .keys import rsa_key
 
 
-class OrderViewTestCase(APITestCase):
+class PaymentViewTestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
 
-    def test_order_view_should_return_bad_request_if_talpa_order_id_missing(self):
-        url = reverse("parking_permits:order-notify")
+    def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
+        url = reverse("parking_permits:payment-notify")
         data = {
             "eventType": "PAYMENT_PAID",
         }
@@ -37,13 +37,13 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     @override_settings(DEBUG=True)
-    def test_order_view_should_update_order_and_permits_status(self):
+    def test_payment_view_should_update_order_and_permits_status(self):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         order = OrderFactory(talpa_order_id=talpa_order_id, status=OrderStatus.DRAFT)
         order.permits.add(permit_1, permit_2)
-        url = reverse("parking_permits:order-notify")
+        url = reverse("parking_permits:payment-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": talpa_order_id}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
@@ -113,8 +113,8 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
         self.assertEqual(subscription.status, SubscriptionStatus.CONFIRMED)
         order.refresh_from_db()
-        self.assertEqual(order.subscription, subscription)
-        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(subscription.order, order)
+        self.assertEqual(subscription.order.status, OrderStatus.CONFIRMED)
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
 
@@ -124,7 +124,7 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
-        permit_1 = ParkingPermitFactory(
+        permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID, customer=customer
         )
         order = OrderFactory(
@@ -132,14 +132,16 @@ class SubscriptionViewTestCase(APITestCase):
             customer=customer,
             status=OrderStatus.CONFIRMED,
         )
-        order.permits.add(permit_1)
+        order.permits.add(permit)
+        order.save()
         subscription = SubscriptionFactory(
             talpa_subscription_id=talpa_subscription_id,
             talpa_order_id=talpa_order_id,
             status=SubscriptionStatus.CONFIRMED,
+            order=order,
+            permit=permit,
         )
-        order.subscription = subscription
-        order.save()
+
         url = reverse("parking_permits:subscription-notify")
         data = {
             "eventType": "SUBSCRIPTION_CANCELLED",
@@ -153,9 +155,9 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
         self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
         order.refresh_from_db()
-        self.assertEqual(order.subscription, subscription)
+        self.assertEqual(subscription.order, order)
         self.assertEqual(order.status, OrderStatus.CANCELLED)
-        self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
 
 
 @override_settings(

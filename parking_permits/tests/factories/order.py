@@ -38,6 +38,8 @@ class SubscriptionFactory(factory.django.DjangoModelFactory):
     talpa_order_id = factory.Faker("uuid4")
     talpa_subscription_id = factory.Faker("uuid4")
     status = SubscriptionStatus.CONFIRMED
+    order = factory.SubFactory(OrderFactory)
+    permit = factory.SubFactory(ParkingPermitFactory)
 
     class Meta:
         model = Subscription
