@@ -5,7 +5,6 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0031_add_create_by_modified_by_fields"),
     ]

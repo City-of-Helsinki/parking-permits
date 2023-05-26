@@ -5,7 +5,6 @@ import encrypted_fields.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0023_order_talpa_logged_in_checkout_url"),
     ]
