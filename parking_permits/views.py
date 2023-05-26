@@ -17,12 +17,7 @@ from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from helsinki_gdpr.views import (
-    DeletionNotAllowed,
-    DryRunSerializer,
-    GDPRAPIView,
-    GDPRScopesPermission,
-)
+from helsinki_gdpr.views import DryRunSerializer, GDPRAPIView, GDPRScopesPermission
 from rest_framework import generics, mixins, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -33,7 +28,7 @@ from audit_logger import AuditMsg
 from .constants import Origin, ParkingPermitEndType
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import OrderValidationError, ParkkihubiPermitError
+from .exceptions import DeletionNotAllowed, OrderValidationError, ParkkihubiPermitError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
