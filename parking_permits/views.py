@@ -4,6 +4,7 @@ import logging
 
 import requests
 from ariadne import convert_camel_case_to_snake
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db import transaction
 from django.http import (
@@ -50,6 +51,7 @@ from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
+    PaymentSerializer,
     ProductSerializer,
     ResolveAvailabilityResponseSerializer,
     ResolveAvailabilitySerializer,
@@ -249,25 +251,26 @@ class TalpaResolveRightOfPurchase(APIView):
         return Response(res)
 
 
-class OrderView(APIView):
+class PaymentView(APIView):
     @swagger_auto_schema(
-        operation_description="Used as an webhook by Talpa in order to send an order notification.",
-        request_body=OrderSerializer,
+        operation_description="Process payment notifications.",
+        request_body=PaymentSerializer,
         security=[],
         responses={
-            200: openapi.Response("Order received response", MessageResponseSerializer)
+            200: openapi.Response(
+                "Payment received response", MessageResponseSerializer
+            )
         },
-        tags=["Order"],
+        tags=["Payment"],
     )
     @transaction.atomic
     def post(self, request, format=None):
-        logger.info(f"Order received. Data = {json.dumps(request.data, default=str)}")
+        logger.info(f"Payment received. Data = {json.dumps(request.data, default=str)}")
         talpa_order_id = request.data.get("orderId")
         event_type = request.data.get("eventType")
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
             return Response({"message": "No order id is provided"}, status=400)
-
         if event_type == "PAYMENT_PAID":
             order = Order.objects.get(talpa_order_id=talpa_order_id)
             order.status = OrderStatus.CONFIRMED
@@ -325,12 +328,59 @@ class OrderView(APIView):
                     permit.create_parkkihubi_permit()
 
         logger.info(f"{order} is confirmed and order permits are set to VALID ")
+        return Response({"message": "Payment received"}, status=200)
+
+
+class OrderView(APIView):
+    @swagger_auto_schema(
+        operation_description="Process order notifications.",
+        request_body=OrderSerializer,
+        security=[],
+        responses={
+            200: openapi.Response("Order received response", MessageResponseSerializer)
+        },
+        tags=["Order"],
+    )
+    @transaction.atomic
+    def post(self, request, format=None):
+        logger.info(f"Order received. Data = {json.dumps(request.data, default=str)}")
+        talpa_order_id = request.data.get("orderId")
+        talpa_subscription_id = request.data.get("subscriptionId")
+        event_type = request.data.get("eventType")
+        if not talpa_order_id:
+            logger.error("Talpa order id is missing from request data")
+            return Response({"message": "No order id is provided"}, status=400)
+        if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
+            # Subscriptipn renewal process
+            subscription = Subscription.objects.get(
+                talpa_subscription_id=talpa_subscription_id
+            )
+            permit = subscription.permit
+            permit.end_time = permit.end_time + relativedelta(months=1)
+            permit.save()
+            order = Order.objects.create(
+                talpa_order_id=talpa_order_id,
+                subscription=subscription,
+                status=OrderStatus.CONFIRMED,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            )
+            order.permits.add(permit)
+            order.save()
+            send_permit_email(PermitEmailType.UPDATED, permit)
+            try:
+                permit.update_parkkihubi_permit()
+            except ParkkihubiPermitError:
+                permit.create_parkkihubi_permit()
+            logger.info(
+                f"{subscription} is renewed and permit end time is set to {permit.end_time}"
+            )
+            return Response({"message": "Subscription renewal completed"}, status=200)
         return Response({"message": "Order received"}, status=200)
 
 
 class SubscriptionView(APIView):
     @swagger_auto_schema(
-        operation_description="Used as an webhook by Talpa in order to send a subscription notification.",
+        operation_description="Process subscription notifications.",
         request_body=SubscriptionSerializer,
         security=[],
         responses={
@@ -362,7 +412,9 @@ class SubscriptionView(APIView):
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
-            self.validate_order(talpa_order_id, order.customer.user.uuid)
+            validated_order_data = self.validate_order(
+                talpa_order_id, order.customer.user.uuid
+            )
         except OrderValidationError as e:
             logger.error(f"Order validation failed. Error = {e}")
             return Response({"message": str(e)}, status=400)
@@ -373,11 +425,17 @@ class SubscriptionView(APIView):
                 talpa_order_id=talpa_order_id,
                 status=SubscriptionStatus.CONFIRMED,
                 created_by=order.customer.user,
+                order=order,
             )
             subscription.created_at = event_time or tz.localtime(tz.now())
             subscription.save()
-            order.subscription = subscription
-            order.save()
+            for permit in order.permits.all():
+                if (
+                    validated_order_data
+                    and validated_order_data.get("permit_id") == permit.id
+                ):
+                    permit.subscription = subscription
+                    permit.save()
             logger.info(
                 f"Subscription {subscription} created and order {order} updated"
             )
@@ -389,13 +447,17 @@ class SubscriptionView(APIView):
             subscription.status = SubscriptionStatus.CANCELLED
             subscription.cancel_reason = request.data.get("reason")
             subscription.save()
-            for order in subscription.orders.all():
+            remaining_valid_subscriptions = subscription.order.subscriptions.filter(
+                status=SubscriptionStatus.CONFIRMED
+            )
+            if not remaining_valid_subscriptions.exists():
+                order = subscription.order
                 order.status = OrderStatus.CANCELLED
                 order.save()
-                permit_ids = order.permits.values_list("id", flat=True)
-                CustomerPermit(order.customer_id).end(
-                    permit_ids, ParkingPermitEndType.AFTER_CURRENT_PERIOD
-                )
+            permit = subscription.permit
+            CustomerPermit(permit.customer_id).end(
+                [permit.id], ParkingPermitEndType.AFTER_CURRENT_PERIOD
+            )
             logger.info(f"Subscription {subscription} cancelled")
             return Response({"message": "Subscription cancelled"}, status=200)
         else:
@@ -423,6 +485,7 @@ class SubscriptionView(APIView):
                     f"Talpa order user id {order['userId']} does not match with user id {user_id}"
                 )
             logger.info("Talpa order is valid")
+            return order
         else:
             logger.error("Talpa order is not valid")
             raise OrderValidationError("Talpa order is not valid")
