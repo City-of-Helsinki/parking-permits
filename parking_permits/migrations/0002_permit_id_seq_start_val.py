@@ -9,7 +9,6 @@ ALTER SEQUENCE parking_permits_parkingpermit_id_seq RESTART;
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0001_initial"),
     ]

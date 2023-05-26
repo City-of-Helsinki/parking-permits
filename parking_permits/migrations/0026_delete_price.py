@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0025_alter_product_low_emission_discount"),
     ]

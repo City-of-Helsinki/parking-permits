@@ -5,7 +5,6 @@ import encrypted_fields.fields
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0010_parkingpermit_synced_with_parkkihubi"),
     ]

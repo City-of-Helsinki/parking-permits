@@ -14,7 +14,6 @@ def update_payment_type(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0005_order_payment_type"),
     ]
