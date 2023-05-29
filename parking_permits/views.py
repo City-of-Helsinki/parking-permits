@@ -347,11 +347,16 @@ class OrderView(APIView):
         talpa_order_id = request.data.get("orderId")
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
+
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
             return Response({"message": "No order id is provided"}, status=400)
+        if not talpa_subscription_id:
+            logger.error("Talpa subscription id is missing from request data")
+            return Response({"message": "No subscription id is provided"}, status=400)
+
+        # Subscriptipn renewal process
         if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
-            # Subscriptipn renewal process
             subscription = Subscription.objects.get(
                 talpa_subscription_id=talpa_subscription_id
             )
@@ -360,11 +365,12 @@ class OrderView(APIView):
             permit.save()
             order = Order.objects.create(
                 talpa_order_id=talpa_order_id,
-                subscription=subscription,
                 status=OrderStatus.CONFIRMED,
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                customer=permit.customer,
             )
             order.permits.add(permit)
+            order.subscriptions.add(subscription)
             order.save()
             send_permit_email(PermitEmailType.UPDATED, permit)
             try:
@@ -403,12 +409,12 @@ class SubscriptionView(APIView):
         if event_timestamp:
             event_time = parse_datetime(event_timestamp[:-1])
 
-        if not talpa_subscription_id:
-            logger.error("Talpa subscription id is missing from request data")
-            return Response({"message": "No subscription id is provided"}, status=400)
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
             return Response({"message": "No order id is provided"}, status=400)
+        if not talpa_subscription_id:
+            logger.error("Talpa subscription id is missing from request data")
+            return Response({"message": "No subscription id is provided"}, status=400)
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
