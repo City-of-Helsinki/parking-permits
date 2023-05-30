@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 from unittest.mock import patch
 
 import requests_mock
@@ -19,9 +20,15 @@ from parking_permits.models.order import (
     SubscriptionStatus,
 )
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
+from parking_permits.models.refund import Refund, RefundStatus
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory, SubscriptionFactory
+from parking_permits.tests.factories.order import (
+    OrderFactory,
+    OrderItemFactory,
+    SubscriptionFactory,
+)
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.views import SubscriptionView
 from users.tests.factories.user import UserFactory
 
@@ -202,12 +209,22 @@ class SubscriptionViewTestCase(APITestCase):
 
     @override_settings(DEBUG=True)
     @patch.object(SubscriptionView, "validate_order")
+    @freeze_time("2023-05-30")
     def test_subscription_cancellation(self, mock_method):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2023, 5, 29, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 6, 28, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
         permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID, customer=customer
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -240,6 +257,69 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(subscription.order, order)
         self.assertEqual(order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+
+    @override_settings(DEBUG=True)
+    @patch.object(SubscriptionView, "validate_order")
+    @freeze_time("2023-05-30")
+    def test_subscription_cancellation_with_refund(self, mock_method):
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        order.permits.add(permit)
+        order.save()
+        unit_price = Decimal(30)
+        product = ProductFactory(unit_price=unit_price)
+        OrderItemFactory(
+            order=order,
+            product=product,
+            permit=permit,
+        )
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            talpa_order_id=talpa_order_id,
+            status=SubscriptionStatus.CONFIRMED,
+            order=order,
+            permit=permit,
+        )
+
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CANCELLED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
+        self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
+        order.refresh_from_db()
+        self.assertEqual(subscription.order, order)
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        refund = Refund.objects.get(order=order)
+        self.assertEqual(refund.order, order)
+        self.assertEqual(refund.amount, unit_price)
+        self.assertEqual(refund.name, permit.customer.full_name)
+        self.assertEqual(refund.status, RefundStatus.OPEN)
 
 
 @override_settings(
