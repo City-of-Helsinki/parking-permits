@@ -47,7 +47,12 @@ from .models.order import (
     Subscription,
     SubscriptionStatus,
 )
-from .models.parking_permit import ParkingPermit, ParkingPermitStatus
+from .models.parking_permit import (
+    ParkingPermit,
+    ParkingPermitEventFactory,
+    ParkingPermitStatus,
+)
+from .models.refund import Refund
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
@@ -62,7 +67,9 @@ from .serializers import (
 )
 from .services.mail import (
     PermitEmailType,
+    RefundEmailType,
     send_permit_email,
+    send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
 from .utils import (
@@ -460,7 +467,22 @@ class SubscriptionView(APIView):
                 order = subscription.order
                 order.status = OrderStatus.CANCELLED
                 order.save()
+
             permit = subscription.permit
+            # Create a refund for a remaining full month period, if it was charged already
+            if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
+                product = Product.objects.get(orderitem__permit=permit)
+                refund = Refund.objects.create(
+                    name=permit.customer.full_name,
+                    order=subscription.order,
+                    amount=product.unit_price,
+                    description=f"Refund for ending permit {str(permit.id)}",
+                )
+                send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+                ParkingPermitEventFactory.make_create_refund_event(
+                    permit, refund, created_by=permit.customer.user
+                )
+
             CustomerPermit(permit.customer_id).end(
                 [permit.id], ParkingPermitEndType.AFTER_CURRENT_PERIOD
             )
