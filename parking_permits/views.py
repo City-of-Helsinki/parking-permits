@@ -1,4 +1,5 @@
 import csv
+import datetime
 import json
 import logging
 
@@ -38,7 +39,7 @@ from .forms import (
     ProductSearchForm,
     RefundSearchForm,
 )
-from .models import Customer, Order, Product
+from .models import Customer, Order, OrderItem, Product
 from .models.common import SourceSystem
 from .models.order import (
     OrderPaymentType,
@@ -90,6 +91,33 @@ audit_logger = audit.getAuditLoggerAdapter(
         "kwarg_name": "audit_msg",
     },
 )
+
+
+def validate_order(order_id, user_id):
+    headers = {
+        "api-key": settings.TALPA_API_KEY,
+        "namespace": settings.NAMESPACE,
+        "Content-Type": "application/json",
+    }
+    response = requests.get(
+        f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
+        headers=headers,
+    )
+
+    if response.status_code == 200:
+        order = response.json()
+        if order["user"] != str(user_id):
+            logger.error(
+                f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+            )
+            raise OrderValidationError(
+                f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+            )
+        logger.info("Talpa order is valid")
+        return order
+    else:
+        logger.error("Talpa order is not valid")
+        raise OrderValidationError("Talpa order is not valid")
 
 
 class ProductList(mixins.ListModelMixin, generics.GenericAPIView):
@@ -279,6 +307,9 @@ class PaymentView(APIView):
             logger.error("Talpa order id is missing from request data")
             return Response({"message": "No order id is provided"}, status=400)
         if event_type == "PAYMENT_PAID":
+            logger.info(
+                f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
+            )
             order = Order.objects.get(talpa_order_id=talpa_order_id)
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
@@ -333,9 +364,11 @@ class PaymentView(APIView):
                     permit.update_parkkihubi_permit()
                 except ParkkihubiPermitError:
                     permit.create_parkkihubi_permit()
-
-        logger.info(f"{order} is confirmed and order permits are set to VALID ")
-        return Response({"message": "Payment received"}, status=200)
+            logger.info(f"{order} is confirmed and order permits are set to VALID ")
+            return Response({"message": "Payment received"}, status=200)
+        else:
+            logger.error(f"Unknown payment event type {event_type}")
+            return Response({"message": "Unknown payment event type"}, status=400)
 
 
 class OrderView(APIView):
@@ -364,21 +397,69 @@ class OrderView(APIView):
 
         # Subscriptipn renewal process
         if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
+            logger.info(f"Renewing subscription: {talpa_subscription_id}")
             subscription = Subscription.objects.get(
                 talpa_subscription_id=talpa_subscription_id
             )
-            permit = subscription.permit
+            permit = subscription.order_items.first().permit
             permit.end_time = permit.end_time + relativedelta(months=1)
             permit.save()
+
+            try:
+                validated_order_data = validate_order(
+                    talpa_order_id, permit.customer.user.uuid
+                )
+            except OrderValidationError as e:
+                logger.error(f"Order validation failed. Error = {e}")
+                return Response({"message": str(e)}, status=400)
+
             order = Order.objects.create(
-                talpa_order_id=talpa_order_id,
-                status=OrderStatus.CONFIRMED,
+                talpa_order_id=validated_order_data.get("orderId"),
+                talpa_checkout_url=validated_order_data.get("checkoutUrl"),
+                talpa_logged_in_checkout_url=validated_order_data.get(
+                    "loggedInCheckoutUrl"
+                ),
+                talpa_receipt_url=validated_order_data.get("receiptUrl"),
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 customer=permit.customer,
+                status=OrderStatus.CONFIRMED,
+                paid_time=datetime.datetime.strptime(
+                    validated_order_data.get("lastValidPurchaseDateTime"),
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                ),
+                address_text=str(permit.address),
+                parking_zone_name=permit.parking_zone.name,
+                vehicles=[permit.vehicle.registration_number],
+                type=OrderType.CREATED,
             )
             order.permits.add(permit)
-            order.subscriptions.add(subscription)
             order.save()
+
+            validated_order_item_data = (
+                validated_order_data.get("items")
+                and validated_order_data.get("items")[0]
+            )
+
+            product = Product.objects.get(
+                talpa_product_id=validated_order_item_data.get("productId")
+            )
+
+            OrderItem.objects.create(
+                talpa_order_item_id=validated_order_item_data.get("orderItemId"),
+                order=order,
+                subscription=subscription,
+                product=product,
+                permit=permit,
+                unit_price=validated_order_item_data.get("priceGross"),
+                payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
+                vat=validated_order_item_data.get("vatPercentage"),
+                quantity=validated_order_item_data.get("quantity"),
+                start_time=datetime.datetime.strptime(
+                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
+                ),
+                # end_date=validated_order_item_data.get("end_date"),
+            )
+
             send_permit_email(PermitEmailType.UPDATED, permit)
             try:
                 permit.update_parkkihubi_permit()
@@ -388,7 +469,9 @@ class OrderView(APIView):
                 f"{subscription} is renewed and permit end time is set to {permit.end_time}"
             )
             return Response({"message": "Subscription renewal completed"}, status=200)
-        return Response({"message": "Order received"}, status=200)
+        else:
+            logger.error(f"Unknown order event type {event_type}")
+            return Response({"message": "Unknown order event type"}, status=400)
 
 
 class SubscriptionView(APIView):
@@ -425,7 +508,7 @@ class SubscriptionView(APIView):
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
-            validated_order_data = self.validate_order(
+            validated_order_data = validate_order(
                 talpa_order_id, order.customer.user.uuid
             )
         except OrderValidationError as e:
@@ -433,49 +516,54 @@ class SubscriptionView(APIView):
             return Response({"message": str(e)}, status=400)
 
         if event_type == "SUBSCRIPTION_CREATED":
+            logger.info(f"Creating new subscription: {talpa_subscription_id}")
+            validated_order_item_data = (
+                validated_order_data.get("items")
+                and validated_order_data.get("items")[0]
+            )
+            order_item = OrderItem.objects.get(
+                talpa_order_item_id=validated_order_item_data.get("orderItemId")
+            )
             subscription = Subscription.objects.create(
                 talpa_subscription_id=talpa_subscription_id,
-                talpa_order_id=talpa_order_id,
                 status=SubscriptionStatus.CONFIRMED,
                 created_by=order.customer.user,
-                order=order,
             )
             subscription.created_at = event_time or tz.localtime(tz.now())
             subscription.save()
-            for permit in order.permits.all():
-                if (
-                    validated_order_data
-                    and validated_order_data.get("permit_id") == permit.id
-                ):
-                    permit.subscription = subscription
-                    permit.save()
+            order_item.subscription = subscription
+            order_item.save()
             logger.info(
-                f"Subscription {subscription} created and order {order} updated"
+                f"Subscription {subscription} created and order item {order_item} updated"
             )
             return Response({"message": "Subscription created"}, status=200)
         elif event_type == "SUBSCRIPTION_CANCELLED":
+            logger.info(f"Cancelling subscription: {talpa_subscription_id}")
             subscription = Subscription.objects.get(
                 talpa_subscription_id=talpa_subscription_id
             )
             subscription.status = SubscriptionStatus.CANCELLED
             subscription.cancel_reason = request.data.get("reason")
             subscription.save()
-            remaining_valid_subscriptions = subscription.order.subscriptions.filter(
-                status=SubscriptionStatus.CONFIRMED
+
+            remaining_valid_subscriptions = (
+                subscription.order_item.subscriptions.filter(
+                    status=SubscriptionStatus.CONFIRMED
+                )
             )
             if not remaining_valid_subscriptions.exists():
-                order = subscription.order
+                order = subscription.order_item.order
                 order.status = OrderStatus.CANCELLED
                 order.save()
 
-            permit = subscription.permit
+            order_item = subscription.order_item
+            permit = order_item.permit
             # Create a refund for a remaining full month period, if it was charged already
             if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
-                product = Product.objects.get(orderitem__permit=permit)
                 refund = Refund.objects.create(
                     name=permit.customer.full_name,
-                    order=subscription.order,
-                    amount=product.unit_price,
+                    order=subscription.order_item.order,
+                    amount=order_item.product.unit_price,
                     description=f"Refund for ending permit {str(permit.id)}",
                 )
                 send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
@@ -491,32 +579,6 @@ class SubscriptionView(APIView):
         else:
             logger.error(f"Unknown subscription event type {event_type}")
             return Response({"message": "Unknown subscription event type"}, status=400)
-
-    def validate_order(cls, order_id, user_id):
-        headers = {
-            "api-key": settings.TALPA_API_KEY,
-            "namespace": settings.NAMESPACE,
-            "Content-Type": "application/json",
-        }
-        response = requests.get(
-            f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
-            headers=headers,
-        )
-
-        if response.status_code == 200:
-            order = response.json()
-            if order["user"] != str(user_id):
-                logger.error(
-                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
-                )
-                raise OrderValidationError(
-                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
-                )
-            logger.info("Talpa order is valid")
-            return order
-        else:
-            logger.error("Talpa order is not valid")
-            raise OrderValidationError("Talpa order is not valid")
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
