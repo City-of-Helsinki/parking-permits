@@ -82,9 +82,12 @@ class TestOrderManager(TestCase):
         order_items = order.order_items.all().order_by("-quantity")
         self.assertEqual(order_items.count(), 1)
         order_item = order_items[0]
-        self.assertEqual(order_item.start_date, timezone.localdate(start_time))
         self.assertEqual(
-            order_item.end_date, timezone.localdate(get_end_time(start_time, 1))
+            order_item.start_time.date(), timezone.localtime(start_time).date()
+        )
+        self.assertEqual(
+            order_item.end_time.date(),
+            get_end_time(start_time, 1).date(),
         )
 
     def test_create_renewable_order_should_create_renewal_order(self):
@@ -130,7 +133,7 @@ class TestOrderManager(TestCase):
 
         with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
             new_order = Order.objects.create_renewal_order(self.customer)
-            order_items = new_order.order_items.all().order_by("start_date")
+            order_items = new_order.order_items.all().order_by("start_time")
             self.assertEqual(order_items.count(), 2)
             self.assertEqual(order_items[0].unit_price, Decimal(15))
             self.assertEqual(order_items[0].payment_unit_price, Decimal(-15))
