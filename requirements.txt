@@ -4,7 +4,7 @@
 #
 #    pip-compile requirements.in
 #
-anyio==3.6.2
+anyio==3.7.0
     # via starlette
 ariadne==0.19.1
     # via ariadne-django
@@ -12,11 +12,11 @@ ariadne-django==0.3.0
     # via -r requirements.in
 arrow==1.2.3
     # via -r requirements.in
-asgiref==3.7.1
+asgiref==3.7.2
     # via django
 authlib==1.2.0
     # via drf-oidc-auth
-cachetools==5.3.0
+cachetools==5.3.1
     # via django-helusers
 certifi==2023.5.7
     # via
@@ -32,8 +32,9 @@ coreschema==0.0.4
     # via
     #   coreapi
     #   drf-yasg
-cryptography==40.0.2
+cryptography==41.0.1
     # via
+    #   -r requirements.in
     #   authlib
     #   drf-oidc-auth
 deprecation==2.1.0
@@ -135,7 +136,7 @@ requests==2.31.0
     #   drf-oidc-auth
 rsa==4.9
     # via python-jose
-ruamel-yaml==0.17.28
+ruamel-yaml==0.17.31
     # via drf-yasg
 ruamel-yaml-clib==0.2.7
     # via ruamel-yaml
@@ -152,7 +153,7 @@ sqlparse==0.4.4
     # via django
 starlette==0.27.0
     # via ariadne
-typing-extensions==4.6.2
+typing-extensions==4.6.3
     # via
     #   ariadne
     #   dj-database-url

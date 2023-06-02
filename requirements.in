@@ -20,3 +20,4 @@ fpdf==1.7.2                                   # pdf generation
 django-searchable-encrypted-fields==0.2.1      # encrypted fields
 sentry-sdk==1.24.0                            # error logging
 numpy==1.24.3                                 # scientific computing
+cryptography==41.0.1                          # cryptographic recipes and primitives
