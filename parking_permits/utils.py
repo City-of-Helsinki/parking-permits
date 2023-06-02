@@ -2,6 +2,8 @@ import calendar
 import copy
 from collections import OrderedDict
 from collections.abc import Callable
+from datetime import datetime
+from datetime import timezone as dt_tz
 from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
@@ -71,6 +73,14 @@ def diff_months_ceil(start_date, end_date):
     if diff.days >= 0:
         diff_months += 1
     return diff_months
+
+
+def start_date_to_datetime(date):
+    return tz.localtime(datetime.combine(date, datetime.min.time(), tzinfo=dt_tz.utc))
+
+
+def end_date_to_datetime(date):
+    return tz.localtime(datetime.combine(date, datetime.max.time(), tzinfo=dt_tz.utc))
 
 
 def get_end_time(start_time, diff_months):

@@ -200,13 +200,14 @@ class OrderAdmin(admin.ModelAdmin):
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = (
         "order",
+        "subscription",
         "product",
         "permit",
         "unit_price",
         "payment_unit_price",
         "quantity",
     )
-    list_select_related = ("order", "product", "permit")
+    list_select_related = ("order", "subscription", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
     ordering = ("-pk",)
 
@@ -217,7 +218,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "talpa_subscription_id",
-        "talpa_order_id",
+        "get_talpa_order_item_id",
         "status",
         "cancel_reason",
         "created_by",
@@ -225,9 +226,14 @@ class SubscriptionAdmin(admin.ModelAdmin):
     )
     readonly_fields = (
         "talpa_subscription_id",
-        "talpa_order_id",
+        "get_talpa_order_item_id",
     )
     ordering = ("-created_at",)
+
+    @admin.display(description="Talpa order item id")
+    def get_talpa_order_item_id(self, obj):
+        if obj.order_items.exists():
+            return obj.order_items.first().talpa_order_item_id
 
 
 @admin.register(TemporaryVehicle)

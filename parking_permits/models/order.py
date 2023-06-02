@@ -7,7 +7,7 @@ from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
 from ..exceptions import OrderCreationFailed
-from ..utils import diff_months_ceil
+from ..utils import diff_months_ceil, end_date_to_datetime, start_date_to_datetime
 from .customer import Customer
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
@@ -82,8 +82,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                         payment_unit_price=unit_price,
                         vat=product.vat,
                         quantity=quantity,
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_time=start_date_to_datetime(start_date),
+                        end_time=end_date_to_datetime(end_date),
                     )
             ParkingPermitEventFactory.make_create_order_event(
                 permit, order, created_by=kwargs.get("user", None)
@@ -204,8 +204,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                     payment_unit_price=payment_unit_price,
                     vat=product.vat,
                     quantity=period_quantity,
-                    start_date=period_start_date,
-                    end_date=period_end_date,
+                    start_time=start_date_to_datetime(start_date),
+                    end_time=end_date_to_datetime(end_date),
                 )
 
                 if product_end_date < order_item_end_date:
@@ -332,6 +332,41 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
 
 
+class SubscriptionStatus(models.TextChoices):
+    CONFIRMED = "CONFIRMED", _("Confirmed")
+    CANCELLED = "CANCELLED", _("Cancelled")
+
+
+class SubscriptionCancelReason(models.TextChoices):
+    RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
+    USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
+
+
+class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
+    talpa_subscription_id = models.UUIDField(
+        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
+    )
+    status = models.CharField(
+        _("Status"), max_length=20, choices=SubscriptionStatus.choices
+    )
+    cancel_reason = models.CharField(
+        _("Cancel reason"),
+        max_length=20,
+        choices=SubscriptionCancelReason.choices,
+        null=True,
+        blank=True,
+    )
+
+    serialize_fields = ({"name": "status"},)
+
+    class Meta:
+        verbose_name = _("Subscription")
+        verbose_name_plural = _("Subscriptions")
+
+    def __str__(self):
+        return f"Subscription #{self.talpa_subscription_id}"
+
+
 class OrderItem(SerializableMixin, TimestampedModelMixin):
     talpa_order_item_id = models.UUIDField(
         _("Talpa order item id"), unique=True, editable=False, null=True, blank=True
@@ -341,6 +376,14 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
         verbose_name=_("Order"),
         related_name="order_items",
         on_delete=models.PROTECT,
+    )
+    subscription = models.ForeignKey(
+        Subscription,
+        verbose_name=_("Subscription"),
+        related_name="order_items",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
     )
     product = models.ForeignKey(
         Product, verbose_name=_("Product"), on_delete=models.PROTECT
@@ -357,8 +400,8 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     quantity = models.IntegerField(_("Quantity"))
-    start_date = models.DateField(_("Start date"), null=True, blank=True)
-    end_date = models.DateField(_("End date"), null=True, blank=True)
+    start_time = models.DateTimeField(_("Start time"), null=True, blank=True)
+    end_time = models.DateTimeField(_("End time"), blank=True, null=True)
 
     serialize_fields = (
         {"name": "product", "accessor": lambda x: str(x)},
@@ -419,56 +462,3 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     @property
     def total_payment_price_vat(self):
         return self.total_payment_price * self.vat
-
-
-class SubscriptionStatus(models.TextChoices):
-    CONFIRMED = "CONFIRMED", _("Confirmed")
-    CANCELLED = "CANCELLED", _("Cancelled")
-
-
-class SubscriptionCancelReason(models.TextChoices):
-    RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
-    USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
-
-
-class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
-    order = models.ForeignKey(
-        Order,
-        verbose_name=_("Order"),
-        null=True,
-        blank=True,
-        related_name="subscriptions",
-        on_delete=models.PROTECT,
-    )
-    permit = models.OneToOneField(
-        ParkingPermit,
-        on_delete=models.PROTECT,
-        related_name="subscription",
-        null=True,
-        blank=True,
-    )
-    talpa_subscription_id = models.UUIDField(
-        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
-    )
-    talpa_order_id = models.UUIDField(
-        _("Talpa order id"), unique=True, editable=False, null=True, blank=True
-    )
-    status = models.CharField(
-        _("Status"), max_length=20, choices=SubscriptionStatus.choices
-    )
-    cancel_reason = models.CharField(
-        _("Cancel reason"),
-        max_length=20,
-        choices=SubscriptionCancelReason.choices,
-        null=True,
-        blank=True,
-    )
-
-    serialize_fields = ({"name": "status"},)
-
-    class Meta:
-        verbose_name = _("Subscription")
-        verbose_name_plural = _("Subscriptions")
-
-    def __str__(self):
-        return f"Subscription #{self.talpa_subscription_id}"
