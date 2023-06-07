@@ -21,10 +21,19 @@ class OrderFactory(factory.django.DjangoModelFactory):
         model = Order
 
 
+class SubscriptionFactory(factory.django.DjangoModelFactory):
+    talpa_subscription_id = factory.Faker("uuid4")
+    status = SubscriptionStatus.CONFIRMED
+
+    class Meta:
+        model = Subscription
+
+
 class OrderItemFactory(factory.django.DjangoModelFactory):
     order = factory.SubFactory(OrderFactory)
     product = factory.SubFactory(ProductFactory)
     permit = factory.SubFactory(ParkingPermitFactory)
+    subscription = factory.SubFactory(SubscriptionFactory)
     unit_price = Decimal(30)
     payment_unit_price = Decimal(30)
     vat = Decimal(0.24)
@@ -32,14 +41,3 @@ class OrderItemFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = OrderItem
-
-
-class SubscriptionFactory(factory.django.DjangoModelFactory):
-    talpa_order_id = factory.Faker("uuid4")
-    talpa_subscription_id = factory.Faker("uuid4")
-    status = SubscriptionStatus.CONFIRMED
-    order = factory.SubFactory(OrderFactory)
-    permit = factory.SubFactory(ParkingPermitFactory)
-
-    class Meta:
-        model = Subscription

@@ -2,7 +2,6 @@ import datetime
 from decimal import Decimal
 from unittest.mock import patch
 
-import pytest
 import requests_mock
 from django.conf import settings
 from django.test import override_settings
@@ -35,6 +34,27 @@ from users.tests.factories.user import UserFactory
 from ..models import Customer
 from ..models.common import SourceSystem
 from .keys import rsa_key
+
+
+def get_validate_order_data(talpa_order_id, talpa_order_item_id):
+    return {
+        "orderId": talpa_order_id,
+        "lastValidPurchaseDateTime": "2023-06-01T15:46:05.000Z",
+        "checkoutUrl": "https://test.com",
+        "loggedInCheckoutUrl": "https://test.com",
+        "receiptUrl": "https://test.com",
+        "items": [
+            {
+                "orderItemId": talpa_order_item_id,
+                "lastValidPurchaseDateTime": "2023-06-01T15:46:05.000Z",
+                "startDate": "2023-06-01T15:46:05",
+                "priceGross": "45.00",
+                "rowPriceTotal": "45.00",
+                "vatPercentage": 24,
+                "quantity": 1,
+            }
+        ],
+    }
 
 
 class PaymentViewTestCase(APITestCase):
@@ -92,35 +112,49 @@ class OrderViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
-    @pytest.mark.skip(reason="TODO")
     @override_settings(DEBUG=True)
     @patch("parking_permits.views.validate_order")
-    def test_subscription_renewal(self):
+    def test_subscription_renewal(self, mock_validate_order):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_existing_order_item_id = "7c779368-7e5f-42dc-9ffe-554915cb5540"
         talpa_new_order_id = "c6f70a98-23d1-46f0-b9cd-c01c6f78e075"
+        talpa_new_order_item_id = "5720b2dd-7226-498f-84c8-2ddb1fa1bada"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2023, 4, 30, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
         permit_end_time = datetime.datetime(
             2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc
         )
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
+            start_time=permit_start_time,
             end_time=permit_end_time,
         )
         order = OrderFactory(
             talpa_order_id=talpa_existing_order_id,
             customer=customer,
             status=OrderStatus.CONFIRMED,
+            paid_time=datetime.datetime.strptime(
+                "2023-06-01T15:46:05.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
         )
         order.permits.add(permit)
         order.save()
         subscription = SubscriptionFactory(
             talpa_subscription_id=talpa_subscription_id,
-            talpa_order_id=talpa_existing_order_id,
             status=SubscriptionStatus.CONFIRMED,
+        )
+        unit_price = Decimal(30)
+        product = ProductFactory(unit_price=unit_price)
+        OrderItemFactory(
+            talpa_order_item_id=talpa_existing_order_item_id,
             order=order,
+            product=product,
             permit=permit,
+            subscription=subscription,
         )
 
         url = reverse("parking_permits:order-notify")
@@ -129,32 +163,32 @@ class OrderViewTestCase(APITestCase):
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_new_order_id,
         }
+
+        mock_validate_order.return_value = get_validate_order_data(
+            talpa_new_order_id, talpa_new_order_item_id
+        )
+
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         subscription.refresh_from_db()
+        subscription_order = subscription.order_items.first().order
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(
+            str(subscription_order.talpa_order_id), talpa_existing_order_id
+        )
+        self.assertEqual(subscription.status, SubscriptionStatus.CONFIRMED)
         self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
         order = Order.objects.get(talpa_order_id=talpa_new_order_id)
         permit.refresh_from_db()
-        self.assertEqual(subscription.order, order)
         self.assertEqual(str(order.talpa_order_id), talpa_new_order_id)
         self.assertEqual(order.customer, permit.customer)
         self.assertEqual(order.status, OrderStatus.CONFIRMED)
         self.assertEqual(order.payment_type, OrderPaymentType.ONLINE_PAYMENT)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         self.assertEqual(
             permit.end_time,
             datetime.datetime(2023, 6, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
         )
-
-
-def get_validate_order_data(order):
-    order_item = order.order_items.first()
-    return {
-        "items": [
-            {
-                "orderItemId": order_item.talpa_order_item_id,
-            }
-        ]
-    }
 
 
 class SubscriptionViewTestCase(APITestCase):
@@ -196,7 +230,9 @@ class SubscriptionViewTestCase(APITestCase):
             status=ParkingPermitStatus.VALID, customer=customer
         )
         order = OrderFactory(
-            talpa_order_id=talpa_order_id, status=OrderStatus.CONFIRMED
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
         )
         order.permits.add(permit_1, permit_2)
         order.save()
@@ -214,7 +250,9 @@ class SubscriptionViewTestCase(APITestCase):
             "orderId": talpa_order_id,
         }
 
-        mock_validate_order.return_value = get_validate_order_data(order)
+        mock_validate_order.return_value = get_validate_order_data(
+            talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
 
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
@@ -231,11 +269,10 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
 
-    @pytest.mark.skip(reason="TODO")
     @override_settings(DEBUG=True)
     @patch("parking_permits.views.validate_order")
     @freeze_time("2023-05-30")
-    def test_subscription_cancellation(self, mock_method):
+    def test_subscription_cancellation(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
@@ -260,14 +297,15 @@ class SubscriptionViewTestCase(APITestCase):
         order.save()
         unit_price = Decimal(30)
         product = ProductFactory(unit_price=unit_price)
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
         OrderItemFactory(
             order=order,
             product=product,
             permit=permit,
-        )
-        subscription = SubscriptionFactory(
-            talpa_subscription_id=talpa_subscription_id,
-            status=SubscriptionStatus.CONFIRMED,
+            subscription=subscription,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -276,22 +314,27 @@ class SubscriptionViewTestCase(APITestCase):
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_order_id,
         }
+
+        mock_validate_order.return_value = get_validate_order_data(
+            talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
+
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         subscription.refresh_from_db()
+        subscription_order = subscription.order_items.first().order
         self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
-        self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
+        self.assertEqual(str(subscription_order.talpa_order_id), talpa_order_id)
         self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
         order.refresh_from_db()
-        self.assertEqual(subscription.order, order)
-        self.assertEqual(order.status, OrderStatus.CANCELLED)
+        self.assertEqual(subscription_order, order)
+        self.assertEqual(subscription_order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
 
-    @pytest.mark.skip(reason="TODO")
     @override_settings(DEBUG=True)
     @patch("parking_permits.views.validate_order")
     @freeze_time("2023-05-30")
-    def test_subscription_cancellation_with_refund(self, mock_method):
+    def test_subscription_cancellation_with_refund(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
@@ -316,14 +359,15 @@ class SubscriptionViewTestCase(APITestCase):
         order.save()
         unit_price = Decimal(30)
         product = ProductFactory(unit_price=unit_price)
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
         OrderItemFactory(
             order=order,
             product=product,
             permit=permit,
-        )
-        subscription = SubscriptionFactory(
-            talpa_subscription_id=talpa_subscription_id,
-            status=SubscriptionStatus.CONFIRMED,
+            subscription=subscription,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -332,15 +376,21 @@ class SubscriptionViewTestCase(APITestCase):
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_order_id,
         }
+
+        mock_validate_order.return_value = get_validate_order_data(
+            talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
+
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         subscription.refresh_from_db()
+        subscription_order = subscription.order_items.first().order
         self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
-        self.assertEqual(str(subscription.talpa_order_id), talpa_order_id)
+        self.assertEqual(str(subscription_order.talpa_order_id), talpa_order_id)
         self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
         order.refresh_from_db()
-        self.assertEqual(subscription.order, order)
-        self.assertEqual(order.status, OrderStatus.CANCELLED)
+        self.assertEqual(subscription_order, order)
+        self.assertEqual(subscription_order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         refund = Refund.objects.get(order=order)
         self.assertEqual(refund.order, order)

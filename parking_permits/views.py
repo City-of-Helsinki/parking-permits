@@ -74,6 +74,7 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .utils import (
+    get_end_time,
     get_meta_value,
     get_user_from_api_view_method_args,
     snake_to_camel_dict,
@@ -401,7 +402,8 @@ class OrderView(APIView):
             subscription = Subscription.objects.get(
                 talpa_subscription_id=talpa_subscription_id
             )
-            permit = subscription.order_items.first().permit
+            order_item = subscription.order_items.first()
+            permit = order_item.permit
             permit.end_time = permit.end_time + relativedelta(months=1)
             permit.save()
 
@@ -444,6 +446,11 @@ class OrderView(APIView):
                 talpa_product_id=validated_order_item_data.get("productId")
             )
 
+            start_time = datetime.datetime.strptime(
+                validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
+            )
+            end_time = get_end_time(start_time, 1)
+
             OrderItem.objects.create(
                 talpa_order_item_id=validated_order_item_data.get("orderItemId"),
                 order=order,
@@ -454,10 +461,8 @@ class OrderView(APIView):
                 payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
                 vat=validated_order_item_data.get("vatPercentage"),
                 quantity=validated_order_item_data.get("quantity"),
-                start_time=datetime.datetime.strptime(
-                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
-                ),
-                # end_date=validated_order_item_data.get("end_date"),
+                start_time=start_time,
+                end_time=end_time,
             )
 
             send_permit_email(PermitEmailType.UPDATED, permit)
@@ -546,23 +551,23 @@ class SubscriptionView(APIView):
             subscription.cancel_reason = request.data.get("reason")
             subscription.save()
 
-            remaining_valid_subscriptions = (
-                subscription.order_item.subscriptions.filter(
-                    status=SubscriptionStatus.CONFIRMED
-                )
+            remaining_valid_order_subscriptions = Subscription.objects.filter(
+                order_items__order__talpa_order_id__exact=talpa_order_id,
+                status=SubscriptionStatus.CONFIRMED,
             )
-            if not remaining_valid_subscriptions.exists():
-                order = subscription.order_item.order
+            # Mark the order as cancelled if it has no active subscriptions left
+            if not remaining_valid_order_subscriptions.exists():
+                order = subscription.order_items.first().order
                 order.status = OrderStatus.CANCELLED
                 order.save()
 
-            order_item = subscription.order_item
+            order_item = subscription.order_items.first()
             permit = order_item.permit
             # Create a refund for a remaining full month period, if it was charged already
             if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
                 refund = Refund.objects.create(
                     name=permit.customer.full_name,
-                    order=subscription.order_item.order,
+                    order=order_item.order,
                     amount=order_item.product.unit_price,
                     description=f"Refund for ending permit {str(permit.id)}",
                 )
