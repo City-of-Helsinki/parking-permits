@@ -565,6 +565,7 @@ class SubscriptionView(APIView):
             permit = order_item.permit
             # Create a refund for a remaining full month period, if it was charged already
             if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
+                logger.info(f"Creating Refund for permit {str(permit.id)}")
                 refund = Refund.objects.create(
                     name=permit.customer.full_name,
                     order=order_item.order,
@@ -575,11 +576,14 @@ class SubscriptionView(APIView):
                 ParkingPermitEventFactory.make_create_refund_event(
                     permit, refund, created_by=permit.customer.user
                 )
+                logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
             CustomerPermit(permit.customer_id).end(
                 [permit.id], ParkingPermitEndType.AFTER_CURRENT_PERIOD
             )
-            logger.info(f"Subscription {subscription} cancelled")
+            logger.info(
+                f"Subscription {subscription} cancelled and permit ended after current period"
+            )
             return Response({"message": "Subscription cancelled"}, status=200)
         else:
             logger.error(f"Unknown subscription event type {event_type}")
