@@ -193,8 +193,7 @@ class CustomerPermit:
                 primary_permit = self.customer_permit_query.get(primary_vehicle=True)
                 contract_type = primary_permit.contract_type
                 primary_vehicle = not primary_permit.primary_vehicle
-                if contract_type == FIXED_PERIOD:
-                    end_time = primary_permit.end_time
+                end_time = primary_permit.end_time
 
             vehicle = self.customer.fetch_vehicle_detail(registration)
             is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
