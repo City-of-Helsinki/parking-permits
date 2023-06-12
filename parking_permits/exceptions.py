@@ -50,6 +50,14 @@ class OrderValidationError(ParkingPermitBaseException):
     pass
 
 
+class OrderCancelError(ParkingPermitBaseException):
+    pass
+
+
+class SubscriptionCancelError(ParkingPermitBaseException):
+    pass
+
+
 class SetTalpaFlowStepsError(ParkingPermitBaseException):
     pass
 

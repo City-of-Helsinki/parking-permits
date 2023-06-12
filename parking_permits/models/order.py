@@ -1,12 +1,21 @@
 import logging
 
+import requests
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import OrderCreationFailed
+from ..exceptions import (
+    OrderCancelError,
+    OrderCreationFailed,
+    OrderValidationError,
+    SubscriptionCancelError,
+)
+from ..services.mail import RefundEmailType, send_refund_email
 from ..utils import diff_months_ceil, end_date_to_datetime, start_date_to_datetime
 from .customer import Customer
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
@@ -17,6 +26,7 @@ from .parking_permit import (
     ParkingPermitStatus,
 )
 from .product import Product
+from .refund import Refund
 
 logger = logging.getLogger("db")
 
@@ -232,6 +242,42 @@ class OrderManager(SerializableMixin.SerializableManager):
 
         return new_order
 
+    def _cancel_talpa_order(self, talpa_order_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}/{talpa_order_id}/cancel",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info(f"Talpa order cancelling successful: {talpa_order_id}")
+            return True
+        else:
+            logger.error("Talpa order cancelling failed")
+            logger.error(
+                "Talpa order cancelling failed."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise OrderCancelError(
+                "Talpa order cancelling failed."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @transaction.atomic
+    def cancel(self, talpa_order_id):
+        logger.info(f"Cancelling order: {talpa_order_id}")
+        order = Order.objects.get(talpa_order_id=talpa_order_id)
+        # Cancel order from Talpa as well
+        if self._cancel_talpa_order(talpa_order_id):
+            order.status = OrderStatus.CANCELLED
+            order.save()
+            return True
+        return False
+
 
 class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     talpa_order_id = models.UUIDField(
@@ -365,6 +411,105 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
 
     def __str__(self):
         return f"Subscription #{self.talpa_subscription_id}"
+
+    def _validate_order(self, order_id, user_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            order = response.json()
+            if order["user"] != str(user_id):
+                logger.error(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+                raise OrderValidationError(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+            logger.info("Talpa order is valid")
+            return order
+        else:
+            logger.error("Talpa order is not valid")
+            raise OrderValidationError("Talpa order is not valid")
+
+    def _cancel_talpa_subcription(self):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}/subcription/{self.talpa_subscription_id}/cancel",
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info(
+                f"Talpa subscription cancelling successful: {self.talpa_subscription_id}"
+            )
+            return True
+        else:
+            logger.error("Talpa subscription cancelling failed")
+            logger.error(
+                "Talpa subscription cancelling failed."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise SubscriptionCancelError(
+                "Talpa subscription cancelling failed."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @transaction.atomic
+    def cancel(self, cancel_reason):
+        logger.info(f"Cancelling subscription: {self.talpa_subscription_id}")
+
+        order_item = self.order_items.first()
+        order = order_item.order
+        talpa_order_id = order.talpa_order_id
+        permit = order_item.permit
+
+        try:
+            self._validate_order(talpa_order_id, permit.customer.user.uuid)
+        except OrderValidationError as e:
+            logger.error(f"Order validation failed. Error = {e}")
+            return False
+
+        # Cancel subscription from Talpa as well
+        if self._cancel_talpa_subcription():
+            self.status = SubscriptionStatus.CANCELLED
+            self.cancel_reason = cancel_reason
+            self.save()
+
+        remaining_valid_order_subscriptions = Subscription.objects.filter(
+            order_items__order__talpa_order_id__exact=talpa_order_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        # Mark the order as cancelled if it has no active subscriptions left
+        if not remaining_valid_order_subscriptions.exists():
+            order.cancel()
+
+        # Create a refund for a remaining full month period, if it was charged already
+        if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
+            logger.info(f"Creating Refund for permit {str(permit.id)}")
+            refund = Refund.objects.create(
+                name=permit.customer.full_name,
+                order=order,
+                amount=order_item.product.unit_price,
+                description=f"Refund for ending permit {str(permit.id)}",
+            )
+            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=permit.customer.user
+            )
+            logger.info(f"Refund for permit {str(permit.id)} created successfully")
+
+        logger.info(f"Subscription {self} cancelled successfully")
+        return True
 
 
 class OrderItem(SerializableMixin, TimestampedModelMixin):

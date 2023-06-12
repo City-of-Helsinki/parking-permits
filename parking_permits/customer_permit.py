@@ -25,10 +25,16 @@ from .models import (
     OrderItem,
     ParkingPermit,
     Refund,
+    Subscription,
     TemporaryVehicle,
     Vehicle,
 )
-from .models.order import OrderPaymentType, OrderStatus, OrderType
+from .models.order import (
+    OrderPaymentType,
+    OrderStatus,
+    OrderType,
+    SubscriptionCancelReason,
+)
 from .models.parking_permit import (
     ContractType,
     ParkingPermitEventFactory,
@@ -376,6 +382,15 @@ class CustomerPermit:
                     )
 
         for permit in permits:
+            if permit.contract_type == ContractType.OPEN_ENDED:
+                # Cancel Talpa subscription
+                subscription = Subscription.objects.get(
+                    order_items__permit__pk=permit.pk
+                )
+                subscription.cancel(
+                    cancel_reason=SubscriptionCancelReason.USER_CANCELLED
+                )
+
             active_temporary_vehicle = permit.active_temporary_vehicle
             if active_temporary_vehicle:
                 active_temporary_vehicle.is_active = False
