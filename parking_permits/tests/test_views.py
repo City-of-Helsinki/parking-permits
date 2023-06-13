@@ -1,4 +1,5 @@
 import datetime
+from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -6,6 +7,7 @@ import requests_mock
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone as tz
 from freezegun import freeze_time
 from helusers.settings import api_token_auth_settings
 from jose import jwt
@@ -137,8 +139,10 @@ class OrderViewTestCase(APITestCase):
             talpa_order_id=talpa_existing_order_id,
             customer=customer,
             status=OrderStatus.CONFIRMED,
-            paid_time=datetime.datetime.strptime(
-                "2023-06-01T15:46:05.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2023-06-01T15:46:05.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
             ),
         )
         order.permits.add(permit)
@@ -422,7 +426,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         ParkingPermitFactory(
             customer=customer,
             status=ParkingPermitStatus.CLOSED,
-            end_time=datetime.datetime(2020, 2, 1),
+            end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
         )
         return customer
 
@@ -530,7 +534,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             ParkingPermitFactory(
                 customer=customer,
                 status=ParkingPermitStatus.CLOSED,
-                end_time=datetime.datetime(2020, 2, 1),
+                end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
             )
 
         with freeze_time(datetime.datetime(2022, 1, 15)):
@@ -552,7 +556,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             ParkingPermitFactory(
                 customer=customer,
                 status=ParkingPermitStatus.CLOSED,
-                end_time=datetime.datetime(2020, 2, 1),
+                end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
             )
 
         with freeze_time(datetime.datetime(2022, 3, 1)):
