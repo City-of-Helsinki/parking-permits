@@ -211,7 +211,9 @@ class TalpaResolveRightOfPurchase(APIView):
         logger.info(
             f"Data received for resolve right of purchase = {json.dumps(request.data, default=str)}"
         )
-        meta = request.data.get("orderItem").get("meta")
+        order_item_data = request.data.get("orderItem")
+        order_item_id = order_item_data.get("orderItemId")
+        meta = order_item_data.get("meta")
         permit_id = get_meta_value(meta, "permitId")
         user_id = request.data.get("userId")
 
@@ -224,8 +226,13 @@ class TalpaResolveRightOfPurchase(APIView):
             has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
                 vehicle
             )
+            order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
+            is_valid_subscription = (
+                order_item.subscription.status == SubscriptionStatus.CONFIRMED
+            )
             right_of_purchase = (
-                is_user_of_vehicle
+                is_valid_subscription
+                and is_user_of_vehicle
                 and customer.driving_licence.active
                 and has_valid_driving_licence
                 and not vehicle.is_due_for_inspection()
