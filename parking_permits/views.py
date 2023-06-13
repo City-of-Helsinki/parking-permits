@@ -3,10 +3,8 @@ import datetime
 import json
 import logging
 
-import requests
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
 from django.db import transaction
 from django.http import (
     Http404,
@@ -45,15 +43,11 @@ from .models.order import (
     OrderPaymentType,
     OrderStatus,
     OrderType,
+    OrderValidator,
     Subscription,
     SubscriptionStatus,
 )
-from .models.parking_permit import (
-    ParkingPermit,
-    ParkingPermitEventFactory,
-    ParkingPermitStatus,
-)
-from .models.refund import Refund
+from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
@@ -68,9 +62,7 @@ from .serializers import (
 )
 from .services.mail import (
     PermitEmailType,
-    RefundEmailType,
     send_permit_email,
-    send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
 from .utils import (
@@ -92,33 +84,6 @@ audit_logger = audit.getAuditLoggerAdapter(
         "kwarg_name": "audit_msg",
     },
 )
-
-
-def validate_order(order_id, user_id):
-    headers = {
-        "api-key": settings.TALPA_API_KEY,
-        "namespace": settings.NAMESPACE,
-        "Content-Type": "application/json",
-    }
-    response = requests.get(
-        f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
-        headers=headers,
-    )
-
-    if response.status_code == 200:
-        order = response.json()
-        if order["user"] != str(user_id):
-            logger.error(
-                f"Talpa order user id {order['userId']} does not match with user id {user_id}"
-            )
-            raise OrderValidationError(
-                f"Talpa order user id {order['userId']} does not match with user id {user_id}"
-            )
-        logger.info("Talpa order is valid")
-        return order
-    else:
-        logger.error("Talpa order is not valid")
-        raise OrderValidationError("Talpa order is not valid")
 
 
 class ProductList(mixins.ListModelMixin, generics.GenericAPIView):
@@ -408,7 +373,7 @@ class OrderView(APIView):
             permit.save()
 
             try:
-                validated_order_data = validate_order(
+                validated_order_data = OrderValidator.validate_order(
                     talpa_order_id, permit.customer.user.uuid
                 )
             except OrderValidationError as e:
@@ -518,7 +483,7 @@ class SubscriptionView(APIView):
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
-            validated_order_data = validate_order(
+            validated_order_data = OrderValidator.validate_order(
                 talpa_order_id, order.customer.user.uuid
             )
         except OrderValidationError as e:
@@ -552,39 +517,13 @@ class SubscriptionView(APIView):
             subscription = Subscription.objects.get(
                 talpa_subscription_id=talpa_subscription_id
             )
-            subscription.status = SubscriptionStatus.CANCELLED
-            subscription.cancel_reason = request.data.get("reason")
-            subscription.save()
-
-            remaining_valid_order_subscriptions = Subscription.objects.filter(
-                order_items__order__talpa_order_id__exact=talpa_order_id,
-                status=SubscriptionStatus.CONFIRMED,
-            )
-            # Mark the order as cancelled if it has no active subscriptions left
-            if not remaining_valid_order_subscriptions.exists():
-                order = subscription.order_items.first().order
-                order.status = OrderStatus.CANCELLED
-                order.save()
-
             order_item = subscription.order_items.first()
             permit = order_item.permit
-            # Create a refund for a remaining full month period, if it was charged already
-            if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
-                logger.info(f"Creating Refund for permit {str(permit.id)}")
-                refund = Refund.objects.create(
-                    name=permit.customer.full_name,
-                    order=order_item.order,
-                    amount=order_item.product.unit_price,
-                    description=f"Refund for ending permit {str(permit.id)}",
-                )
-                send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
-                ParkingPermitEventFactory.make_create_refund_event(
-                    permit, refund, created_by=permit.customer.user
-                )
-                logger.info(f"Refund for permit {str(permit.id)} created successfully")
-
             CustomerPermit(permit.customer_id).end(
-                [permit.id], ParkingPermitEndType.AFTER_CURRENT_PERIOD
+                [permit.id],
+                ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+                subscription_cancel_reason=request.data.get("reason"),
+                cancel_from_talpa=False,
             )
             logger.info(
                 f"Subscription {subscription} cancelled and permit ended after current period"

@@ -343,7 +343,15 @@ class CustomerPermit:
 
         return self._update_fields_to_all_draft(fields_to_update)
 
-    def end(self, permit_ids, end_type, iban=None, user=None):
+    def end(
+        self,
+        permit_ids,
+        end_type,
+        iban=None,
+        user=None,
+        subscription_cancel_reason=SubscriptionCancelReason.USER_CANCELLED,
+        cancel_from_talpa=True,
+    ):
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
@@ -383,12 +391,12 @@ class CustomerPermit:
 
         for permit in permits:
             if permit.contract_type == ContractType.OPEN_ENDED:
-                # Cancel Talpa subscription
                 subscription = Subscription.objects.get(
                     order_items__permit__pk=permit.pk
                 )
                 subscription.cancel(
-                    cancel_reason=SubscriptionCancelReason.USER_CANCELLED
+                    cancel_reason=subscription_cancel_reason,
+                    cancel_from_talpa=cancel_from_talpa,
                 )
 
             active_temporary_vehicle = permit.active_temporary_vehicle
