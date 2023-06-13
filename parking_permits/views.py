@@ -415,6 +415,12 @@ class OrderView(APIView):
                 logger.error(f"Order validation failed. Error = {e}")
                 return Response({"message": str(e)}, status=400)
 
+            paid_time = tz.make_aware(
+                datetime.datetime.strptime(
+                    validated_order_data.get("lastValidPurchaseDateTime"),
+                    "%Y-%m-%dT%H:%M:%S.%fZ",
+                )
+            )
             order = Order.objects.create(
                 talpa_order_id=validated_order_data.get("orderId"),
                 talpa_checkout_url=validated_order_data.get("checkoutUrl"),
@@ -425,10 +431,7 @@ class OrderView(APIView):
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 customer=permit.customer,
                 status=OrderStatus.CONFIRMED,
-                paid_time=datetime.datetime.strptime(
-                    validated_order_data.get("lastValidPurchaseDateTime"),
-                    "%Y-%m-%dT%H:%M:%S.%fZ",
-                ),
+                paid_time=paid_time,
                 address_text=str(permit.address),
                 parking_zone_name=permit.parking_zone.name,
                 vehicles=[permit.vehicle.registration_number],
@@ -446,8 +449,10 @@ class OrderView(APIView):
                 talpa_product_id=validated_order_item_data.get("productId")
             )
 
-            start_time = datetime.datetime.strptime(
-                validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
+            start_time = tz.make_aware(
+                datetime.datetime.strptime(
+                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
+                )
             )
             end_time = get_end_time(start_time, 1)
 
