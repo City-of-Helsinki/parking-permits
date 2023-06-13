@@ -18,6 +18,7 @@ from parking_permits.models.order import (
     Order,
     OrderPaymentType,
     OrderStatus,
+    OrderValidator,
     Subscription,
     SubscriptionStatus,
 )
@@ -115,7 +116,7 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     @override_settings(DEBUG=True)
-    @patch("parking_permits.views.validate_order")
+    @patch.object(OrderValidator, "validate_order")
     def test_subscription_renewal(self, mock_validate_order):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_existing_order_item_id = "7c779368-7e5f-42dc-9ffe-554915cb5540"
@@ -222,7 +223,7 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     @override_settings(DEBUG=True)
-    @patch("parking_permits.views.validate_order")
+    @patch.object(OrderValidator, "validate_order")
     def test_subscription_creation(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
@@ -274,7 +275,7 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
 
     @override_settings(DEBUG=True)
-    @patch("parking_permits.views.validate_order")
+    @patch.object(OrderValidator, "validate_order")
     @freeze_time("2023-05-30")
     def test_subscription_cancellation(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
@@ -336,7 +337,7 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
 
     @override_settings(DEBUG=True)
-    @patch("parking_permits.views.validate_order")
+    @patch.object(OrderValidator, "validate_order")
     @freeze_time("2023-05-30")
     def test_subscription_cancellation_with_refund(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
