@@ -398,6 +398,14 @@ class CustomerPermit:
                     cancel_reason=subscription_cancel_reason,
                     cancel_from_talpa=cancel_from_talpa,
                 )
+            else:
+                # Cancel fixed period permit order when this is the last valid permit in that order
+                if (
+                    not permit.order.permits.filter(status=[VALID])
+                    .exclude(permit=permit.id)
+                    .exists()
+                ):
+                    permit.order.cancel(cancel_from_talpa=cancel_from_talpa)
 
             active_temporary_vehicle = permit.active_temporary_vehicle
             if active_temporary_vehicle:
