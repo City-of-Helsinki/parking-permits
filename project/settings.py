@@ -15,6 +15,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     DJANGO_SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
+    CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
     TALPA_MERCHANT_EXPERIENCE_API=(
         str,
@@ -76,6 +77,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = env("DEBUG")
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
 AUTH_USER_MODEL = "users.User"
 
