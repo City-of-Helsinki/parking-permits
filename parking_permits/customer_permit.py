@@ -138,7 +138,7 @@ class CustomerPermit:
         permits = []
         # Delete all the draft permits if it wasn't created today
         draft_permits = self.customer_permit_query.filter(
-            status=DRAFT, start_time__lt=tz.now()
+            status=DRAFT, start_time__lt=tz.localdate(tz.now())
         ).all()
         for permit in draft_permits:
             permit.order_items.all().delete()
@@ -391,8 +391,10 @@ class CustomerPermit:
 
         for permit in permits:
             if permit.contract_type == ContractType.OPEN_ENDED:
-                subscription = Subscription.objects.get(
-                    order_items__permit__pk=permit.pk
+                subscription = (
+                    Subscription.objects.filter(order_items__permit__pk=permit.pk)
+                    .distinct()
+                    .first()
                 )
                 subscription.cancel(
                     cancel_reason=subscription_cancel_reason,
@@ -400,12 +402,14 @@ class CustomerPermit:
                 )
             else:
                 # Cancel fixed period permit order when this is the last valid permit in that order
+                latest_order = permit.latest_order
                 if (
-                    not permit.order.permits.filter(status=[VALID])
-                    .exclude(permit=permit.id)
+                    latest_order
+                    and not latest_order.order_permits.filter(status=[VALID])
+                    .exclude(pk=permit.pk)
                     .exists()
                 ):
-                    permit.order.cancel(cancel_from_talpa=cancel_from_talpa)
+                    latest_order.cancel(cancel_from_talpa=cancel_from_talpa)
 
             active_temporary_vehicle = permit.active_temporary_vehicle
             if active_temporary_vehicle:

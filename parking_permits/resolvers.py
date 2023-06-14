@@ -97,6 +97,7 @@ def is_valid_address(address):
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_customer_permits(_obj, info):
     request = info.context["request"]
     # NOTE: get() actually fetches a *list* of items... and more importantly, also
@@ -131,6 +132,7 @@ def save_profile_address(address):
     autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
@@ -178,6 +180,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_update_language(_obj, info, lang):
     request = info.context["request"]
     customer = request.user.customer
@@ -187,6 +190,7 @@ def resolve_update_language(_obj, info, lang):
 
 
 @address_node.field("primary")
+@transaction.atomic
 def resolve_address_primary(address, info):
     address_node_path_key = info.path.prev.key
     if address_node_path_key == "otherAddress":
@@ -216,6 +220,7 @@ def validate_customer_address(customer, address_id):
 @query.field("getUpdateAddressPriceChanges")
 @is_authenticated
 @convert_kwargs_to_snake_case
+@transaction.atomic
 def resolve_get_update_address_price_changes(_obj, info, address_id):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
@@ -249,6 +254,7 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
@@ -266,6 +272,7 @@ def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = N
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_create_parking_permit(_obj, info, address_id, registration):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
@@ -281,6 +288,7 @@ def resolve_create_parking_permit(_obj, info, address_id, registration):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_update_parking_permit(
     _obj, info, input, permit_id=None, audit_msg: AuditMsg = None
 ):
@@ -304,6 +312,7 @@ def resolve_update_parking_permit(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_end_permit(
     _obj, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
 ):
@@ -326,6 +335,7 @@ def resolve_end_permit(
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_get_vehicle_information(_obj, info, registration):
     request = info.context["request"]
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
@@ -357,6 +367,7 @@ def resolve_get_vehicle_information(_obj, info, registration):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_update_permit_vehicle(
     _obj,
     info,
@@ -446,6 +457,7 @@ def resolve_update_permit_vehicle(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     request = info.context["request"]
     customer = request.user.customer
@@ -468,6 +480,7 @@ def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_add_temporary_vehicle(
     _obj,
     info,
@@ -505,6 +518,7 @@ def resolve_add_temporary_vehicle(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_remove_temporary_vehicle(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
