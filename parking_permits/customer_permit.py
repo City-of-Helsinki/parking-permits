@@ -150,13 +150,13 @@ class CustomerPermit:
             )
             vehicle = permit.vehicle
             # Update vehicle detail from traficom if it wasn't updated today
-            if permit.vehicle.updated_from_traficom_on < tz.now().date():
+            if permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now()):
                 self.customer.fetch_vehicle_detail(vehicle.registration_number)
 
             user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
             if not user_of_vehicle:
                 permit.vehicle_changed = True
-                permit.vehicle_changed_date = tz.now().date()
+                permit.vehicle_changed_date = tz.localdate(tz.now())
                 permit.save()
             products = []
             for product_with_qty in permit.get_products_with_quantities():

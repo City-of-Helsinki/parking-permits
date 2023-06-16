@@ -19,7 +19,7 @@ db_logger = logging.getLogger("db")
 def automatic_expiration_of_permits():
     logger.info("Automatically ending permits started...")
     ending_permits = ParkingPermit.objects.filter(
-        end_time__lt=tz.now(), status=ParkingPermitStatus.VALID
+        end_time__lt=tz.localdate(tz.now()), status=ParkingPermitStatus.VALID
     )
     for permit in ending_permits:
         permit.status = ParkingPermitStatus.CLOSED
@@ -35,7 +35,7 @@ def automatic_expiration_of_permits():
 def automatic_expiration_remind_notification_of_permits():
     logger.info("Automatically sending remind notifications for permits started...")
     count = 0
-    now = tz.now()
+    now = tz.localdate(tz.now())
     expiring_permits = ParkingPermit.objects.filter(
         end_time__lt=now + relativedelta(weeks=1), status=ParkingPermitStatus.VALID
     )
