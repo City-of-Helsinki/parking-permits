@@ -221,13 +221,17 @@ class CustomerPermit:
                     _("Customer does not have a valid driving licence")
                 )
 
+            start_time = tz.now()
+            if not end_time:
+                end_time = get_end_time(start_time, 1)
+
             permit = ParkingPermit.objects.create(
                 customer=self.customer,
                 address=address,
                 parking_zone=address.zone,
                 primary_vehicle=primary_vehicle,
                 contract_type=contract_type,
-                start_time=tz.now(),
+                start_time=start_time,
                 end_time=end_time,
                 vehicle=Vehicle.objects.get(registration_number=registration),
             )
@@ -254,8 +258,6 @@ class CustomerPermit:
         keys = data.keys()
         fields_to_update = {}
 
-        # TODO: this is a remporary solution for now. It should be removed and the field
-        #  needs to be updated when a notification is received from talpa
         if "order_id" in keys:
             fields_to_update.update(
                 {"order_id": data["order_id"], "status": PAYMENT_IN_PROGRESS}
@@ -535,13 +537,12 @@ class CustomerPermit:
         primary.primary_vehicle = secondary.primary_vehicle
 
         update_fields = ["primary_vehicle"]
-        if primary.contract_type == ContractType.FIXED_PERIOD:
-            primary.end_time = get_end_time(primary.start_time, 1)
-            secondary.end_time = get_end_time(primary.start_time, 1)
-            primary.month_count = 1
-            secondary.month_count = 1
-            update_fields.append("end_time")
-            update_fields.append("month_count")
+        primary.end_time = get_end_time(primary.start_time, 1)
+        secondary.end_time = get_end_time(primary.start_time, 1)
+        primary.month_count = 1
+        secondary.month_count = 1
+        update_fields.append("end_time")
+        update_fields.append("month_count")
 
         primary.save(update_fields=update_fields)
         secondary.primary_vehicle = not secondary.primary_vehicle
