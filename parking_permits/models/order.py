@@ -103,6 +103,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         for permit in permits:
             order.vehicles.append(permit.vehicle.registration_number)
             order.save()
+            first_order_item = True
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
                 if quantity > 0:
@@ -120,9 +121,12 @@ class OrderManager(SerializableMixin.SerializableManager):
                         payment_unit_price=unit_price,
                         vat=product.vat,
                         quantity=quantity,
-                        start_time=start_date_to_datetime(start_date),
+                        start_time=permit.start_time
+                        if first_order_item
+                        else start_date_to_datetime(start_date),
                         end_time=end_date_to_datetime(end_date),
                     )
+                    first_order_item = False
             ParkingPermitEventFactory.make_create_order_event(
                 permit, order, created_by=kwargs.get("user", None)
             )

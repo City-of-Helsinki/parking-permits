@@ -481,7 +481,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if not self.is_fixed_period:
             order_items = self.latest_order_items
             return [
-                [item, item.quantity, (item.start_time.date(), item.end_time.date())]
+                [
+                    item,
+                    item.quantity,
+                    (
+                        timezone.localtime(item.start_time).date(),
+                        timezone.localtime(item.end_time).date(),
+                    ),
+                ]
                 for item in order_items
             ]
 
@@ -497,18 +504,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # unused_start_date
         first_item = order_items[0]
         first_item_unused_quantity = diff_months_ceil(
-            unused_start_date, first_item.end_time.date()
+            unused_start_date, timezone.localtime(first_item.end_time).date()
         )
         first_item_with_quantity = [
             first_item,
             first_item_unused_quantity,
-            (unused_start_date, first_item.end_time.date()),
+            (unused_start_date, timezone.localtime(first_item.end_time).date()),
         ]
 
         return [
             first_item_with_quantity,
             *[
-                [item, item.quantity, (item.start_time.date(), item.end_time.date())]
+                [
+                    item,
+                    item.quantity,
+                    (
+                        timezone.localtime(item.start_time).date(),
+                        timezone.localtime(item.end_time).date(),
+                    ),
+                ]
                 for item in order_items[1:]
             ],
         ]
