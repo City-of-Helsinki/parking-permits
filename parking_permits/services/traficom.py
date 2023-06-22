@@ -23,6 +23,7 @@ logger = logging.getLogger("db")
 
 CONSUMPTION_TYPE_NEDC = "4"
 CONSUMPTION_TYPE_WLTP = "10"
+DECOMMISSIONED_VEHICLE_RESTRICTION_TYPE = "18"
 VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
 VEHICLE_SEARCH = 841
@@ -87,6 +88,17 @@ class Traficom:
                     "registration_number": registration_number,
                 }
             )
+
+        restrictions = et.findall(".//rajoitustiedot/rajoitustieto")
+        for r in restrictions:
+            restriction_type = r.find("rajoitusLaji").text
+            if restriction_type == DECOMMISSIONED_VEHICLE_RESTRICTION_TYPE:
+                raise TraficomFetchVehicleError(
+                    _("Vehicle %(registration_number)s is decommissioned")
+                    % {
+                        "registration_number": registration_number,
+                    }
+                )
 
         vehicle_identity = et.find(".//tunnus")
         motor = et.find(".//moottori")

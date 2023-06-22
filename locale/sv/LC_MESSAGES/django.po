@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-05-08 16:32+0300\n"
+"POT-Creation-Date: 2023-06-22 17:38+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -130,7 +130,7 @@ msgstr ""
 "(tidsbegränsad / obestämd tid)."
 
 msgid "Primary permit cannot be ended if customer has two permits"
-msgstr ""
+msgstr "Primärt tillstånd kan inte avslutas om kunden har två tillstånd"
 
 msgid "Product search error"
 msgstr "Produktsökningsfel"
@@ -476,29 +476,14 @@ msgstr "Modifierad"
 msgid "Created by"
 msgstr "Skapad av"
 
+msgid "Draft"
+msgstr "Skiss"
+
 msgid "Confirmed"
 msgstr "Bekräftad"
 
 msgid "Cancelled"
 msgstr "Inställt"
-
-msgid "Talpa subscription id"
-msgstr "Talpa återkommande laddning ID"
-
-msgid "Period unit"
-msgstr "Periodenhet"
-
-msgid "Period frequency"
-msgstr "Period frekvens"
-
-msgid "Subscription"
-msgstr "Avtal"
-
-msgid "Subscriptions"
-msgstr "Avtalet"
-
-msgid "Draft"
-msgstr "Skiss"
 
 msgid "Created"
 msgstr "Skapad kl"
@@ -544,6 +529,24 @@ msgstr "Beställning"
 
 msgid "Orders"
 msgstr "Beställningar"
+
+msgid "Renewal failed"
+msgstr "Förnyelsen misslyckades"
+
+msgid "User cancelled"
+msgstr "Användaren har avbrutits"
+
+msgid "Talpa subscription id"
+msgstr "Talpa återkommande laddning ID"
+
+msgid "Cancel reason"
+msgstr "Avbryt anledning"
+
+msgid "Subscription"
+msgstr "Avtal"
+
+msgid "Subscriptions"
+msgstr "Avtalet"
 
 msgid "Talpa order item id"
 msgstr "Talpa beställning id"
@@ -906,6 +909,10 @@ msgid "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
 msgstr ""
 "Ej stödd fordonsklass %(vehicle_class)s för registreringsskylt "
 "%(registration_number)s"
+
+#, python-format
+msgid "Vehicle %(registration_number)s is decommissioned"
+msgstr "Fordonet %(registration_number)s är avställd"
 
 msgid ""
 "According to the Digital and Population Data Services Agency, you do not "
