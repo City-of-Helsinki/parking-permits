@@ -41,6 +41,7 @@ type AddressNode {
 type CustomerActivePermit {
   id: ID!
   primaryVehicle: Boolean!
+  monthCount: Int
 }
 
 type CustomerNode {
