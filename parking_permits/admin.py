@@ -249,5 +249,9 @@ class TemporaryVehicleAdmin(admin.ModelAdmin):
 
 @admin.register(VehicleUser)
 class VehicleUserAdmin(admin.ModelAdmin):
-    list_display = ("national_id_number",)
+    list_display = ("national_id_number", "get_vehicles")
     ordering = ("national_id_number",)
+
+    @admin.display(description="Vehicles")
+    def get_vehicles(self, obj):
+        return [vehicle.registration_number for vehicle in obj.vehicles.all()]

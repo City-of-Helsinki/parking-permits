@@ -157,7 +157,9 @@ class Vehicle(TimestampedModelMixin):
     updated_from_traficom_on = models.DateField(
         _("Update from traficom on"), default=tz.now
     )
-    users = models.ManyToManyField(VehicleUser)
+    users = models.ManyToManyField(
+        VehicleUser, verbose_name=_("Vehicle users"), related_name="vehicles"
+    )
 
     class Meta:
         verbose_name = _("Vehicle")
