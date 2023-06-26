@@ -1,8 +1,32 @@
 from django.contrib import admin
+from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import RedirectView
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
+
+
+def healthz(*args, **kwargs):
+    """Returns status code 200 if the server is alive."""
+    return HttpResponse(status=200)
+
+
+def readiness(*args, **kwargs):
+    """
+    Returns status code 200 if the server is ready to perform its duties.
+
+    This goes through each database connection and perform a standard SQL
+    query without requiring any particular tables to exist.
+    """
+    from django.db import connections
+
+    for name in connections:
+        cursor = connections[name].cursor()
+        cursor.execute("SELECT 1;")
+        cursor.fetchone()
+
+    return HttpResponse(status=200)
+
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -21,6 +45,8 @@ schema_view = get_schema_view(
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", RedirectView.as_view(url="/admin/")),
+    path("healthz/", healthz),
+    path("readiness/", readiness),
     path("", include("parking_permits.urls")),
     path(
         "swagger/",
