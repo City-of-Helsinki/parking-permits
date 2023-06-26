@@ -302,14 +302,25 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     autotarget=audit.TARGET_RETURN,
 )
 def resolve_vehicle(obj, info, reg_number, national_id_number):
-    vehicle = Traficom().fetch_vehicle_details(reg_number)
+    customer = Customer.objects.get_or_create(national_id_number=national_id_number)[0]
+    customer.fetch_driving_licence_detail()
+    vehicle = customer.fetch_vehicle_detail(reg_number)
     if not settings.TRAFICOM_CHECK:
         return vehicle
-    users_nin = [user.national_id_number for user in vehicle.users.all()]
-    if vehicle and national_id_number in users_nin:
-        return vehicle
-    else:
-        raise ObjectNotFound(_("Vehicle not found for the customer"))
+    is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
+    if not is_user_of_vehicle:
+        raise TraficomFetchVehicleError(
+            _("Customer is not an owner or holder of a vehicle %(registration)s")
+            % {
+                "registration": reg_number,
+            }
+        )
+    has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
+    if not has_valid_driving_licence:
+        raise TraficomFetchVehicleError(
+            _("Customer does not have a valid driving licence for this vehicle")
+        )
+    return vehicle
 
 
 def update_or_create_address(address_info):
