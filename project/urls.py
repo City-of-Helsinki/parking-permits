@@ -9,8 +9,11 @@ schema_view = get_schema_view(
         title="Parking permits API",
         default_version="v1",
         description="Parking permits API",
-        terms_of_service="https://www.hel.fi/helsinki/fi/kartat-ja-liikenne/pysakointi/vahapaastoisten_alennus",
-        contact=openapi.Contact(email="permits@hel.fi"),
+        terms_of_service="https://www.hel.fi/static/liitteet/kaupunkiymparisto/"
+        "liikenne-ja-kartat/pysakointi/pysakointitunnusten-ohjeet.pdf",
+        contact=openapi.Contact(
+            name="City of Helsinki - Urban environment and traffic"
+        ),
     ),
     public=True,
 )
