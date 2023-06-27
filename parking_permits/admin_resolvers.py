@@ -34,6 +34,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
+from parking_permits.models.customer import generate_ssn
 from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
 from users.models import ParkingPermitGroups
 
@@ -457,9 +458,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     security_ban = customer_info.get("address_security_ban", False)
     national_id_number = customer_info["national_id_number"]
     if not national_id_number:
-        raise CreatePermitError(
-            _("Customer national id number is mandatory for the permit")
-        )
+        customer_info["national_id_number"] = generate_ssn()
 
     customer = update_or_create_customer(customer_info)
     active_permits = customer.active_permits

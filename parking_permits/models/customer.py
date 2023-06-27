@@ -1,9 +1,12 @@
+import logging
+import re
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
+from django.db.models.functions import Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
@@ -13,6 +16,8 @@ from .common import SourceSystem
 from .driving_licence import DrivingLicence
 from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitStatus
+
+logger = logging.getLogger("db")
 
 
 class Languages(models.TextChoices):
@@ -198,3 +203,19 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     @property
     def active_permits(self):
         return self.permits.active()
+
+
+def generate_ssn():
+    customer_qs = (
+        Customer.objects.annotate(ssn_len=Length("national_id_number"))
+        .filter(national_id_number__istartswith="XX-", ssn_len__gte=9)
+        .order_by("-national_id_number")
+    )
+    if customer_qs.exists():
+        for customer in customer_qs:
+            latest_generated_ssn = customer.national_id_number
+            match = re.search(r"\d+", latest_generated_ssn)
+            if match:
+                latest_generated_ssn_number = int(match.group()) + 1
+                return "XX-%06d" % (latest_generated_ssn_number,)
+    return "XX-000001"
