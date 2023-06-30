@@ -38,7 +38,6 @@ from .models.parking_permit import (
 )
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
-from .services.kmo import get_address_details
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
@@ -106,16 +105,20 @@ def resolve_customer_permits(_obj, info):
 
 
 def save_profile_address(address):
-    street_name = address.get("street_name")
-    street_number = address.get("street_number")
-    address_detail = get_address_details(street_name, street_number)
-    address.update(address_detail)
     address_obj = Address.objects.update_or_create(
-        street_name=street_name,
-        street_number=street_number,
-        city=address["city"],
-        postal_code=address["postal_code"],
-        defaults=address,
+        street_name=address.get("street_name"),
+        street_number=address.get("street_number"),
+        city=address.get("city"),
+        postal_code=address.get("postal_code"),
+        defaults={
+            "street_name": address.get("street_name"),
+            "street_name_sv": address.get("street_name_sv"),
+            "street_number": address.get("street_number"),
+            "city": address.get("city"),
+            "city_sv": address.get("city_sv"),
+            "postal_code": address.get("postal_code"),
+            "location": address.get("location"),
+        },
     )
     return address_obj[0]
 
@@ -157,6 +160,10 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
             "user": request.user,
             **customer,
             **{"primary_address": primary_address, "other_address": other_address},
+            "primary_address_apartment": primary_address_data.get("apartment"),
+            "primary_address_apartment_sv": primary_address_data.get("apartment_sv"),
+            "other_address_apartment": other_address_data.get("apartment"),
+            "other_address_apartment_sv": other_address_data.get("apartment_sv"),
         },
     )
 

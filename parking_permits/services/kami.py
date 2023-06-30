@@ -46,7 +46,7 @@ def get_wfs_result(street_name="", street_number_token=""):
         "VERSION": "2.0.0",
     }
 
-    response = requests.get(settings.KMO_URL, params=params)
+    response = requests.get(settings.KAMI_URL, params=params)
 
     if response.status_code != status.HTTP_200_OK:
         xml_response = xmltodict.parse(response.content)
@@ -75,7 +75,7 @@ def get_wfs_result(street_name="", street_number_token=""):
 def search_address(search_text):
     if not search_text:
         return []
-    street_name, street_number = parse_street_name_and_number(search_text)
+    street_name, street_number, _apartment = parse_street_data(search_text)
 
     cql_filter = (
         f"katunimi ILIKE '{street_name}%' AND osoitenumero='{street_number}'"
@@ -92,7 +92,7 @@ def search_address(search_text):
         "VERSION": "2.0.0",
         "COUNT": "8",
     }
-    response = requests.get(settings.KMO_URL, params=params)
+    response = requests.get(settings.KAMI_URL, params=params)
 
     if response.status_code != status.HTTP_200_OK:
         xml_response = xmltodict.parse(response.content)
@@ -143,20 +143,22 @@ def parse_feature(feature):
     )
 
 
-def extract_street_number(input):
-    street_number_regex = re.compile(r"\d+")
-    street_number = street_number_regex.search(input)
-    return street_number.group(0) if street_number else ""
+def extract_street_number_and_apartment(street_data):
+    parts = street_data.split()
+    if not parts:
+        return "", ""
+    street_number = parts[0].strip()
+    apartment = " ".join(parts[1:]).strip()
+    return street_number, apartment
 
 
-def parse_street_name_and_number(street_address: str) -> tuple[str, str]:
+def parse_street_data(street_address: str) -> tuple[str, str, str]:
     match = re.search(r"\D+", street_address)
     street_name = match.group().strip() if match else street_address
-    street_number = extract_street_number(
+    street_number, apartment = extract_street_number_and_apartment(
         street_address[match.end() :].strip() if match else ""
     )
-
-    return street_name, street_number
+    return street_name, street_number, apartment
 
 
 def get_address_from_db(street_name, street_number):
