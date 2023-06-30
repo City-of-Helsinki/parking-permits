@@ -17,7 +17,7 @@ from django.utils import timezone
 from parking_permits.models import Address, Customer, Order, ParkingPermit, Vehicle
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
-from parking_permits.services import dvv, kmo
+from parking_permits.services import dvv, kami
 from parking_permits.services.traficom import Traficom
 
 # E.g. 1.1.2011 1:01, 31.12.2012 15:50
@@ -88,13 +88,16 @@ class PasiResidentPermit:
     _end_dt: datetime = dataclasses.field(init=False, default=None)
     _street_name: Optional[str] = dataclasses.field(init=False, default=None)
     _street_number: Optional[str] = dataclasses.field(init=False, default=None)
+    _apartment: Optional[str] = dataclasses.field(init=False, default=None)
 
     @address_line.setter
     def address_line(self, val):
         self._address_line = val
-        self._street_name, self._street_number = kmo.parse_street_name_and_number(
-            self.address_line
-        )
+        (
+            self._street_name,
+            self._street_number,
+            self._apartment,
+        ) = kami.parse_street_data(self.address_line)
 
     @property
     def language(self):

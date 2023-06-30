@@ -153,6 +153,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         null=True,
         blank=True,
     )
+    address_apartment = models.CharField(
+        _("Address apartment"), max_length=32, blank=True
+    )
+    address_apartment_sv = models.CharField(
+        _("Address apartment (sv)"), max_length=32, blank=True
+    )
     next_address = models.ForeignKey(
         "Address",
         verbose_name=_("Next address"),
@@ -160,6 +166,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         related_name="next_permits",
         null=True,
         blank=True,
+    )
+    next_address_apartment = models.CharField(
+        _("Next address apartment"), max_length=32, blank=True
+    )
+    next_address_apartment_sv = models.CharField(
+        _("Next address apartment (sv)"), max_length=32, blank=True
     )
 
     serialize_fields = (
@@ -183,6 +195,46 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def __str__(self):
         return str(self.id)
+
+    @property
+    def full_address(self):
+        return (
+            f"{self.address.street_name} {self.address.street_number} "
+            f"{self.address_apartment}, "
+            f"{self.address.postal_code} {self.address.city}"
+            if self.address
+            else ""
+        )
+
+    @property
+    def full_address_sv(self):
+        return (
+            f"{self.address.street_name_sv} {self.address.street_number} "
+            f"{self.address_apartment_sv}, "
+            f"{self.address.postal_code} {self.address.city_sv}"
+            if self.address
+            else ""
+        )
+
+    @property
+    def full_next_address(self):
+        return (
+            f"{self.next_address.street_name} {self.next_address.street_number} "
+            f"{self.next_address_apartment}, "
+            f"{self.next_address.postal_code} {self.next_address.city}"
+            if self.next_address
+            else ""
+        )
+
+    @property
+    def full_next_address_sv(self):
+        return (
+            f"{self.next_address.street_name_sv} {self.next_address.street_number} "
+            f"{self.next_address_apartment_sv}, "
+            f"{self.next_address.postal_code} {self.next_address.city_sv}"
+            if self.next_address
+            else ""
+        )
 
     @property
     def is_secondary_vehicle(self):

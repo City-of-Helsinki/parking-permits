@@ -63,7 +63,15 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
-    list_display = ("__str__", "id", "first_name", "last_name", "email")
+    list_display = (
+        "__str__",
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "full_primary_address",
+        "full_other_address",
+    )
     ordering = (
         "first_name",
         "last_name",

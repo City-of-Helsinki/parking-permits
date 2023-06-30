@@ -55,6 +55,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         null=True,
         blank=True,
     )
+    primary_address_apartment = models.CharField(
+        _("Primary address apartment"), max_length=32, blank=True
+    )
+    primary_address_apartment_sv = models.CharField(
+        _("Primary address apartment (sv)"), max_length=32, blank=True
+    )
     other_address = models.ForeignKey(
         "Address",
         verbose_name=_("Other address"),
@@ -62,6 +68,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         related_name="customers_other_address",
         blank=True,
         null=True,
+    )
+    other_address_apartment = models.CharField(
+        _("Other address apartment"), max_length=32, blank=True
+    )
+    other_address_apartment_sv = models.CharField(
+        _("Other address apartment (sv)"), max_length=32, blank=True
     )
     email = models.CharField(_("Email"), max_length=128, blank=True)
     phone_number = models.CharField(
@@ -152,6 +164,46 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         return any(
             vehicle.vehicle_class in d_class.vehicle_classes
             for d_class in self.driving_licence.driving_classes.all()
+        )
+
+    @property
+    def full_primary_address(self):
+        return (
+            f"{self.primary_address.street_name} {self.primary_address.street_number} "
+            f"{self.primary_address_apartment}, "
+            f"{self.primary_address.postal_code} {self.primary_address.city}"
+            if self.primary_address
+            else ""
+        )
+
+    @property
+    def full_primary_address_sv(self):
+        return (
+            f"{self.primary_address.street_name_sv} {self.primary_address.street_number} "
+            f"{self.primary_address_apartment_sv}, "
+            f"{self.primary_address.postal_code} {self.primary_address.city_sv}"
+            if self.primary_address
+            else ""
+        )
+
+    @property
+    def full_other_address(self):
+        return (
+            f"{self.other_address.street_name} {self.other_address.street_number} "
+            f"{self.other_address_apartment}, "
+            f"{self.other_address.postal_code} {self.other_address.city}"
+            if self.other_address
+            else ""
+        )
+
+    @property
+    def full_other_address_sv(self):
+        return (
+            f"{self.other_address.street_name_sv} {self.other_address.street_number} "
+            f"{self.other_address_apartment_sv}, "
+            f"{self.other_address.postal_code} {self.other_address.city_sv}"
+            if self.other_address
+            else ""
         )
 
     @property

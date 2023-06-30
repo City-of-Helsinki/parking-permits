@@ -79,7 +79,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .services import kmo
+from .services import kami
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -439,7 +439,7 @@ def extract_street_number(input):
 @query.field("addressSearch")
 @convert_kwargs_to_snake_case
 def resolve_address_search(obj, info, search_input):
-    return kmo.search_address(search_text=search_input)
+    return kami.search_address(search_text=search_input)
 
 
 @mutation.field("createResidentPermit")

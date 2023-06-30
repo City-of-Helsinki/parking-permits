@@ -27,7 +27,7 @@ env = environ.Env(
     TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=(int, 5),
     TALPA_SUBSCRIPTION_PERIOD_UNIT=(str, "monthly"),
     OPEN_CITY_PROFILE_GRAPHQL_API=(str, "https://profile-api.test.hel.ninja/graphql/"),
-    KMO_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
+    KAMI_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
     TOKEN_AUTH_ACCEPTED_AUDIENCE=(str, ""),
     TOKEN_AUTH_ACCEPTED_SCOPE_PREFIX=(str, ""),
     TOKEN_AUTH_AUTHSERVER_URL=(str, ""),
@@ -82,7 +82,7 @@ CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 AUTH_USER_MODEL = "users.User"
 
 SRID = 4326
-KMO_URL = env("KMO_URL")
+KAMI_URL = env("KAMI_URL")
 OPEN_CITY_PROFILE_GRAPHQL_API = env("OPEN_CITY_PROFILE_GRAPHQL_API")
 
 INSTALLED_APPS = [

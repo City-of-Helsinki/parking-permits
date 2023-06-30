@@ -9,7 +9,7 @@ logger = logging.getLogger("db")
 
 
 class WfsImporter(metaclass=abc.ABCMeta):
-    wfs_url = settings.KMO_URL
+    wfs_url = settings.KAMI_URL
 
     @property
     @abc.abstractmethod

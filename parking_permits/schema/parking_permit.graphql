@@ -29,6 +29,8 @@ type CustomerNode {
   phoneNumber: String
   primaryAddress: AddressNode
   otherAddress: AddressNode
+  fullPrimaryAddress: String,
+  fullOtherAddress: String,
 }
 
 type VehicleNode {
