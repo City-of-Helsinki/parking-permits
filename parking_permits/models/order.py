@@ -95,7 +95,7 @@ class OrderManager(SerializableMixin.SerializableManager):
             customer=first_permit.customer,
             status=status,
             paid_time=paid_time,
-            address_text=str(first_permit.address) if first_permit else None,
+            address_text=str(first_permit.full_address) if first_permit else None,
             parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
 
@@ -172,7 +172,7 @@ class OrderManager(SerializableMixin.SerializableManager):
             status=status,
             type=order_type,
             payment_type=payment_type,
-            address_text=str(first_permit.address) if first_permit else None,
+            address_text=str(first_permit.full_address) if first_permit else None,
             parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
         if order_type == OrderType.CREATED:

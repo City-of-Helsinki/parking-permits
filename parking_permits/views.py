@@ -404,7 +404,7 @@ class OrderView(APIView):
                 customer=permit.customer,
                 status=OrderStatus.CONFIRMED,
                 paid_time=paid_time,
-                address_text=str(permit.address),
+                address_text=str(permit.full_address),
                 parking_zone_name=permit.parking_zone.name,
                 vehicles=[permit.vehicle.registration_number],
                 type=OrderType.CREATED,
