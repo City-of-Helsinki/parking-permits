@@ -20,7 +20,6 @@ from ..utils import diff_months_ceil, end_date_to_datetime, start_date_to_dateti
 from .customer import Customer
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
-    ContractType,
     ParkingPermit,
     ParkingPermitEventFactory,
     ParkingPermitStatus,
@@ -150,11 +149,6 @@ class OrderManager(SerializableMixin.SerializableManager):
             end_date = tz.localdate(permit.end_time)
             date_ranges.append([start_date, end_date])
 
-        if all([start_date >= end_date for start_date, end_date in date_ranges]):
-            raise OrderCreationFailed(
-                "Cannot create renewal order. All permits are ending or ended already."
-            )
-
     @transaction.atomic
     def create_renewal_order(
         self,
@@ -169,9 +163,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         Create new order for updated permits information that affect
         permit prices, e.g. change address or change vehicle.
         """
-        customer_permits = ParkingPermit.objects.active().filter(
-            contract_type=ContractType.FIXED_PERIOD, customer=customer
-        )
+        customer_permits = ParkingPermit.objects.filter(customer=customer)
         self._validate_customer_permits(customer_permits)
 
         first_permit = customer_permits.first()
