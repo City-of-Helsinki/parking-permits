@@ -225,9 +225,14 @@ class CustomerPermit:
             if not end_time:
                 end_time = get_end_time(start_time, 1)
 
+            address_apartment, address_apartment_sv = self._get_address_apartments(
+                address
+            )
             permit = ParkingPermit.objects.create(
                 customer=self.customer,
                 address=address,
+                address_apartment=address_apartment,
+                address_apartment_sv=address_apartment_sv,
                 parking_zone=address.zone,
                 primary_vehicle=primary_vehicle,
                 contract_type=contract_type,
@@ -437,6 +442,16 @@ class CustomerPermit:
         OrderItem.objects.filter(permit__in=draft_permits).delete()
         draft_permits.delete()
         return True
+
+    def _get_address_apartments(self, address: Address):
+        customer = self.customer
+        if address == customer.primary_address:
+            return (
+                customer.primary_address_apartment,
+                customer.primary_address_apartment_sv,
+            )
+        else:
+            return customer.other_address_apartment, customer.other_address_apartment_sv
 
     def _update_fields_to_all_draft(self, data):
         permits = self.customer_permit_query.filter(status=DRAFT).all()
