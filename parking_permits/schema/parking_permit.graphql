@@ -28,9 +28,11 @@ type CustomerNode {
   email: String
   phoneNumber: String
   primaryAddress: AddressNode
+  primaryAddressApartment: String,
+  primaryAddressApartmentSv: String,
   otherAddress: AddressNode
-  fullPrimaryAddress: String,
-  fullOtherAddress: String,
+  otherAddressApartment: String,
+  otherAddressApartmentSv: String,
 }
 
 type VehicleNode {
@@ -66,6 +68,8 @@ type PermitNode {
   id: ID!
   zone: ID!
   address: AddressNode
+  addressApartment: String,
+  addressApartmentSv: String,
   talpaOrderId: String
   receiptUrl: String
   subscriptionId: String
