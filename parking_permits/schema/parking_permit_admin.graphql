@@ -51,7 +51,9 @@ type CustomerNode {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressNode
+  primaryAddressApartment: String
   otherAddress: AddressNode
+  otherAddressApartment: String
   zone: String
   email: String
   phoneNumber: String
@@ -274,6 +276,7 @@ type TemporaryVehicleNode {
 type PermitDetailNode {
   id: ID!
   address: AddressNode
+  addressApartment: String,
   customer: CustomerNode!
   vehicle: VehicleNode
   activeTemporaryVehicle: TemporaryVehicleNode
@@ -450,7 +453,9 @@ input CustomerInput {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressInput
+  primaryAddressApartment: String
   otherAddress: AddressInput
+  otherAddressApartment: String
   zone: String
   email: String
   phoneNumber: String
@@ -486,6 +491,7 @@ input ResidentPermitInput {
   monthCount: Int
   description: String
   address: AddressInput
+  addressApartment: String
   zone: String
 }
 

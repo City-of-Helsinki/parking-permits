@@ -367,9 +367,21 @@ def update_or_create_customer(customer_info):
 
     if primary_address:
         customer_data["primary_address"] = update_or_create_address(primary_address)
+        customer_data["primary_address_apartment"] = customer_info.get(
+            "primary_address_apartment"
+        )
+        customer_data["primary_address_apartment_sv"] = customer_info.get(
+            "primary_address_apartment"
+        )
 
     if other_address:
         customer_data["other_address"] = update_or_create_address(other_address)
+        customer_data["other_address_apartment"] = customer_info.get(
+            "other_address_apartment"
+        )
+        customer_data["other_address_apartment_sv"] = customer_info.get(
+            "other_address_apartment"
+        )
 
     return Customer.objects.update_or_create(
         national_id_number=customer_info["national_id_number"], defaults=customer_data
@@ -543,12 +555,14 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         customer=customer,
         vehicle=vehicle,
         parking_zone=parking_zone,
-        status=permit["status"],
+        status=permit.get("status"),
         start_time=start_time,
         month_count=month_count,
         end_time=end_time,
-        description=permit["description"],
+        description=permit.get("description"),
         address=permit_address if not security_ban else None,
+        address_apartment=permit.get("address_apartment"),
+        address_apartment_sv=permit.get("address_apartment"),
         primary_vehicle=primary_vehicle,
     )
 
@@ -815,7 +829,9 @@ def resolve_update_resident_permit(
     with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
         permit.status = permit_info["status"]
         permit.vehicle = vehicle
-        permit.description = permit_info["description"]
+        permit.description = permit_info.get("description")
+        permit.address_apartment = permit_info.get("address_apartment")
+        permit.address_apartment_sv = permit_info.get("address_apartment")
         permit.save()
 
     ParkingPermitEventFactory.make_update_permit_event(
