@@ -46,10 +46,10 @@ def _get_permit_row(permit):
         name,
         customer.national_id_number,
         vehicle.registration_number,
-        str(permit.address)
+        str(permit.full_address)
         if permit.address and permit.address == customer.primary_address
         else "-",
-        str(permit.address)
+        str(permit.full_address)
         if permit.address and permit.address == customer.other_address
         else "-",
         permit.parking_zone.name,
@@ -245,7 +245,7 @@ class ParkingPermitPDF(BasePDF):
             if permit.customer.first_name
             else "-"
         )
-        address = str(permit.address) if permit.address else "-"
+        address = str(permit.full_address) if permit.full_address else "-"
         permit_end_time = _get_permit_end_time(permit)
 
         return [
