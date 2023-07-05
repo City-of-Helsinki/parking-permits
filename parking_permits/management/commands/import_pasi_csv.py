@@ -376,7 +376,7 @@ class Command(BaseCommand):
         address, _created = Address.objects.update_or_create(
             street_name=address_info["street_name"],
             street_number=address_info["street_number"],
-            city=address_info["city"].title() if address_info["city"] else "",
+            city=address_info["city"] if address_info["city"] else "",
             postal_code=address_info["postal_code"],
             location=location,
         )
