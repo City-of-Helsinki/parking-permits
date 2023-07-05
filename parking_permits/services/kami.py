@@ -75,7 +75,7 @@ def get_wfs_result(street_name="", street_number_token=""):
 def search_address(search_text):
     if not search_text:
         return []
-    street_name, street_number, _apartment = parse_street_data(search_text)
+    street_name, street_number, __ = parse_street_data(search_text)
 
     cql_filter = (
         f"katunimi ILIKE '{street_name}%' AND osoitenumero='{street_number}'"
@@ -136,8 +136,8 @@ def parse_feature(feature):
         street_name_sv=properties.get("gatan", ""),
         street_number=properties.get("osoitenumero_teksti", ""),
         postal_code=properties.get("postinumero", ""),
-        city=properties.get("kaupunki", ""),
-        city_sv=properties.get("staden", ""),
+        city=properties.get("kaupunki", "").upper(),
+        city_sv=properties.get("staden", "").upper(),
         location=location,
         zone=zone,
     )
