@@ -1,4 +1,5 @@
 import abc
+from datetime import date
 
 from django.conf import settings
 from django.utils import timezone as tz
@@ -10,6 +11,7 @@ from parking_permits.models.order import OrderPaymentType
 
 DATETIME_FORMAT = "%-d.%-m.%Y, %H:%M"
 DATE_FORMAT = "%-d.%-m.%Y"
+CURRENT_YEAR = date.today().year
 
 MODEL_MAPPING = {
     "permits": ParkingPermit,
@@ -192,8 +194,25 @@ class DataExporter:
         self.data_type = data_type
         self.queryset = queryset
 
+    def get_metadata(self):
+        return {
+            "metadata": {
+                "copyright": {
+                    "© "
+                    + _(
+                        "City of Helsinki, "
+                        "Personal data - Digital and population data services agency, "
+                        "Vehicle and driving licence data - Traficom "
+                    )
+                    + str(CURRENT_YEAR)
+                }
+            }
+        }
+
     def get_headers(self):
-        return HEADERS_MAPPING[self.data_type]
+        headers = HEADERS_MAPPING[self.data_type]
+        headers.append(self.get_metadata())
+        return headers
 
     def get_rows(self):
         row_getter = ROW_GETTER_MAPPING[self.data_type]

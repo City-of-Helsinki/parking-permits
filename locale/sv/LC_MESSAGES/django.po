@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-22 17:38+0300\n"
+"POT-Creation-Date: 2023-07-08 09:53+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,8 +66,12 @@ msgstr "Ingen kund hittas"
 msgid "Customer search error"
 msgstr "Kundsökningsfel"
 
-msgid "Vehicle not found for the customer"
-msgstr "Fordonet hjittasdes inte för kunden"
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr "Kunden är inte ägare eller innehavare av ett fordon %(registration)s"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Kunden har inte ett giltigt körkort för detta fordon"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Kund utan adresssäkerhetsförbud måste ha en adress vald"
@@ -77,9 +81,6 @@ msgstr "Fordonskraftstyp hittades inte"
 
 msgid "Permit address does not have a valid zone"
 msgstr "Tillståndsadressen har ingen giltig zon"
-
-msgid "Customer national id number is mandatory for the permit"
-msgstr "Kundens personnummer är obligatoriskt för tillståndet"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Kan inte skapa mer än 2 boendeparkeringpermit"
@@ -118,6 +119,9 @@ msgstr "Parkeringtecken hittades inte"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Kunden kan inte bytas till detta parkeringstecken"
+
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Kundens personnummer är obligatoriskt för tillståndet"
 
 msgid "User already has a valid other permit for the given vehicle."
 msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
@@ -171,10 +175,6 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
-
-#, python-format
-msgid "Customer is not an owner or holder of a vehicle %(registration)s"
-msgstr "Kunden är inte ägare eller innehavare av ett fordon %(registration)s"
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Kunden har inte giltigt körkort"
@@ -305,6 +305,13 @@ msgstr "Redigeringsdatum"
 msgid "Modified by"
 msgstr "Redigerat"
 
+msgid ""
+"City of Helsinki, Personal data - Digital and population data services "
+"agency, Vehicle and driving licence data - Traficom "
+msgstr ""
+"Helsingfors stad, Personuppgifter - Digital- och befolkningsdatatjänstbyrå, "
+"Fordons- och körkortsdata - Traficom "
+
 msgid "City of Helsinki"
 msgstr "Helsingfors stad"
 
@@ -433,6 +440,18 @@ msgstr "Förnamn"
 
 msgid "Last name"
 msgstr "Efternamn"
+
+msgid "Primary address apartment"
+msgstr "Primär adress lägenhet"
+
+msgid "Primary address apartment (sv)"
+msgstr "Primär adress lägenhet (sv)"
+
+msgid "Other address apartment"
+msgstr "Tillfällig adress lägenhet"
+
+msgid "Other address apartment (sv)"
+msgstr "Tillfällig adress lägenhet (sv)"
 
 msgid "Email"
 msgstr "E-post"
@@ -629,8 +648,20 @@ msgstr "Månad (st)"
 msgid "Description"
 msgstr "Beskrivning"
 
+msgid "Address apartment"
+msgstr "Adress lägenhet"
+
+msgid "Address apartment (sv)"
+msgstr "Adress lägenhet (sv)"
+
 msgid "Next address"
 msgstr "Nästa adress"
+
+msgid "Next address apartment"
+msgstr "Nästa adress lägenhet"
+
+msgid "Next address apartment (sv)"
+msgstr "Nästa adress lägenhet (sv)"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
@@ -863,9 +894,6 @@ msgstr "Adressen hittades inte"
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
 
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Kunden har inte ett giltigt körkort för detta fordon"
-
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
 
@@ -1044,3 +1072,6 @@ msgstr "Rätten till rabatt har tagits bort från fordonet."
 
 msgid "Discount right ends"
 msgstr "Rabatten till höger upphör"
+
+#~ msgid "Vehicle not found for the customer"
+#~ msgstr "Fordonet hjittasdes inte för kunden"

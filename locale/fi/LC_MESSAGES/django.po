@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-06-22 17:35+0300\n"
+"POT-Creation-Date: 2023-07-08 09:53+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,8 +66,12 @@ msgstr "Henkilöä ei löytynyt"
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
-msgid "Vehicle not found for the customer"
-msgstr "Asiakkaan ajoneuvoa ei löytynyt"
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr "Et ole ajoneuvon %(registration)s omistaja tai haltija"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
@@ -77,9 +81,6 @@ msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
 
 msgid "Permit address does not have a valid zone"
 msgstr "Tunnuksen osoitteella ei ole sopivaa aluetta"
-
-msgid "Customer national id number is mandatory for the permit"
-msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
@@ -118,6 +119,9 @@ msgstr "Pysäköintitunnusta ei löytynyt"
 
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
+
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
 
 msgid "User already has a valid other permit for the given vehicle."
 msgstr ""
@@ -175,10 +179,6 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
-
-#, python-format
-msgid "Customer is not an owner or holder of a vehicle %(registration)s"
-msgstr "Et ole ajoneuvon %(registration)s omistaja tai haltija"
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Puutteelliset ajokorttitiedot"
@@ -310,6 +310,13 @@ msgstr "Muokattu"
 msgid "Modified by"
 msgstr "Muokkaaja"
 
+msgid ""
+"City of Helsinki, Personal data - Digital and population data services "
+"agency, Vehicle and driving licence data - Traficom "
+msgstr ""
+"Helsinki kaupunki, Henkilötiedot - Digi- ja väestötietovirasto, "
+"Ajoneuvo- ja ajokorttitiedot - Liikenne- ja viestintävirasto Traficom "
+
 msgid "City of Helsinki"
 msgstr "Helsingin kaupunki"
 
@@ -438,6 +445,18 @@ msgstr "Etunimi"
 
 msgid "Last name"
 msgstr "Sukunimi"
+
+msgid "Primary address apartment"
+msgstr "Vakituisen osoitteen huoneisto"
+
+msgid "Primary address apartment (sv)"
+msgstr "Vakituisen osoitteen huoneisto (sv)"
+
+msgid "Other address apartment"
+msgstr "Tilapäisen osoitteen huoneisto"
+
+msgid "Other address apartment (sv)"
+msgstr "Tilapäisen osoitteen huoneisto (sv)"
 
 msgid "Email"
 msgstr "Sähköposti"
@@ -634,8 +653,20 @@ msgstr "Kuukaudet (lkm)"
 msgid "Description"
 msgstr "Kuvaus"
 
+msgid "Address apartment"
+msgstr "Osoiteen huoneisto"
+
+msgid "Address apartment (sv)"
+msgstr "Osoiteen huoneisto (sv)"
+
 msgid "Next address"
 msgstr "Tuleva osoite"
+
+msgid "Next address apartment"
+msgstr "Tulevan osoitteen huoneisto"
+
+msgid "Next address apartment (sv)"
+msgstr "Tulevan osoitteen huoneisto (sv)"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
@@ -865,9 +896,6 @@ msgstr "Osoitetta ei löytynyt"
 
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
-
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
