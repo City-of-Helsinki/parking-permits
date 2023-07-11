@@ -198,13 +198,12 @@ class DataExporter:
         return {
             "metadata": {
                 "copyright": {
-                    "© "
-                    + _(
-                        "City of Helsinki, "
-                        "Personal data - Digital and population data services agency, "
-                        "Vehicle and driving licence data - Traficom "
-                    )
-                    + str(CURRENT_YEAR)
+                    "© " + _("City of Helsinki") + ", ",
+                    +_("Personal data - Digital and population data services agency")
+                    + ", ",
+                    +_("Vehicle and driving licence data - Traficom")
+                    + " "
+                    + str(CURRENT_YEAR),
                 }
             }
         }
@@ -232,8 +231,17 @@ class BasePDF(FPDF, metaclass=abc.ABCMeta):
     def footer(self):
         self.set_y(-25)
         self.set_font("Arial", "", 10)
-        self.cell(0, 5, _("City of Helsinki"), 0, 1)
-        self.cell(0, 5, _("Urban Environment Division"), 0, 1)
+        self.cell(0, 5, "© " + _("City of Helsinki"), 0, 1)
+        self.cell(
+            0, 5, _("Personal data - Digital and population data services agency"), 0, 1
+        )
+        self.cell(
+            0,
+            5,
+            _("Vehicle and driving licence data - Traficom") + " " + str(CURRENT_YEAR),
+            0,
+            1,
+        )
 
     @abc.abstractmethod
     def get_title(self):
