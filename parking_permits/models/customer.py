@@ -56,10 +56,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         blank=True,
     )
     primary_address_apartment = models.CharField(
-        _("Primary address apartment"), max_length=32, blank=True
+        _("Primary address apartment"), max_length=32, blank=True, null=True
     )
     primary_address_apartment_sv = models.CharField(
-        _("Primary address apartment (sv)"), max_length=32, blank=True
+        _("Primary address apartment (sv)"), max_length=32, blank=True, null=True
     )
     other_address = models.ForeignKey(
         "Address",
@@ -70,10 +70,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         null=True,
     )
     other_address_apartment = models.CharField(
-        _("Other address apartment"), max_length=32, blank=True
+        _("Other address apartment"), max_length=32, blank=True, null=True
     )
     other_address_apartment_sv = models.CharField(
-        _("Other address apartment (sv)"), max_length=32, blank=True
+        _("Other address apartment (sv)"), max_length=32, blank=True, null=True
     )
     email = models.CharField(_("Email"), max_length=128, blank=True)
     phone_number = models.CharField(

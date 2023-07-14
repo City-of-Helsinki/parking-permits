@@ -154,10 +154,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         blank=True,
     )
     address_apartment = models.CharField(
-        _("Address apartment"), max_length=32, blank=True
+        _("Address apartment"), max_length=32, blank=True, null=True
     )
     address_apartment_sv = models.CharField(
-        _("Address apartment (sv)"), max_length=32, blank=True
+        _("Address apartment (sv)"), max_length=32, blank=True, null=True
     )
     next_address = models.ForeignKey(
         "Address",
@@ -168,10 +168,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         blank=True,
     )
     next_address_apartment = models.CharField(
-        _("Next address apartment"), max_length=32, blank=True
+        _("Next address apartment"), max_length=32, blank=True, null=True
     )
     next_address_apartment_sv = models.CharField(
-        _("Next address apartment (sv)"), max_length=32, blank=True
+        _("Next address apartment (sv)"), max_length=32, blank=True, null=True
     )
 
     serialize_fields = (
