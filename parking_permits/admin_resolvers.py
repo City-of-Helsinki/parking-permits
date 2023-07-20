@@ -331,11 +331,11 @@ def update_or_create_address(address_info):
     address_obj = Address.objects.update_or_create(
         street_name=address_info["street_name"],
         street_name_sv=address_info["street_name_sv"]
-        if address_info["street_name_sv"]
+        if address_info.get("street_name_sv")
         else "",
         street_number=address_info["street_number"],
-        city=address_info["city"] if address_info["city"] else "",
-        city_sv=address_info["city_sv"] if address_info["city_sv"] else "",
+        city=address_info["city"] if address_info.get("city") else "",
+        city_sv=address_info["city_sv"] if address_info.get("city_sv") else "",
         postal_code=address_info["postal_code"],
         location=location,
     )
