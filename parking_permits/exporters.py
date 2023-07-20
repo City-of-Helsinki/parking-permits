@@ -199,9 +199,9 @@ class DataExporter:
             "metadata": {
                 "copyright": {
                     "© " + _("City of Helsinki") + ", ",
-                    +_("Personal data - Digital and population data services agency")
+                    _("Personal data - Digital and population data services agency")
                     + ", ",
-                    +_("Vehicle and driving licence data - Traficom")
+                    _("Vehicle and driving licence data - Traficom")
                     + " "
                     + str(CURRENT_YEAR),
                 }
