@@ -236,6 +236,52 @@ class ResolveUpdateAddressTestCase(TestCase):
         self.assertEqual(address.postal_code, "00580")
 
 
+class UpdateOrCreateAddressTestCase(TestCase):
+    def test_address_info_none(self):
+        """Info is None, should just return None."""
+        address = update_or_create_address(None)
+        self.assertEqual(address, None)
+
+    def test_new_address(self):
+        """Should create a new address"""
+        address = update_or_create_address(_address_info())
+
+        self.assertEqual(Address.objects.count(), 1)
+        self.assertEqual(address.postal_code, "00580")
+
+    def test_new_address_with_another_existing(self):
+        existing = AddressFactory(**_address_info(for_db=True))
+        """Should still create a new address, if some key fields different."""
+        address = update_or_create_address(_address_info(street_number="1/5"))
+        assert address.pk != existing.pk
+
+        self.assertEqual(Address.objects.count(), 2)
+        self.assertEqual(address.postal_code, "00580")
+        self.assertEqual(address.street_number, "1/5")
+
+    def test_update_address(self):
+        """If same matching address, should update and not create another."""
+        address = AddressFactory(**_address_info(for_db=True))
+        address = update_or_create_address(_address_info(city_sv="Stadi"))
+
+        self.assertEqual(Address.objects.count(), 1)
+        self.assertEqual(address.postal_code, "00580")
+        self.assertEqual(address.city_sv, "Stadi")
+
+    def test_update_address_case_insensitive(self):
+        """Ensure we match address even if some key fields in different case."""
+        address = AddressFactory(**_address_info(for_db=True))
+        address = update_or_create_address(
+            _address_info(street_name="KÄSIVOIDE", city_sv="Stadi")
+        )
+
+        self.assertEqual(Address.objects.count(), 1)
+        # address should still be updated
+        self.assertEqual(address.street_name, "KÄSIVOIDE")
+        self.assertEqual(address.postal_code, "00580")
+        self.assertEqual(address.city_sv, "Stadi")
+
+
 def _make_authenticated_request(mock_authenticate, *, is_admin=True):
     user = UserFactory()
 
