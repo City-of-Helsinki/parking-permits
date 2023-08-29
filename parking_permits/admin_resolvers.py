@@ -327,17 +327,19 @@ def resolve_vehicle(obj, info, reg_number, national_id_number):
 def update_or_create_address(address_info):
     if not address_info:
         return None
-    location = Point(*address_info["location"], srid=settings.SRID)
     address_obj = Address.objects.update_or_create(
-        street_name=address_info["street_name"],
-        street_name_sv=address_info["street_name_sv"]
-        if address_info.get("street_name_sv")
-        else "",
-        street_number=address_info["street_number"],
-        city=address_info["city"] if address_info.get("city") else "",
-        city_sv=address_info["city_sv"] if address_info.get("city_sv") else "",
         postal_code=address_info["postal_code"],
-        location=location,
+        street_name__iexact=address_info["street_name"],
+        street_number__iexact=address_info["street_number"],
+        defaults={
+            "city": address_info.get("city", "") or "",
+            "city_sv": address_info.get("city_sv", "") or "",
+            "postal_code": address_info["postal_code"],
+            "street_name": address_info["street_name"],
+            "street_name_sv": address_info.get("street_name_sv", "") or "",
+            "street_number": address_info["street_number"],
+            "location": Point(*address_info["location"], srid=settings.SRID),
+        },
     )
     return address_obj[0]
 
