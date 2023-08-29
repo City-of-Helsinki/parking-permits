@@ -890,6 +890,9 @@ msgstr "Epäkelpo asiakkaan osoite"
 msgid "Address not found"
 msgstr "Osoitetta ei löytynyt"
 
+msgid "This address is already in use"
+msgstr "Tämä osoite on jo käytössä"
+
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 

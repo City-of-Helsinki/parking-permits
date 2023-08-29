@@ -887,6 +887,9 @@ msgstr "Inte en giltig kundadress"
 msgid "Address not found"
 msgstr "Adressen hittades inte"
 
+msgid "This address is already in use"
+msgstr "Adressen används redan"
+
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
 
