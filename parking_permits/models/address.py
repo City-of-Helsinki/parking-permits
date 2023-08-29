@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.gis.db import models
+from django.db.models.functions import Upper
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
@@ -44,6 +45,14 @@ class Address(SerializableMixin, TimestampedModelMixin):
     class Meta:
         verbose_name = _("Address")
         verbose_name_plural = _("Addresses")
+        constraints = [
+            models.UniqueConstraint(
+                Upper("street_name"),
+                Upper("street_number"),
+                "postal_code",
+                name="unique_address_fields",
+            )
+        ]
 
     def __str__(self):
         return f"{self.street_name} {self.street_number}, {self.city}"
