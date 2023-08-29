@@ -15,7 +15,7 @@ from ariadne import (
 from dateutil.parser import isoparse
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
@@ -1180,7 +1180,10 @@ def resolve_update_address(obj, info, address_id, address):
     _address.city = address["city"]
     _address.city_sv = address["city_sv"]
     _address.location = location
-    _address.save()
+    try:
+        _address.save()
+    except IntegrityError:
+        raise AddressError(_("This address is already in use"))
     return {"success": True}
 
 
@@ -1200,15 +1203,18 @@ def resolve_delete_address(obj, info, address_id):
 @transaction.atomic
 def resolve_create_address(obj, info, address):
     location = Point(*address["location"], srid=settings.SRID)
-    Address.objects.create(
-        street_name=address["street_name"],
-        street_name_sv=address["street_name_sv"],
-        street_number=address["street_number"],
-        postal_code=address["postal_code"],
-        city=address["city"],
-        city_sv=address["city_sv"],
-        location=location,
-    )
+    try:
+        Address.objects.create(
+            street_name=address["street_name"],
+            street_name_sv=address["street_name_sv"],
+            street_number=address["street_number"],
+            postal_code=address["postal_code"],
+            city=address["city"],
+            city_sv=address["city_sv"],
+            location=location,
+        )
+    except IntegrityError:
+        raise AddressError(_("This address is already in use"))
     return {"success": True}
 
 
