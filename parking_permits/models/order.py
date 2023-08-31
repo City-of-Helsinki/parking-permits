@@ -1,4 +1,5 @@
 import logging
+from urllib.parse import urljoin
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -39,7 +40,7 @@ class OrderValidator:
             "Content-Type": "application/json",
         }
         response = requests.get(
-            f"{settings.TALPA_ORDER_EXPERIENCE_API}/admin/{order_id}",
+            urljoin(settings.TALPA_ORDER_EXPERIENCE_API, f"admin/{order_id}"),
             headers=headers,
         )
         if response.status_code == 200:
@@ -369,10 +370,13 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         headers = {
             "api-key": settings.TALPA_API_KEY,
             "namespace": settings.NAMESPACE,
+            "user": str(self.customer.user.uuid),
             "Content-Type": "application/json",
         }
         response = requests.post(
-            f"{settings.TALPA_ORDER_EXPERIENCE_API}/{self.talpa_order_id}/cancel",
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API, f"{self.talpa_order_id}/cancel"
+            ),
             headers=headers,
         )
         if response.status_code == 200:
@@ -452,7 +456,10 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             "Content-Type": "application/json",
         }
         response = requests.post(
-            f"{settings.TALPA_ORDER_EXPERIENCE_API}/subcription/{self.talpa_subscription_id}/cancel",
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API,
+                f"subcription/{self.talpa_subscription_id}/cancel",
+            ),
             headers=headers,
         )
         if response.status_code == 200:
