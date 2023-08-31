@@ -1,6 +1,7 @@
 import json
 import logging
 from decimal import Decimal
+from urllib.parse import urljoin
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -180,7 +181,10 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "Content-Type": "application/json",
         }
         response = requests.get(
-            f"{settings.TALPA_MERCHANT_EXPERIENCE_API}/list/merchants/{settings.NAMESPACE}/",
+            urljoin(
+                settings.TALPA_MERCHANT_EXPERIENCE_API,
+                f"list/merchants/{settings.NAMESPACE}/",
+            ),
             headers=headers,
         )
         if response.status_code == 200:
