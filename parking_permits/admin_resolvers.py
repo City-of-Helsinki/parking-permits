@@ -267,7 +267,6 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
             audit_msg.event_type = audit.EventType.DVV
             logger.info("Customer does not exist, searching from DVV...")
             customer = get_person_info(query_params.get("national_id_number"))
-
         if not customer:
             raise ObjectNotFound(_("Person not found"))
 
