@@ -32,7 +32,9 @@ class DvvPersonInfo(TypedDict, total=False):
     first_name: str
     last_name: str
     primary_address: Optional[DvvAddressInfo]
+    primary_address_apartment: str
     other_address: Optional[DvvAddressInfo]
+    other_address_apartment: str
     phone_number: str
     email: str
     address_security_ban: bool
@@ -68,7 +70,7 @@ def get_addresses(national_id_number):
     return primary_address, other_address
 
 
-def _extract_address_data(address) -> DvvAddressInfo:
+def _extract_address_data(address) -> Optional[DvvAddressInfo]:
     return (
         {
             "street_name": address.get("street_name"),
@@ -151,24 +153,29 @@ def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
 
     last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
     first_name = person_info["NykyisetEtunimet"]["Etunimet"]
+
+    primary_address, primary_apartment = None, ""
     permanent_address = person_info["VakinainenKotimainenLahiosoite"]
+
+    if is_valid_address(permanent_address):
+        primary_address = format_address(permanent_address)
+        primary_apartment = primary_address.get("apartment", "")
+
+    other_address, other_apartment = None, ""
     temporary_address = person_info["TilapainenKotimainenLahiosoite"]
-    primary_address = (
-        format_address(permanent_address)
-        if is_valid_address(permanent_address)
-        else None
-    )
-    other_address = (
-        format_address(temporary_address)
-        if is_valid_address(temporary_address)
-        else None
-    )
+
+    if is_valid_address(temporary_address):
+        other_address = format_address(temporary_address)
+        other_apartment = other_address.get("apartment", "")
+
     return {
         "national_id_number": national_id_number,
         "first_name": first_name,
         "last_name": last_name,
         "primary_address": primary_address,
         "other_address": other_address,
+        "primary_address_apartment": primary_apartment,
+        "other_address_apartment": other_apartment,
         "phone_number": "",
         "email": "",
         "address_security_ban": False,
