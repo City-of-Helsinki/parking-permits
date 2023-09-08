@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
-from rest_framework import status
 
 from parking_permits.exceptions import AddressError
 from parking_permits.models import ParkingZone
@@ -48,7 +47,7 @@ def get_wfs_result(street_name="", street_number_token=""):
 
     response = requests.get(settings.KAMI_URL, params=params)
 
-    if response.status_code != status.HTTP_200_OK:
+    if response.status_code != 200:
         xml_response = xmltodict.parse(response.content)
 
         error_message = (
@@ -94,7 +93,7 @@ def search_address(search_text):
     }
     response = requests.get(settings.KAMI_URL, params=params)
 
-    if response.status_code != status.HTTP_200_OK:
+    if response.status_code != 200:
         xml_response = xmltodict.parse(response.content)
 
         error_message = (

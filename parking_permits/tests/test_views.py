@@ -21,6 +21,7 @@ from parking_permits.models.order import (
     OrderValidator,
     Subscription,
     SubscriptionStatus,
+    SubscriptionValidator,
 )
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
 from parking_permits.models.refund import Refund, RefundStatus
@@ -39,7 +40,7 @@ from ..models.common import SourceSystem
 from .keys import rsa_key
 
 
-def get_validate_order_data(talpa_order_id, talpa_order_item_id):
+def get_validated_order_data(talpa_order_id, talpa_order_item_id):
     return {
         "orderId": talpa_order_id,
         "lastValidPurchaseDateTime": "2023-06-01T15:46:05.000Z",
@@ -57,6 +58,19 @@ def get_validate_order_data(talpa_order_id, talpa_order_item_id):
                 "quantity": 1,
             }
         ],
+    }
+
+
+def get_validated_subscription_data(
+    talpa_subscription_id, talpa_order_id, talpa_order_item_id, permit_id
+):
+    return {
+        "orderId": talpa_order_id,
+        "orderItemId": talpa_order_item_id,
+        "subscriptionId": talpa_subscription_id,
+        "key": "permitId",
+        "value": permit_id,
+        "visibleInCheckout": "false",
     }
 
 
@@ -169,7 +183,7 @@ class OrderViewTestCase(APITestCase):
             "orderId": talpa_new_order_id,
         }
 
-        mock_validate_order.return_value = get_validate_order_data(
+        mock_validate_order.return_value = get_validated_order_data(
             talpa_new_order_id, talpa_new_order_item_id
         )
 
@@ -211,6 +225,17 @@ class SubscriptionViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
+    def test_subscription_view_should_return_bad_request_if_talpa_order_item_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b36",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+
     def test_subscription_view_should_return_bad_request_if_talpa_subscription_id_missing(
         self,
     ):
@@ -223,9 +248,13 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     @override_settings(DEBUG=True)
+    @patch.object(SubscriptionValidator, "validate_subscription")
     @patch.object(OrderValidator, "validate_order")
-    def test_subscription_creation(self, mock_validate_order):
+    def test_subscription_creation(
+        self, mock_validate_order, mock_validate_subscription
+    ):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_1 = ParkingPermitFactory(
@@ -253,10 +282,15 @@ class SubscriptionViewTestCase(APITestCase):
             "eventType": "SUBSCRIPTION_CREATED",
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_order_id,
+            "orderItemId": talpa_order_item_id,
         }
 
-        mock_validate_order.return_value = get_validate_order_data(
+        mock_validate_order.return_value = get_validated_order_data(
             talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
+
+        mock_validate_subscription.return_value = get_validated_subscription_data(
+            talpa_subscription_id, talpa_order_id, talpa_order_item_id, permit_1.id
         )
 
         response = self.client.post(url, data)
@@ -264,8 +298,12 @@ class SubscriptionViewTestCase(APITestCase):
         subscription = Subscription.objects.get(
             talpa_subscription_id=talpa_subscription_id
         )
-        subscription_order = subscription.order_items.first().order
+        subscription_order_item = subscription.order_items.first()
+        subscription_order = subscription_order_item.order
         self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(
+            str(subscription_order_item.talpa_order_item_id), talpa_order_item_id
+        )
         self.assertEqual(str(subscription_order.talpa_order_id), talpa_order_id)
         self.assertEqual(subscription.status, SubscriptionStatus.CONFIRMED)
         order.refresh_from_db()
@@ -279,6 +317,7 @@ class SubscriptionViewTestCase(APITestCase):
     @freeze_time("2023-05-30")
     def test_subscription_cancellation(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
@@ -318,9 +357,10 @@ class SubscriptionViewTestCase(APITestCase):
             "eventType": "SUBSCRIPTION_CANCELLED",
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_order_id,
+            "orderItemId": talpa_order_item_id,
         }
 
-        mock_validate_order.return_value = get_validate_order_data(
+        mock_validate_order.return_value = get_validated_order_data(
             talpa_order_id, order.order_items.first().talpa_order_item_id
         )
 
@@ -341,6 +381,7 @@ class SubscriptionViewTestCase(APITestCase):
     @freeze_time("2023-05-30")
     def test_subscription_cancellation_with_refund(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
@@ -380,9 +421,10 @@ class SubscriptionViewTestCase(APITestCase):
             "eventType": "SUBSCRIPTION_CANCELLED",
             "subscriptionId": talpa_subscription_id,
             "orderId": talpa_order_id,
+            "orderItemId": talpa_order_item_id,
         }
 
-        mock_validate_order.return_value = get_validate_order_data(
+        mock_validate_order.return_value = get_validated_order_data(
             talpa_order_id, order.order_items.first().talpa_order_item_id
         )
 

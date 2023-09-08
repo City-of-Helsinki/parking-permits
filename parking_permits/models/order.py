@@ -15,9 +15,15 @@ from ..exceptions import (
     OrderCreationFailed,
     OrderValidationError,
     SubscriptionCancelError,
+    SubscriptionValidationError,
 )
 from ..services.mail import RefundEmailType, send_refund_email
-from ..utils import diff_months_ceil, end_date_to_datetime, start_date_to_datetime
+from ..utils import (
+    diff_months_ceil,
+    end_date_to_datetime,
+    get_meta_item,
+    start_date_to_datetime,
+)
 from .customer import Customer
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
@@ -43,7 +49,7 @@ class OrderValidator:
             urljoin(settings.TALPA_ORDER_EXPERIENCE_API, f"admin/{order_id}"),
             headers=headers,
         )
-        if response.status_code == 200:
+        if response.ok:
             order = response.json()
             if order["user"] != str(user_id):
                 logger.error(
@@ -57,6 +63,68 @@ class OrderValidator:
         else:
             logger.error("Talpa order is not valid")
             raise OrderValidationError("Talpa order is not valid")
+
+
+class SubscriptionValidator:
+    @staticmethod
+    def get_subscription_info(data, subscription_id, order_id, order_item_id):
+        for subscription in data.get("subscriptions"):
+            if subscription.get("subscriptionId") == str(subscription_id):
+                meta = subscription.get("meta")
+                meta_item = get_meta_item(meta, "permitId")
+                meta_permit_id = meta_item.get("value")
+                meta_subscription_id = meta_item.get("subscriptionId")
+                meta_order_id = meta_item.get("orderId")
+                meta_order_item_id = meta_item.get("orderItemId")
+                if meta_permit_id is None:
+                    msg = "No permitId key available in meta list of key-value pairs"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_subscription_id is None or meta_subscription_id != str(
+                    subscription_id
+                ):
+                    msg = f"Subscription id does not match with the requested subscription id value {subscription_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_order_id is None or meta_order_id != str(order_id):
+                    msg = f"Order id does not match with the requested order id value: {order_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_order_item_id is None or meta_order_item_id != str(
+                    order_item_id
+                ):
+                    msg = f"Order item id does not match with the requested order item id value: {order_item_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                logger.info("Talpa subscription is valid")
+                return subscription
+        msg = f"Talpa subscription {subscription_id} not found for order {order_id}"
+        logger.error(msg)
+        raise SubscriptionValidationError(msg)
+
+    @staticmethod
+    def validate_subscription(user_id, subscription_id, order_id, order_item_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "user": user_id,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API,
+                f"subscriptions/get-by-order-id/{order_id}",
+            ),
+            headers=headers,
+        )
+        if response.ok:
+            return SubscriptionValidator.get_subscription_info(
+                response.json(), subscription_id, order_id, order_item_id
+            )
+        else:
+            msg = f"Failed to retrieve order {order_id} subscriptions from Talpa"
+            logger.error(msg)
+            raise SubscriptionValidationError(msg)
 
 
 class OrderPaymentType(models.TextChoices):

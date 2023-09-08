@@ -50,6 +50,10 @@ class OrderValidationError(ParkingPermitBaseException):
     pass
 
 
+class SubscriptionValidationError(ParkingPermitBaseException):
+    pass
+
+
 class OrderCancelError(ParkingPermitBaseException):
     pass
 
