@@ -286,6 +286,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return None
 
     @property
+    def checkout_url(self):
+        if self.latest_order and self.latest_order.talpa_checkout_url:
+            return self.latest_order.talpa_checkout_url
+        return None
+
+    @property
     def latest_order_items(self):
         """Get latest order items for the permit"""
         return self.order_items.filter(order=self.latest_order)

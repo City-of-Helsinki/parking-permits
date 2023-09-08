@@ -19,7 +19,7 @@ from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory
+from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -552,6 +552,14 @@ class TestParkingPermit(TestCase):
 
     def test_should_return_correct_product_name(self):
         self.assertIsNotNone(self.permit.parking_zone.name)
+
+    def test_checkout_url_if_latest_order_none(self):
+        self.assertIsNone(self.permit.checkout_url)
+
+    def test_checkout_url_if_latest_order_not_none(self):
+        item = OrderItemFactory(permit=self.permit)
+        self.permit.orders.add(item.order)
+        self.assertEqual(self.permit.checkout_url, item.order.talpa_checkout_url)
 
     @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(201))
