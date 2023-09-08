@@ -18,7 +18,7 @@ from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from helsinki_gdpr.views import DryRunSerializer, GDPRAPIView, GDPRScopesPermission
-from rest_framework import generics, mixins, status
+from rest_framework import generics, mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -28,7 +28,12 @@ from audit_logger import AuditMsg
 from .constants import Origin, ParkingPermitEndType
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import DeletionNotAllowed, OrderValidationError, ParkkihubiPermitError
+from .exceptions import (
+    DeletionNotAllowed,
+    OrderValidationError,
+    ParkkihubiPermitError,
+    SubscriptionValidationError,
+)
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -46,6 +51,7 @@ from .models.order import (
     OrderValidator,
     Subscription,
     SubscriptionStatus,
+    SubscriptionValidator,
 )
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
@@ -165,7 +171,7 @@ class TalpaResolvePrice(APIView):
                 {
                     "message": "No permitId key available in meta list of key-value pairs"
                 },
-                status=status.HTTP_400_BAD_REQUEST,
+                status=400,
             )
 
         try:
@@ -179,7 +185,7 @@ class TalpaResolvePrice(APIView):
             price_vat = price * vat
         except Exception as e:
             logger.error(f"Resolve price error = {str(e)}")
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message": str(e)}, status=400)
 
         response = snake_to_camel_dict(
             {
@@ -278,7 +284,10 @@ class PaymentView(APIView):
         event_type = request.data.get("eventType")
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
-            return Response({"message": "No order id is provided"}, status=400)
+            return Response(
+                {"message": "No order id is provided"},
+                status=400,
+            )
         if event_type == "PAYMENT_PAID":
             logger.info(
                 f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
@@ -341,7 +350,10 @@ class PaymentView(APIView):
             return Response({"message": "Payment received"}, status=200)
         else:
             logger.error(f"Unknown payment event type {event_type}")
-            return Response({"message": "Unknown payment event type"}, status=400)
+            return Response(
+                {"message": "Unknown payment event type"},
+                status=400,
+            )
 
 
 class OrderView(APIView):
@@ -363,10 +375,16 @@ class OrderView(APIView):
 
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
-            return Response({"message": "No order id is provided"}, status=400)
+            return Response(
+                {"message": "No order id is provided"},
+                status=400,
+            )
         if not talpa_subscription_id:
             logger.error("Talpa subscription id is missing from request data")
-            return Response({"message": "No subscription id is provided"}, status=400)
+            return Response(
+                {"message": "No subscription id is provided"},
+                status=400,
+            )
 
         # Subscriptipn renewal process
         if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
@@ -453,7 +471,10 @@ class OrderView(APIView):
             return Response({"message": "Subscription renewal completed"}, status=200)
         else:
             logger.error(f"Unknown order event type {event_type}")
-            return Response({"message": "Unknown order event type"}, status=400)
+            return Response(
+                {"message": "Unknown order event type"},
+                status=400,
+            )
 
 
 class SubscriptionView(APIView):
@@ -474,6 +495,7 @@ class SubscriptionView(APIView):
             f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
         )
         talpa_order_id = request.data.get("orderId")
+        talpa_order_item_id = request.data.get("orderItemId")
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
         event_timestamp = request.data.get("eventTimestamp")
@@ -483,29 +505,61 @@ class SubscriptionView(APIView):
 
         if not talpa_order_id:
             logger.error("Talpa order id is missing from request data")
-            return Response({"message": "No order id is provided"}, status=400)
+            return Response(
+                {"message": "No order id is provided"},
+                status=400,
+            )
+        if not talpa_order_item_id:
+            logger.error("Talpa order item id is missing from request data")
+            return Response(
+                {"message": "No order item id is provided"},
+                status=400,
+            )
         if not talpa_subscription_id:
             logger.error("Talpa subscription id is missing from request data")
-            return Response({"message": "No subscription id is provided"}, status=400)
+            return Response(
+                {"message": "No subscription id is provided"},
+                status=400,
+            )
+        if not event_type:
+            logger.error("Talpa subscription event type is missing from request data")
+            return Response(
+                {"message": "No subscription event type is provided"},
+                status=400,
+            )
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
-            validated_order_data = OrderValidator.validate_order(
-                talpa_order_id, order.customer.user.uuid
-            )
+            OrderValidator.validate_order(talpa_order_id, order.customer.user.uuid)
         except OrderValidationError as e:
-            logger.error(f"Order validation failed. Error = {e}")
+            logger.error(f"Subscription order validation failed. Error = {e}")
             return Response({"message": str(e)}, status=400)
 
         if event_type == "SUBSCRIPTION_CREATED":
             logger.info(f"Creating new subscription: {talpa_subscription_id}")
-            validated_order_item_data = (
-                validated_order_data.get("items")
-                and validated_order_data.get("items")[0]
+            try:
+                validated_subscription_data = (
+                    SubscriptionValidator.validate_subscription(
+                        str(order.customer.user.uuid),
+                        talpa_subscription_id,
+                        talpa_order_id,
+                        talpa_order_item_id,
+                    )
+                )
+            except SubscriptionValidationError as e:
+                logger.error(f"Subscription validation failed. Error = {e}")
+                return Response({"message": str(e)}, status=400)
+
+            permit_id = validated_subscription_data.get("value")
+            order_item_qs = OrderItem.objects.filter(
+                order__talpa_order_id=talpa_order_id,
+                permit_id=permit_id,
             )
-            order_item = OrderItem.objects.get(
-                talpa_order_item_id=validated_order_item_data.get("orderItemId")
-            )
+            order_item = order_item_qs.first()
+            if not order_item:
+                message = f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
+                logger.error(message)
+                return Response({"message": message}, status=400)
             subscription = Subscription.objects.create(
                 talpa_subscription_id=talpa_subscription_id,
                 status=SubscriptionStatus.CONFIRMED,
@@ -513,6 +567,7 @@ class SubscriptionView(APIView):
             )
             subscription.created_at = event_time or tz.localtime(tz.now())
             subscription.save()
+            order_item.talpa_order_item_id = talpa_order_item_id
             order_item.subscription = subscription
             order_item.save()
             logger.info(
@@ -538,7 +593,10 @@ class SubscriptionView(APIView):
             return Response({"message": "Subscription cancelled"}, status=200)
         else:
             logger.error(f"Unknown subscription event type {event_type}")
-            return Response({"message": "Unknown subscription event type"}, status=400)
+            return Response(
+                {"message": "Unknown subscription event type"},
+                status=400,
+            )
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
@@ -566,7 +624,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
     def get(self, request, *args, audit_msg: AuditMsg = None, **kwargs):
         obj = self.get_object()
         audit_msg.target = obj
-        return Response(obj.serialize(), status=status.HTTP_200_OK)
+        return Response(obj.serialize(), status=200)
 
     def get_object(self) -> Customer:
         try:
@@ -592,7 +650,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
             self._delete()
             if dry_run_serializer.data["dry_run"]:
                 transaction.set_rollback(True)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=204)
 
 
 @require_preparators
