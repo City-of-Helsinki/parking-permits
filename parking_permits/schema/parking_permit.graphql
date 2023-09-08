@@ -71,6 +71,7 @@ type PermitNode {
   addressApartment: String,
   addressApartmentSv: String,
   talpaOrderId: String
+  checkoutUrl: String
   receiptUrl: String
   subscriptionId: String
   vehicle: VehicleNode!
