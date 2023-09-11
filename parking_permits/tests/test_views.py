@@ -65,12 +65,17 @@ def get_validated_subscription_data(
     talpa_subscription_id, talpa_order_id, talpa_order_item_id, permit_id
 ):
     return {
-        "orderId": talpa_order_id,
-        "orderItemId": talpa_order_item_id,
         "subscriptionId": talpa_subscription_id,
-        "key": "permitId",
-        "value": permit_id,
-        "visibleInCheckout": "false",
+        "meta": [
+            {
+                "orderId": talpa_order_id,
+                "orderItemId": talpa_order_item_id,
+                "subscriptionId": talpa_subscription_id,
+                "key": "permitId",
+                "value": permit_id,
+                "visibleInCheckout": "false",
+            }
+        ],
     }
 
 
