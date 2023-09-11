@@ -554,6 +554,12 @@ class SubscriptionView(APIView):
             meta = validated_subscription_data.get("meta")
             meta_item = get_meta_item(meta, "permitId")
             permit_id = meta_item.get("value") if meta_item else None
+            if not permit_id:
+                logger.error("Permit id is missing from subscription meta data")
+                return Response(
+                    {"message": "No permit id is provided"},
+                    status=400,
+                )
 
             order_item_qs = OrderItem.objects.filter(
                 order__talpa_order_id=talpa_order_id,
