@@ -403,10 +403,11 @@ class CustomerPermit:
                     .distinct()
                     .first()
                 )
-                subscription.cancel(
-                    cancel_reason=subscription_cancel_reason,
-                    cancel_from_talpa=cancel_from_talpa,
-                )
+                if subscription:
+                    subscription.cancel(
+                        cancel_reason=subscription_cancel_reason,
+                        cancel_from_talpa=cancel_from_talpa,
+                    )
             else:
                 # Cancel fixed period permit order when this is the last valid permit in that order
                 latest_order = permit.latest_order
