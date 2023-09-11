@@ -73,6 +73,7 @@ from .services.mail import (
 )
 from .utils import (
     get_end_time,
+    get_meta_item,
     get_meta_value,
     get_user_from_api_view_method_args,
     snake_to_camel_dict,
@@ -550,7 +551,10 @@ class SubscriptionView(APIView):
                 logger.error(f"Subscription validation failed. Error = {e}")
                 return Response({"message": str(e)}, status=400)
 
-            permit_id = validated_subscription_data.get("value")
+            meta = validated_subscription_data.get("meta")
+            meta_item = get_meta_item(meta, "permitId")
+            permit_id = meta_item.get("value") if meta_item else None
+
             order_item_qs = OrderItem.objects.filter(
                 order__talpa_order_id=talpa_order_id,
                 permit_id=permit_id,

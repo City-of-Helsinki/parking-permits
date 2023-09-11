@@ -72,6 +72,10 @@ class SubscriptionValidator:
             if subscription.get("subscriptionId") == str(subscription_id):
                 meta = subscription.get("meta")
                 meta_item = get_meta_item(meta, "permitId")
+                if not meta_item:
+                    msg = "No permitId key available in meta list of key-value pairs"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
                 meta_permit_id = meta_item.get("value")
                 meta_subscription_id = meta_item.get("subscriptionId")
                 meta_order_id = meta_item.get("orderId")
