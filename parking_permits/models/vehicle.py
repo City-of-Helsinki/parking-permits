@@ -1,3 +1,5 @@
+import datetime
+
 import arrow
 from django.contrib.gis.db import models
 from django.utils import timezone as tz
@@ -172,7 +174,8 @@ class Vehicle(TimestampedModelMixin):
     def is_due_for_inspection(self):
         return (
             self.last_inspection_date is not None
-            and arrow.utcnow().date() > self.last_inspection_date
+            and arrow.utcnow().date()
+            > datetime.datetime.strptime(self.last_inspection_date, "%Y-%m-%d").date()
         )
 
     @property
