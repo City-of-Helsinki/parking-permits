@@ -14,6 +14,7 @@ from jose import jwt
 from rest_framework.test import APIClient, APITestCase
 
 from parking_permits.exceptions import DeletionNotAllowed
+from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.order import (
     Order,
     OrderPaymentType,
@@ -25,6 +26,7 @@ from parking_permits.models.order import (
 )
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
 from parking_permits.models.refund import Refund, RefundStatus
+from parking_permits.models.vehicle import VehicleUser
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
     OrderFactory,
@@ -33,6 +35,7 @@ from parking_permits.tests.factories.order import (
 )
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
+from parking_permits.tests.factories.vehicle import VehicleFactory
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
@@ -108,6 +111,252 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(order.status, OrderStatus.CONFIRMED)
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
+
+
+class RightOfPurchaseViewTestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_right_of_purchase_view_should_return_bad_request_if_talpa_order_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "permitId": "80000001",
+            "userId": "d86ca61d-97e9-410a-a1e3-4894873b1b46",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_right_of_purchase_view_should_return_bad_request_if_permit_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "userId": "d86ca61d-97e9-410a-a1e3-4894873b1b46",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_right_of_purchase_view_should_return_bad_request_if_user_id_missing(self):
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "permitId": "80000001",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_right_of_purchase_view_permit_not_found(self):
+        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
+        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
+        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
+        permit_id = "80000001"
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "orderId": talpa_order_id,
+            "namespace": "asukaspysakointi",
+            "userId": user_id,
+            "orderItem": {
+                "merchantId": "00243b8a-b30c-4370-af19-90631bf9a370",
+                "orderItemId": talpa_order_item_id,
+                "orderId": talpa_order_id,
+                "meta": [
+                    {
+                        "orderItemMetaId": "ee04456f-b330-4dab-a277-12d5cd24a4b7",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "permitId",
+                        "value": permit_id,
+                        "label": None,
+                        "visibleInCheckout": "false",
+                        "ordinal": None,
+                    },
+                ],
+            },
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("rightOfPurchase"), False)
+        self.assertEqual(response.data.get("userId"), user_id)
+        self.assertEqual(
+            response.data.get("errorMessage"),
+            "ParkingPermit matching query does not exist.",
+        )
+
+    @override_settings(
+        DEBUG=True,
+        TRAFICOM_CHECK=False,
+    )
+    @patch.object(Customer, "fetch_vehicle_detail")
+    @patch.object(Customer, "fetch_driving_licence_detail")
+    def test_right_of_purchase_view_is_valid(
+        self, mock_fetch_driving_licence_detail, mock_fetch_vehicle_detail
+    ):
+        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
+        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        user = UserFactory(uuid="a571a903-b0d2-4b36-80ff-348173e6d085")
+        customer = CustomerFactory(user=user)
+        permit_start_time = datetime.datetime(
+            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            id="80000163",
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2023-09-12T13:46:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+        order.permits.add(permit)
+        order.save()
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        unit_price = Decimal(30)
+        product = ProductFactory(
+            talpa_product_id="68db99cb-2ae5-36fd-bc18-51d30f1116bd",
+            unit_price=unit_price,
+        )
+        OrderItemFactory(
+            talpa_order_item_id=talpa_order_item_id,
+            order=order,
+            product=product,
+            permit=permit,
+            subscription=subscription,
+        )
+
+        vehicle = VehicleFactory(
+            registration_number="ABC-123", last_inspection_date="2050-01-01"
+        )
+        vehicle.users.add(
+            VehicleUser.objects.create(national_id_number=customer.national_id_number)
+        )
+        DrivingLicence.objects.create(
+            customer=customer,
+            start_date=datetime.datetime.strptime("2023-01-01", "%Y-%m-%d").date(),
+            active=True,
+        )
+
+        mock_fetch_driving_licence_detail.return_value = None
+        mock_fetch_vehicle_detail.return_value = vehicle
+
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "orderId": talpa_order_id,
+            "namespace": "asukaspysakointi",
+            "userId": str(user.uuid),
+            "orderItem": {
+                "merchantId": "00243b8a-b30c-4370-af19-90631bf9a370",
+                "orderItemId": talpa_order_item_id,
+                "orderId": talpa_order_id,
+                "productId": product.talpa_product_id,
+                "productName": "Pysäköintialue K",
+                "productLabel": "Ajoneuvo: FLN-835 Mercedes-Benz Vito Tourer Yksikerroksinen (CI) 3ov 1950cm3 A",
+                "productDescription": "12.09.2023 - 11.10.2023",
+                "unit": "kk",
+                "quantity": 1,
+                "rowPriceNet": "34.20",
+                "rowPriceVat": "10.80",
+                "rowPriceTotal": "45.00",
+                "vatPercentage": "24",
+                "priceNet": "34.20",
+                "priceVat": "10.80",
+                "priceGross": "45.00",
+                "originalPriceNet": None,
+                "originalPriceVat": None,
+                "originalPriceGross": None,
+                "periodFrequency": 1,
+                "periodUnit": "weekly",
+                "periodCount": None,
+                "startDate": "2023-09-12T13:46:00",
+                "billingStartDate": None,
+                "invoicingDate": None,
+                "invoicingStatus": None,
+                "meta": [
+                    {
+                        "orderItemMetaId": "9a672f56-2bad-4510-9831-3c4dad12928f",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "permitDuration",
+                        "value": "Määräaikainen 1 kk",
+                        "label": "Pysäköintitunnuksen kesto",
+                        "visibleInCheckout": "true",
+                        "ordinal": "1",
+                    },
+                    {
+                        "orderItemMetaId": "d1d4ba0a-dc0e-41ac-b52a-1845de02dcee",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "endDate",
+                        "value": "11.10.2023 23:59",
+                        "label": "Pysäköintitunnuksen päättymispäivä",
+                        "visibleInCheckout": "true",
+                        "ordinal": "3",
+                    },
+                    {
+                        "orderItemMetaId": "22f4bad6-3410-479e-8acb-acd890f6013b",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "startDate",
+                        "value": "11.09.2023",
+                        "label": "Pysäköintitunnuksen alkamispäivä*",
+                        "visibleInCheckout": "true",
+                        "ordinal": "2",
+                    },
+                    {
+                        "orderItemMetaId": "30579a8c-51af-42d1-bce4-a8afdc381a6e",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "terms",
+                        "value": "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, "
+                        + "kun maksusuoritus on hyväksytty.",
+                        "label": "",
+                        "visibleInCheckout": "true",
+                        "ordinal": "4",
+                    },
+                    {
+                        "orderItemMetaId": "c4caf437-d4ee-43e6-b547-f32e89929773",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "sourceOrderItemId",
+                        "value": "243",
+                        "label": None,
+                        "visibleInCheckout": "false",
+                        "ordinal": "0",
+                    },
+                    {
+                        "orderItemMetaId": "ee04456f-b330-4dab-a277-12d5cd24a4b7",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "permitId",
+                        "value": permit.id,
+                        "label": None,
+                        "visibleInCheckout": "false",
+                        "ordinal": None,
+                    },
+                ],
+            },
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("rightOfPurchase"), True)
+        self.assertEqual(response.data.get("userId"), str(user.uuid))
 
 
 class OrderViewTestCase(APITestCase):
