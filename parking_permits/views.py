@@ -219,10 +219,40 @@ class TalpaResolveRightOfPurchase(APIView):
             f"Data received for resolve right of purchase = {json.dumps(request.data, default=str)}"
         )
         order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            logger.error("Order item data is missing from request data")
+            return Response(
+                {"message": "No order item data is provided"},
+                status=400,
+            )
         order_item_id = order_item_data.get("orderItemId")
+        if not order_item_id:
+            logger.error("Talpa order item id is missing from request data")
+            return Response(
+                {"message": "No order item id is provided"},
+                status=400,
+            )
         meta = order_item_data.get("meta")
+        if not meta:
+            logger.error("Order item metadata is missing from request data")
+            return Response(
+                {"message": "No order item metadata is provided"},
+                status=400,
+            )
         permit_id = get_meta_value(meta, "permitId")
+        if not permit_id:
+            logger.error("Permit id is missing from request data")
+            return Response(
+                {"message": "No permit id is provided"},
+                status=400,
+            )
         user_id = request.data.get("userId")
+        if not user_id:
+            logger.error("User id is missing from request data")
+            return Response(
+                {"message": "No user id is provided"},
+                status=400,
+            )
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
