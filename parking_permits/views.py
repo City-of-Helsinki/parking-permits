@@ -93,6 +93,11 @@ audit_logger = audit.getAuditLoggerAdapter(
 )
 
 
+def invalid_response(message):
+    logger.error(message)
+    return Response({"message": message}, status=400)
+
+
 class ProductList(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -185,8 +190,7 @@ class TalpaResolvePrice(APIView):
             vat = product.vat
             price_vat = price * vat
         except Exception as e:
-            logger.error(f"Resolve price error = {str(e)}")
-            return Response({"message": str(e)}, status=400)
+            return invalid_response(f"Resolve price error = {str(e)}")
 
         response = snake_to_camel_dict(
             {
@@ -220,39 +224,19 @@ class TalpaResolveRightOfPurchase(APIView):
         )
         order_item_data = request.data.get("orderItem")
         if not order_item_data:
-            logger.error("Order item data is missing from request data")
-            return Response(
-                {"message": "No order item data is provided"},
-                status=400,
-            )
+            return invalid_response("Order item data is missing from request data")
         order_item_id = order_item_data.get("orderItemId")
         if not order_item_id:
-            logger.error("Talpa order item id is missing from request data")
-            return Response(
-                {"message": "No order item id is provided"},
-                status=400,
-            )
+            return invalid_response("Talpa order item id is missing from request data")
         meta = order_item_data.get("meta")
         if not meta:
-            logger.error("Order item metadata is missing from request data")
-            return Response(
-                {"message": "No order item metadata is provided"},
-                status=400,
-            )
+            return invalid_response("Order item metadata is missing from request data")
         permit_id = get_meta_value(meta, "permitId")
         if not permit_id:
-            logger.error("Permit id is missing from request data")
-            return Response(
-                {"message": "No permit id is provided"},
-                status=400,
-            )
+            return invalid_response("Permit id is missing from request data")
         user_id = request.data.get("userId")
         if not user_id:
-            logger.error("User id is missing from request data")
-            return Response(
-                {"message": "No user id is provided"},
-                status=400,
-            )
+            return invalid_response("User id is missing from request data")
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
@@ -314,11 +298,7 @@ class PaymentView(APIView):
         talpa_order_id = request.data.get("orderId")
         event_type = request.data.get("eventType")
         if not talpa_order_id:
-            logger.error("Talpa order id is missing from request data")
-            return Response(
-                {"message": "No order id is provided"},
-                status=400,
-            )
+            return invalid_response("Talpa order id is missing from request data")
         if event_type == "PAYMENT_PAID":
             logger.info(
                 f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
@@ -380,11 +360,7 @@ class PaymentView(APIView):
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
-            logger.error(f"Unknown payment event type {event_type}")
-            return Response(
-                {"message": "Unknown payment event type"},
-                status=400,
-            )
+            return invalid_response(f"Unknown payment event type {event_type}")
 
 
 class OrderView(APIView):
@@ -405,16 +381,10 @@ class OrderView(APIView):
         event_type = request.data.get("eventType")
 
         if not talpa_order_id:
-            logger.error("Talpa order id is missing from request data")
-            return Response(
-                {"message": "No order id is provided"},
-                status=400,
-            )
+            return invalid_response("Talpa order id is missing from request data")
         if not talpa_subscription_id:
-            logger.error("Talpa subscription id is missing from request data")
-            return Response(
-                {"message": "No subscription id is provided"},
-                status=400,
+            return invalid_response(
+                "Talpa subscription id is missing from request data"
             )
 
         # Subscriptipn renewal process
@@ -433,8 +403,7 @@ class OrderView(APIView):
                     talpa_order_id, permit.customer.user.uuid
                 )
             except OrderValidationError as e:
-                logger.error(f"Order validation failed. Error = {e}")
-                return Response({"message": str(e)}, status=400)
+                return invalid_response(f"Order validation failed. Error = {str(e)}")
 
             paid_time = tz.make_aware(
                 datetime.datetime.strptime(
@@ -501,11 +470,7 @@ class OrderView(APIView):
             )
             return Response({"message": "Subscription renewal completed"}, status=200)
         else:
-            logger.error(f"Unknown order event type {event_type}")
-            return Response(
-                {"message": "Unknown order event type"},
-                status=400,
-            )
+            return invalid_response(f"Unknown order event type {event_type}")
 
 
 class SubscriptionView(APIView):
@@ -535,36 +500,28 @@ class SubscriptionView(APIView):
             event_time = parse_datetime(event_timestamp[:-1])
 
         if not talpa_order_id:
-            logger.error("Talpa order id is missing from request data")
-            return Response(
-                {"message": "No order id is provided"},
-                status=400,
-            )
+            return invalid_response("Talpa order id is missing from request data")
+
         if not talpa_order_item_id:
-            logger.error("Talpa order item id is missing from request data")
-            return Response(
-                {"message": "No order item id is provided"},
-                status=400,
-            )
+            return invalid_response("Talpa order item id is missing from request data")
+
         if not talpa_subscription_id:
-            logger.error("Talpa subscription id is missing from request data")
-            return Response(
-                {"message": "No subscription id is provided"},
-                status=400,
+            return invalid_response(
+                "Talpa subscription id is missing from request data"
             )
+
         if not event_type:
-            logger.error("Talpa subscription event type is missing from request data")
-            return Response(
-                {"message": "No subscription event type is provided"},
-                status=400,
+            return invalid_response(
+                "Talpa subscription event type is missing from request data"
             )
 
         order = Order.objects.get(talpa_order_id=talpa_order_id)
         try:
             OrderValidator.validate_order(talpa_order_id, order.customer.user.uuid)
         except OrderValidationError as e:
-            logger.error(f"Subscription order validation failed. Error = {e}")
-            return Response({"message": str(e)}, status=400)
+            return invalid_response(
+                f"Subscription order validation failed. Error = {str(e)}"
+            )
 
         if event_type == "SUBSCRIPTION_CREATED":
             logger.info(f"Creating new subscription: {talpa_subscription_id}")
@@ -578,17 +535,14 @@ class SubscriptionView(APIView):
                     )
                 )
             except SubscriptionValidationError as e:
-                logger.error(f"Subscription validation failed. Error = {e}")
-                return Response({"message": str(e)}, status=400)
+                return invalid_response(f"Subscription validation failed. Error = {e}")
 
             meta = validated_subscription_data.get("meta")
             meta_item = get_meta_item(meta, "permitId")
             permit_id = meta_item.get("value") if meta_item else None
             if not permit_id:
-                logger.error("Permit id is missing from subscription meta data")
-                return Response(
-                    {"message": "No permit id is provided"},
-                    status=400,
+                return invalid_response(
+                    "Permit id is missing from subscription meta data"
                 )
 
             order_item_qs = OrderItem.objects.filter(
@@ -597,9 +551,10 @@ class SubscriptionView(APIView):
             )
             order_item = order_item_qs.first()
             if not order_item:
-                message = f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
-                logger.error(message)
-                return Response({"message": message}, status=400)
+                return invalid_response(
+                    f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
+                )
+
             subscription = Subscription.objects.create(
                 talpa_subscription_id=talpa_subscription_id,
                 status=SubscriptionStatus.CONFIRMED,
@@ -632,11 +587,7 @@ class SubscriptionView(APIView):
             )
             return Response({"message": "Subscription cancelled"}, status=200)
         else:
-            logger.error(f"Unknown subscription event type {event_type}")
-            return Response(
-                {"message": "Unknown subscription event type"},
-                status=400,
-            )
+            return invalid_response(f"Unknown subscription event type {event_type}")
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
