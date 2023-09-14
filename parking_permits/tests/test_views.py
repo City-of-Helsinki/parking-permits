@@ -11,7 +11,7 @@ from django.utils import timezone as tz
 from freezegun import freeze_time
 from helusers.settings import api_token_auth_settings
 from jose import jwt
-from rest_framework.test import APIClient, APITestCase
+from rest_framework.test import APITestCase
 
 from parking_permits.exceptions import DeletionNotAllowed
 from parking_permits.models.driving_licence import DrivingLicence
@@ -83,9 +83,6 @@ def get_validated_subscription_data(
 
 
 class PaymentViewTestCase(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-
     def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
         url = reverse("parking_permits:payment-notify")
         data = {
@@ -114,9 +111,6 @@ class PaymentViewTestCase(APITestCase):
 
 
 class RightOfPurchaseViewTestCase(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-
     def test_right_of_purchase_view_should_return_bad_request_if_talpa_order_id_missing(
         self,
     ):
@@ -360,9 +354,6 @@ class RightOfPurchaseViewTestCase(APITestCase):
 
 
 class OrderViewTestCase(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-
     def test_order_view_should_return_bad_request_if_talpa_order_id_missing(self):
         url = reverse("parking_permits:order-notify")
         data = {
@@ -465,9 +456,6 @@ class OrderViewTestCase(APITestCase):
 
 
 class SubscriptionViewTestCase(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-
     def test_subscription_view_should_return_bad_request_if_talpa_order_id_missing(
         self,
     ):
