@@ -256,7 +256,6 @@ class TalpaResolveRightOfPurchase(APIView):
                 and is_user_of_vehicle
                 and customer.driving_licence.active
                 and has_valid_driving_licence
-                and not vehicle.is_due_for_inspection()
             )
             res = snake_to_camel_dict(
                 {

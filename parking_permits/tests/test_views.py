@@ -13,7 +13,7 @@ from helusers.settings import api_token_auth_settings
 from jose import jwt
 from rest_framework.test import APITestCase
 
-from parking_permits.exceptions import DeletionNotAllowed
+from parking_permits.exceptions import DeletionNotAllowed, TraficomFetchVehicleError
 from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.order import (
     Order,
@@ -185,6 +185,66 @@ class RightOfPurchaseViewTestCase(APITestCase):
     )
     @patch.object(Customer, "fetch_vehicle_detail")
     @patch.object(Customer, "fetch_driving_licence_detail")
+    def test_right_of_purchase_view_when_vehicle_is_decommissioned(
+        self, mock_fetch_driving_licence_detail, mock_fetch_vehicle_detail
+    ):
+        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
+        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
+        user = UserFactory(uuid="a571a903-b0d2-4b36-80ff-348173e6d085")
+        customer = CustomerFactory(user=user)
+        permit = ParkingPermitFactory(
+            id="80000163",
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+        )
+        vehicle = VehicleFactory()
+        vehicle.users.add(
+            VehicleUser.objects.create(national_id_number=customer.national_id_number)
+        )
+
+        mock_fetch_driving_licence_detail.return_value = None
+        mock_fetch_vehicle_detail.side_effect = TraficomFetchVehicleError(
+            f"Vehicle {vehicle.registration_number} is decommissioned"
+        )
+
+        url = reverse("parking_permits:talpa-right-of-purchase")
+        data = {
+            "orderId": talpa_order_id,
+            "namespace": "asukaspysakointi",
+            "userId": str(user.uuid),
+            "orderItem": {
+                "merchantId": "00243b8a-b30c-4370-af19-90631bf9a370",
+                "orderItemId": talpa_order_item_id,
+                "orderId": talpa_order_id,
+                "meta": [
+                    {
+                        "orderItemMetaId": "ee04456f-b330-4dab-a277-12d5cd24a4b7",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "permitId",
+                        "value": permit.id,
+                        "label": None,
+                        "visibleInCheckout": "false",
+                        "ordinal": None,
+                    },
+                ],
+            },
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("rightOfPurchase"), False)
+        self.assertEqual(response.data.get("userId"), str(user.uuid))
+        self.assertEqual(
+            response.data.get("errorMessage"),
+            f"Vehicle {vehicle.registration_number} is decommissioned",
+        )
+
+    @override_settings(
+        DEBUG=True,
+        TRAFICOM_CHECK=False,
+    )
+    @patch.object(Customer, "fetch_vehicle_detail")
+    @patch.object(Customer, "fetch_driving_licence_detail")
     def test_right_of_purchase_view_is_valid(
         self, mock_fetch_driving_licence_detail, mock_fetch_vehicle_detail
     ):
@@ -235,9 +295,7 @@ class RightOfPurchaseViewTestCase(APITestCase):
             subscription=subscription,
         )
 
-        vehicle = VehicleFactory(
-            registration_number="ABC-123", last_inspection_date="2050-01-01"
-        )
+        vehicle = VehicleFactory(registration_number="ABC-123")
         vehicle.users.add(
             VehicleUser.objects.create(national_id_number=customer.national_id_number)
         )
