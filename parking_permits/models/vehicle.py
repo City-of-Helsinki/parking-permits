@@ -1,6 +1,3 @@
-import datetime
-
-import arrow
 from django.contrib.gis.db import models
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -170,13 +167,6 @@ class Vehicle(TimestampedModelMixin):
     def save(self, *args, **kwargs):
         self._is_low_emission = self.is_low_emission
         super(Vehicle, self).save(*args, **kwargs)
-
-    def is_due_for_inspection(self):
-        return (
-            self.last_inspection_date is not None
-            and arrow.utcnow().date()
-            > datetime.datetime.strptime(self.last_inspection_date, "%Y-%m-%d").date()
-        )
 
     @property
     def is_low_emission(self):
