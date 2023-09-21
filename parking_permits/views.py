@@ -76,6 +76,7 @@ from .utils import (
     get_meta_item,
     get_meta_value,
     get_user_from_api_view_method_args,
+    round_up,
     snake_to_camel_dict,
 )
 
@@ -169,40 +170,60 @@ class TalpaResolvePrice(APIView):
         logger.info(
             f"Data received for resolve price = {json.dumps(request.data, default=str)}"
         )
-        meta = request.data.get("orderItem").get("meta")
+        subscription_id = request.data.get("subscriptionId")
+        if not subscription_id:
+            return invalid_response("Subscription id is missing from request data")
+        user_id = request.data.get("userId")
+        if not user_id:
+            return invalid_response("User id is missing from request data")
+        order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            return invalid_response("Order item data is missing from request data")
+        order_item_id = order_item_data.get("orderItemId")
+        if not order_item_id:
+            return invalid_response("Order item id is missing from request data")
+        meta = order_item_data.get("meta")
+        if not meta:
+            return invalid_response("Order item metadata is missing from request data")
         permit_id = get_meta_value(meta, "permitId")
-
-        if permit_id is None:
-            return Response(
-                {
-                    "message": "No permitId key available in meta list of key-value pairs"
-                },
-                status=400,
+        if not permit_id:
+            return invalid_response(
+                "No permitId key available in meta list of key-value pairs"
             )
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
             products_with_quantity = permit.get_products_with_quantities()
-            product, quantity, date_range = products_with_quantity[0]
+            if not products_with_quantity:
+                return invalid_response("No products found for permit")
+            product_with_quantity = products_with_quantity[0]
+            if not product_with_quantity:
+                return invalid_response("Product with quantity not found for permit")
+            product = product_with_quantity[0]
+            if not product:
+                return invalid_response("Product not found")
             price = product.get_modified_unit_price(
                 permit.vehicle.is_low_emission, permit.is_secondary_vehicle
             )
             vat = product.vat
             price_vat = price * vat
+            response = snake_to_camel_dict(
+                {
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                    "price_net": round_up(float(price - price_vat)),
+                    "price_vat": round_up(float(price_vat)),
+                    "price_gross": round_up(float(price)),
+                }
+            )
         except Exception as e:
-            return invalid_response(f"Resolve price error = {str(e)}")
-
-        response = snake_to_camel_dict(
-            {
-                "row_price_net": float(price - price_vat),
-                "row_price_vat": float(price_vat),
-                "row_price_total": float(price),
-                "price_net": float(price - price_vat),
-                "price_vat": float(price_vat),
-                "price_gross": float(price),
-                "vat_percentage": float(product.vat_percentage),
-            }
-        )
+            response = snake_to_camel_dict(
+                {
+                    "error_message": str(e),
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                }
+            )
         logger.info(f"Resolve price response = {json.dumps(response, default=str)}")
         return Response(response)
 
@@ -233,7 +254,9 @@ class TalpaResolveRightOfPurchase(APIView):
             return invalid_response("Order item metadata is missing from request data")
         permit_id = get_meta_value(meta, "permitId")
         if not permit_id:
-            return invalid_response("Permit id is missing from request data")
+            return invalid_response(
+                "No permitId key available in meta list of key-value pairs"
+            )
         user_id = request.data.get("userId")
         if not user_id:
             return invalid_response("User id is missing from request data")
@@ -541,7 +564,7 @@ class SubscriptionView(APIView):
             permit_id = meta_item.get("value") if meta_item else None
             if not permit_id:
                 return invalid_response(
-                    "Permit id is missing from subscription meta data"
+                    "No permitId key available in meta list of key-value pairs"
                 )
 
             order_item_qs = OrderItem.objects.filter(
