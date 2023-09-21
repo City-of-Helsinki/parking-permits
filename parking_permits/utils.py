@@ -6,6 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from itertools import chain
 
+import numpy as np
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.db import models
@@ -303,3 +304,7 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
         else:
             output[f"{prefix}{k}"] = v
     return output
+
+
+def round_up(v):
+    return "{:0.2f}".format(np.round(v, 3)) if v else "0.00"
