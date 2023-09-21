@@ -122,13 +122,19 @@ class PaymentViewTestCase(APITestCase):
 
 
 class ResolvePriceViewTestCase(APITestCase):
+    talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+    talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
+    talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
+    user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
+    permit_id = "80000001"
+
     def test_resolve_price_view_should_return_bad_request_if_subscription_id_missing(
         self,
     ):
         url = reverse("parking_permits:talpa-price")
         data = {
-            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
-            "userId": "d86ca61d-97e9-410a-a1e3-4894873b1b46",
+            "orderId": self.talpa_order_id,
+            "userId": self.user_id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
@@ -136,8 +142,8 @@ class ResolvePriceViewTestCase(APITestCase):
     def test_resolve_price_view_should_return_bad_request_if_user_id_missing(self):
         url = reverse("parking_permits:talpa-price")
         data = {
-            "subscription_id": "f769b803-0bd0-489d-aa81-b35af391f391",
-            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "subscription_id": self.talpa_subscription_id,
+            "orderId": self.talpa_order_id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 400)
@@ -147,7 +153,7 @@ class ResolvePriceViewTestCase(APITestCase):
     ):
         url = reverse("parking_permits:talpa-price")
         data = {
-            "permitId": "80000001",
+            "permitId": self.permit_id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 400)
@@ -157,32 +163,33 @@ class ResolvePriceViewTestCase(APITestCase):
     ):
         url = reverse("parking_permits:talpa-price")
         data = {
-            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "orderId": self.talpa_order_id,
         }
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 400)
 
     def test_resolve_price_view_for_normal_emission_vehicle(self):
-        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
-        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
-        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
-        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
-        permit_id = "80000001"
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, products = self._prepare_test_data(
-            permit_id, unit_price, low_emission_discount
+            self.permit_id, unit_price, low_emission_discount
         )
         url = reverse("parking_permits:talpa-price")
         data = self._prepare_request_data(
-            permit, talpa_order_id, talpa_order_item_id, talpa_subscription_id, user_id
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
         vat = products[0].vat
         price_vat = unit_price * vat
-        self.assertEqual(response.data.get("subscriptionId"), talpa_subscription_id)
-        self.assertEqual(response.data.get("userId"), user_id)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertEqual(
             response.data.get("priceNet"), round_up(float(unit_price - price_vat))
         )
@@ -190,19 +197,18 @@ class ResolvePriceViewTestCase(APITestCase):
         self.assertEqual(response.data.get("priceGross"), round_up(float(unit_price)))
 
     def test_resolve_price_view_for_low_emission_vehicle(self):
-        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
-        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
-        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
-        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
-        permit_id = "80000001"
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.5)
         permit, products = self._prepare_test_data(
-            permit_id, unit_price, low_emission_discount
+            self.permit_id, unit_price, low_emission_discount
         )
         url = reverse("parking_permits:talpa-price")
         data = self._prepare_request_data(
-            permit, talpa_order_id, talpa_order_item_id, talpa_subscription_id, user_id
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
@@ -211,8 +217,10 @@ class ResolvePriceViewTestCase(APITestCase):
             unit_price - unit_price * low_emission_discount
         )  # discount price
         low_emission_price_vat = low_emission_price * vat
-        self.assertEqual(response.data.get("subscriptionId"), talpa_subscription_id)
-        self.assertEqual(response.data.get("userId"), user_id)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertEqual(
             response.data.get("priceGross"), round_up(float(low_emission_price))
         )
@@ -225,20 +233,19 @@ class ResolvePriceViewTestCase(APITestCase):
         )
 
     def test_resolve_price_view_for_secondary_normal_emission_vehicle(self):
-        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
-        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
-        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
-        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
-        permit_id = "80000001"
         secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, products = self._prepare_test_data(
-            permit_id, unit_price, low_emission_discount, primary_permit=False
+            self.permit_id, unit_price, low_emission_discount, primary_permit=False
         )
         url = reverse("parking_permits:talpa-price")
         data = self._prepare_request_data(
-            permit, talpa_order_id, talpa_order_item_id, talpa_subscription_id, user_id
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
@@ -247,34 +254,35 @@ class ResolvePriceViewTestCase(APITestCase):
             unit_price + unit_price * secondary_vehicle_increase_rate
         )  # secondary vehicle price
         secondary_vehicle_price_vat = secondary_vehicle_price * vat
-        self.assertEqual(response.data.get("subscriptionId"), talpa_subscription_id)
-        self.assertEqual(response.data.get("userId"), user_id)
         self.assertEqual(
-            response.data.get("priceNet"),
-            round_up(float(secondary_vehicle_price - secondary_vehicle_price_vat)),
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(
+            response.data.get("priceGross"), round_up(float(secondary_vehicle_price))
         )
         self.assertEqual(
             response.data.get("priceVat"), round_up(float(secondary_vehicle_price_vat))
         )
         self.assertEqual(
-            response.data.get("priceGross"), round_up(float(secondary_vehicle_price))
+            response.data.get("priceNet"),
+            round_up(float(secondary_vehicle_price - secondary_vehicle_price_vat)),
         )
 
     def test_resolve_price_view_for_secondary_low_emission_vehicle(self):
-        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
-        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
-        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
-        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
-        permit_id = "80000001"
         secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.5)
         permit, products = self._prepare_test_data(
-            permit_id, unit_price, low_emission_discount, primary_permit=False
+            self.permit_id, unit_price, low_emission_discount, primary_permit=False
         )
         url = reverse("parking_permits:talpa-price")
         data = self._prepare_request_data(
-            permit, talpa_order_id, talpa_order_item_id, talpa_subscription_id, user_id
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
@@ -285,40 +293,43 @@ class ResolvePriceViewTestCase(APITestCase):
         modified_price += modified_price * secondary_vehicle_increase_rate
         modified_price_vat = modified_price * vat
 
-        self.assertEqual(response.data.get("subscriptionId"), talpa_subscription_id)
-        self.assertEqual(response.data.get("userId"), user_id)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertEqual(
             response.data.get("priceGross"), round_up(float(modified_price))
+        )
+        self.assertEqual(
+            response.data.get("priceVat"), round_up(float(modified_price_vat))
         )
         self.assertEqual(
             response.data.get("priceNet"),
             round_up(float(modified_price - modified_price_vat)),
         )
-        self.assertEqual(
-            response.data.get("priceVat"), round_up(float(modified_price_vat))
-        )
 
     def test_resolve_price_view_should_return_error_if_permit_products_missing(
         self,
     ):
-        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
-        talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
-        talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
-        user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
-        permit_id = "80000001"
         permit = ParkingPermitFactory(
-            id=permit_id,
+            id=self.permit_id,
             contract_type=ContractType.OPEN_ENDED,
             month_count=1,
         )
         url = reverse("parking_permits:talpa-price")
         data = self._prepare_request_data(
-            permit, talpa_order_id, talpa_order_item_id, talpa_subscription_id, user_id
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data.get("subscriptionId"), talpa_subscription_id)
-        self.assertEqual(response.data.get("userId"), user_id)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertNotEquals(response.data.get("errorMessage"), "")
 
     def _prepare_test_data(
