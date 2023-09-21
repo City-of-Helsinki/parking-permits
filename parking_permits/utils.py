@@ -4,9 +4,9 @@ import zoneinfo
 from collections import OrderedDict
 from collections.abc import Callable
 from datetime import datetime
+from decimal import ROUND_UP, Decimal
 from itertools import chain
 
-import numpy as np
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.db import models
@@ -307,4 +307,8 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
 
 
 def round_up(v):
-    return "{:0.2f}".format(np.round(v, 3)) if v else "0.00"
+    return (
+        "{:0.2f}".format(Decimal(v).quantize(Decimal(".001"), rounding=ROUND_UP))
+        if v
+        else "0.00"
+    )
