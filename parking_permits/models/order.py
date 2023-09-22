@@ -146,6 +146,7 @@ class OrderType(models.TextChoices):
     CREATED = "CREATED", _("Created")
     VEHICLE_CHANGED = "VEHICLE_CHANGED", _("Vehicle changed")
     ADDRESS_CHANGED = "ADDRESS_CHANGED", _("Address changed")
+    SUBSCRIPTION_RENEWED = "SUBSCRIPTION_RENEWED", _("Subscription renewed")
 
 
 class OrderManager(SerializableMixin.SerializableManager):
