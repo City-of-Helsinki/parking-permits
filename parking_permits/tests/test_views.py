@@ -19,6 +19,7 @@ from parking_permits.models.order import (
     Order,
     OrderPaymentType,
     OrderStatus,
+    OrderType,
     OrderValidator,
     Subscription,
     SubscriptionStatus,
@@ -57,14 +58,12 @@ from .keys import rsa_key
 def get_validated_order_data(talpa_order_id, talpa_order_item_id):
     return {
         "orderId": talpa_order_id,
-        "lastValidPurchaseDateTime": "2023-06-01T15:46:05.000Z",
         "checkoutUrl": "https://test.com",
         "loggedInCheckoutUrl": "https://test.com",
         "receiptUrl": "https://test.com",
         "items": [
             {
                 "orderItemId": talpa_order_item_id,
-                "lastValidPurchaseDateTime": "2023-06-01T15:46:05.000Z",
                 "startDate": "2023-06-01T15:46:05",
                 "priceGross": "45.00",
                 "rowPriceTotal": "45.00",
@@ -119,6 +118,44 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(order.status, OrderStatus.CONFIRMED)
         self.assertEqual(permit_1.status, ParkingPermitStatus.VALID)
         self.assertEqual(permit_2.status, ParkingPermitStatus.VALID)
+
+    @override_settings(DEBUG=True)
+    def test_payment_view_should_update_renewal_order_and_permit_status(self):
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        permit_id = "80000001"
+        permit_start_time = datetime.datetime(
+            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            id=permit_id,
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+            month_count=1,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            status=OrderStatus.DRAFT,
+            type=OrderType.SUBSCRIPTION_RENEWED,
+        )
+        order.permits.add(permit)
+        url = reverse("parking_permits:payment-notify")
+        data = {"eventType": "PAYMENT_PAID", "orderId": talpa_order_id}
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        permit.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit.start_time, permit_start_time)
+        self.assertEqual(
+            permit.end_time,
+            datetime.datetime(2023, 11, 11, 23, 59, 0, tzinfo=datetime.timezone.utc),
+        )
 
 
 class ResolvePriceViewTestCase(APITestCase):
@@ -816,12 +853,13 @@ class OrderViewTestCase(APITestCase):
         permit.refresh_from_db()
         self.assertEqual(str(order.talpa_order_id), talpa_new_order_id)
         self.assertEqual(order.customer, permit.customer)
-        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(order.status, OrderStatus.DRAFT)
+        self.assertEqual(order.type, OrderType.SUBSCRIPTION_RENEWED)
         self.assertEqual(order.payment_type, OrderPaymentType.ONLINE_PAYMENT)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         self.assertEqual(
             permit.end_time,
-            datetime.datetime(2023, 6, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
         )
 
 
