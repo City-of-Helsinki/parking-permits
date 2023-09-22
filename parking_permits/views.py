@@ -333,6 +333,14 @@ class PaymentView(APIView):
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
 
+                # Subscription renewed type order has always only one permit
+                if order.type == OrderType.SUBSCRIPTION_RENEWED:
+                    if not permit.end_time:
+                        permit.end_time = permit.current_period_end_time()
+                    permit.end_time = permit.end_time + relativedelta(months=1)
+                    permit.save()
+                    send_permit_email(PermitEmailType.UPDATED, permit)
+
                 if order.type == OrderType.VEHICLE_CHANGED:
                     if (
                         permit.consent_low_emission_accepted
@@ -417,8 +425,6 @@ class OrderView(APIView):
             )
             order_item = subscription.order_items.first()
             permit = order_item.permit
-            permit.end_time = permit.end_time + relativedelta(months=1)
-            permit.save()
 
             try:
                 validated_order_data = OrderValidator.validate_order(
@@ -427,12 +433,6 @@ class OrderView(APIView):
             except OrderValidationError as e:
                 return invalid_response(f"Order validation failed. Error = {str(e)}")
 
-            paid_time = tz.make_aware(
-                datetime.datetime.strptime(
-                    validated_order_data.get("lastValidPurchaseDateTime"),
-                    "%Y-%m-%dT%H:%M:%S.%fZ",
-                )
-            )
             order = Order.objects.create(
                 talpa_order_id=validated_order_data.get("orderId"),
                 talpa_checkout_url=validated_order_data.get("checkoutUrl"),
@@ -442,12 +442,11 @@ class OrderView(APIView):
                 talpa_receipt_url=validated_order_data.get("receiptUrl"),
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 customer=permit.customer,
-                status=OrderStatus.CONFIRMED,
-                paid_time=paid_time,
+                status=OrderStatus.DRAFT,
                 address_text=str(permit.full_address),
                 parking_zone_name=permit.parking_zone.name,
                 vehicles=[permit.vehicle.registration_number],
-                type=OrderType.CREATED,
+                type=OrderType.SUBSCRIPTION_RENEWED,
             )
             order.permits.add(permit)
             order.save()
