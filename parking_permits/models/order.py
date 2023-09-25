@@ -237,10 +237,15 @@ class OrderManager(SerializableMixin.SerializableManager):
         Create new order for updated permits information that affect
         permit prices, e.g. change address or change vehicle.
         """
-        customer_permits = ParkingPermit.objects.filter(customer=customer)
+        customer_permits = ParkingPermit.objects.filter(
+            customer=customer, status=ParkingPermitStatus.VALID
+        )
         self._validate_customer_permits(customer_permits)
 
-        first_permit = customer_permits.first()
+        try:
+            first_permit = customer_permits[0]
+        except IndexError:
+            raise OrderCreationFailed("No valid permits found for renewal order")
         new_order = Order.objects.create(
             customer=customer,
             status=status,
