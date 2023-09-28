@@ -178,8 +178,10 @@ class Vehicle(TimestampedModelMixin):
         )
 
     def __str__(self):
-        return "%s (%s, %s)" % (
-            self.registration_number,
-            self.manufacturer,
-            self.model,
-        )
+        vehicle_str = "%s" % self.registration_number or ""
+        if self.manufacturer:
+            vehicle_str += " (%s" % self.manufacturer
+            if self.model:
+                vehicle_str += ", %s" % self.model
+            vehicle_str += ")"
+        return vehicle_str
