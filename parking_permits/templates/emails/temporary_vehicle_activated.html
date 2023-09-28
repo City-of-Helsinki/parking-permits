@@ -10,7 +10,7 @@
     <p>
         {% translate "Order info" %}: <br>
         {{ permit.get_type_display }} <br>
-        {{ permit.customer }} <br>
+        {{ permit.customer.full_name }} <br>
         {% translate "Address" %}: {{ permit.address }} <br>
         {% translate "Area" %}: {{ permit.parking_zone.name }} <br>
         {% translate "Vehicle" %}: {{ permit.active_temporary_vehicle.vehicle }}<br>
