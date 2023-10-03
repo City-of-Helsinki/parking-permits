@@ -93,6 +93,8 @@ def get_validated_subscription_data(
 
 
 class PaymentViewTestCase(APITestCase):
+    talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+
     def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
         url = reverse("parking_permits:payment-notify")
         data = {
@@ -101,15 +103,27 @@ class PaymentViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
+    def test_payment_view_should_return_not_found_if_talpa_order_does_not_exist(
+        self,
+    ):
+        url = reverse("parking_permits:payment-notify")
+        data = {
+            "eventType": "PAYMENT_PAID",
+            "orderId": self.talpa_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 404)
+
     @override_settings(DEBUG=True)
     def test_payment_view_should_update_order_and_permits_status(self):
-        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         permit_1 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         permit_2 = ParkingPermitFactory(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
-        order = OrderFactory(talpa_order_id=talpa_order_id, status=OrderStatus.DRAFT)
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id, status=OrderStatus.DRAFT
+        )
         order.permits.add(permit_1, permit_2)
         url = reverse("parking_permits:payment-notify")
-        data = {"eventType": "PAYMENT_PAID", "orderId": talpa_order_id}
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
@@ -121,7 +135,6 @@ class PaymentViewTestCase(APITestCase):
 
     @override_settings(DEBUG=True)
     def test_payment_view_should_update_renewal_order_and_permit_status(self):
-        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         permit_id = "80000001"
         permit_start_time = datetime.datetime(
             2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
@@ -138,13 +151,13 @@ class PaymentViewTestCase(APITestCase):
             month_count=1,
         )
         order = OrderFactory(
-            talpa_order_id=talpa_order_id,
+            talpa_order_id=self.talpa_order_id,
             status=OrderStatus.DRAFT,
             type=OrderType.SUBSCRIPTION_RENEWED,
         )
         order.permits.add(permit)
         url = reverse("parking_permits:payment-notify")
-        data = {"eventType": "PAYMENT_PAID", "orderId": talpa_order_id}
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
@@ -781,6 +794,18 @@ class OrderViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
+    def test_order_view_should_return_not_found_if_talpa_subscription_does_not_exist(
+        self,
+    ):
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_RENEWAL_ORDER_CREATED",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 404)
+
     @override_settings(DEBUG=True)
     @patch.object(OrderValidator, "validate_order")
     def test_subscription_renewal(self, mock_validate_order):
@@ -874,6 +899,32 @@ class SubscriptionViewTestCase(APITestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
+
+    def test_subscription_view_should_return_not_found_if_talpa_order_does_not_exist(
+        self,
+    ):
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "orderItemId": "819daecd-5ebb-4a94-924e-9710069e9285",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 404)
+
+    def test_subscription_view_should_return_not_found_if_talpa_subscription_does_not_exist(
+        self,
+    ):
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CANCELLED",
+            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "orderItemId": "819daecd-5ebb-4a94-924e-9710069e9285",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 404)
 
     def test_subscription_view_should_return_bad_request_if_talpa_order_item_id_missing(
         self,
