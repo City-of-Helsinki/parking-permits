@@ -510,7 +510,7 @@ class OrderView(APIView):
             except ParkkihubiPermitError:
                 permit.create_parkkihubi_permit()
             logger.info(
-                f"{subscription} is renewed and permit end time is set to {permit.end_time}"
+                f"{subscription} is renewed and new order {order} is created with order item {order_item}"
             )
             return Response({"message": "Subscription renewal completed"}, status=200)
         else:
