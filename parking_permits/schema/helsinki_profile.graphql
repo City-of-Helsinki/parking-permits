@@ -1,10 +1,10 @@
 query MyProfileQuery {
   myProfile {
     id
-    firstName
-    lastName
     language
     verifiedPersonalInformation {
+      firstName
+      lastName
       nationalIdentificationNumber
     }
     primaryPhone {
