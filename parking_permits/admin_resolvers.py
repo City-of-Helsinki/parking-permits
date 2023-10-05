@@ -259,16 +259,13 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
     query_params = data.get("query")
     customer = None
 
-    try:
-        customer = Customer.objects.get(**query_params)
-    except Customer.DoesNotExist:
-        if query_params.get("national_id_number"):
-            # We're searching data from DVV now, so change the event type.
-            audit_msg.event_type = audit.EventType.DVV
-            logger.info("Customer does not exist, searching from DVV...")
-            customer = get_person_info(query_params.get("national_id_number"))
-        if not customer:
-            raise ObjectNotFound(_("Person not found"))
+    if national_id_number := query_params.get("national_id_number"):
+        # We're searching data from DVV now, so change the event type.
+        audit_msg.event_type = audit.EventType.DVV
+        logger.info("Searching customer from DVV...")
+        customer = get_person_info(national_id_number)
+    if not customer:
+        raise ObjectNotFound(_("Person not found"))
 
     return customer
 
