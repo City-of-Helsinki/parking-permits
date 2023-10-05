@@ -108,7 +108,6 @@ def save_profile_address(address):
     address_obj = Address.objects.update_or_create(
         street_name=address.get("street_name"),
         street_number=address.get("street_number"),
-        city=address.get("city"),
         postal_code=address.get("postal_code"),
         defaults={
             "street_name": address.get("street_name"),
