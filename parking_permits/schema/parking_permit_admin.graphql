@@ -476,7 +476,7 @@ input VehicleInput {
   consentLowEmissionAccepted: Boolean!
   vehicleClass: String!
   euroClass: Int!
-  emission: Int!
+  emission: Int
   emissionType: String!
   powerType: PowerTypeInput!
 }
