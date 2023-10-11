@@ -404,6 +404,8 @@ def update_or_create_vehicle(vehicle_info):
         else None
     )
 
+    emission = vehicle_info.get("emission") or 0
+
     vehicle_data = {
         "registration_number": registration_number,
         "manufacturer": vehicle_info["manufacturer"],
@@ -412,8 +414,8 @@ def update_or_create_vehicle(vehicle_info):
         "serial_number": vehicle_info["serial_number"],
         "vehicle_class": vehicle_info["vehicle_class"],
         "euro_class": vehicle_info["euro_class"],
-        "emission": vehicle_info["emission"],
         "emission_type": vehicle_info["emission_type"],
+        "emission": emission,
         "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(

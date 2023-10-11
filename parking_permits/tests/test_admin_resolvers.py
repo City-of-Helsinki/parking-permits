@@ -35,6 +35,33 @@ def test_update_or_create_vehicle_should_create_vehicle():
 
 
 @pytest.mark.django_db
+def test_update_or_create_vehicle_emission_none():
+    power_type = VehiclePowerTypeFactory()
+    vehicle_info = dict(
+        registration_number="ABC-123",
+        manufacturer="Manufacturer",
+        model="Model",
+        consent_low_emission_accepted=True,
+        serial_number="123",
+        vehicle_class="M1",
+        euro_class=1,
+        emission=None,
+        emission_type="WLTP",
+        power_type={"identifier": power_type.identifier},
+    )
+
+    vehicle = update_or_create_vehicle(vehicle_info)
+
+    skipped_keys = ["power_type", "emission"]
+    for k, v in vehicle_info.items():
+        if k in skipped_keys:
+            continue
+        assert getattr(vehicle, k) == v
+    assert vehicle.emission == 0
+    assert vehicle.power_type == power_type
+
+
+@pytest.mark.django_db
 def test_update_or_create_vehicle_should_update_vehicle():
     old_power_type = VehiclePowerTypeFactory()
     new_power_type = VehiclePowerTypeFactory()
