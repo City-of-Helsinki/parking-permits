@@ -5,6 +5,7 @@ import factory
 import pytz
 
 from parking_permits.models import Vehicle
+from parking_permits.models.temporary_vehicle import TemporaryVehicle
 from parking_permits.models.vehicle import LowEmissionCriteria, VehiclePowerType
 from parking_permits.tests.factories.faker import fake
 
@@ -52,3 +53,20 @@ class LowEmissionCriteriaFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = LowEmissionCriteria
+
+
+class TemporaryVehicleFactory(factory.django.DjangoModelFactory):
+    vehicle = factory.SubFactory(Vehicle)
+    start_time = factory.LazyFunction(
+        lambda: fake.date_time_between(
+            start_date="-2d", end_date="-1d", tzinfo=pytz.utc
+        )
+    )
+    end_time = factory.LazyFunction(
+        lambda: fake.date_time_between(
+            start_date="+1d", end_date="+2d", tzinfo=pytz.utc
+        )
+    )
+
+    class Meta:
+        model = TemporaryVehicle

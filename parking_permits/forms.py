@@ -1,3 +1,6 @@
+import functools
+import operator
+
 from django import forms
 from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
@@ -208,6 +211,9 @@ class RefundSearchForm(SearchFormBase):
 
 
 class OrderSearchForm(SearchFormBase):
+    # max number of individual terms in text search
+    MAX_TEXT_SEARCH_TOKENS = 6
+
     q = forms.CharField(required=False)
     start_date = forms.DateField(required=False)
     end_date = forms.DateField(required=False)
@@ -276,11 +282,18 @@ class OrderSearchForm(SearchFormBase):
             if q.isdigit():
                 query = Q(id=int(q))
             else:
-                query = (
-                    Q(customer__first_name__icontains=q)
-                    | Q(customer__last_name__icontains=q)
-                    | Q(permits__vehicle__registration_number=q)
-                    | Q(customer__national_id_number=q)
+                query = functools.reduce(
+                    operator.and_,
+                    [
+                        Q(customer__first_name__icontains=token)
+                        | Q(customer__last_name__icontains=token)
+                        | Q(customer__permits__vehicle__registration_number=token)
+                        | Q(customer__national_id_number=token)
+                        | Q(permits__vehicle__registration_number=token)
+                        # TBD: enable temp vehicle search
+                        # | Q(permits__temp_vehicles__vehicle__registration_number=token)
+                        for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
+                    ],
                 )
             qs = qs.filter(query)
             has_filters = True
