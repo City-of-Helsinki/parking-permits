@@ -19,6 +19,10 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.refund import RefundFactory
+from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
+    VehicleFactory,
+)
 
 
 class PdfExportFormTestCase(TestCase):
@@ -90,6 +94,172 @@ class OrderSearchFormDistinctOrdersTestCase(TestCase):
         self.assertEqual(len(qs), 4)
         for idx, name in enumerate(["A", "B", "C", "D"]):
             self.assertEqual(name, qs[idx].permits.first().parking_zone.name)
+
+
+class OrderSearchFormTextSearch(TestCase):
+    def setUp(self):
+        self.address = AddressFactory(street_name="Pihlajakatu", street_number="23")
+
+    def test_search_permit_id(self):
+        order = OrderFactory()
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=order.customer,
+        )
+
+        form = OrderSearchForm({"q": str(order.pk)})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+
+    def test_search_customer_name(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Taalasmaa")
+        order = OrderFactory(customer=customer)
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+
+        form = OrderSearchForm({"q": "Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), order)
+
+    def test_search_multiple_values(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Taalasmaa")
+        order = OrderFactory(customer=customer)
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+
+        form = OrderSearchForm({"q": "Taalasmaa Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), order)
+
+    def test_search_multiple_values_not_all_correct(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Koski")
+        order = OrderFactory(customer=customer)
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+
+        form = OrderSearchForm({"q": "Taalasmaa Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 0)
+
+    def test_search_customer_national_id_number(self):
+        customer = CustomerFactory(
+            first_name="Seppo",
+            last_name="Taalasmaa",
+            national_id_number="02051951-A111B",
+        )
+        order = OrderFactory(customer=customer)
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+
+        form = OrderSearchForm({"q": customer.national_id_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), order)
+
+    def test_search_vehicle_registration(self):
+        customer = CustomerFactory()
+        order = OrderFactory(customer=customer)
+
+        vehicle = VehicleFactory(registration_number="YLH-371")
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+            vehicle=vehicle,
+        )
+
+        form = OrderSearchForm({"q": vehicle.registration_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), order)
+
+    def test_search_other_vehicle_registration(self):
+        customer = CustomerFactory()
+        order = OrderFactory(customer=customer)
+
+        vehicle = VehicleFactory(registration_number="YLH-371")
+
+        ParkingPermitFactory(
+            address=self.address,
+            customer=customer,
+            vehicle=vehicle,
+        )
+
+        ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+
+        form = OrderSearchForm({"q": vehicle.registration_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), order)
+
+    def test_search_temp_vehicle_registration(self):
+        customer = CustomerFactory()
+        order = OrderFactory(customer=customer)
+
+        vehicle = VehicleFactory(registration_number="YLH-371")
+
+        permit = ParkingPermitFactory(
+            orders=[order],
+            address=self.address,
+            customer=customer,
+        )
+        permit.temp_vehicles.add(TemporaryVehicleFactory(vehicle=vehicle))
+
+        form = OrderSearchForm({"q": vehicle.registration_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        # TBD: enable temp vehicle search
+        # self.assertEqual(qs.count(), 1)
+        # self.assertEqual(qs.first(), order)
+        self.assertEqual(qs.count(), 0)
 
 
 class OrderSearchFormSortTestCase(TestCase):
