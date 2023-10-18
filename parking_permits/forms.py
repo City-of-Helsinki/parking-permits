@@ -287,9 +287,8 @@ class OrderSearchForm(SearchFormBase):
                     [
                         Q(customer__first_name__icontains=token)
                         | Q(customer__last_name__icontains=token)
-                        | Q(customer__permits__vehicle__registration_number=token)
                         | Q(customer__national_id_number=token)
-                        | Q(permits__vehicle__registration_number=token)
+                        | Q(vehicles__icontains=token)
                         # TBD: enable temp vehicle search
                         # | Q(permits__temp_vehicles__vehicle__registration_number=token)
                         for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
