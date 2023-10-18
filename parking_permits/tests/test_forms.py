@@ -19,10 +19,6 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.refund import RefundFactory
-from parking_permits.tests.factories.vehicle import (
-    TemporaryVehicleFactory,
-    VehicleFactory,
-)
 
 
 class PdfExportFormTestCase(TestCase):

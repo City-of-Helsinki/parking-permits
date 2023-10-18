@@ -64,21 +64,18 @@ def _get_permit_row(permit):
 
 def _get_order_row(order):
     customer = order.customer
-    permit_ids = order.order_items.values_list("permit")
-    permits = ParkingPermit.objects.filter(id__in=permit_ids)
-    name = f"{customer.last_name}, {customer.first_name}"
-    permit_ids_str = ", ".join([str(permit.id) for permit in permits])
-    if len(permits) > 0:
-        reg_numbers = ", ".join(
-            [permit.vehicle.registration_number for permit in permits]
-        )
+    permits = order.permits.all()
+    try:
         permit_type = permits[0].get_type_display()
-    else:
-        reg_numbers = "-"
-        permit_type = "-"
+        permit_ids = ", ".join([str(permit.pk) for permit in permits])
+    except IndexError:
+        permit_type = permit_ids = "-"
+
+    reg_numbers = ", ".join(order.vehicles) if order.vehicles else "-"
+    name = f"{customer.last_name}, {customer.first_name}"
 
     return [
-        permit_ids_str,
+        permit_ids,
         reg_numbers,
         name,
         order.parking_zone_name or "-",
