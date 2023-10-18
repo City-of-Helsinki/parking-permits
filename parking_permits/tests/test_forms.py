@@ -191,20 +191,11 @@ class OrderSearchFormTextSearch(TestCase):
         self.assertEqual(qs.count(), 1)
         self.assertEqual(qs.first(), order)
 
-    def test_search_vehicle_registration(self):
+    def test_search_vehicle(self):
         customer = CustomerFactory()
-        order = OrderFactory(customer=customer)
+        order = OrderFactory(customer=customer, vehicles=["YLH-371"])
 
-        vehicle = VehicleFactory(registration_number="YLH-371")
-
-        ParkingPermitFactory(
-            orders=[order],
-            address=self.address,
-            customer=customer,
-            vehicle=vehicle,
-        )
-
-        form = OrderSearchForm({"q": vehicle.registration_number})
+        form = OrderSearchForm({"q": "YLH-371"})
 
         self.assertTrue(form.is_valid())
 
@@ -212,54 +203,17 @@ class OrderSearchFormTextSearch(TestCase):
         self.assertEqual(qs.count(), 1)
         self.assertEqual(qs.first(), order)
 
-    def test_search_other_vehicle_registration(self):
+    def test_search_multiple_vehicles(self):
         customer = CustomerFactory()
-        order = OrderFactory(customer=customer)
+        order = OrderFactory(customer=customer, vehicles=["YLH-371", "CYV-111"])
 
-        vehicle = VehicleFactory(registration_number="YLH-371")
-
-        ParkingPermitFactory(
-            address=self.address,
-            customer=customer,
-            vehicle=vehicle,
-        )
-
-        ParkingPermitFactory(
-            orders=[order],
-            address=self.address,
-            customer=customer,
-        )
-
-        form = OrderSearchForm({"q": vehicle.registration_number})
+        form = OrderSearchForm({"q": "YLH-371 CYV-111"})
 
         self.assertTrue(form.is_valid())
 
         qs = form.get_queryset()
         self.assertEqual(qs.count(), 1)
         self.assertEqual(qs.first(), order)
-
-    def test_search_temp_vehicle_registration(self):
-        customer = CustomerFactory()
-        order = OrderFactory(customer=customer)
-
-        vehicle = VehicleFactory(registration_number="YLH-371")
-
-        permit = ParkingPermitFactory(
-            orders=[order],
-            address=self.address,
-            customer=customer,
-        )
-        permit.temp_vehicles.add(TemporaryVehicleFactory(vehicle=vehicle))
-
-        form = OrderSearchForm({"q": vehicle.registration_number})
-
-        self.assertTrue(form.is_valid())
-
-        qs = form.get_queryset()
-        # TBD: enable temp vehicle search
-        # self.assertEqual(qs.count(), 1)
-        # self.assertEqual(qs.first(), order)
-        self.assertEqual(qs.count(), 0)
 
 
 class OrderSearchFormSortTestCase(TestCase):
