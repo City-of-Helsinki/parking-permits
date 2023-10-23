@@ -643,10 +643,8 @@ def resolve_change_address(
             user=request.user,
             create_renew_order_event=customer_total_price_change > 0,
         )
-        print("TOTAL PRICE CHANGE", total_price_change_by_order)
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
-            print(order, order_total_price_change)
             if order_total_price_change < 0:
                 refund = Refund.objects.create(
                     name=customer.full_name,
@@ -657,7 +655,7 @@ def resolve_change_address(
                 )
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, refund)
-                for permit in order.permits:
+                for permit in order.permits.all():
                     ParkingPermitEventFactory.make_create_refund_event(
                         permit, refund, created_by=request.user
                     )
