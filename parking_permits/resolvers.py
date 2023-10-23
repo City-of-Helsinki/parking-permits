@@ -219,6 +219,7 @@ def validate_customer_address(customer, address_id):
     i.e. either the primary address or the other address
     """
     addr_ids = [customer.primary_address_id, customer.other_address_id]
+
     allowed_addr_ids = [str(addr_id) for addr_id in addr_ids if addr_id is not None]
     if address_id not in allowed_addr_ids:
         logger.error("Not a valid customer address")
@@ -642,8 +643,10 @@ def resolve_change_address(
             user=request.user,
             create_renew_order_event=customer_total_price_change > 0,
         )
+        print("TOTAL PRICE CHANGE", total_price_change_by_order)
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
+            print(order, order_total_price_change)
             if order_total_price_change < 0:
                 refund = Refund.objects.create(
                     name=customer.full_name,
