@@ -485,7 +485,7 @@ class OrderView(APIView):
 
             start_time = tz.make_aware(
                 datetime.datetime.strptime(
-                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S"
+                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S.%f"
                 )
             )
             end_time = get_end_time(start_time, 1)

@@ -64,7 +64,7 @@ def get_validated_order_data(talpa_order_id, talpa_order_item_id):
         "items": [
             {
                 "orderItemId": talpa_order_item_id,
-                "startDate": "2023-06-01T15:46:05",
+                "startDate": "2023-06-01T15:46:05.619",
                 "priceGross": "45.00",
                 "rowPriceTotal": "45.00",
                 "vatPercentage": 24,
