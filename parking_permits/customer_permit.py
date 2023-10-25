@@ -298,6 +298,7 @@ class CustomerPermit:
             month_count = data.get("month_count", 1)
             primary, secondary = self._get_primary_and_secondary_permit()
             end_time = get_end_time(primary.start_time, month_count)
+
             if not contract_type:
                 raise InvalidContractType(_("Contract type is required"))
 
@@ -571,6 +572,7 @@ class CustomerPermit:
     def _get_start_type_and_start_time(self, data):
         start_type = data.get("start_type", None)
         start_time = data.get("start_time", next_day())
+        month_count = data.get("month_count", 1)
 
         if start_time and not start_type:
             start_type = FROM
@@ -585,7 +587,12 @@ class CustomerPermit:
                 if parsed.date() > two_week_from_now().date()
                 else parsed
             )
-        return {"start_type": start_type, "start_time": start_time}
+
+        return {
+            "start_type": start_type,
+            "start_time": start_time,
+            "end_time": get_end_time(start_time, diff_months=month_count),
+        }
 
     def _get_month_count_for_secondary_permit(self, contract_type, count):
         if contract_type == OPEN_ENDED:
