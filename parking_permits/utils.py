@@ -14,6 +14,8 @@ from django.utils import timezone as tz
 from graphql import GraphQLResolveInfo
 from pytz import utc
 
+HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
+
 
 class DefaultOrderedDict(OrderedDict):
     def __init__(self, default_factory=None, *a, **kw):
@@ -77,15 +79,11 @@ def diff_months_ceil(start_date, end_date):
 
 
 def start_date_to_datetime(date):
-    return datetime.combine(
-        date, datetime.min.time(), tzinfo=zoneinfo.ZoneInfo("Europe/Helsinki")
-    )
+    return datetime.combine(date, datetime.min.time(), tzinfo=HELSINKI_TZ)
 
 
 def end_date_to_datetime(date):
-    return datetime.combine(
-        date, datetime.max.time(), tzinfo=zoneinfo.ZoneInfo("Europe/Helsinki")
-    )
+    return datetime.combine(date, datetime.max.time(), tzinfo=HELSINKI_TZ)
 
 
 def get_end_time(start_time, diff_months):
@@ -121,6 +119,15 @@ def find_next_date(dt, day):
 def date_time_to_utc(dt):
     return (
         dt.replace(microsecond=0).astimezone(utc).replace(tzinfo=None).isoformat() + "Z"
+    )
+
+
+def date_time_to_helsinki(dt):
+    return (
+        dt.replace(microsecond=0)
+        .astimezone(HELSINKI_TZ)
+        .replace(tzinfo=None)
+        .isoformat()
     )
 
 
