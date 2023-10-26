@@ -707,7 +707,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "orderItemMetaId": "9a672f56-2bad-4510-9831-3c4dad12928f",
                         "orderItemId": talpa_order_item_id,
                         "orderId": talpa_order_id,
-                        "key": "permitDuration",
+                        "key": "permitType",
                         "value": "Määräaikainen 1 kk",
                         "label": "Pysäköintitunnuksen kesto",
                         "visibleInCheckout": "true",
