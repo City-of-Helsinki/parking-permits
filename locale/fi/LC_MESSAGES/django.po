@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-11 21:01+0300\n"
+"POT-Creation-Date: 2023-10-26 07:26+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -90,7 +90,7 @@ msgid ""
 "ended"
 msgstr ""
 "Määräaikaisen tunnuksen luonti ei ole mahdollista, jos asiakkaalla on jo "
-"voimassa oleva jatkuvavelotteinen tunnus"
+"voimassa oleva jatkuvaveloitteinen tunnus"
 
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
@@ -132,7 +132,7 @@ msgid ""
 "not allowed"
 msgstr ""
 "Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
-"(määräaikainen / jatkuvavelotteinen)"
+"(määräaikainen / jatkuvaveloitteinen)"
 
 msgid "Primary permit cannot be ended if customer has two permits"
 msgstr ""
@@ -152,6 +152,9 @@ msgstr "Tilauksen hakuvirhe"
 
 msgid "Address search error"
 msgstr "Osoitteen hakuvirhe"
+
+msgid "This address is already in use"
+msgstr "Tämä osoite on jo käytössä"
 
 msgid "Announcement search error"
 msgstr "Ilmoituksen hakuvirhe"
@@ -514,6 +517,9 @@ msgstr "Ajoneuvo vaihtunut"
 msgid "Address changed"
 msgstr "Osoite vaihtunut"
 
+msgid "Subscription renewed"
+msgstr "Sopimus uusittu"
+
 msgid "Talpa order id"
 msgstr "Talpan tilauksen tunniste"
 
@@ -599,7 +605,7 @@ msgid "Fixed period"
 msgstr "Määräaikainen"
 
 msgid "Open ended"
-msgstr "Jatkuvavelotteinen"
+msgstr "Jatkuvaveloitteinen"
 
 msgid "Immediately"
 msgstr "Heti"
@@ -890,9 +896,6 @@ msgstr "Epäkelpo asiakkaan osoite"
 msgid "Address not found"
 msgstr "Osoitetta ei löytynyt"
 
-msgid "This address is already in use"
-msgstr "Tämä osoite on jo käytössä"
-
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 
@@ -954,12 +957,15 @@ msgstr ""
 msgid "Failed to fetch data from traficom"
 msgstr "Tietojen haku Traficomilta epäonnistui"
 
-msgid "Duration of parking permit"
-msgstr "Pysäköintitunnuksen kesto"
+msgid "Parking permit type"
+msgstr "Pysäköintitunnuksen tyyppi"
 
 #, python-format
-msgid "Fixed period %(month)d kk"
+msgid "Fixed period %(month)d months"
 msgstr "Määräaikainen %(month)d kk"
+
+msgid "Open ended 1 month"
+msgstr "Jatkuvaveloitteinen 1 kk"
 
 msgid "Parking permit start date*"
 msgstr "Pysäköintitunnuksen alkamispäivä*"
@@ -973,6 +979,9 @@ msgstr ""
 
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
+
+msgid "Parking permit period expiration date"
+msgstr "Pysäköintitunnuksen jakson päättymispäivä"
 
 msgid "Failed to create the order"
 msgstr "Tilauksen luonti epäonnistui"
