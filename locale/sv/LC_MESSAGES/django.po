@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-07-11 21:06+0300\n"
+"POT-Creation-Date: 2023-10-26 07:26+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -150,6 +150,9 @@ msgstr "Beställningssökningsfel"
 
 msgid "Address search error"
 msgstr "Adresssökningsfel"
+
+msgid "This address is already in use"
+msgstr "Adressen används redan"
 
 msgid "Announcement search error"
 msgstr "Sökningsfel för meddelande"
@@ -508,6 +511,9 @@ msgstr "Fordon bytt"
 
 msgid "Address changed"
 msgstr "Adress ändrad"
+
+msgid "Subscription renewed"
+msgstr "Avtal förnyad"
 
 msgid "Talpa order id"
 msgstr "Talpa beställning ID"
@@ -887,9 +893,6 @@ msgstr "Inte en giltig kundadress"
 msgid "Address not found"
 msgstr "Adressen hittades inte"
 
-msgid "This address is already in use"
-msgstr "Adressen används redan"
-
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
 
@@ -953,12 +956,14 @@ msgstr ""
 msgid "Failed to fetch data from traficom"
 msgstr "Datahämtning från Traficomilta misslyckades"
 
-msgid "Duration of parking permit"
-msgstr "Pysäköintitunnuksen kesto"
+msgid "Parking permit type"
+msgstr "Typ av parkeringstillstånd"
 
-#, python-format
-msgid "Fixed period %(month)d kk"
+msgid "Fixed period %(month)d months"
 msgstr "Temporär %(month)d månad"
+
+msgid "Open ended 1 month"
+msgstr "Löpande debitering 1 månad"
 
 msgid "Parking permit start date*"
 msgstr "Tillståndet stardag*"
@@ -971,6 +976,9 @@ msgstr ""
 
 msgid "Parking permit expiration date"
 msgstr "Tillståndet utgångsdatum"
+
+msgid "Parking permit period expiration date"
+msgstr "Tillståndet period utgångsdatum"
 
 msgid "Failed to create the order"
 msgstr "Misslyckades med att skapa beställningen"
