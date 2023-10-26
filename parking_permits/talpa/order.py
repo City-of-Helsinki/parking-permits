@@ -12,7 +12,7 @@ from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsErr
 from parking_permits.models.order import OrderPaymentType
 from parking_permits.utils import (
     DefaultOrderedDict,
-    date_time_to_utc,
+    date_time_to_helsinki,
     format_local_time,
 )
 
@@ -53,7 +53,7 @@ class TalpaOrderManager:
             "productName": order_item.product.name,
             "productDescription": cls._get_product_description(order_item),
             "unit": "kk",
-            "startDate": date_time_to_utc(order_item.permit.start_time),
+            "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
             "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
             "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
