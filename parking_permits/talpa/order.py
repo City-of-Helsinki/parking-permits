@@ -86,9 +86,12 @@ class TalpaOrderManager:
         item["meta"] += [
             {"key": "permitId", "value": str(permit.id), "visibleInCheckout": False},
             {
-                "key": "permitDuration",
-                "label": _("Duration of parking permit"),
-                "value": _("Fixed period %(month)d kk") % {"month": permit.month_count},
+                "key": "permitType",
+                "label": _("Parking permit type"),
+                "value": _("Fixed period %(month)d months")
+                % {"month": permit.month_count}
+                if permit.is_fixed_period
+                else _("Open ended 1 month"),
                 "visibleInCheckout": True,
                 "ordinal": 1,
             },
@@ -114,7 +117,9 @@ class TalpaOrderManager:
             item["meta"].append(
                 {
                     "key": "endDate",
-                    "label": _("Parking permit expiration date"),
+                    "label": _("Parking permit expiration date")
+                    if permit.is_fixed_period
+                    else _("Parking permit period expiration date"),
                     "value": end_time,
                     "visibleInCheckout": True,
                     "ordinal": 3,
