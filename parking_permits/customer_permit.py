@@ -570,23 +570,30 @@ class CustomerPermit:
     # but if the start type is FROM then the start time can not be
     # now or in the past also it can not be more than two weeks in future.
     def _get_start_type_and_start_time(self, data):
+        start_time = data.get("start_time", None)
+        is_start_time = bool(start_time)
+
         start_type = data.get("start_type", None)
-        start_time = data.get("start_time", next_day())
-        month_count = data.get("month_count", 1)
 
-        if start_time and not start_type:
-            start_type = FROM
+        if not start_type:
+            start_type = FROM if is_start_time else IMMEDIATELY
 
-        if not data.get("start_time", None) and not start_type:
-            start_type = IMMEDIATELY
+        start_time = start_time or next_day()
+
+        if isinstance(start_time, str):
+            start_time = tz.localtime(parse(start_time))
 
         if start_type == FROM:
-            parsed = tz.localtime(parse(start_time))
             start_time = (
                 two_week_from_now()
-                if parsed.date() > two_week_from_now().date()
-                else parsed
+                if start_time.date() > two_week_from_now().date()
+                else start_time
             )
+
+        try:
+            month_count = int(data.get("month_count", 1))
+        except ValueError:
+            month_count = 1
 
         return {
             "start_type": start_type,
