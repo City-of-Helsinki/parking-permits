@@ -87,9 +87,32 @@ def end_date_to_datetime(date):
 
 
 def get_end_time(start_time, diff_months):
+    """Adds number of months equal to `diff_months` to `start_time`.
+
+    The final result should be 23:59 on the previous day for example:
+
+    Current date: 25th Oct
+    Final result (+1 month): 24 Nov 23:59 EET
+
+    Result will be in default timezone (i.e. TIME_ZONE).
+    """
+
+    # normalize start time to midnight localtime
+    start_time = start_time.astimezone(tz.get_default_timezone())
+    start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # add 1 month minus one day
     end_time = start_time + relativedelta(months=diff_months, days=-1)
+
+    # ensure end time is 23:59 on that last day
     return tz.make_aware(
-        end_time.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
+        end_time.replace(
+            hour=23,
+            minute=59,
+            second=59,
+            microsecond=999999,
+            tzinfo=None,
+        )
     )
 
 
