@@ -185,7 +185,9 @@ class OrderManager(SerializableMixin.SerializableManager):
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
-                        end_date = tz.localdate(permit.current_period_end_time)
+                        end_date = tz.localdate(
+                            permit.current_period_end_time_with_fixed_months(1)
+                        )
                     OrderItem.objects.create(
                         order=order,
                         product=product,

@@ -359,8 +359,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_end_time(self):
-        end_time = get_end_time(self.start_time, self.months_used)
-        return max(self.start_time, end_time)
+        return self.current_period_end_time_with_fixed_months(self.months_used)
 
     @property
     def current_period_range(self):
@@ -386,6 +385,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return not any(
             address and address.zone == self.parking_zone for address in addresses
         )
+
+    def current_period_end_time_with_fixed_months(self, months):
+        end_time = get_end_time(self.start_time, months)
+        return max(self.start_time, end_time)
 
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
