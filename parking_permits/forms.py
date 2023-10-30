@@ -94,6 +94,9 @@ class SearchFormBase(forms.Form):
 
 
 class PermitSearchForm(SearchFormBase):
+    # max number of individual terms in text search
+    MAX_TEXT_SEARCH_TOKENS = 6
+
     q = forms.CharField(required=False)
     status = forms.ChoiceField(
         choices=ParkingPermitStatus.choices + [("ALL", "All")],
@@ -137,13 +140,17 @@ class PermitSearchForm(SearchFormBase):
                 query = Q(id=int(q))
             else:
                 if user_role == ParkingPermitGroups.INSPECTORS:
-                    query = Q(vehicle__registration_number=q)
+                    query = Q(vehicle__registration_number__iexact=q)
                 else:
-                    query = (
-                        Q(customer__first_name__icontains=q)
-                        | Q(customer__last_name__icontains=q)
-                        | Q(customer__national_id_number=q)
-                        | Q(vehicle__registration_number=q)
+                    query = functools.reduce(
+                        operator.and_,
+                        [
+                            Q(customer__first_name__icontains=token)
+                            | Q(customer__last_name__icontains=token)
+                            | Q(customer__national_id_number=token)
+                            | Q(vehicle__registration_number__iexact=q)
+                            for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
+                        ],
                     )
             qs = qs.filter(query)
             has_filters = True
