@@ -40,9 +40,9 @@ class TalpaOrderManager:
 
     @classmethod
     def _get_product_description(cls, order_item):
-        if order_item.start_time.date() and order_item.end_time.date():
-            start_time = order_item.start_time.date().strftime(DATE_FORMAT)
-            end_time = order_item.end_time.date().strftime(DATE_FORMAT)
+        if order_item.start_time and order_item.end_time:
+            start_time = tz.localtime(order_item.start_time).strftime(DATE_FORMAT)
+            end_time = tz.localtime(order_item.end_time).strftime(DATE_FORMAT)
             return f"{start_time} - {end_time}"
         return ""
 
