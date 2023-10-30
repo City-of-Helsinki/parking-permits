@@ -12,13 +12,19 @@ from parking_permits.forms import (
     RefundSearchForm,
 )
 from parking_permits.models.order import OrderPaymentType
-from parking_permits.models.parking_permit import ContractType, ParkingPermitType
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermitStatus,
+    ParkingPermitType,
+)
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.refund import RefundFactory
+from parking_permits.tests.factories.vehicle import VehicleFactory
+from users.models import ParkingPermitGroups
 
 
 class PdfExportFormTestCase(TestCase):
@@ -90,6 +96,184 @@ class OrderSearchFormDistinctOrdersTestCase(TestCase):
         self.assertEqual(len(qs), 4)
         for idx, name in enumerate(["A", "B", "C", "D"]):
             self.assertEqual(name, qs[idx].permits.first().parking_zone.name)
+
+
+class PermitSearchFormTextSearch(TestCase):
+    def test_search_permit_id(self):
+        permit = ParkingPermitFactory(
+            id="80000001",
+        )
+
+        form = PermitSearchForm({"q": str(permit.pk)})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_customer_name(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Taalasmaa")
+
+        permit = ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm({"q": "Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_customer_name_with_inspector_role(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Taalasmaa")
+
+        ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm(
+            {"q": "Seppo", "user_role": ParkingPermitGroups.INSPECTORS}
+        )
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 0)
+
+    def test_search_multiple_values(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Taalasmaa")
+
+        permit = ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm({"q": "Taalasmaa Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_multiple_values_not_all_correct(self):
+        customer = CustomerFactory(first_name="Seppo", last_name="Koski")
+
+        ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm({"q": "Taalasmaa Seppo"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 0)
+
+    def test_search_customer_national_id_number(self):
+        customer = CustomerFactory(
+            first_name="Seppo",
+            last_name="Taalasmaa",
+            national_id_number="02051951-A111B",
+        )
+
+        permit = ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm({"q": customer.national_id_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_customer_national_id_number_with_inspector_role(self):
+        customer = CustomerFactory(
+            first_name="Seppo",
+            last_name="Taalasmaa",
+            national_id_number="02051951-A111B",
+        )
+
+        ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm(
+            {
+                "q": customer.national_id_number,
+                "user_role": ParkingPermitGroups.INSPECTORS,
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 0)
+
+    def test_search_vehicle(self):
+        registration_number = "YLH-371"
+        vehicle = VehicleFactory(registration_number=registration_number)
+
+        permit = ParkingPermitFactory(vehicle=vehicle)
+        form = PermitSearchForm({"q": registration_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_vehicle_lower_case(self):
+        registration_number = "YLH-371"
+        vehicle = VehicleFactory(registration_number=registration_number)
+
+        permit = ParkingPermitFactory(vehicle=vehicle)
+        form = PermitSearchForm({"q": "ylh-371"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_vehicle_lower_case_with_inspector_role(self):
+        registration_number = "YLH-371"
+        vehicle = VehicleFactory(registration_number=registration_number)
+
+        permit = ParkingPermitFactory(vehicle=vehicle)
+        form = PermitSearchForm(
+            {"q": "ylh-371", "user_role": ParkingPermitGroups.INSPECTORS}
+        )
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_status(self):
+        registration_number = "YLH-371"
+        vehicle = VehicleFactory(registration_number=registration_number)
+        permit = ParkingPermitFactory(vehicle=vehicle, status=ParkingPermitStatus.VALID)
+        ParkingPermitFactory(
+            vehicle=vehicle, status=ParkingPermitStatus.PAYMENT_IN_PROGRESS
+        )
+        ParkingPermitFactory(vehicle=vehicle, status=ParkingPermitStatus.CLOSED)
+        ParkingPermitFactory(vehicle=vehicle, status=ParkingPermitStatus.DRAFT)
+
+        form = PermitSearchForm(
+            {"q": registration_number, "status": ParkingPermitStatus.VALID}
+        )
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
 
 
 class OrderSearchFormTextSearch(TestCase):
