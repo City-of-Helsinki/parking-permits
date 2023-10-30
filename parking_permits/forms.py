@@ -147,7 +147,7 @@ class PermitSearchForm(SearchFormBase):
                         [
                             Q(customer__first_name__icontains=token)
                             | Q(customer__last_name__icontains=token)
-                            | Q(customer__national_id_number=token)
+                            | Q(customer__national_id_number__iexact=token)
                             | Q(vehicle__registration_number__iexact=q)
                             for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
                         ],
