@@ -191,6 +191,25 @@ class PermitSearchFormTextSearch(TestCase):
         self.assertEqual(qs.count(), 1)
         self.assertEqual(qs.first(), permit)
 
+    def test_search_customer_national_id_number_mixed_case(self):
+        customer = CustomerFactory(
+            first_name="Seppo",
+            last_name="Taalasmaa",
+            national_id_number="02051951-a111b",
+        )
+
+        permit = ParkingPermitFactory(
+            customer=customer,
+        )
+
+        form = PermitSearchForm({"q": customer.national_id_number})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
     def test_search_customer_national_id_number_with_inspector_role(self):
         customer = CustomerFactory(
             first_name="Seppo",
