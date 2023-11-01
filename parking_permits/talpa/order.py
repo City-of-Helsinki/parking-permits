@@ -31,28 +31,12 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def _get_label(cls, permit):
-        registration_number = permit.vehicle.registration_number
-        manufacturer = permit.vehicle.manufacturer
-        model = permit.vehicle.model
-        car_info = f"Ajoneuvo: {registration_number} {manufacturer} {model}"
-        return car_info
-
-    @classmethod
-    def _get_product_description(cls, order_item):
-        if order_item.start_time and order_item.end_time:
-            start_time = tz.localtime(order_item.start_time).strftime(DATE_FORMAT)
-            end_time = tz.localtime(order_item.end_time).strftime(DATE_FORMAT)
-            return f"{start_time} - {end_time}"
-        return ""
-
-    @classmethod
     def _create_item_data(cls, order, order_item):
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
-            "productDescription": cls._get_product_description(order_item),
-            "unit": "kk",
+            "productDescription": order_item.timeframe,
+            "unit": _("pcm"),
             "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
             "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
@@ -106,10 +90,17 @@ class TalpaOrderManager:
                 "key": "terms",
                 "label": "",
                 "value": _(
-                    "* The permit is valid from the selected start date once the payment has been accepted"
+                    "* Parking permit is valid from the start date of your choice, once the payment has been accepted"
                 ),
                 "visibleInCheckout": True,
                 "ordinal": 4,
+            },
+            {
+                "key": "copyright",
+                "label": "",
+                "value": f'© {_("Vehicle information - Transport register, Traficom")}',
+                "visibleInCheckout": True,
+                "ordinal": 5,
             },
         ]
         if permit.end_time:
@@ -158,7 +149,7 @@ class TalpaOrderManager:
                     if index == 0:
                         item.update(
                             {
-                                "productLabel": cls._get_label(order_item.permit),
+                                "productLabel": order_item.permit.vehicle.description,
                             }
                         )
                     order_items_of_single_permit.append(item)

@@ -161,11 +161,13 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def name(self):
-        return f"Pysäköintialue {self.zone.name}"
+        return f'{_("Parking zone")} {self.zone.name}'
 
     @property
     def description(self):
-        return f"Pysäköintialue {self.zone.name}, {self.start_date} - {self.end_date}"
+        return (
+            f'{_("Parking zone")} {self.zone.name}, {self.start_date} - {self.end_date}'
+        )
 
     def get_modified_unit_price(self, is_low_emission, is_secondary):
         price = self.unit_price
