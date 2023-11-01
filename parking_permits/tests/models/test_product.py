@@ -4,6 +4,8 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.utils import translation
+from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import CreateTalpaProductError
 from parking_permits.models import Product
@@ -58,7 +60,8 @@ class TestProduct(TestCase):
         self.product = ProductFactory(zone=zone)
 
     def test_should_return_correct_product_name(self):
-        self.assertEqual(self.product.name, "Pysäköintialue A")
+        with translation.override("fi"):
+            self.assertEqual(self.product.name, f'{_("Parking zone")} A')
 
     @patch("requests.post", return_value=MockResponse(201, {"productId": uuid.uuid4()}))
     def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(

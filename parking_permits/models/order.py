@@ -36,6 +36,8 @@ from .refund import Refund
 
 logger = logging.getLogger("db")
 
+DATE_FORMAT = "%d.%m.%Y"
+
 
 class OrderValidator:
     @staticmethod
@@ -710,3 +712,11 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     @property
     def total_payment_price_vat(self):
         return self.total_payment_price * self.vat
+
+    @property
+    def timeframe(self):
+        if self.start_time and self.end_time:
+            start_time = tz.localtime(self.start_time).strftime(DATE_FORMAT)
+            end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
+            return f"{start_time} - {end_time}"
+        return ""

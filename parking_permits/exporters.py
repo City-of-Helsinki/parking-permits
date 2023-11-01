@@ -198,7 +198,7 @@ class DataExporter:
                     "© " + _("City of Helsinki") + ", ",
                     _("Personal data - Digital and population data services agency")
                     + ", ",
-                    _("Vehicle and driving licence data - Traficom")
+                    _("Vehicle information - Transport register, Traficom")
                     + " "
                     + str(CURRENT_YEAR),
                 }
@@ -235,7 +235,9 @@ class BasePDF(FPDF, metaclass=abc.ABCMeta):
         self.cell(
             0,
             5,
-            _("Vehicle and driving licence data - Traficom") + " " + str(CURRENT_YEAR),
+            _("Vehicle information - Transport register, Traficom")
+            + " "
+            + str(CURRENT_YEAR),
             0,
             1,
         )
