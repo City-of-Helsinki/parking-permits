@@ -604,6 +604,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 amount=order_item.product.unit_price,
                 description=f"Refund for ending permit {str(permit.id)}",
             )
+            refund.permits.add(permit)
             send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=permit.customer.user

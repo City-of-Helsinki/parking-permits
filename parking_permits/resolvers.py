@@ -435,6 +435,7 @@ def resolve_update_permit_vehicle(
             iban=iban if iban else "",
             description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
         )
+        refund.permits.add(permit)
         logger.info(f"Refund for updating permits created: {refund}")
         send_refund_email(RefundEmailType.CREATED, customer, refund)
         ParkingPermitEventFactory.make_create_refund_event(
@@ -653,6 +654,7 @@ def resolve_change_address(
                     iban=iban if iban else "",
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
+                refund.permits.set(order.permits.all())
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, refund)
                 for permit in order.permits.all():

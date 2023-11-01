@@ -804,6 +804,7 @@ def resolve_update_resident_permit(
                 iban=iban,
                 description=f"Refund for updating permit: {permit.id}",
             )
+            refund.permits.add(permit)
             logger.info(f"Refund for lowered permit price created: {refund}")
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
@@ -939,6 +940,7 @@ def resolve_end_permit(
                 iban=iban,
                 description=description,
             )
+            refund.permits.add(permit)
             send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user

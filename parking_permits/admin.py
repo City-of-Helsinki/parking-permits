@@ -164,6 +164,13 @@ class RefundAdmin(admin.ModelAdmin):
     )
     list_select_related = ("order",)
     ordering = ("-created_at",)
+    raw_id_fields = (
+        "accepted_by",
+        "created_by",
+        "modified_by",
+        "order",
+        "permits",
+    )
 
 
 @admin.register(Product)
