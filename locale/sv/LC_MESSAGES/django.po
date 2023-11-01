@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-10-26 07:26+0300\n"
+"POT-Creation-Date: 2023-11-01 18:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -255,7 +255,7 @@ msgid "Status"
 msgstr "Status"
 
 msgid "Parking permits"
-msgstr "Parkeringspermit"
+msgstr "Parkeringstillstånder"
 
 msgid "Registration numbers"
 msgstr "Registreringsnummer"
@@ -314,8 +314,8 @@ msgstr "Helsingfors stad"
 msgid "Personal data - Digital and population data services agency"
 msgstr "Personuppgifter - Digital- och befolkningsdatatjänstbyrå"
 
-msgid "Vehicle and driving licence data - Traficom"
-msgstr "Fordons- och körkortsdata - Traficom"
+msgid "Vehicle information - Transport register, Traficom"
+msgstr "Fordonsuppgifter - Trafik- och transportregistret, Traficom"
 
 msgid "Permit ID"
 msgstr "Permit ID"
@@ -537,7 +537,7 @@ msgid "Order status"
 msgstr "Beställningens status"
 
 msgid "permits"
-msgstr "Parkeringtecken"
+msgstr "Parkeringstillstånder"
 
 msgid "Vehicles"
 msgstr "Fordonet"
@@ -749,6 +749,9 @@ msgstr "Öppna"
 msgid "Request for approval"
 msgstr "Acceptabel"
 
+msgid "Permits"
+msgstr "Parkeringstillstånder"
+
 msgid "Accepted at"
 msgstr "Accepterad"
 
@@ -956,9 +959,13 @@ msgstr ""
 msgid "Failed to fetch data from traficom"
 msgstr "Datahämtning från Traficomilta misslyckades"
 
-msgid "Parking permit type"
-msgstr "Typ av parkeringstillstånd"
+msgid "pcm"
+msgstr "pm"
 
+msgid "Parking permit type"
+msgstr "Typ av tillstånd"
+
+#, python-format
 msgid "Fixed period %(month)d months"
 msgstr "Temporär %(month)d månad"
 
@@ -966,19 +973,19 @@ msgid "Open ended 1 month"
 msgstr "Löpande debitering 1 månad"
 
 msgid "Parking permit start date*"
-msgstr "Tillståndet stardag*"
+msgstr "Tillståndet börjar gälla*"
 
 msgid ""
-"* The permit is valid from the selected start date once the payment has been "
-"accepted"
+"* Parking permit is valid from the start date of your choice, "
+"once the payment has been accepted"
 msgstr ""
-"* Tillståndet gäller från valt startdatum när betalningen har accepterats."
+"* Parkeringpermit är i kraft från den valda startdatum, när betalningen är godkännt"
 
 msgid "Parking permit expiration date"
-msgstr "Tillståndet utgångsdatum"
+msgstr "Tillståndet upphör att gälla"
 
 msgid "Parking permit period expiration date"
-msgstr "Tillståndet period utgångsdatum"
+msgstr "Tillståndet period upphör att gälla"
 
 msgid "Failed to create the order"
 msgstr "Misslyckades med att skapa beställningen"
