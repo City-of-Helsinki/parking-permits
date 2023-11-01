@@ -390,6 +390,7 @@ class CustomerPermit:
                     iban=iban,
                     description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
                 )
+                refund.permits.set(permits)
                 send_refund_email(RefundEmailType.CREATED, self.customer, refund)
 
                 for permit in permits:
