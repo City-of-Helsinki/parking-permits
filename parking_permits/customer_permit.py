@@ -359,6 +359,7 @@ class CustomerPermit:
         user=None,
         subscription_cancel_reason=SubscriptionCancelReason.USER_CANCELLED,
         cancel_from_talpa=True,
+        force_end=False,
     ):
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
@@ -432,7 +433,7 @@ class CustomerPermit:
                     permit,
                 )
 
-            permit.end_permit(end_type)
+            permit.end_permit(end_type, force_end=force_end)
             send_permit_email(
                 PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
             )

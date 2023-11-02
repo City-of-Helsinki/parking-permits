@@ -171,13 +171,104 @@ class PaymentViewTestCase(APITestCase):
         )
 
 
-class ResolvePriceViewTestCase(APITestCase):
+class BaseResolveEndpointTestCase(APITestCase):
     talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
     talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
     talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
+    talpa_product_id = "e490e13e-ecd1-4f4f-8e26-a29a5de42b80"
     user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
     permit_id = "80000001"
 
+    def prepare_test_data(
+        self, permit_id, unit_price, low_emission_discount, primary_permit=True
+    ):
+        start_date = datetime.date(2023, 1, 1)
+        end_date = datetime.date(2023, 12, 31)
+        vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=45,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
+        LowEmissionCriteriaFactory(
+            start_date=start_date,
+            end_date=end_date,
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=50,
+            euro_min_class_limit=6,
+        )
+        permit_start_time = datetime.datetime(
+            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        zone_a = ParkingZoneFactory(name="A")
+        product_detail_list = [[(start_date, end_date), unit_price]]
+        product = self.create_product_for_zone(
+            zone_a, product_detail_list, low_emission_discount, self.talpa_product_id
+        )
+        permit = ParkingPermitFactory(
+            id=permit_id,
+            parking_zone=zone_a,
+            vehicle=vehicle,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+            month_count=1,
+            primary_vehicle=primary_permit,
+        )
+        return permit, product
+
+    def prepare_request_data(
+        self,
+        permit,
+        talpa_order_id,
+        talpa_order_item_id,
+        talpa_subscription_id,
+        user_id,
+    ):
+        data = {
+            "subscriptionId": talpa_subscription_id,
+            "userId": user_id,
+            "namespace": "asukaspysakointi",
+            "orderItem": {
+                "merchantId": "00243b8a-b30c-4370-af19-90631bf9a370",
+                "orderItemId": talpa_order_item_id,
+                "orderId": talpa_order_id,
+                "meta": [
+                    {
+                        "orderItemMetaId": "ee04456f-b330-4dab-a277-12d5cd24a4b7",
+                        "orderItemId": talpa_order_item_id,
+                        "orderId": talpa_order_id,
+                        "key": "permitId",
+                        "value": permit.id,
+                        "label": None,
+                        "visibleInCheckout": "false",
+                        "ordinal": None,
+                    },
+                ],
+            },
+        }
+        return data
+
+    def create_product_for_zone(
+        self, zone, product_detail_list, low_emission_discount, talpa_product_id
+    ):
+        date_range, unit_price = product_detail_list[0]
+        start_date, end_date = date_range
+        return ProductFactory(
+            zone=zone,
+            type=ProductType.RESIDENT,
+            start_date=start_date,
+            end_date=end_date,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
+            talpa_product_id=talpa_product_id,
+        )
+
+
+class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
     def test_resolve_price_view_should_return_bad_request_if_subscription_id_missing(
         self,
     ):
@@ -221,11 +312,11 @@ class ResolvePriceViewTestCase(APITestCase):
     def test_resolve_price_view_for_normal_emission_vehicle(self):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
-        permit, products = self._prepare_test_data(
+        permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount
         )
         url = reverse("parking_permits:talpa-price")
-        data = self._prepare_request_data(
+        data = self.prepare_request_data(
             permit,
             self.talpa_order_id,
             self.talpa_order_item_id,
@@ -234,7 +325,7 @@ class ResolvePriceViewTestCase(APITestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = products[0].vat
+        vat = product.vat
         price_vat = unit_price * vat
         self.assertEqual(
             response.data.get("subscriptionId"), self.talpa_subscription_id
@@ -249,11 +340,11 @@ class ResolvePriceViewTestCase(APITestCase):
     def test_resolve_price_view_for_low_emission_vehicle(self):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.5)
-        permit, products = self._prepare_test_data(
+        permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount
         )
         url = reverse("parking_permits:talpa-price")
-        data = self._prepare_request_data(
+        data = self.prepare_request_data(
             permit,
             self.talpa_order_id,
             self.talpa_order_item_id,
@@ -262,7 +353,7 @@ class ResolvePriceViewTestCase(APITestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = products[0].vat
+        vat = product.vat
         low_emission_price = (
             unit_price - unit_price * low_emission_discount
         )  # discount price
@@ -286,11 +377,11 @@ class ResolvePriceViewTestCase(APITestCase):
         secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
-        permit, products = self._prepare_test_data(
+        permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount, primary_permit=False
         )
         url = reverse("parking_permits:talpa-price")
-        data = self._prepare_request_data(
+        data = self.prepare_request_data(
             permit,
             self.talpa_order_id,
             self.talpa_order_item_id,
@@ -299,7 +390,7 @@ class ResolvePriceViewTestCase(APITestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = products[0].vat
+        vat = product.vat
         secondary_vehicle_price = (
             unit_price + unit_price * secondary_vehicle_increase_rate
         )  # secondary vehicle price
@@ -323,11 +414,11 @@ class ResolvePriceViewTestCase(APITestCase):
         secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.5)
-        permit, products = self._prepare_test_data(
+        permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount, primary_permit=False
         )
         url = reverse("parking_permits:talpa-price")
-        data = self._prepare_request_data(
+        data = self.prepare_request_data(
             permit,
             self.talpa_order_id,
             self.talpa_order_item_id,
@@ -336,7 +427,7 @@ class ResolvePriceViewTestCase(APITestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = products[0].vat
+        vat = product.vat
 
         modified_price = unit_price
         modified_price -= modified_price * low_emission_discount
@@ -367,7 +458,7 @@ class ResolvePriceViewTestCase(APITestCase):
             month_count=1,
         )
         url = reverse("parking_permits:talpa-price")
-        data = self._prepare_request_data(
+        data = self.prepare_request_data(
             permit,
             self.talpa_order_id,
             self.talpa_order_item_id,
@@ -382,93 +473,212 @@ class ResolvePriceViewTestCase(APITestCase):
         self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertNotEquals(response.data.get("errorMessage"), "")
 
-    def _prepare_test_data(
-        self, permit_id, unit_price, low_emission_discount, primary_permit=True
-    ):
-        start_date = datetime.date(2023, 1, 1)
-        end_date = datetime.date(2023, 12, 31)
-        vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=45,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
-        )
-        LowEmissionCriteriaFactory(
-            start_date=start_date,
-            end_date=end_date,
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=50,
-            euro_min_class_limit=6,
-        )
-        permit_start_time = datetime.datetime(
-            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
-        )
-        permit_end_time = datetime.datetime(
-            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
-        zone_a = ParkingZoneFactory(name="A")
-        product_detail_list = [[(start_date, end_date), unit_price]]
-        products = self._create_zone_products(
-            zone_a, product_detail_list, low_emission_discount
-        )
-        permit = ParkingPermitFactory(
-            id=permit_id,
-            parking_zone=zone_a,
-            vehicle=vehicle,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=permit_start_time,
-            end_time=permit_end_time,
-            month_count=1,
-            primary_vehicle=primary_permit,
-        )
-        return permit, products
 
-    def _prepare_request_data(
+class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
+    def test_resolve_product_view_should_return_bad_request_if_subscription_id_missing(
         self,
-        permit,
-        talpa_order_id,
-        talpa_order_item_id,
-        talpa_subscription_id,
-        user_id,
     ):
+        url = reverse("parking_permits:talpa-product")
         data = {
-            "subscriptionId": talpa_subscription_id,
-            "userId": user_id,
-            "namespace": "asukaspysakointi",
-            "orderItem": {
-                "merchantId": "00243b8a-b30c-4370-af19-90631bf9a370",
-                "orderItemId": talpa_order_item_id,
-                "orderId": talpa_order_id,
-                "meta": [
-                    {
-                        "orderItemMetaId": "ee04456f-b330-4dab-a277-12d5cd24a4b7",
-                        "orderItemId": talpa_order_item_id,
-                        "orderId": talpa_order_id,
-                        "key": "permitId",
-                        "value": permit.id,
-                        "label": None,
-                        "visibleInCheckout": "false",
-                        "ordinal": None,
-                    },
-                ],
-            },
+            "orderId": self.talpa_order_id,
+            "userId": self.user_id,
         }
-        return data
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
 
-    def _create_zone_products(self, zone, product_detail_list, low_emission_discount):
-        products = []
-        for date_range, unit_price in product_detail_list:
-            start_date, end_date = date_range
-            product = ProductFactory(
-                zone=zone,
-                type=ProductType.RESIDENT,
-                start_date=start_date,
-                end_date=end_date,
-                unit_price=unit_price,
-                low_emission_discount=low_emission_discount,
-            )
-            products.append(product)
-        return products
+    def test_resolve_product_view_should_return_bad_request_if_user_id_missing(self):
+        url = reverse("parking_permits:talpa-product")
+        data = {
+            "subscription_id": self.talpa_subscription_id,
+            "orderId": self.talpa_order_id,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_resolve_product_view_should_return_bad_request_if_order_meta_missing(
+        self,
+    ):
+        url = reverse("parking_permits:talpa-product")
+        data = {
+            "permitId": self.permit_id,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_resolve_product_view_should_return_bad_request_if_permit_id_missing(
+        self,
+    ):
+        url = reverse("parking_permits:talpa-product")
+        data = {
+            "orderId": self.talpa_order_id,
+        }
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_resolve_product_view_for_permit(self):
+        unit_price = Decimal(60)
+        low_emission_discount = Decimal(0)
+        permit, product = self.prepare_test_data(
+            self.permit_id, unit_price, low_emission_discount
+        )
+        url = reverse("parking_permits:talpa-product")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
+        self.assertEqual(response.data.get("productName"), product.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+    def test_resolve_product_view_after_vehicle_change(self):
+        unit_price = Decimal(60)
+        low_emission_discount = Decimal(0)
+        permit, product = self.prepare_test_data(
+            self.permit_id, unit_price, low_emission_discount
+        )
+        url = reverse("parking_permits:talpa-product")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
+        self.assertEqual(response.data.get("productName"), product.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+        # Change vehicle
+        vehicle = VehicleFactory(registration_number="DON-313")
+        permit.vehicle = vehicle
+        permit.save()
+
+        # Check that vehicle change is reflected in product
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
+        self.assertEqual(response.data.get("productName"), product.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+    def test_resolve_product_view_after_address_change(self):
+        unit_price = Decimal(60)
+        low_emission_discount = Decimal(0)
+        permit, product = self.prepare_test_data(
+            self.permit_id, unit_price, low_emission_discount
+        )
+        url = reverse("parking_permits:talpa-product")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
+        self.assertEqual(response.data.get("productName"), product.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+        # Change address to another zone
+        talpa_product_id_zone_b = "3d2a87a1-f245-4cd8-9f67-d1b6b50a48bb"
+        zone_b = ParkingZoneFactory(name="B")
+        product_detail_list = [
+            [(permit.start_time.date(), permit.end_time.date()), unit_price]
+        ]
+        product_b = self.create_product_for_zone(
+            zone_b, product_detail_list, low_emission_discount, talpa_product_id_zone_b
+        )
+        permit.parking_zone = zone_b
+        permit.save()
+
+        # Check that address zone change is reflected in product
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(
+            response.data.get("productId"), str(product_b.talpa_product_id)
+        )
+        self.assertEqual(response.data.get("productName"), product_b.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+    def test_resolve_product_view_after_primary_permit_ending(self):
+        unit_price = Decimal(60)
+        low_emission_discount = Decimal(0)
+        permit, product = self.prepare_test_data(
+            self.permit_id, unit_price, low_emission_discount, primary_permit=False
+        )
+        url = reverse("parking_permits:talpa-product")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
+        self.assertEqual(response.data.get("productName"), product.name)
+        self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+
+        permit.refresh_from_db()
+        # Check that permit has been marked as primary
+        self.assertEqual(permit.primary_vehicle, True)
+
+    def test_resolve_product_view_should_return_error_if_permit_products_missing(
+        self,
+    ):
+        permit = ParkingPermitFactory(
+            id=self.permit_id,
+            contract_type=ContractType.OPEN_ENDED,
+            month_count=1,
+        )
+        url = reverse("parking_permits:talpa-product")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.data.get("subscriptionId"), self.talpa_subscription_id
+        )
+        self.assertEqual(response.data.get("userId"), self.user_id)
+        self.assertNotEquals(response.data.get("errorMessage"), "")
 
 
 class ResolveRightOfPurchaseViewTestCase(APITestCase):

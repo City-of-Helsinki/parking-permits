@@ -62,6 +62,7 @@ from .serializers import (
     ResolveAvailabilityResponseSerializer,
     ResolveAvailabilitySerializer,
     ResolvePriceResponseSerializer,
+    ResolveProductResponseSerializer,
     RightOfPurchaseResponseSerializer,
     SubscriptionSerializer,
     TalpaPayloadSerializer,
@@ -160,6 +161,82 @@ class TalpaResolveAvailability(APIView):
         res = snake_to_camel_dict({"product_id": shared_product_id, "value": True})
         logger.info(f"Resolve availability response = {json.dumps(res, default=str)}")
         return Response(res)
+
+
+class TalpaResolveProduct(APIView):
+    @swagger_auto_schema(
+        operation_description="Resolve product for subscription.",
+        request_body=TalpaPayloadSerializer,
+        responses={
+            200: openapi.Response("Resolve product", ResolveProductResponseSerializer)
+        },
+        tags=["ResolveProduct"],
+    )
+    def post(self, request, format=None):
+        logger.info(
+            f"Data received for resolve product = {json.dumps(request.data, default=str)}"
+        )
+        subscription_id = request.data.get("subscriptionId")
+        if not subscription_id:
+            return bad_request_response("Subscription id is missing from request data")
+        user_id = request.data.get("userId")
+        if not user_id:
+            return bad_request_response("User id is missing from request data")
+        order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            return bad_request_response("Order item data is missing from request data")
+        meta = order_item_data.get("meta")
+        if not meta:
+            return bad_request_response(
+                "Order item metadata is missing from request data"
+            )
+        permit_id = get_meta_value(meta, "permitId")
+        if not permit_id:
+            return bad_request_response(
+                "No permitId key available in meta list of key-value pairs"
+            )
+
+        try:
+            permit = ParkingPermit.objects.get(pk=permit_id)
+            # If permit is open ended and it is the only permit for the customer, set it as primary vehicle
+            if (
+                permit.is_open_ended
+                and not permit.primary_vehicle
+                and not permit.customer.permits.active().exclude(id=permit.id).exists()
+            ):
+                permit.primary_vehicle = True
+                permit.save()
+
+            products_with_quantity = permit.get_products_with_quantities()
+            if not products_with_quantity:
+                return bad_request_response("No products found for permit")
+            product_with_quantity = products_with_quantity[0]
+            if not product_with_quantity:
+                return bad_request_response(
+                    "Product with quantity not found for permit"
+                )
+            product = product_with_quantity[0]
+            if not product:
+                return bad_request_response("Product not found")
+            response = snake_to_camel_dict(
+                {
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                    "product_id": str(product.talpa_product_id),
+                    "product_name": product.name,
+                    "product_label": permit.vehicle.description,
+                }
+            )
+        except Exception as e:
+            response = snake_to_camel_dict(
+                {
+                    "error_message": str(e),
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                }
+            )
+        logger.info(f"Resolve product response = {json.dumps(response, default=str)}")
+        return Response(response)
 
 
 class TalpaResolvePrice(APIView):
@@ -637,6 +714,7 @@ class SubscriptionView(APIView):
                 ParkingPermitEndType.AFTER_CURRENT_PERIOD,
                 subscription_cancel_reason=request.data.get("reason"),
                 cancel_from_talpa=False,
+                force_end=True,
             )
             logger.info(
                 f"Subscription {subscription} cancelled and permit ended after current period"

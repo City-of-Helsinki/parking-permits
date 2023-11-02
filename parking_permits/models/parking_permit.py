@@ -503,14 +503,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 )
             return price_change_list
 
-    def end_permit(self, end_type):
+    def end_permit(self, end_type, force_end=False):
         if end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:
             end_time = max(self.start_time, timezone.now())
 
         if (
-            self.primary_vehicle
+            not force_end
+            and self.primary_vehicle
             and self.customer.permits.active_after(end_time)
             .exclude(id=self.id)
             .exists()
