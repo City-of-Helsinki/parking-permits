@@ -17,19 +17,28 @@ class TalpaPayloadSerializer(serializers.Serializer):
 
 
 class RightOfPurchaseResponseSerializer(serializers.Serializer):
-    errorMessage = serializers.CharField(help_text="Error if exists", default="")
     rightOfPurchase = serializers.BooleanField(help_text="Has rights to purchase")
     userId = serializers.CharField(help_text="User id")
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")
 
 
 class ResolvePriceResponseSerializer(serializers.Serializer):
-    rowPriceNet = serializers.FloatField(help_text="Row price net")
-    rowPriceVat = serializers.FloatField(help_text="Row price vat")
-    rowPriceTotal = serializers.FloatField(help_text="Row price total")
+    userId = serializers.CharField(help_text="User id")
+    subscriptionId = serializers.CharField(help_text="Subscription id")
     priceNet = serializers.FloatField(help_text="Total net price")
     priceVat = serializers.FloatField(help_text="Total vat")
     priceGross = serializers.FloatField(help_text="Gross price")
     vatPercentage = serializers.FloatField(help_text="Vat percentage")
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")
+
+
+class ResolveProductResponseSerializer(serializers.Serializer):
+    userId = serializers.CharField(help_text="User id")
+    subscriptionId = serializers.CharField(help_text="Subscription id")
+    productId = serializers.FloatField(help_text="Product id")
+    productName = serializers.FloatField(help_text="Product name")
+    productLabel = serializers.FloatField(help_text="Product label")
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")
 
 
 class PaymentSerializer(serializers.Serializer):
