@@ -22,6 +22,12 @@ class RightOfPurchaseResponseSerializer(serializers.Serializer):
     errorMessage = serializers.CharField(help_text="Error if exists", default="")
 
 
+class ResolvePriceRequestSerializer(serializers.Serializer):
+    userId = serializers.CharField(help_text="User id")
+    subscriptionId = serializers.CharField(help_text="Subscription id")
+    orderItem = OrderItemSerializer()
+
+
 class ResolvePriceResponseSerializer(serializers.Serializer):
     userId = serializers.CharField(help_text="User id")
     subscriptionId = serializers.CharField(help_text="Subscription id")
@@ -30,6 +36,12 @@ class ResolvePriceResponseSerializer(serializers.Serializer):
     priceGross = serializers.FloatField(help_text="Gross price")
     vatPercentage = serializers.FloatField(help_text="Vat percentage")
     errorMessage = serializers.CharField(help_text="Error if exists", default="")
+
+
+class ResolveProductRequestSerializer(serializers.Serializer):
+    userId = serializers.CharField(help_text="User id")
+    subscriptionId = serializers.CharField(help_text="Subscription id")
+    orderItem = OrderItemSerializer()
 
 
 class ResolveProductResponseSerializer(serializers.Serializer):
@@ -104,11 +116,11 @@ class ProductSerializer(serializers.Serializer):
     )
 
 
-class ResolveAvailabilitySerializer(serializers.Serializer):
+class ResolveAvailabilityRequestSerializer(serializers.Serializer):
     productId = serializers.CharField(help_text="Shared product id")
 
 
-class ResolveAvailabilityResponseSerializer(ResolveAvailabilitySerializer):
+class ResolveAvailabilityResponseSerializer(ResolveAvailabilityRequestSerializer):
     value = serializers.BooleanField(default=True)
 
 

@@ -59,9 +59,11 @@ from .serializers import (
     OrderSerializer,
     PaymentSerializer,
     ProductSerializer,
+    ResolveAvailabilityRequestSerializer,
     ResolveAvailabilityResponseSerializer,
-    ResolveAvailabilitySerializer,
+    ResolvePriceRequestSerializer,
     ResolvePriceResponseSerializer,
+    ResolveProductRequestSerializer,
     ResolveProductResponseSerializer,
     RightOfPurchaseResponseSerializer,
     SubscriptionSerializer,
@@ -144,7 +146,7 @@ class ProductDetail(mixins.RetrieveModelMixin, generics.GenericAPIView):
 class TalpaResolveAvailability(APIView):
     @swagger_auto_schema(
         operation_description="Resolve product availability.",
-        request_body=ResolveAvailabilitySerializer,
+        request_body=ResolveAvailabilityRequestSerializer,
         responses={
             200: openapi.Response(
                 "Product is always available for purchase.",
@@ -166,7 +168,7 @@ class TalpaResolveAvailability(APIView):
 class TalpaResolveProduct(APIView):
     @swagger_auto_schema(
         operation_description="Resolve product for subscription.",
-        request_body=TalpaPayloadSerializer,
+        request_body=ResolveProductRequestSerializer,
         responses={
             200: openapi.Response("Resolve product", ResolveProductResponseSerializer)
         },
@@ -242,7 +244,7 @@ class TalpaResolveProduct(APIView):
 class TalpaResolvePrice(APIView):
     @swagger_auto_schema(
         operation_description="Resolve price of product from an order item.",
-        request_body=TalpaPayloadSerializer,
+        request_body=ResolvePriceRequestSerializer,
         responses={
             200: openapi.Response("Resolve price", ResolvePriceResponseSerializer)
         },
