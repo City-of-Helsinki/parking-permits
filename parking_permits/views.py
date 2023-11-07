@@ -97,6 +97,11 @@ audit_logger = audit.getAuditLoggerAdapter(
 )
 
 
+def ok_response(message):
+    logger.info(message)
+    return Response({"message": message}, status=200)
+
+
 def bad_request_response(message):
     logger.error(message)
     return Response({"message": message}, status=400)
@@ -712,6 +717,10 @@ class SubscriptionView(APIView):
             except Subscription.DoesNotExist:
                 return not_found_response(
                     f"Subscription {talpa_subscription_id} does not exist"
+                )
+            if subscription.status == SubscriptionStatus.CANCELLED:
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} is already cancelled"
                 )
             order_item = subscription.order_items.first()
             permit = order_item.permit
