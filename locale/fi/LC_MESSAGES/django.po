@@ -911,8 +911,8 @@ msgstr "Sinulle on luotu pysäköintitunnus"
 msgid "Your parking permit information has been updated"
 msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
-msgid "Your order has ended"
-msgstr "Tilauksesi on päättynyt"
+msgid "Your order will end"
+msgstr "Tilauksesi päättyy"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
