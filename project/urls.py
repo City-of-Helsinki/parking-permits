@@ -1,16 +1,19 @@
 from django.contrib import admin
 from django.http import HttpResponse
 from django.urls import include, path
+from django.views.decorators.http import require_GET
 from django.views.generic import RedirectView
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 
 
+@require_GET
 def healthz(*args, **kwargs):
     """Returns status code 200 if the server is alive."""
     return HttpResponse(status=200)
 
 
+@require_GET
 def readiness(*args, **kwargs):
     """
     Returns status code 200 if the server is ready to perform its duties.
