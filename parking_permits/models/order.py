@@ -531,10 +531,11 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
     def __str__(self):
         return f"Subscription #{self.talpa_subscription_id}"
 
-    def _cancel_talpa_subcription(self):
+    def _cancel_talpa_subcription(self, customer_id):
         headers = {
             "api-key": settings.TALPA_API_KEY,
             "namespace": settings.NAMESPACE,
+            "user": str(customer_id),
             "Content-Type": "application/json",
         }
         response = requests.post(
@@ -569,9 +570,10 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         order = order_item.order
         talpa_order_id = order.talpa_order_id
         permit = order_item.permit
+        customer_id = permit.customer.user.uuid
 
         try:
-            OrderValidator.validate_order(talpa_order_id, permit.customer.user.uuid)
+            OrderValidator.validate_order(talpa_order_id, customer_id)
         except OrderValidationError as e:
             logger.error(f"Order validation failed. Error = {e}")
             return False
@@ -579,7 +581,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         # Try to cancel subscription from Talpa as well
         if cancel_from_talpa:
             try:
-                self._cancel_talpa_subcription()
+                self._cancel_talpa_subcription(customer_id)
             except SubscriptionCancelError:
                 logger.warning(
                     "Talpa subscription cancelling failed. Continuing the cancel process.."
