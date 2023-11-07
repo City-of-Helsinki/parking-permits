@@ -26,7 +26,7 @@ permit_email_subjects = {
     % (SUBJECT_PREFIX, _("New parking permit has been created for you")),
     PermitEmailType.UPDATED: "%s: %s"
     % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
-    PermitEmailType.ENDED: "%s: %s" % (SUBJECT_PREFIX, _("Your order has ended")),
+    PermitEmailType.ENDED: "%s: %s" % (SUBJECT_PREFIX, _("Your order will end")),
     PermitEmailType.TEMP_VEHICLE_ACTIVATED: "%s: %s"
     % (SUBJECT_PREFIX, _("Temporary vehicle attached to your permit")),
     PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "%s: %s"
