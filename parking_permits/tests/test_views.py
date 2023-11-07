@@ -1097,6 +1097,79 @@ class OrderViewTestCase(APITestCase):
             datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
         )
 
+    @override_settings(DEBUG=True)
+    def test_subscription_renewal_already_renewed(self):
+        talpa_order_id = "c6f70a98-23d1-46f0-b9cd-c01c6f78e075"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2023, 4, 30, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2023-06-01T15:46:05.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+            type=OrderType.SUBSCRIPTION_RENEWED,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        )
+        order.permits.add(permit)
+        order.save()
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        unit_price = Decimal(30)
+        product = ProductFactory(unit_price=unit_price)
+        OrderItemFactory(
+            talpa_order_item_id=talpa_order_id,
+            order=order,
+            product=product,
+            permit=permit,
+            subscription=subscription,
+        )
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_RENEWAL_ORDER_CREATED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+        }
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        subscription_order = subscription.order_items.first().order
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(str(subscription_order.talpa_order_id), talpa_order_id)
+        self.assertEqual(subscription.status, SubscriptionStatus.CONFIRMED)
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        order = Order.objects.get(talpa_order_id=talpa_order_id)
+        permit.refresh_from_db()
+        self.assertEqual(str(order.talpa_order_id), talpa_order_id)
+        self.assertEqual(order.customer, permit.customer)
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(order.type, OrderType.SUBSCRIPTION_RENEWED)
+        self.assertEqual(order.payment_type, OrderPaymentType.ONLINE_PAYMENT)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        self.assertEqual(
+            permit.end_time,
+            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
+        )
+
 
 class SubscriptionViewTestCase(APITestCase):
     def test_subscription_view_should_return_bad_request_if_talpa_order_id_missing(

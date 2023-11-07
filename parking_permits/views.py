@@ -523,6 +523,10 @@ class OrderView(APIView):
                 return not_found_response(
                     f"Subscription {talpa_subscription_id} does not exist"
                 )
+            if Order.objects.filter(talpa_order_id=talpa_order_id).exists():
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} already renewed with order {talpa_order_id}"
+                )
             order_item = subscription.order_items.first()
             permit = order_item.permit
 
