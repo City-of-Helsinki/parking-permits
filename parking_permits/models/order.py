@@ -540,7 +540,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         response = requests.post(
             urljoin(
                 settings.TALPA_ORDER_EXPERIENCE_API,
-                f"subcription/{self.talpa_subscription_id}/cancel",
+                f"subscription/{self.talpa_subscription_id}/cancel",
             ),
             headers=headers,
         )
