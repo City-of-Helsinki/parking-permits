@@ -510,6 +510,10 @@ class OrderView(APIView):
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
 
+        # Always bypass Order cancelled event
+        if event_type == "ORDER_CANCELLED":
+            return ok_response(f"Order {talpa_order_id} cancel bypassed")
+
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
         if not talpa_subscription_id:
