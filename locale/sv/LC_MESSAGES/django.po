@@ -336,7 +336,7 @@ msgid "Refund ID"
 msgstr "Återbetalning ID"
 
 msgid "incl. VAT"
-msgstr "ink. MOMS"
+msgstr "inkl. MOMS"
 
 msgid "Extra info"
 msgstr "Ytterligare uppgifter"
@@ -908,8 +908,8 @@ msgstr "Nytt parkeringstillstånd har skapats åt dig"
 msgid "Your parking permit information has been updated"
 msgstr "Parkeringtillståndet informationen har uppdaterats"
 
-msgid "Your order has ended"
-msgstr "Er tillståndet har slutat"
+msgid "Your order will end"
+msgstr "Ditt parkeringstillstånd kommer att avslutas"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tillfälligt fordon kopplat till ditt tillstånd"
