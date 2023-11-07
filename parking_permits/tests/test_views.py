@@ -1016,6 +1016,16 @@ class OrderViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 404)
 
+    def test_order_cancellation(self):
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "ORDER_CANCELLED",
+            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+
     @override_settings(DEBUG=True)
     @patch.object(OrderValidator, "validate_order")
     def test_subscription_renewal(self, mock_validate_order):
