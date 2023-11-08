@@ -578,26 +578,9 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             logger.error(f"Order validation failed. Error = {e}")
             return False
 
-        # Try to cancel subscription from Talpa as well
-        if cancel_from_talpa:
-            try:
-                self._cancel_talpa_subcription(customer_id)
-            except SubscriptionCancelError:
-                logger.warning(
-                    "Talpa subscription cancelling failed. Continuing the cancel process.."
-                )
-
         self.status = SubscriptionStatus.CANCELLED
         self.cancel_reason = cancel_reason
         self.save()
-
-        remaining_valid_order_subscriptions = Subscription.objects.filter(
-            order_items__order__talpa_order_id__exact=talpa_order_id,
-            status=SubscriptionStatus.CONFIRMED,
-        )
-        # Mark the order as cancelled if it has no active subscriptions left
-        if not remaining_valid_order_subscriptions.exists():
-            order.cancel(cancel_from_talpa=cancel_from_talpa)
 
         # Create a refund for a remaining full month period, if it was charged already
         if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
@@ -615,7 +598,24 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             )
             logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
-        logger.info(f"Subscription {self} cancelled successfully")
+        # Try to cancel subscription from Talpa as well
+        if cancel_from_talpa:
+            try:
+                self._cancel_talpa_subcription(customer_id)
+            except SubscriptionCancelError:
+                logger.warning(
+                    "Talpa subscription cancelling failed. Continuing the cancel process.."
+                )
+
+        remaining_valid_order_subscriptions = Subscription.objects.filter(
+            order_items__order__talpa_order_id__exact=talpa_order_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        # Mark the order as cancelled if it has no active subscriptions left
+        if not remaining_valid_order_subscriptions.exists():
+            order.cancel(cancel_from_talpa=cancel_from_talpa)
+
+        logger.info(f"Subscription {self.talpa_subscription_id} cancelled successfully")
         return True
 
 
