@@ -7,7 +7,7 @@ from freezegun import freeze_time
 
 from parking_permits.exceptions import OrderCreationFailed
 from parking_permits.models import Order
-from parking_permits.models.order import OrderStatus
+from parking_permits.models.order import OrderStatus, OrderType
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType
@@ -177,6 +177,60 @@ class TestOrderManager(TestCase):
         with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
             with self.assertRaises(OrderCreationFailed):
                 Order.objects.create_renewal_order(self.customer)
+
+    def test_create_renewable_order_should_allow_open_ended_permits_vehicle_change(
+        self,
+    ):
+        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
+        end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
+
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
+        low_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=70,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
+        LowEmissionCriteriaFactory(
+            start_date=start_time,
+            end_date=end_time,
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=80,
+            euro_min_class_limit=6,
+        )
+        permit = ParkingPermitFactory(
+            parking_zone=self.zone,
+            vehicle=high_emission_vehicle,
+            customer=self.customer,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.DRAFT,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+        order = Order.objects.create_for_permits([permit])
+        order.status = OrderStatus.CONFIRMED
+        order.save()
+        permit.refresh_from_db()
+        permit.status = ParkingPermitStatus.VALID
+        permit.vehicle = low_emission_vehicle
+        permit.save()
+
+        with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
+            new_order = Order.objects.create_renewal_order(
+                self.customer,
+                order_type=OrderType.VEHICLE_CHANGED,
+            )
+            order_items = new_order.order_items.all().order_by("start_time")
+            self.assertEqual(order_items.count(), 1)
+            self.assertEqual(order_items[0].unit_price, Decimal(15))
+            self.assertEqual(order_items[0].payment_unit_price, Decimal(-15))
+            self.assertEqual(order_items[0].quantity, 1)
 
 
 class TestOrder(TestCase):
