@@ -209,14 +209,17 @@ class OrderManager(SerializableMixin.SerializableManager):
         order.permits.add(*permits)
         return order
 
-    def _validate_customer_permits(self, permits):
+    def _validate_customer_permits(self, permits, order_type):
         date_ranges = []
         for permit in permits:
             if permit.status != ParkingPermitStatus.VALID:
                 raise OrderCreationFailed(
                     "Cannot create renewal order for non-valid permits"
                 )
-            if permit.is_open_ended:
+            if (
+                permit.is_open_ended
+                and order_type not in self.model.OPEN_ENDED_RENEWABLE_ORDER_TYPES
+            ):
                 raise OrderCreationFailed(
                     "Cannot create renewal order for open ended permits"
                 )
@@ -242,7 +245,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         customer_permits = ParkingPermit.objects.filter(
             customer=customer, status=ParkingPermitStatus.VALID
         )
-        self._validate_customer_permits(customer_permits)
+        self._validate_customer_permits(customer_permits, order_type)
 
         try:
             first_permit = customer_permits[0]
@@ -279,15 +282,15 @@ class OrderManager(SerializableMixin.SerializableManager):
             product_detail = next(product_detail_iter, None)
 
             while order_item_detail and product_detail:
-                product, product_quantity, product_date_range = product_detail
+                product, _, product_date_range = product_detail
                 product_start_date, product_end_date = product_date_range
                 (
                     order_item,
-                    order_item_quantity,
+                    _,
                     order_item_date_range,
                 ) = order_item_detail
                 order_item_start_date, order_item_end_date = order_item_date_range
-
+                product_end_date = product_end_date or order_item_end_date
                 # find the period in which the months have the same payment price
                 period_start_date = max(product_start_date, order_item_start_date)
                 period_end_date = min(product_end_date, order_item_end_date)
@@ -349,6 +352,10 @@ class OrderManager(SerializableMixin.SerializableManager):
 
 
 class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
+    OPEN_ENDED_RENEWABLE_ORDER_TYPES = (
+        OrderType.ADDRESS_CHANGED,
+        OrderType.VEHICLE_CHANGED,
+    )
     talpa_order_id = models.UUIDField(
         _("Talpa order id"), unique=True, editable=False, null=True, blank=True
     )
