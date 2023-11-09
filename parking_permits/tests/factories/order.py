@@ -2,9 +2,9 @@ from decimal import Decimal
 
 import factory
 
-from parking_permits.models import Order, OrderItem
+from parking_permits.models import Order, OrderItem, Subscription
 
-from ...models.order import OrderStatus
+from ...models.order import OrderStatus, SubscriptionStatus
 from .customer import CustomerFactory
 from .parking_permit import ParkingPermitFactory
 from .product import ProductFactory
@@ -21,10 +21,19 @@ class OrderFactory(factory.django.DjangoModelFactory):
         model = Order
 
 
+class SubscriptionFactory(factory.django.DjangoModelFactory):
+    talpa_subscription_id = factory.Faker("uuid4")
+    status = SubscriptionStatus.CONFIRMED
+
+    class Meta:
+        model = Subscription
+
+
 class OrderItemFactory(factory.django.DjangoModelFactory):
     order = factory.SubFactory(OrderFactory)
     product = factory.SubFactory(ProductFactory)
     permit = factory.SubFactory(ParkingPermitFactory)
+    subscription = factory.SubFactory(SubscriptionFactory)
     unit_price = Decimal(30)
     payment_unit_price = Decimal(30)
     vat = Decimal(0.24)

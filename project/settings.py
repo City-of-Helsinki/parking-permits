@@ -1,3 +1,4 @@
+from os import environ as os_environ
 from os import path
 from pathlib import Path
 
@@ -7,17 +8,26 @@ import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.django import DjangoIntegration
 
+GDAL_LIBRARY_PATH = os_environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
+
 env = environ.Env(
     DEBUG=(bool, False),
     DJANGO_SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
+    CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
-    TALPA_MERCHANT_EXPERIENCE_API=(str, ""),
+    TALPA_MERCHANT_EXPERIENCE_API=(
+        str,
+        "",
+    ),
     TALPA_PRODUCT_EXPERIENCE_API=(str, ""),
     TALPA_ORDER_EXPERIENCE_API=(str, ""),
+    TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS=(int, 15),
+    TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=(int, 5),
     TALPA_SUBSCRIPTION_PERIOD_UNIT=(str, "monthly"),
     OPEN_CITY_PROFILE_GRAPHQL_API=(str, "https://profile-api.test.hel.ninja/graphql/"),
-    KMO_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
+    KAMI_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
     TOKEN_AUTH_ACCEPTED_AUDIENCE=(str, ""),
     TOKEN_AUTH_ACCEPTED_SCOPE_PREFIX=(str, ""),
     TOKEN_AUTH_AUTHSERVER_URL=(str, ""),
@@ -67,11 +77,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = env("DEBUG")
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
 AUTH_USER_MODEL = "users.User"
 
 SRID = 4326
-KMO_URL = env("KMO_URL")
+KAMI_URL = env("KAMI_URL")
 OPEN_CITY_PROFILE_GRAPHQL_API = env("OPEN_CITY_PROFILE_GRAPHQL_API")
 
 INSTALLED_APPS = [
@@ -85,7 +96,7 @@ INSTALLED_APPS = [
     # disable Django’s static file handling during development so that whitenoise can take over
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
-    "ariadne.contrib.django",
+    "ariadne_django",
     "django_extensions",
     "corsheaders",
     "parking_permits",
@@ -161,8 +172,6 @@ TIME_ZONE = "Europe/Helsinki"
 
 USE_I18N = True
 
-USE_L10N = True
-
 USE_TZ = True
 
 
@@ -178,6 +187,10 @@ TALPA_PRODUCT_EXPERIENCE_API = env("TALPA_PRODUCT_EXPERIENCE_API")
 TALPA_ORDER_EXPERIENCE_API = env("TALPA_ORDER_EXPERIENCE_API")
 TALPA_API_KEY = env("TALPA_API_KEY")
 TALPA_SUBSCRIPTION_PERIOD_UNIT = env("TALPA_SUBSCRIPTION_PERIOD_UNIT")
+TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS = env("TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS")
+TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS = env(
+    "TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS"
+)
 
 # PARKKIHUBI
 PARKKIHUBI_DOMAIN = env("PARKKIHUBI_DOMAIN")

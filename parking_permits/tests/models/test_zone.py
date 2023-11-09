@@ -45,9 +45,9 @@ class ParkingZoneTestCase(TestCase):
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        self.assertQuerysetEqual(
+        self.assertQuerySetEqual(
             self.zone.resident_products,
-            [repr(product_1), repr(product_2), repr(product_3)],
+            [product_1, product_2, product_3],
             ordered=False,
         )
 

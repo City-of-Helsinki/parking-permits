@@ -17,8 +17,8 @@ from django.utils import timezone
 from parking_permits.models import Address, Customer, Order, ParkingPermit, Vehicle
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
-from parking_permits.services import dvv, kmo
-from parking_permits.services.traficom import Traficom
+from parking_permits.models.vehicle import VehicleUser
+from parking_permits.services import dvv, kami
 
 # E.g. 1.1.2011 1:01, 31.12.2012 15:50
 PASI_DATETIME_FORMAT = re.compile(
@@ -88,13 +88,16 @@ class PasiResidentPermit:
     _end_dt: datetime = dataclasses.field(init=False, default=None)
     _street_name: Optional[str] = dataclasses.field(init=False, default=None)
     _street_number: Optional[str] = dataclasses.field(init=False, default=None)
+    _apartment: Optional[str] = dataclasses.field(init=False, default=None)
 
     @address_line.setter
     def address_line(self, val):
         self._address_line = val
-        self._street_name, self._street_number = kmo.parse_street_name_and_number(
-            self.address_line
-        )
+        (
+            self._street_name,
+            self._street_number,
+            self._apartment,
+        ) = kami.parse_street_data(self.address_line)
 
     @property
     def language(self):
@@ -241,7 +244,14 @@ class Command(BaseCommand):
         # Validation & initialization
         person_info = self.get_person_info(pasi_permit.national_id_number)
         permit_address_type = self.find_permit_address_type(pasi_permit, person_info)
-        vehicle = self.fetch_vehicle(pasi_permit.registration_number)
+        vehicle = Vehicle.objects.get_or_create(
+            registration_number=pasi_permit.registration_number.strip()
+        )[0]
+        vehicle.users.add(
+            VehicleUser.objects.get_or_create(
+                national_id_number=pasi_permit.national_id_number.strip()
+            )[0]
+        )
         self.validate_vehicle(pasi_permit, vehicle)
 
         # Create/get all the instances required for a parking permit.
@@ -373,7 +383,7 @@ class Command(BaseCommand):
         address, _created = Address.objects.update_or_create(
             street_name=address_info["street_name"],
             street_number=address_info["street_number"],
-            city=address_info["city"].title() if address_info["city"] else "",
+            city=address_info["city"] if address_info["city"] else "",
             postal_code=address_info["postal_code"],
             location=location,
         )
@@ -404,15 +414,6 @@ class Command(BaseCommand):
         )
 
         return customer
-
-    @staticmethod
-    def fetch_vehicle(registration_number: str) -> Vehicle:
-        try:
-            return Traficom().fetch_vehicle_details(registration_number)
-        except Exception as e:
-            raise PasiImportError(
-                "Something went wrong during Traficom vehicle fetch"
-            ) from e
 
     @staticmethod
     def validate_vehicle(pasi_permit: PasiResidentPermit, vehicle: Vehicle) -> NoReturn:

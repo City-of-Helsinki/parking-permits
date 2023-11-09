@@ -1,8 +1,10 @@
 import csv
+import datetime
 import json
 import logging
 
 from ariadne import convert_camel_case_to_snake
+from dateutil.relativedelta import relativedelta
 from django.db import transaction
 from django.http import (
     Http404,
@@ -11,25 +13,27 @@ from django.http import (
     HttpResponseNotFound,
 )
 from django.utils import timezone as tz
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.http import require_safe
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from helsinki_gdpr.views import (
-    DeletionNotAllowed,
-    DryRunSerializer,
-    GDPRAPIView,
-    GDPRScopesPermission,
-)
-from rest_framework import generics, mixins, status
+from helsinki_gdpr.views import DryRunSerializer, GDPRAPIView, GDPRScopesPermission
+from rest_framework import generics, mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import audit_logger as audit
 from audit_logger import AuditMsg
 
-from .constants import Origin
+from .constants import Origin, ParkingPermitEndType
+from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import ParkkihubiPermitError
+from .exceptions import (
+    DeletionNotAllowed,
+    OrderValidationError,
+    ParkkihubiPermitError,
+    SubscriptionValidationError,
+)
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -38,18 +42,31 @@ from .forms import (
     ProductSearchForm,
     RefundSearchForm,
 )
-from .models import Customer, Order, Product
+from .models import Customer, Order, OrderItem, Product
 from .models.common import SourceSystem
-from .models.order import OrderPaymentType, OrderStatus, OrderType
+from .models.order import (
+    OrderPaymentType,
+    OrderStatus,
+    OrderType,
+    OrderValidator,
+    Subscription,
+    SubscriptionStatus,
+    SubscriptionValidator,
+)
 from .models.parking_permit import ParkingPermit, ParkingPermitStatus
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
+    PaymentSerializer,
     ProductSerializer,
+    ResolveAvailabilityRequestSerializer,
     ResolveAvailabilityResponseSerializer,
-    ResolveAvailabilitySerializer,
+    ResolvePriceRequestSerializer,
     ResolvePriceResponseSerializer,
+    ResolveProductRequestSerializer,
+    ResolveProductResponseSerializer,
     RightOfPurchaseResponseSerializer,
+    SubscriptionSerializer,
     TalpaPayloadSerializer,
 )
 from .services.mail import (
@@ -58,8 +75,11 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .utils import (
+    get_end_time,
+    get_meta_item,
     get_meta_value,
     get_user_from_api_view_method_args,
+    round_up,
     snake_to_camel_dict,
 )
 
@@ -75,6 +95,21 @@ audit_logger = audit.getAuditLoggerAdapter(
         "kwarg_name": "audit_msg",
     },
 )
+
+
+def ok_response(message):
+    logger.info(message)
+    return Response({"message": message}, status=200)
+
+
+def bad_request_response(message):
+    logger.error(message)
+    return Response({"message": message}, status=400)
+
+
+def not_found_response(message):
+    logger.info(message)
+    return Response({"message": message}, status=404)
 
 
 class ProductList(mixins.ListModelMixin, generics.GenericAPIView):
@@ -116,7 +151,7 @@ class ProductDetail(mixins.RetrieveModelMixin, generics.GenericAPIView):
 class TalpaResolveAvailability(APIView):
     @swagger_auto_schema(
         operation_description="Resolve product availability.",
-        request_body=ResolveAvailabilitySerializer,
+        request_body=ResolveAvailabilityRequestSerializer,
         responses={
             200: openapi.Response(
                 "Product is always available for purchase.",
@@ -135,10 +170,86 @@ class TalpaResolveAvailability(APIView):
         return Response(res)
 
 
+class TalpaResolveProduct(APIView):
+    @swagger_auto_schema(
+        operation_description="Resolve product for subscription.",
+        request_body=ResolveProductRequestSerializer,
+        responses={
+            200: openapi.Response("Resolve product", ResolveProductResponseSerializer)
+        },
+        tags=["ResolveProduct"],
+    )
+    def post(self, request, format=None):
+        logger.info(
+            f"Data received for resolve product = {json.dumps(request.data, default=str)}"
+        )
+        subscription_id = request.data.get("subscriptionId")
+        if not subscription_id:
+            return bad_request_response("Subscription id is missing from request data")
+        user_id = request.data.get("userId")
+        if not user_id:
+            return bad_request_response("User id is missing from request data")
+        order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            return bad_request_response("Order item data is missing from request data")
+        meta = order_item_data.get("meta")
+        if not meta:
+            return bad_request_response(
+                "Order item metadata is missing from request data"
+            )
+        permit_id = get_meta_value(meta, "permitId")
+        if not permit_id:
+            return bad_request_response(
+                "No permitId key available in meta list of key-value pairs"
+            )
+
+        try:
+            permit = ParkingPermit.objects.get(pk=permit_id)
+            # If permit is open ended and it is the only permit for the customer, set it as primary vehicle
+            if (
+                permit.is_open_ended
+                and not permit.primary_vehicle
+                and not permit.customer.permits.active().exclude(id=permit.id).exists()
+            ):
+                permit.primary_vehicle = True
+                permit.save()
+
+            products_with_quantity = permit.get_products_with_quantities()
+            if not products_with_quantity:
+                return bad_request_response("No products found for permit")
+            product_with_quantity = products_with_quantity[0]
+            if not product_with_quantity:
+                return bad_request_response(
+                    "Product with quantity not found for permit"
+                )
+            product = product_with_quantity[0]
+            if not product:
+                return bad_request_response("Product not found")
+            response = snake_to_camel_dict(
+                {
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                    "product_id": str(product.talpa_product_id),
+                    "product_name": product.name,
+                    "product_label": permit.vehicle.description,
+                }
+            )
+        except Exception as e:
+            response = snake_to_camel_dict(
+                {
+                    "error_message": str(e),
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                }
+            )
+        logger.info(f"Resolve product response = {json.dumps(response, default=str)}")
+        return Response(response)
+
+
 class TalpaResolvePrice(APIView):
     @swagger_auto_schema(
         operation_description="Resolve price of product from an order item.",
-        request_body=TalpaPayloadSerializer,
+        request_body=ResolvePriceRequestSerializer,
         responses={
             200: openapi.Response("Resolve price", ResolvePriceResponseSerializer)
         },
@@ -148,41 +259,64 @@ class TalpaResolvePrice(APIView):
         logger.info(
             f"Data received for resolve price = {json.dumps(request.data, default=str)}"
         )
-        meta = request.data.get("orderItem").get("meta")
+        subscription_id = request.data.get("subscriptionId")
+        if not subscription_id:
+            return bad_request_response("Subscription id is missing from request data")
+        user_id = request.data.get("userId")
+        if not user_id:
+            return bad_request_response("User id is missing from request data")
+        order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            return bad_request_response("Order item data is missing from request data")
+        order_item_id = order_item_data.get("orderItemId")
+        if not order_item_id:
+            return bad_request_response("Order item id is missing from request data")
+        meta = order_item_data.get("meta")
+        if not meta:
+            return bad_request_response(
+                "Order item metadata is missing from request data"
+            )
         permit_id = get_meta_value(meta, "permitId")
-
-        if permit_id is None:
-            return Response(
-                {
-                    "message": "No permitId key available in meta list of key-value pairs"
-                },
-                status=status.HTTP_400_BAD_REQUEST,
+        if not permit_id:
+            return bad_request_response(
+                "No permitId key available in meta list of key-value pairs"
             )
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
             products_with_quantity = permit.get_products_with_quantities()
-            product, quantity, date_range = products_with_quantity[0]
+            if not products_with_quantity:
+                return bad_request_response("No products found for permit")
+            product_with_quantity = products_with_quantity[0]
+            if not product_with_quantity:
+                return bad_request_response(
+                    "Product with quantity not found for permit"
+                )
+            product = product_with_quantity[0]
+            if not product:
+                return bad_request_response("Product not found")
             price = product.get_modified_unit_price(
                 permit.vehicle.is_low_emission, permit.is_secondary_vehicle
             )
             vat = product.vat
             price_vat = price * vat
+            response = snake_to_camel_dict(
+                {
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                    "price_net": round_up(float(price - price_vat)),
+                    "price_vat": round_up(float(price_vat)),
+                    "price_gross": round_up(float(price)),
+                }
+            )
         except Exception as e:
-            logger.error(f"Resolve price error = {str(e)}")
-            return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-        response = snake_to_camel_dict(
-            {
-                "row_price_net": float(price - price_vat),
-                "row_price_vat": float(price_vat),
-                "row_price_total": float(price),
-                "price_net": float(price - price_vat),
-                "price_vat": float(price_vat),
-                "price_gross": float(price),
-                "vat_percentage": float(product.vat_percentage),
-            }
-        )
+            response = snake_to_camel_dict(
+                {
+                    "error_message": str(e),
+                    "subscription_id": subscription_id,
+                    "user_id": user_id,
+                }
+            )
         logger.info(f"Resolve price response = {json.dumps(response, default=str)}")
         return Response(response)
 
@@ -202,9 +336,27 @@ class TalpaResolveRightOfPurchase(APIView):
         logger.info(
             f"Data received for resolve right of purchase = {json.dumps(request.data, default=str)}"
         )
-        meta = request.data.get("orderItem").get("meta")
+        order_item_data = request.data.get("orderItem")
+        if not order_item_data:
+            return bad_request_response("Order item data is missing from request data")
+        order_item_id = order_item_data.get("orderItemId")
+        if not order_item_id:
+            return bad_request_response(
+                "Talpa order item id is missing from request data"
+            )
+        meta = order_item_data.get("meta")
+        if not meta:
+            return bad_request_response(
+                "Order item metadata is missing from request data"
+            )
         permit_id = get_meta_value(meta, "permitId")
+        if not permit_id:
+            return bad_request_response(
+                "No permitId key available in meta list of key-value pairs"
+            )
         user_id = request.data.get("userId")
+        if not user_id:
+            return bad_request_response("User id is missing from request data")
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
@@ -215,11 +367,15 @@ class TalpaResolveRightOfPurchase(APIView):
             has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
                 vehicle
             )
+            order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
+            is_valid_subscription = (
+                order_item.subscription.status == SubscriptionStatus.CONFIRMED
+            )
             right_of_purchase = (
-                is_user_of_vehicle
+                is_valid_subscription
+                and is_user_of_vehicle
                 and customer.driving_licence.active
                 and has_valid_driving_licence
-                and not vehicle.is_due_for_inspection()
             )
             res = snake_to_camel_dict(
                 {
@@ -243,33 +399,47 @@ class TalpaResolveRightOfPurchase(APIView):
         return Response(res)
 
 
-class OrderView(APIView):
+class PaymentView(APIView):
     @swagger_auto_schema(
-        operation_description="Used as an webhook by Talpa in order to send an order notification.",
-        request_body=OrderSerializer,
+        operation_description="Process payment notifications.",
+        request_body=PaymentSerializer,
         security=[],
         responses={
-            200: openapi.Response("Order received response", MessageResponseSerializer)
+            200: openapi.Response(
+                "Payment received response", MessageResponseSerializer
+            )
         },
-        tags=["Order"],
+        tags=["Payment"],
     )
     @transaction.atomic
     def post(self, request, format=None):
-        logger.info(f"Order received. Data = {json.dumps(request.data, default=str)}")
+        logger.info(f"Payment received. Data = {json.dumps(request.data, default=str)}")
         talpa_order_id = request.data.get("orderId")
         event_type = request.data.get("eventType")
         if not talpa_order_id:
-            logger.error("Talpa order id is missing from request data")
-            return Response({"message": "No order id is provided"}, status=400)
-
+            return bad_request_response("Talpa order id is missing from request data")
         if event_type == "PAYMENT_PAID":
-            order = Order.objects.get(talpa_order_id=talpa_order_id)
+            logger.info(
+                f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
+            )
+            try:
+                order = Order.objects.get(talpa_order_id=talpa_order_id)
+            except Order.DoesNotExist:
+                return not_found_response(f"Order {talpa_order_id} does not exist")
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
             order.paid_time = tz.now()
             order.save()
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
+
+                # Subscription renewed type order has always only one permit
+                if order.type == OrderType.SUBSCRIPTION_RENEWED:
+                    if not permit.end_time:
+                        permit.end_time = permit.current_period_end_time()
+                    permit.end_time = permit.end_time + relativedelta(months=1)
+                    permit.save()
+                    send_permit_email(PermitEmailType.UPDATED, permit)
 
                 if order.type == OrderType.VEHICLE_CHANGED:
                     if (
@@ -317,9 +487,260 @@ class OrderView(APIView):
                     permit.update_parkkihubi_permit()
                 except ParkkihubiPermitError:
                     permit.create_parkkihubi_permit()
+            logger.info(f"{order} is confirmed and order permits are set to VALID ")
+            return Response({"message": "Payment received"}, status=200)
+        else:
+            return bad_request_response(f"Unknown payment event type {event_type}")
 
-        logger.info(f"{order} is confirmed and order permits are set to VALID ")
-        return Response({"message": "Order received"}, status=200)
+
+class OrderView(APIView):
+    @swagger_auto_schema(
+        operation_description="Process order notifications.",
+        request_body=OrderSerializer,
+        security=[],
+        responses={
+            200: openapi.Response("Order received response", MessageResponseSerializer)
+        },
+        tags=["Order"],
+    )
+    @transaction.atomic
+    def post(self, request, format=None):
+        logger.info(f"Order received. Data = {json.dumps(request.data, default=str)}")
+        talpa_order_id = request.data.get("orderId")
+        talpa_subscription_id = request.data.get("subscriptionId")
+        event_type = request.data.get("eventType")
+
+        # Always bypass Order cancelled event
+        if event_type == "ORDER_CANCELLED":
+            return ok_response(f"Order {talpa_order_id} cancel bypassed")
+
+        if not talpa_order_id:
+            return bad_request_response("Talpa order id is missing from request data")
+        if not talpa_subscription_id:
+            return bad_request_response(
+                "Talpa subscription id is missing from request data"
+            )
+
+        # Subscriptipn renewal process
+        if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
+            logger.info(f"Renewing subscription: {talpa_subscription_id}")
+            try:
+                subscription = Subscription.objects.get(
+                    talpa_subscription_id=talpa_subscription_id
+                )
+            except Subscription.DoesNotExist:
+                return not_found_response(
+                    f"Subscription {talpa_subscription_id} does not exist"
+                )
+            if Order.objects.filter(talpa_order_id=talpa_order_id).exists():
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} already renewed with order {talpa_order_id}"
+                )
+            order_item = subscription.order_items.first()
+            permit = order_item.permit
+
+            try:
+                validated_order_data = OrderValidator.validate_order(
+                    talpa_order_id, permit.customer.user.uuid
+                )
+            except OrderValidationError as e:
+                return bad_request_response(
+                    f"Order validation failed. Error = {str(e)}"
+                )
+
+            order = Order.objects.create(
+                talpa_order_id=validated_order_data.get("orderId"),
+                talpa_checkout_url=validated_order_data.get("checkoutUrl"),
+                talpa_logged_in_checkout_url=validated_order_data.get(
+                    "loggedInCheckoutUrl"
+                ),
+                talpa_receipt_url=validated_order_data.get("receiptUrl"),
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                customer=permit.customer,
+                status=OrderStatus.DRAFT,
+                address_text=str(permit.full_address),
+                parking_zone_name=permit.parking_zone.name,
+                vehicles=[permit.vehicle.registration_number],
+                type=OrderType.SUBSCRIPTION_RENEWED,
+            )
+            order.permits.add(permit)
+            order.save()
+
+            validated_order_item_data = (
+                validated_order_data.get("items")
+                and validated_order_data.get("items")[0]
+            )
+
+            product = Product.objects.get(
+                talpa_product_id=validated_order_item_data.get("productId")
+            )
+
+            start_time = tz.make_aware(
+                datetime.datetime.strptime(
+                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S.%f"
+                )
+            )
+            end_time = get_end_time(start_time, 1)
+
+            OrderItem.objects.create(
+                talpa_order_item_id=validated_order_item_data.get("orderItemId"),
+                order=order,
+                subscription=subscription,
+                product=product,
+                permit=permit,
+                unit_price=validated_order_item_data.get("priceGross"),
+                payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
+                vat=validated_order_item_data.get("vatPercentage"),
+                quantity=validated_order_item_data.get("quantity"),
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            send_permit_email(PermitEmailType.UPDATED, permit)
+            try:
+                permit.update_parkkihubi_permit()
+            except ParkkihubiPermitError:
+                permit.create_parkkihubi_permit()
+            logger.info(
+                f"{subscription} is renewed and new order {order} is created with order item {order_item}"
+            )
+            return Response({"message": "Subscription renewal completed"}, status=200)
+        else:
+            return bad_request_response(f"Unknown order event type {event_type}")
+
+
+class SubscriptionView(APIView):
+    @swagger_auto_schema(
+        operation_description="Process subscription notifications.",
+        request_body=SubscriptionSerializer,
+        security=[],
+        responses={
+            200: openapi.Response(
+                "Subscription event received response", MessageResponseSerializer
+            )
+        },
+        tags=["Subscription"],
+    )
+    @transaction.atomic
+    def post(self, request, format=None):
+        logger.info(
+            f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
+        )
+        talpa_order_id = request.data.get("orderId")
+        talpa_order_item_id = request.data.get("orderItemId")
+        talpa_subscription_id = request.data.get("subscriptionId")
+        event_type = request.data.get("eventType")
+        event_timestamp = request.data.get("eventTimestamp")
+        event_time = None
+        if event_timestamp:
+            event_time = parse_datetime(event_timestamp[:-1])
+
+        if not talpa_order_id:
+            return bad_request_response("Talpa order id is missing from request data")
+
+        if not talpa_order_item_id:
+            return bad_request_response(
+                "Talpa order item id is missing from request data"
+            )
+
+        if not talpa_subscription_id:
+            return bad_request_response(
+                "Talpa subscription id is missing from request data"
+            )
+
+        if not event_type:
+            return bad_request_response(
+                "Talpa subscription event type is missing from request data"
+            )
+
+        try:
+            order = Order.objects.get(talpa_order_id=talpa_order_id)
+        except Order.DoesNotExist:
+            return not_found_response(f"Order {talpa_order_id} does not exist")
+        try:
+            OrderValidator.validate_order(talpa_order_id, order.customer.user.uuid)
+        except OrderValidationError as e:
+            return bad_request_response(
+                f"Subscription order validation failed. Error = {str(e)}"
+            )
+
+        if event_type == "SUBSCRIPTION_CREATED":
+            logger.info(f"Creating new subscription: {talpa_subscription_id}")
+            try:
+                validated_subscription_data = (
+                    SubscriptionValidator.validate_subscription(
+                        str(order.customer.user.uuid),
+                        talpa_subscription_id,
+                        talpa_order_id,
+                        talpa_order_item_id,
+                    )
+                )
+            except SubscriptionValidationError as e:
+                return bad_request_response(
+                    f"Subscription validation failed. Error = {e}"
+                )
+
+            meta = validated_subscription_data.get("meta")
+            meta_item = get_meta_item(meta, "permitId")
+            permit_id = meta_item.get("value") if meta_item else None
+            if not permit_id:
+                return bad_request_response(
+                    "No permitId key available in meta list of key-value pairs"
+                )
+
+            order_item_qs = OrderItem.objects.filter(
+                order__talpa_order_id=talpa_order_id,
+                permit_id=permit_id,
+            )
+            order_item = order_item_qs.first()
+            if not order_item:
+                return not_found_response(
+                    f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
+                )
+
+            subscription = Subscription.objects.create(
+                talpa_subscription_id=talpa_subscription_id,
+                status=SubscriptionStatus.CONFIRMED,
+                created_by=order.customer.user,
+            )
+            subscription.created_at = event_time or tz.localtime(tz.now())
+            subscription.save()
+            order_item.talpa_order_item_id = talpa_order_item_id
+            order_item.subscription = subscription
+            order_item.save()
+            logger.info(
+                f"Subscription {subscription} created and order item {order_item} updated"
+            )
+            return Response({"message": "Subscription created"}, status=200)
+        elif event_type == "SUBSCRIPTION_CANCELLED":
+            logger.info(f"Cancelling subscription: {talpa_subscription_id}")
+            try:
+                subscription = Subscription.objects.get(
+                    talpa_subscription_id=talpa_subscription_id
+                )
+            except Subscription.DoesNotExist:
+                return not_found_response(
+                    f"Subscription {talpa_subscription_id} does not exist"
+                )
+            if subscription.status == SubscriptionStatus.CANCELLED:
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} is already cancelled"
+                )
+            order_item = subscription.order_items.first()
+            permit = order_item.permit
+            CustomerPermit(permit.customer_id).end(
+                [permit.id],
+                ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+                subscription_cancel_reason=request.data.get("reason"),
+                cancel_from_talpa=False,
+                force_end=True,
+            )
+            logger.info(
+                f"Subscription {subscription} cancelled and permit ended after current period"
+            )
+            return Response({"message": "Subscription cancelled"}, status=200)
+        else:
+            return bad_request_response(f"Unknown subscription event type {event_type}")
 
 
 class ParkingPermitGDPRScopesPermission(GDPRScopesPermission):
@@ -347,7 +768,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
     def get(self, request, *args, audit_msg: AuditMsg = None, **kwargs):
         obj = self.get_object()
         audit_msg.target = obj
-        return Response(obj.serialize(), status=status.HTTP_200_OK)
+        return Response(obj.serialize(), status=200)
 
     def get_object(self) -> Customer:
         try:
@@ -373,7 +794,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
             self._delete()
             if dry_run_serializer.data["dry_run"]:
                 transaction.set_rollback(True)
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=204)
 
 
 @require_preparators

@@ -46,6 +46,26 @@ class CreateTalpaProductError(ParkingPermitBaseException):
     pass
 
 
+class OrderValidationError(ParkingPermitBaseException):
+    pass
+
+
+class SubscriptionValidationError(ParkingPermitBaseException):
+    pass
+
+
+class OrderCancelError(ParkingPermitBaseException):
+    pass
+
+
+class SubscriptionCancelError(ParkingPermitBaseException):
+    pass
+
+
+class SetTalpaFlowStepsError(ParkingPermitBaseException):
+    pass
+
+
 class OrderCreationFailed(ParkingPermitBaseException):
     pass
 
@@ -91,4 +111,8 @@ class SearchError(ParkingPermitBaseException):
 
 
 class TemporaryVehicleValidationError(ParkingPermitBaseException):
+    pass
+
+
+class DeletionNotAllowed(ParkingPermitBaseException):
     pass

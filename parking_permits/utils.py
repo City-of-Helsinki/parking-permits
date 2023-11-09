@@ -1,15 +1,20 @@
 import calendar
 import copy
+import zoneinfo
 from collections import OrderedDict
 from collections.abc import Callable
+from datetime import datetime
+from decimal import ROUND_UP, Decimal
 from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
 from django.db import models
-from django.utils import timezone
+from django.utils import timezone as tz
 from graphql import GraphQLResolveInfo
 from pytz import utc
+
+HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
 
 
 class DefaultOrderedDict(OrderedDict):
@@ -73,10 +78,41 @@ def diff_months_ceil(start_date, end_date):
     return diff_months
 
 
+def start_date_to_datetime(date):
+    return datetime.combine(date, datetime.min.time(), tzinfo=HELSINKI_TZ)
+
+
+def end_date_to_datetime(date):
+    return datetime.combine(date, datetime.max.time(), tzinfo=HELSINKI_TZ)
+
+
 def get_end_time(start_time, diff_months):
+    """Adds number of months equal to `diff_months` to `start_time`.
+
+    The final result should be 23:59 on the previous day for example:
+
+    Current date: 25th Oct
+    Final result (+1 month): 24 Nov 23:59 EET
+
+    Result will be in default timezone (i.e. TIME_ZONE).
+    """
+
+    # normalize start time to midnight localtime
+    start_time = start_time.astimezone(tz.get_default_timezone())
+    start_time = start_time.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # add 1 month minus one day
     end_time = start_time + relativedelta(months=diff_months, days=-1)
-    return timezone.make_aware(
-        end_time.replace(hour=23, minute=59, second=59, microsecond=999999, tzinfo=None)
+
+    # ensure end time is 23:59 on that last day
+    return tz.make_aware(
+        end_time.replace(
+            hour=23,
+            minute=59,
+            second=59,
+            microsecond=999999,
+            tzinfo=None,
+        )
     )
 
 
@@ -109,6 +145,21 @@ def date_time_to_utc(dt):
     )
 
 
+def date_time_to_helsinki(dt):
+    return (
+        dt.replace(microsecond=0)
+        .astimezone(HELSINKI_TZ)
+        .replace(tzinfo=None)
+        .isoformat()
+    )
+
+
+def format_local_time(dt):
+    return (
+        tz.localtime(dt).replace(microsecond=0).replace(tzinfo=None).isoformat() + "Z"
+    )
+
+
 def convert_to_snake_case(d):
     if isinstance(d, str):
         return convert_camel_case_to_snake(d)
@@ -125,26 +176,30 @@ def convert_to_snake_case(d):
 
 
 def get_permit_prices(
-    zone,
-    is_low_emission,
-    is_secondary,
+    parking_zone,
+    is_low_emission_vehicle,
+    is_secondary_permit,
     permit_start_date,
     permit_end_date,
 ):
-    products = zone.products.for_resident().for_date_range(
+    products = parking_zone.products.for_resident().for_date_range(
         permit_start_date,
         permit_end_date,
     )
+
     permit_prices = []
-    for product in products:
+    product_count = len(products) if len(products) > 1 else 0
+    for index, product in enumerate(products, start=1):
         start_date = max(product.start_date, permit_start_date)
         end_date = min(product.end_date, permit_end_date)
         quantity = diff_months_ceil(start_date, end_date)
+        if index == product_count:
+            quantity -= 1
         permit_prices.append(
             {
                 "original_unit_price": product.unit_price,
                 "unit_price": product.get_modified_unit_price(
-                    is_low_emission, is_secondary
+                    is_low_emission_vehicle, is_secondary_permit
                 ),
                 "start_date": start_date,
                 "end_date": end_date,
@@ -154,15 +209,20 @@ def get_permit_prices(
     return permit_prices
 
 
-def get_meta_value(meta_pair_list, meta_pair_key):
+def get_meta_item(meta_pair_list, meta_pair_key):
     return next(
         (
-            meta_pair.get("value")
+            meta_pair
             for meta_pair in meta_pair_list
             if meta_pair.get("key") == meta_pair_key
         ),
         None,
     )
+
+
+def get_meta_value(meta_pair_list, meta_pair_key):
+    item = get_meta_item(meta_pair_list, meta_pair_key)
+    return item.get("value") if item else None
 
 
 def snake_to_camel_dict(dictionary):
@@ -274,3 +334,11 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
         else:
             output[f"{prefix}{k}"] = v
     return output
+
+
+def round_up(v):
+    return (
+        "{:0.2f}".format(Decimal(v).quantize(Decimal(".001"), rounding=ROUND_UP))
+        if v
+        else "0.00"
+    )

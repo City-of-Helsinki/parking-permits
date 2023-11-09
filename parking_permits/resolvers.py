@@ -38,7 +38,6 @@ from .models.parking_permit import (
 )
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
-from .services.kmo import get_address_details
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
@@ -97,6 +96,7 @@ def is_valid_address(address):
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_customer_permits(_obj, info):
     request = info.context["request"]
     # NOTE: get() actually fetches a *list* of items... and more importantly, also
@@ -105,16 +105,19 @@ def resolve_customer_permits(_obj, info):
 
 
 def save_profile_address(address):
-    street_name = address.get("street_name")
-    street_number = address.get("street_number")
-    address_detail = get_address_details(street_name, street_number)
-    address.update(address_detail)
     address_obj = Address.objects.update_or_create(
-        street_name=street_name,
-        street_number=street_number,
-        city=address["city"],
-        postal_code=address["postal_code"],
-        defaults=address,
+        street_name=address.get("street_name"),
+        street_number=address.get("street_number"),
+        postal_code=address.get("postal_code"),
+        defaults={
+            "street_name": address.get("street_name"),
+            "street_name_sv": address.get("street_name_sv"),
+            "street_number": address.get("street_number"),
+            "city": address.get("city"),
+            "city_sv": address.get("city_sv"),
+            "postal_code": address.get("postal_code"),
+            "location": address.get("location"),
+        },
     )
     return address_obj[0]
 
@@ -131,6 +134,7 @@ def save_profile_address(address):
     autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
@@ -155,6 +159,18 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
             "user": request.user,
             **customer,
             **{"primary_address": primary_address, "other_address": other_address},
+            "primary_address_apartment": primary_address_data.get("apartment")
+            if is_valid_address(primary_address_data)
+            else None,
+            "primary_address_apartment_sv": primary_address_data.get("apartment_sv")
+            if is_valid_address(primary_address_data)
+            else None,
+            "other_address_apartment": other_address_data.get("apartment")
+            if is_valid_address(other_address_data)
+            else None,
+            "other_address_apartment_sv": other_address_data.get("apartment_sv")
+            if is_valid_address(other_address_data)
+            else None,
         },
     )
 
@@ -178,6 +194,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_update_language(_obj, info, lang):
     request = info.context["request"]
     customer = request.user.customer
@@ -187,6 +204,7 @@ def resolve_update_language(_obj, info, lang):
 
 
 @address_node.field("primary")
+@transaction.atomic
 def resolve_address_primary(address, info):
     address_node_path_key = info.path.prev.key
     if address_node_path_key == "otherAddress":
@@ -201,6 +219,7 @@ def validate_customer_address(customer, address_id):
     i.e. either the primary address or the other address
     """
     addr_ids = [customer.primary_address_id, customer.other_address_id]
+
     allowed_addr_ids = [str(addr_id) for addr_id in addr_ids if addr_id is not None]
     if address_id not in allowed_addr_ids:
         logger.error("Not a valid customer address")
@@ -216,6 +235,7 @@ def validate_customer_address(customer, address_id):
 @query.field("getUpdateAddressPriceChanges")
 @is_authenticated
 @convert_kwargs_to_snake_case
+@transaction.atomic
 def resolve_get_update_address_price_changes(_obj, info, address_id):
     customer = info.context["request"].user.customer
     address = validate_customer_address(customer, address_id)
@@ -249,6 +269,7 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
@@ -266,6 +287,7 @@ def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = N
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_create_parking_permit(_obj, info, address_id, registration):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
@@ -281,6 +303,7 @@ def resolve_create_parking_permit(_obj, info, address_id, registration):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_update_parking_permit(
     _obj, info, input, permit_id=None, audit_msg: AuditMsg = None
 ):
@@ -304,6 +327,7 @@ def resolve_update_parking_permit(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_end_permit(
     _obj, info, permit_ids, end_type, iban=None, audit_msg: AuditMsg = None
 ):
@@ -326,6 +350,7 @@ def resolve_end_permit(
     ),
     autotarget=audit.TARGET_RETURN,
 )
+@transaction.atomic
 def resolve_get_vehicle_information(_obj, info, registration):
     request = info.context["request"]
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
@@ -357,6 +382,7 @@ def resolve_get_vehicle_information(_obj, info, registration):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_update_permit_vehicle(
     _obj,
     info,
@@ -369,8 +395,7 @@ def resolve_update_permit_vehicle(
     request = info.context["request"]
     customer = request.user.customer
     permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
-    permit_differ = ModelDiffer.start(permit, fields=EventFields.PERMIT)
-    vehicle_differ = ModelDiffer.start(permit.vehicle, fields=EventFields.VEHICLE)
+    old_registration_number = permit.vehicle.registration_number
 
     audit_msg.target = permit
     checkout_url = None
@@ -379,63 +404,57 @@ def resolve_update_permit_vehicle(
     new_vehicle.consent_low_emission_accepted = consent_low_emission_accepted
     new_vehicle.save()
 
-    if (
-        permit.contract_type == ContractType.FIXED_PERIOD
-        and permit.vehicle.is_low_emission != new_vehicle.is_low_emission
-    ):
-        price_change_list = permit.get_price_change_list(
-            permit.parking_zone, new_vehicle.is_low_emission
-        )
-        permit_total_price_change = sum(
-            [item["price_change"] * item["month_count"] for item in price_change_list]
-        )
+    price_change_list = permit.get_price_change_list(
+        permit.parking_zone, new_vehicle.is_low_emission
+    )
+    permit_total_price_change = sum(
+        [item["price_change"] * item["month_count"] for item in price_change_list]
+    )
 
-        if permit_total_price_change > 0:
-            permit.next_vehicle = new_vehicle
-            permit.save()
-        else:
-            permit.vehicle = new_vehicle
-            permit.save()
-
-        new_order = Order.objects.create_renewal_order(
-            customer,
-            status=OrderStatus.CONFIRMED,
-            order_type=OrderType.VEHICLE_CHANGED,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            user=request.user,
-        )
-
-        if permit_total_price_change < 0:
-            refund = Refund.objects.create(
-                name=str(customer),
-                order=new_order,
-                amount=-permit_total_price_change,
-                iban=iban if iban else "",
-                description=f"Refund for updating permits zone (customer switch vehicle to: {new_vehicle})",
-            )
-            logger.info(f"Refund for updating permits zone created: {refund}")
-            send_refund_email(RefundEmailType.CREATED, customer, refund)
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=request.user
-            )
-
-        if permit_total_price_change > 0:
-            checkout_url = TalpaOrderManager.send_to_talpa(new_order)
-            permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
-            talpa_order_created = True
+    if permit_total_price_change > 0:
+        permit.next_vehicle = new_vehicle
+        permit.save()
     else:
         permit.vehicle = new_vehicle
+        permit.save()
+
+    new_order = Order.objects.create_renewal_order(
+        customer,
+        status=OrderStatus.CONFIRMED,
+        order_type=OrderType.VEHICLE_CHANGED,
+        payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        user=request.user,
+        create_renew_order_event=permit_total_price_change > 0,
+    )
+
+    if permit_total_price_change < 0:
+        refund = Refund.objects.create(
+            name=customer.full_name,
+            order=new_order,
+            amount=-permit_total_price_change,
+            iban=iban if iban else "",
+            description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
+        )
+        refund.permits.add(permit)
+        logger.info(f"Refund for updating permits created: {refund}")
+        send_refund_email(RefundEmailType.CREATED, customer, refund)
+        ParkingPermitEventFactory.make_create_refund_event(
+            permit, refund, created_by=request.user
+        )
+
+    if permit_total_price_change > 0:
+        checkout_url = TalpaOrderManager.send_to_talpa(new_order)
+        permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+        talpa_order_created = True
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
     permit.save()
 
-    permit_diff = permit_differ.stop()
-    vehicle_diff = vehicle_differ.stop()
     ParkingPermitEventFactory.make_update_permit_event(
         permit,
         created_by=request.user,
-        changes={**permit_diff, "vehicle": vehicle_diff},
+        changes={"vehicle": [old_registration_number, new_vehicle.registration_number]},
     )
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
@@ -454,6 +473,7 @@ def resolve_update_permit_vehicle(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     request = info.context["request"]
     customer = request.user.customer
@@ -476,6 +496,7 @@ def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_add_temporary_vehicle(
     _obj,
     info,
@@ -513,6 +534,7 @@ def resolve_add_temporary_vehicle(
     ),
     add_kwarg=True,
 )
+@transaction.atomic
 def resolve_remove_temporary_vehicle(_obj, info, permit_id, audit_msg: AuditMsg = None):
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
@@ -605,10 +627,13 @@ def resolve_change_address(
             )
         else:
             new_order_status = OrderStatus.CONFIRMED
+            old_zone_name = fixed_period_permits[0].parking_zone.name
             fixed_period_permits.update(parking_zone=new_zone, address=address)
             for permit in fixed_period_permits:
                 ParkingPermitEventFactory.make_update_permit_event(
-                    permit, created_by=request.user, changes={"parking_zone": new_zone}
+                    permit,
+                    created_by=request.user,
+                    changes={"parking_zone": [old_zone_name, new_zone.name]},
                 )
 
         new_order = Order.objects.create_renewal_order(
@@ -617,20 +642,22 @@ def resolve_change_address(
             order_type=OrderType.ADDRESS_CHANGED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,
             user=request.user,
+            create_renew_order_event=customer_total_price_change > 0,
         )
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
             if order_total_price_change < 0:
                 refund = Refund.objects.create(
-                    name=str(customer),
+                    name=customer.full_name,
                     order=order,
                     amount=-order_total_price_change,
                     iban=iban if iban else "",
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
+                refund.permits.set(order.permits.all())
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, refund)
-                for permit in order.permits:
+                for permit in order.permits.all():
                     ParkingPermitEventFactory.make_create_refund_event(
                         permit, refund, created_by=request.user
                     )

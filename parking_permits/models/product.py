@@ -1,6 +1,7 @@
 import json
 import logging
 from decimal import Decimal
+from urllib.parse import urljoin
 
 import requests
 from dateutil.relativedelta import relativedelta
@@ -127,7 +128,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     low_emission_discount = models.DecimalField(
-        _("Low emission discount"), max_digits=4, decimal_places=2
+        _("Low emission discount"), max_digits=6, decimal_places=4
     )
     objects = ProductQuerySet.as_manager()
 
@@ -151,12 +152,22 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         self.vat = value / 100
 
     @property
+    def low_emission_discount_percentage(self):
+        return self.low_emission_discount * 100
+
+    @low_emission_discount_percentage.setter
+    def low_emission_discount_percentage(self, value):
+        self.low_emission_discount = value / 100
+
+    @property
     def name(self):
-        return f"{self.get_type_display()}pysäköintialue {self.zone.name}"
+        return f'{_("Parking zone")} {self.zone.name}'
 
     @property
     def description(self):
-        return f"{self.get_type_display()}pysäköintialue {self.zone.name}, {self.start_date} - {self.end_date}"
+        return (
+            f'{_("Parking zone")} {self.zone.name}, {self.start_date} - {self.end_date}'
+        )
 
     def get_modified_unit_price(self, is_low_emission, is_secondary):
         price = self.unit_price
@@ -172,7 +183,10 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "Content-Type": "application/json",
         }
         response = requests.get(
-            f"{settings.TALPA_MERCHANT_EXPERIENCE_API}/list/merchants/{settings.NAMESPACE}/",
+            urljoin(
+                settings.TALPA_MERCHANT_EXPERIENCE_API,
+                f"list/merchants/{settings.NAMESPACE}/",
+            ),
             headers=headers,
         )
         if response.status_code == 200:

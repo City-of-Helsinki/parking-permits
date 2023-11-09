@@ -18,11 +18,17 @@ class RefundStatus(models.TextChoices):
 
 class Refund(TimestampedModelMixin, UserStampedModelMixin):
     name = models.CharField(_("Name"), max_length=200, blank=True)
-    order = models.OneToOneField(
+    order = models.ForeignKey(
         "Order",
         verbose_name=_("Order"),
         on_delete=models.PROTECT,
-        related_name="refund",
+        related_name="refunds",
+    )
+    permits = models.ManyToManyField(
+        "ParkingPermit",
+        verbose_name=_("Permits"),
+        related_name="refunds",
+        blank=True,
     )
     amount = models.DecimalField(
         _("Amount"), default=0.00, max_digits=6, decimal_places=2

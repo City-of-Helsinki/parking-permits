@@ -9,10 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import ObjectNotFound
 from parking_permits.models import ParkingZone
-from parking_permits.services.kmo import (
-    get_address_details,
-    parse_street_name_and_number,
-)
+from parking_permits.services.kami import get_address_details, parse_street_data
 
 logger = logging.getLogger("db")
 
@@ -21,6 +18,8 @@ class DvvAddressInfo(TypedDict, total=False):
     street_name: str
     street_name_sv: str
     street_number: str
+    apartment: str
+    apartment_sv: str
     city: str
     city_sv: str
     postal_code: str
@@ -33,7 +32,9 @@ class DvvPersonInfo(TypedDict, total=False):
     first_name: str
     last_name: str
     primary_address: Optional[DvvAddressInfo]
+    primary_address_apartment: str
     other_address: Optional[DvvAddressInfo]
+    other_address_apartment: str
     phone_number: str
     email: str
     address_security_ban: bool
@@ -69,13 +70,18 @@ def get_addresses(national_id_number):
     return primary_address, other_address
 
 
-def _extract_address_data(address) -> DvvAddressInfo:
+def _extract_address_data(address) -> Optional[DvvAddressInfo]:
     return (
         {
             "street_name": address.get("street_name"),
+            "street_name_sv": address.get("street_name_sv"),
             "street_number": address.get("street_number"),
+            "apartment": address.get("apartment"),
+            "apartment_sv": address.get("apartment_sv"),
             "city": address.get("city"),
+            "city_sv": address.get("city_sv"),
             "postal_code": address.get("postal_code"),
+            "location": address.get("location"),
         }
         if address
         else None
@@ -87,10 +93,12 @@ def format_address(address_data) -> DvvAddressInfo:
     # building number together in a single string. We only need
     # to use the street name and street number
 
-    street_name, street_number = parse_street_name_and_number(
+    street_name, street_number, apartment = parse_street_data(
         address_data["LahiosoiteS"]
     )
-    street_name_sv, __ = parse_street_name_and_number(address_data["LahiosoiteR"])
+    street_name_sv, street_number, apartment_sv = parse_street_data(
+        address_data["LahiosoiteR"]
+    )
     address_detail = get_address_details(street_name, street_number)
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])
@@ -102,8 +110,10 @@ def format_address(address_data) -> DvvAddressInfo:
         "street_name": street_name,
         "street_name_sv": street_name_sv,
         "street_number": street_number,
-        "city_sv": address_data["PostitoimipaikkaR"].title(),
-        "city": address_data["PostitoimipaikkaS"].title(),
+        "apartment": apartment,
+        "apartment_sv": apartment_sv,
+        "city": address_data["PostitoimipaikkaS"],
+        "city_sv": address_data["PostitoimipaikkaR"],
         "postal_code": address_data["Postinumero"],
         "zone": zone,
     }
@@ -143,24 +153,29 @@ def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
 
     last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
     first_name = person_info["NykyisetEtunimet"]["Etunimet"]
+
+    primary_address, primary_apartment = None, ""
     permanent_address = person_info["VakinainenKotimainenLahiosoite"]
+
+    if is_valid_address(permanent_address):
+        primary_address = format_address(permanent_address)
+        primary_apartment = primary_address.get("apartment", "")
+
+    other_address, other_apartment = None, ""
     temporary_address = person_info["TilapainenKotimainenLahiosoite"]
-    primary_address = (
-        format_address(permanent_address)
-        if is_valid_address(permanent_address)
-        else None
-    )
-    other_address = (
-        format_address(temporary_address)
-        if is_valid_address(temporary_address)
-        else None
-    )
+
+    if is_valid_address(temporary_address):
+        other_address = format_address(temporary_address)
+        other_apartment = other_address.get("apartment", "")
+
     return {
         "national_id_number": national_id_number,
         "first_name": first_name,
         "last_name": last_name,
         "primary_address": primary_address,
         "other_address": other_address,
+        "primary_address_apartment": primary_apartment,
+        "other_address_apartment": other_apartment,
         "phone_number": "",
         "email": "",
         "address_security_ban": False,

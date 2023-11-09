@@ -318,25 +318,6 @@ class TestPasiImportCommand:
         with pytest.raises(PasiValidationError):
             PasiCommand.validate_vehicle(pasi_resident_permit, vehicle)
 
-    @patch.object(Traficom, "fetch_vehicle_details", return_value="Hello, world!")
-    def test_fetch_vehicle_gets_vehicle_from_traficom(self, mock_fetch_vehicle_details):
-        vehicle = PasiCommand.fetch_vehicle("FOO-123")
-
-        mock_fetch_vehicle_details.assert_called_once_with("FOO-123")
-        assert vehicle == "Hello, world!"
-
-    @patch.object(Traficom, "fetch_vehicle_details", return_value="Hello, world!")
-    def test_fetch_vehicle_raises_pasi_error_on_failure(
-        self, mock_fetch_vehicle_details
-    ):
-        def raise_error(*_, **__):
-            raise ValueError
-
-        mock_fetch_vehicle_details.side_effect = raise_error
-
-        with pytest.raises(PasiImportError):
-            PasiCommand.fetch_vehicle("FOO-123")
-
     def test_vehicle_has_active_permits_returns_true_if_has_active_permits(self):
         vehicle = VehicleFactory(registration_number="FOO-123")
         ParkingPermitFactory(status=ParkingPermitStatus.VALID, vehicle=vehicle)

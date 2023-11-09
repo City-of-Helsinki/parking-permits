@@ -1,6 +1,6 @@
 from ariadne import load_schema_from_path
-from ariadne.contrib.django.views import GraphQLView
 from ariadne.contrib.federation import make_federated_schema
+from ariadne_django.views import GraphQLView
 
 from parking_permits import admin_resolvers, resolvers
 from parking_permits.error_formatter import error_formatter

@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0016_remove_old_national_id_number_alter_is_low_emission"),
     ]

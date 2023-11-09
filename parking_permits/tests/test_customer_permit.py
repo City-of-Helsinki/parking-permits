@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from datetime import timezone as dt_tz
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
@@ -325,7 +326,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         utc_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         data = {
             "start_type": FROM,
-            "start_time": after_3_days.astimezone(tz.utc).strftime(utc_format),
+            "start_time": after_3_days.astimezone(dt_tz.utc).strftime(utc_format),
         }
         permits = CustomerPermit(self.cus_a.id).update(data)
         for permit in permits:
@@ -337,7 +338,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         utc_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         data = {
             "start_type": FROM,
-            "start_time": after_3_weeks.astimezone(tz.utc).strftime(utc_format),
+            "start_time": after_3_weeks.astimezone(dt_tz.utc).strftime(utc_format),
         }
         permits = CustomerPermit(self.cus_a.id).update(data)
         time_after_2_weeks = get_end_time(next_day(), 2)

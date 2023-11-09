@@ -10,6 +10,7 @@ from parking_permits.services.mail import send_announcement_email
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from users.tests.factories.user import UserFactory
 
 
@@ -98,6 +99,8 @@ class PostCreateAnnouncementTest(TestCase):
         zone_a_customer = CustomerFactory(zone=zone_a)
         CustomerFactory(zone=zone_b)
 
+        ParkingPermitFactory(customer=zone_a_customer, parking_zone=zone_a)
+
         # Set the announcement for zone A.
         self.announcement._parking_zones.set([zone_a])
 
@@ -123,6 +126,9 @@ class PostCreateAnnouncementTest(TestCase):
         zone_b_customer = CustomerFactory(zone=zone_b)
         CustomerFactory(zone=zone_c)
         expected_customers = [zone_a_customer, zone_b_customer]
+
+        ParkingPermitFactory(customer=zone_a_customer, parking_zone=zone_a)
+        ParkingPermitFactory(customer=zone_b_customer, parking_zone=zone_b)
 
         # Set the announcement for zone A & B.
         self.announcement._parking_zones.set([zone_a, zone_b])

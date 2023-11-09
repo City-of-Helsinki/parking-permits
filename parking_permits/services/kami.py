@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
-from rest_framework import status
 
 from parking_permits.exceptions import AddressError
 from parking_permits.models import ParkingZone
@@ -46,9 +45,9 @@ def get_wfs_result(street_name="", street_number_token=""):
         "VERSION": "2.0.0",
     }
 
-    response = requests.get(settings.KMO_URL, params=params)
+    response = requests.get(settings.KAMI_URL, params=params)
 
-    if response.status_code != status.HTTP_200_OK:
+    if response.status_code != 200:
         xml_response = xmltodict.parse(response.content)
 
         error_message = (
@@ -75,7 +74,7 @@ def get_wfs_result(street_name="", street_number_token=""):
 def search_address(search_text):
     if not search_text:
         return []
-    street_name, street_number = parse_street_name_and_number(search_text)
+    street_name, street_number, __ = parse_street_data(search_text)
 
     cql_filter = (
         f"katunimi ILIKE '{street_name}%' AND osoitenumero='{street_number}'"
@@ -92,9 +91,9 @@ def search_address(search_text):
         "VERSION": "2.0.0",
         "COUNT": "8",
     }
-    response = requests.get(settings.KMO_URL, params=params)
+    response = requests.get(settings.KAMI_URL, params=params)
 
-    if response.status_code != status.HTTP_200_OK:
+    if response.status_code != 200:
         xml_response = xmltodict.parse(response.content)
 
         error_message = (
@@ -136,24 +135,34 @@ def parse_feature(feature):
         street_name_sv=properties.get("gatan", ""),
         street_number=properties.get("osoitenumero_teksti", ""),
         postal_code=properties.get("postinumero", ""),
-        city=properties.get("kaupunki", ""),
-        city_sv=properties.get("staden", ""),
+        city=properties.get("kaupunki", "").upper(),
+        city_sv=properties.get("staden", "").upper(),
         location=location,
         zone=zone,
     )
 
 
-def parse_street_name_and_number(street_address: str) -> tuple[str, str]:
+def extract_street_number_and_apartment(street_data):
+    parts = street_data.split()
+    if not parts:
+        return "", ""
+    street_number = parts[0].strip()
+    apartment = " ".join(parts[1:]).strip()
+    return street_number, apartment
+
+
+def parse_street_data(street_address: str) -> tuple[str, str, str]:
     match = re.search(r"\D+", street_address)
     street_name = match.group().strip() if match else street_address
-    street_number = street_address[match.end() :].strip() if match else ""
-
-    return street_name, street_number
+    street_number, apartment = extract_street_number_and_apartment(
+        street_address[match.end() :].strip() if match else ""
+    )
+    return street_name, street_number, apartment
 
 
 def get_address_from_db(street_name, street_number):
     address_qs = Address.objects.filter(
-        street_name=street_name, street_number=street_number
+        street_name=street_name, street_number__istartswith=street_number
     )
     if address_qs.exists():
         return address_qs.first()

@@ -5,6 +5,7 @@ import factory
 
 from parking_permits.models import Customer
 from parking_permits.tests.factories.address import AddressFactory
+from users.tests.factories.user import UserFactory
 
 
 def generate_random_national_id():
@@ -19,6 +20,7 @@ class CustomerFactory(factory.django.DjangoModelFactory):
     national_id_number = factory.LazyFunction(generate_random_national_id)
     primary_address = factory.SubFactory(AddressFactory)
     other_address = factory.SubFactory(AddressFactory)
+    user = factory.SubFactory(UserFactory)
 
     class Meta:
         model = Customer

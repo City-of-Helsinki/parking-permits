@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-29 09:14+0200\n"
+"POT-Creation-Date: 2023-11-01 18:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,8 +66,12 @@ msgstr "Ingen kund hittas"
 msgid "Customer search error"
 msgstr "Kundsökningsfel"
 
-msgid "Vehicle not found for the customer"
-msgstr "Fordonet hjittasdes inte för kunden"
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr "Kunden är inte ägare eller innehavare av ett fordon %(registration)s"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Kunden har inte ett giltigt körkort för detta fordon"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Kund utan adresssäkerhetsförbud måste ha en adress vald"
@@ -77,9 +81,6 @@ msgstr "Fordonskraftstyp hittades inte"
 
 msgid "Permit address does not have a valid zone"
 msgstr "Tillståndsadressen har ingen giltig zon"
-
-msgid "Customer national id number is mandatory for the permit"
-msgstr "Kundens personnummer är obligatoriskt för tillståndet"
 
 msgid "Cannot create more than 2 permits"
 msgstr "Kan inte skapa mer än 2 boendeparkeringpermit"
@@ -97,10 +98,13 @@ msgstr "Fordonets registreringsnummer är obligatoriskt för tillståndet"
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
 
-msgid "The validity period of secondary permit cannot exceed the primary one"
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in other "
+"address %(address)s."
 msgstr ""
-"Giltighetstiden för det sekundära permit får inte överstiga det primära "
-"permit"
+"Kan inte skapa tillstånd. Användaren har redan ett giltigt befintligt "
+"tillstånd i addressen %(address)s."
 
 #, python-format
 msgid ""
@@ -116,6 +120,9 @@ msgstr "Parkeringtecken hittades inte"
 msgid "Cannot change the customer of the permit"
 msgstr "Kunden kan inte bytas till detta parkeringstecken"
 
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Kundens personnummer är obligatoriskt för tillståndet"
+
 msgid "User already has a valid other permit for the given vehicle."
 msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
 
@@ -126,8 +133,8 @@ msgstr ""
 "Det är inte tillåtet att byta adress för olika typer av tillstånd "
 "(tidsbegränsad / obestämd tid)."
 
-msgid "IBAN is not provided"
-msgstr "IBAN tillhandahålls inte"
+msgid "Primary permit cannot be ended if customer has two permits"
+msgstr "Primärt tillstånd kan inte avslutas om kunden har två tillstånd"
 
 msgid "Product search error"
 msgstr "Produktsökningsfel"
@@ -143,6 +150,9 @@ msgstr "Beställningssökningsfel"
 
 msgid "Address search error"
 msgstr "Adresssökningsfel"
+
+msgid "This address is already in use"
+msgstr "Adressen används redan"
 
 msgid "Announcement search error"
 msgstr "Sökningsfel för meddelande"
@@ -168,10 +178,6 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
-
-#, python-format
-msgid "Customer is not an owner or holder of a vehicle %(registration)s"
-msgstr "Kunden är inte ägare eller innehavare av ett fordon %(registration)s"
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Kunden har inte giltigt körkort"
@@ -206,6 +212,18 @@ msgstr "Förbjuden"
 msgid "Internal Server Error"
 msgstr "Internt fel"
 
+msgid "Primary permit"
+msgstr "1. permit"
+
+msgid "Secondary permit"
+msgstr "2. permit"
+
+msgid "Online payment"
+msgstr "Online betalning"
+
+msgid "Cashier payment"
+msgstr "Kassabetalning"
+
 msgid "Name"
 msgstr "Namn"
 
@@ -213,16 +231,16 @@ msgid "National identification number"
 msgstr "Personnummer"
 
 msgid "Registration number"
-msgstr "Registreringsskylt"
+msgstr "Registreringsnummer"
 
-msgid "Permanent address"
+msgid "Primary address"
 msgstr "Permanent adress"
 
-msgid "Temporary address"
+msgid "Other address"
 msgstr "Tillfällig adress"
 
-msgid "Parking zone"
-msgstr "Parkering zone"
+msgid "Area"
+msgstr "Zone"
 
 msgid "Start time"
 msgstr "Starttid"
@@ -230,8 +248,20 @@ msgstr "Starttid"
 msgid "End time"
 msgstr "Sluttid"
 
+msgid "Permit order"
+msgstr "Ordning"
+
 msgid "Status"
 msgstr "Status"
+
+msgid "Parking permits"
+msgstr "Parkeringstillstånder"
+
+msgid "Registration numbers"
+msgstr "Registreringsnummer"
+
+msgid "Customer"
+msgstr "Kund"
 
 msgid "Address"
 msgstr "Gatuadress"
@@ -241,6 +271,9 @@ msgstr "Permit typ"
 
 msgid "Order number"
 msgstr "Ordernummer"
+
+msgid "Order payment type"
+msgstr "Typ av betalning"
 
 msgid "Paid time"
 msgstr "Betalningstid"
@@ -254,8 +287,14 @@ msgstr "IBAN-nummer"
 msgid "Product type"
 msgstr "Produkttyp"
 
+msgid "Parking zone"
+msgstr "Parkering zone"
+
 msgid "Price"
 msgstr "Pris"
+
+msgid "Low emission discount"
+msgstr "Rabatt för lågemission fordon"
 
 msgid "VAT"
 msgstr "MOMS"
@@ -272,20 +311,14 @@ msgstr "Redigerat"
 msgid "City of Helsinki"
 msgstr "Helsingfors stad"
 
-msgid "Urban Environment Division"
-msgstr "Stadsmiljösektorn"
+msgid "Personal data - Digital and population data services agency"
+msgstr "Personuppgifter - Digital- och befolkningsdatatjänstbyrå"
 
-msgid "Parking permits"
-msgstr "Parkeringspermit"
+msgid "Vehicle information - Transport register, Traficom"
+msgstr "Fordonsuppgifter - Trafik- och transportregistret, Traficom"
 
 msgid "Permit ID"
 msgstr "Permit ID"
-
-msgid "Customer"
-msgstr "Kund"
-
-msgid "Area"
-msgstr "Zone"
 
 msgid "Vehicle"
 msgstr "Fordon"
@@ -303,16 +336,13 @@ msgid "Refund ID"
 msgstr "Återbetalning ID"
 
 msgid "incl. VAT"
-msgstr "ink. MOMS"
+msgstr "inkl. MOMS"
 
 msgid "Extra info"
 msgstr "Ytterligare uppgifter"
 
 msgid "Order ID"
 msgstr "Ordernummer"
-
-msgid "Order payment type"
-msgstr "Typ av betalning"
 
 msgid "Order payment time"
 msgstr "Betald"
@@ -322,18 +352,6 @@ msgstr "Återbetalning"
 
 msgid "Order info"
 msgstr "Beställningsinformation"
-
-msgid "Primary permit"
-msgstr "1. permit"
-
-msgid "Secondary permit"
-msgstr "2. permit"
-
-msgid "Time created"
-msgstr "Tid skapad"
-
-msgid "Time modified"
-msgstr "Modifierad"
 
 msgid "Street name"
 msgstr "Gatuadress FI"
@@ -422,11 +440,17 @@ msgstr "Förnamn"
 msgid "Last name"
 msgstr "Efternamn"
 
-msgid "Primary address"
-msgstr "Permanent adress"
+msgid "Primary address apartment"
+msgstr "Primär adress lägenhet"
 
-msgid "Other address"
-msgstr "Tillfällig adress"
+msgid "Primary address apartment (sv)"
+msgstr "Primär adress lägenhet (sv)"
+
+msgid "Other address apartment"
+msgstr "Tillfällig adress lägenhet"
+
+msgid "Other address apartment (sv)"
+msgstr "Tillfällig adress lägenhet (sv)"
 
 msgid "Email"
 msgstr "E-post"
@@ -461,38 +485,23 @@ msgstr "Körkort"
 msgid "Driving licences"
 msgstr "Körkorten"
 
+msgid "Time created"
+msgstr "Tid skapad"
+
+msgid "Time modified"
+msgstr "Modifierad"
+
 msgid "Created by"
 msgstr "Skapad av"
+
+msgid "Draft"
+msgstr "Skiss"
 
 msgid "Confirmed"
 msgstr "Bekräftad"
 
 msgid "Cancelled"
 msgstr "Inställt"
-
-msgid "Talpa subscription id"
-msgstr "Talpa återkommande laddning ID"
-
-msgid "Period unit"
-msgstr "Periodenhet"
-
-msgid "Period frequency"
-msgstr "Period frekvens"
-
-msgid "Subscription"
-msgstr "Avtal"
-
-msgid "Subscriptions"
-msgstr "Avtalet"
-
-msgid "Online payment"
-msgstr "Online betalning"
-
-msgid "Cashier payment"
-msgstr "Kassabetalning"
-
-msgid "Draft"
-msgstr "Skiss"
 
 msgid "Created"
 msgstr "Skapad kl"
@@ -503,14 +512,23 @@ msgstr "Fordon bytt"
 msgid "Address changed"
 msgstr "Adress ändrad"
 
+msgid "Subscription renewed"
+msgstr "Avtal förnyad"
+
 msgid "Talpa order id"
 msgstr "Talpa beställning ID"
 
 msgid "Talpa checkout url"
-msgstr "Talpa checkou url"
+msgstr "Talpa checkout url"
+
+msgid "Talpa logged in checkout url"
+msgstr "Talpa inloggad checkout url"
 
 msgid "Talpa receipt_url"
 msgstr "Talpa kvitto url"
+
+msgid "Talpa last valid purchase time"
+msgstr "Talpa senaste giltiga köptid"
 
 msgid "Payment type"
 msgstr "Typ av betalning"
@@ -519,7 +537,10 @@ msgid "Order status"
 msgstr "Beställningens status"
 
 msgid "permits"
-msgstr "Parkeringtecken"
+msgstr "Parkeringstillstånder"
+
+msgid "Vehicles"
+msgstr "Fordonet"
 
 msgid "Order type"
 msgstr "Beställningtyp"
@@ -529,6 +550,24 @@ msgstr "Beställning"
 
 msgid "Orders"
 msgstr "Beställningar"
+
+msgid "Renewal failed"
+msgstr "Förnyelsen misslyckades"
+
+msgid "User cancelled"
+msgstr "Användaren har avbrutits"
+
+msgid "Talpa subscription id"
+msgstr "Talpa återkommande laddning ID"
+
+msgid "Cancel reason"
+msgstr "Avbryt anledning"
+
+msgid "Subscription"
+msgstr "Avtal"
+
+msgid "Subscriptions"
+msgstr "Avtalet"
 
 msgid "Talpa order item id"
 msgstr "Talpa beställning id"
@@ -611,8 +650,20 @@ msgstr "Månad (st)"
 msgid "Description"
 msgstr "Beskrivning"
 
+msgid "Address apartment"
+msgstr "Adress lägenhet"
+
+msgid "Address apartment (sv)"
+msgstr "Adress lägenhet (sv)"
+
 msgid "Next address"
 msgstr "Nästa adress"
+
+msgid "Next address apartment"
+msgstr "Nästa adress lägenhet"
+
+msgid "Next address apartment (sv)"
+msgstr "Nästa adress lägenhet (sv)"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
@@ -649,6 +700,16 @@ msgstr "Tillstånd #%(permit_id)s avslutat"
 msgid "Refund #%(refund_id)s created"
 msgstr "Återbetalning #%(refund_id)s skapad"
 
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
+msgstr ""
+"Tillfälligt fordon #%(temp_vehicle_reg_number)s kopplat till ditt tillstånd"
+
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
+msgstr ""
+"Tillfälligt fordon #%(temp_vehicle_reg_number)s togs bort från tillståndet"
+
 msgid "Description sv"
 msgstr "Beskrivning (sv)"
 
@@ -660,12 +721,6 @@ msgstr "Parkeringzon"
 
 msgid "Resident"
 msgstr "Bosatt"
-
-msgid "Year"
-msgstr "År"
-
-msgid "Prices"
-msgstr "Priserna"
 
 msgid "Monthly"
 msgstr "Månatlig"
@@ -685,9 +740,6 @@ msgstr "zon"
 msgid "Unit"
 msgstr "Enhet"
 
-msgid "Low emission discount"
-msgstr "Rabatt för lågemission fordon"
-
 msgid "Products"
 msgstr "Produkter"
 
@@ -696,6 +748,9 @@ msgstr "Öppna"
 
 msgid "Request for approval"
 msgstr "Acceptabel"
+
+msgid "Permits"
+msgstr "Parkeringstillstånder"
 
 msgid "Accepted at"
 msgstr "Accepterad"
@@ -835,9 +890,6 @@ msgstr "Sista besiktas dag"
 msgid "Update from traficom on"
 msgstr "Uppdated från Traficom"
 
-msgid "Vehicles"
-msgstr "Fordonet"
-
 msgid "Not a valid customer address"
 msgstr "Inte en giltig kundadress"
 
@@ -846,9 +898,6 @@ msgstr "Adressen hittades inte"
 
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
-
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Kunden har inte ett giltigt körkort för detta fordon"
 
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
@@ -859,8 +908,8 @@ msgstr "Nytt parkeringstillstånd har skapats åt dig"
 msgid "Your parking permit information has been updated"
 msgstr "Parkeringtillståndet informationen har uppdaterats"
 
-msgid "Your order has ended"
-msgstr "Er tillståndet har slutat"
+msgid "Your order will end"
+msgstr "Ditt parkeringstillstånd kommer att avslutas"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tillfälligt fordon kopplat till ditt tillstånd"
@@ -894,33 +943,49 @@ msgstr ""
 "Ej stödd fordonsklass %(vehicle_class)s för registreringsskylt "
 "%(registration_number)s"
 
+#, python-format
+msgid "Vehicle %(registration_number)s is decommissioned"
+msgstr "Fordonet %(registration_number)s är avställd"
+
 msgid ""
-"Could not find any driving license information for given customer from "
-"Traficom"
+"According to the Digital and Population Data Services Agency, you do not "
+"live in the Resident parking area. If you have just moved to a Resident "
+"parking area, contact Digital and Population Data Services Agency."
 msgstr ""
-"Kunde inte hitta någon körkortsinformation för given kund från Traficom"
+"Enligt Myndigheten för digitalisering och befolkningsdata bor du inte i "
+"boendeparkering zone. Om du precis har flyttat till ett boendeparkering "
+"zone, kontakta Myndigheten för digitalisering och befolkningsdata."
 
 msgid "Failed to fetch data from traficom"
 msgstr "Datahämtning från Traficomilta misslyckades"
 
-msgid "Duration of parking permit"
-msgstr "Pysäköintitunnuksen kesto"
+msgid "pcm"
+msgstr "pm"
+
+msgid "Parking permit type"
+msgstr "Typ av tillstånd"
 
 #, python-format
-msgid "Fixed period %(month)d kk"
+msgid "Fixed period %(month)d months"
 msgstr "Temporär %(month)d månad"
 
+msgid "Open ended 1 month"
+msgstr "Löpande debitering 1 månad"
+
 msgid "Parking permit start date*"
-msgstr "Tillståndet stardag*"
+msgstr "Tillståndet börjar gälla*"
 
 msgid ""
-"* The permit is valid from the selected start date once the payment has been "
-"accepted"
+"* Parking permit is valid from the start date of your choice, "
+"once the payment has been accepted"
 msgstr ""
-"* Tillståndet gäller från valt startdatum när betalningen har accepterats."
+"* Parkeringpermit är i kraft från den valda startdatum, när betalningen är godkännt"
 
 msgid "Parking permit expiration date"
-msgstr "Tillståndet utgångsdatum"
+msgstr "Tillståndet upphör att gälla"
+
+msgid "Parking permit period expiration date"
+msgstr "Tillståndet period upphör att gälla"
 
 msgid "Failed to create the order"
 msgstr "Misslyckades med att skapa beställningen"

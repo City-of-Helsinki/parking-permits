@@ -1,12 +1,14 @@
+import logging
+import re
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
+from django.db.models.functions import Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from encrypted_fields import fields
 from helsinki_gdpr.models import SerializableMixin
 
 from ..services.traficom import Traficom
@@ -14,6 +16,8 @@ from .common import SourceSystem
 from .driving_licence import DrivingLicence
 from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitStatus
+
+logger = logging.getLogger("db")
 
 
 class Languages(models.TextChoices):
@@ -36,11 +40,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     )
     first_name = models.CharField(_("First name"), max_length=32, blank=True)
     last_name = models.CharField(_("Last name"), max_length=32, blank=True)
-    _national_id_number = fields.EncryptedCharField(
-        _("National identification number"), max_length=50, blank=True
-    )
-    national_id_number = fields.SearchField(
-        _("National identification number"), encrypted_field_name="_national_id_number"
+    national_id_number = models.CharField(
+        _("National identification number"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
     )
     primary_address = models.ForeignKey(
         "Address",
@@ -50,6 +55,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         null=True,
         blank=True,
     )
+    primary_address_apartment = models.CharField(
+        _("Primary address apartment"), max_length=32, blank=True, null=True
+    )
+    primary_address_apartment_sv = models.CharField(
+        _("Primary address apartment (sv)"), max_length=32, blank=True, null=True
+    )
     other_address = models.ForeignKey(
         "Address",
         verbose_name=_("Other address"),
@@ -57,6 +68,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         related_name="customers_other_address",
         blank=True,
         null=True,
+    )
+    other_address_apartment = models.CharField(
+        _("Other address apartment"), max_length=32, blank=True, null=True
+    )
+    other_address_apartment_sv = models.CharField(
+        _("Other address apartment (sv)"), max_length=32, blank=True, null=True
     )
     email = models.CharField(_("Email"), max_length=128, blank=True)
     phone_number = models.CharField(
@@ -100,6 +117,14 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         return "%s" % self.national_id_number
 
     @property
+    def full_name(self):
+        return "%s %s" % (self.first_name, self.last_name)
+
+    @full_name.setter
+    def full_name(self, value):
+        self._full_name = value
+
+    @property
     def age(self):
         ssn = self.national_id_number
         key_centuries = {"+": "18", "-": "19", "A": "20"}
@@ -116,7 +141,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     def is_user_of_vehicle(self, vehicle):
         if not settings.TRAFICOM_CHECK:
             return True
-        users_nin = [user._national_id_number for user in vehicle.users.all()]
+        users_nin = [user.national_id_number for user in vehicle.users.all()]
         return self.national_id_number in users_nin
 
     def fetch_driving_licence_detail(self):
@@ -139,6 +164,46 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         return any(
             vehicle.vehicle_class in d_class.vehicle_classes
             for d_class in self.driving_licence.driving_classes.all()
+        )
+
+    @property
+    def full_primary_address(self):
+        return (
+            f"{self.primary_address.street_name} {self.primary_address.street_number} "
+            f"{self.primary_address_apartment}, "
+            f"{self.primary_address.postal_code} {self.primary_address.city}"
+            if self.primary_address
+            else ""
+        )
+
+    @property
+    def full_primary_address_sv(self):
+        return (
+            f"{self.primary_address.street_name_sv} {self.primary_address.street_number} "
+            f"{self.primary_address_apartment_sv}, "
+            f"{self.primary_address.postal_code} {self.primary_address.city_sv}"
+            if self.primary_address
+            else ""
+        )
+
+    @property
+    def full_other_address(self):
+        return (
+            f"{self.other_address.street_name} {self.other_address.street_number} "
+            f"{self.other_address_apartment}, "
+            f"{self.other_address.postal_code} {self.other_address.city}"
+            if self.other_address
+            else ""
+        )
+
+    @property
+    def full_other_address_sv(self):
+        return (
+            f"{self.other_address.street_name_sv} {self.other_address.street_number} "
+            f"{self.other_address_apartment_sv}, "
+            f"{self.other_address.postal_code} {self.other_address.city_sv}"
+            if self.other_address
+            else ""
         )
 
     @property
@@ -190,3 +255,19 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     @property
     def active_permits(self):
         return self.permits.active()
+
+
+def generate_ssn():
+    customer_qs = (
+        Customer.objects.annotate(ssn_len=Length("national_id_number"))
+        .filter(national_id_number__istartswith="XX-", ssn_len__gte=9)
+        .order_by("-national_id_number")
+    )
+    if customer_qs.exists():
+        for customer in customer_qs:
+            latest_generated_ssn = customer.national_id_number
+            match = re.search(r"\d+", latest_generated_ssn)
+            if match:
+                latest_generated_ssn_number = int(match.group()) + 1
+                return "XX-%06d" % (latest_generated_ssn_number,)
+    return "XX-000001"

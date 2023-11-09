@@ -22,6 +22,11 @@ urlpatterns = [
         name="talpa-availability",
     ),
     path(
+        "api/talpa/resolve-product/",
+        views.TalpaResolveProduct.as_view(),
+        name="talpa-product",
+    ),
+    path(
         "api/talpa/resolve-price/",
         views.TalpaResolvePrice.as_view(),
         name="talpa-price",
@@ -32,9 +37,19 @@ urlpatterns = [
         name="talpa-right-of-purchase",
     ),
     path(
+        "api/talpa/payment/",
+        views.PaymentView.as_view(),
+        name="payment-notify",
+    ),
+    path(
         "api/talpa/order/",
         views.OrderView.as_view(),
         name="order-notify",
+    ),
+    path(
+        "api/talpa/subscription/",
+        views.SubscriptionView.as_view(),
+        name="subscription-notify",
     ),
     path(
         "gdpr-api/v1/profiles/<str:id>",

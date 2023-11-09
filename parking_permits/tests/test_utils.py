@@ -1,4 +1,5 @@
-from datetime import date
+import zoneinfo
+from datetime import date, datetime
 
 import pytest
 from django.test import TestCase
@@ -7,12 +8,20 @@ from parking_permits.models import Vehicle
 from parking_permits.tests.factories.vehicle import VehicleFactory
 from parking_permits.utils import (
     ModelDiffer,
+    date_time_to_helsinki,
     diff_months_ceil,
     diff_months_floor,
     find_next_date,
     flatten_dict,
     get_model_diff,
 )
+
+
+class DateTimeToHelsinkiTestCase(TestCase):
+    def test_date_time_to_helsinki(self):
+        dt = datetime(2023, 10, 25, 10, 30, tzinfo=zoneinfo.ZoneInfo("UTC"))
+        hel_tz = date_time_to_helsinki(dt)
+        self.assertEqual(hel_tz, "2023-10-25T13:30:00")
 
 
 class DiffMonthsFloorTestCase(TestCase):

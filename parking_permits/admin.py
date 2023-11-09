@@ -12,9 +12,9 @@ from parking_permits.models import (
     OrderItem,
     ParkingPermit,
     ParkingZone,
-    Price,
     Product,
     Refund,
+    Subscription,
     TemporaryVehicle,
     Vehicle,
 )
@@ -33,6 +33,11 @@ class AddressAdmin(admin.OSMGeoAdmin):
         "city",
         "city_sv",
     )
+    ordering = (
+        "street_name",
+        "street_number",
+        "city",
+    )
 
 
 @admin.register(Announcement)
@@ -45,6 +50,7 @@ class AnnouncementAdmin(admin.ModelAdmin):
         "created_at",
         "created_by",
     )
+    ordering = ("-created_at",)
 
 
 @admin.register(Company)
@@ -57,11 +63,19 @@ class CompanyAdmin(admin.ModelAdmin):
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     search_fields = ("first_name", "last_name")
-    list_display = ("__str__", "id", "first_name", "last_name", "email")
-    exclude = ("_national_id_number",)
-
-    def has_add_permission(self, request):
-        return False
+    list_display = (
+        "__str__",
+        "id",
+        "first_name",
+        "last_name",
+        "email",
+        "full_primary_address",
+        "full_other_address",
+    )
+    ordering = (
+        "first_name",
+        "last_name",
+    )
 
 
 @admin.register(DrivingClass)
@@ -94,6 +108,7 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
         "start_date",
         "end_date",
     )
+    ordering = ("start_date",)
 
 
 @admin.register(ParkingPermit)
@@ -104,24 +119,24 @@ class ParkingPermitAdmin(admin.ModelAdmin):
         "customer",
         "vehicle",
         "parking_zone",
+        "full_address",
+        "full_address_sv",
         "status",
         "start_time",
         "end_time",
         "contract_type",
     )
     list_select_related = ("customer", "vehicle", "parking_zone")
+    ordering = (
+        "customer__first_name",
+        "customer__last_name",
+    )
 
 
 @admin.register(ParkingZone)
 class ParkingZoneAdmin(admin.OSMGeoAdmin):
     list_display = ("id", "name", "description", "description_sv")
     ordering = ("name",)
-
-
-@admin.register(Price)
-class PriceAdmin(admin.ModelAdmin):
-    list_display = ("id", "zone", "price", "year", "type")
-    list_select_related = ("zone",)
 
 
 @admin.register(Vehicle)
@@ -133,6 +148,7 @@ class VehicleAdmin(admin.ModelAdmin):
         "manufacturer",
         "model",
     )
+    ordering = ("registration_number",)
 
 
 @admin.register(Refund)
@@ -147,6 +163,14 @@ class RefundAdmin(admin.ModelAdmin):
         "accepted_at",
     )
     list_select_related = ("order",)
+    ordering = ("-created_at",)
+    raw_id_fields = (
+        "accepted_by",
+        "created_by",
+        "modified_by",
+        "order",
+        "permits",
+    )
 
 
 @admin.register(Product)
@@ -157,10 +181,15 @@ class ProductAdmin(admin.ModelAdmin):
         "start_date",
         "end_date",
         "unit_price",
-        "vat_percentage",
+        "low_emission_discount_percentage",
+        "talpa_product_id",
     )
     list_select_related = ("zone",)
     readonly_fields = ("talpa_product_id",)
+    ordering = (
+        "zone__name",
+        "start_date",
+    )
 
 
 @admin.register(Order)
@@ -170,23 +199,57 @@ class OrderAdmin(admin.ModelAdmin):
         "id",
         "customer",
         "status",
+        "total_payment_price",
+        "address_text",
+        "parking_zone_name",
+        "vehicles",
     )
     list_select_related = ("customer",)
-    readonly_fields = ("talpa_order_id",)
+    readonly_fields = (
+        "talpa_order_id",
+        "total_payment_price",
+    )
+    ordering = ("-created_at",)
 
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = (
         "order",
+        "subscription",
         "product",
         "permit",
         "unit_price",
-        "vat_percentage",
+        "payment_unit_price",
         "quantity",
     )
-    list_select_related = ("order", "product", "permit")
+    list_select_related = ("order", "subscription", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
+    ordering = ("-pk",)
+
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+    list_filter = ("status",)
+    list_display = (
+        "id",
+        "talpa_subscription_id",
+        "get_talpa_order_item_id",
+        "status",
+        "cancel_reason",
+        "created_by",
+        "created_at",
+    )
+    readonly_fields = (
+        "talpa_subscription_id",
+        "get_talpa_order_item_id",
+    )
+    ordering = ("-created_at",)
+
+    @admin.display(description="Talpa order item id")
+    def get_talpa_order_item_id(self, obj):
+        if obj.order_items.exists():
+            return obj.order_items.first().talpa_order_item_id
 
 
 @admin.register(TemporaryVehicle)
@@ -197,8 +260,14 @@ class TemporaryVehicleAdmin(admin.ModelAdmin):
         "end_time",
         "is_active",
     )
+    ordering = ("vehicle",)
 
 
 @admin.register(VehicleUser)
 class VehicleUserAdmin(admin.ModelAdmin):
-    list_display = ("national_id_number",)
+    list_display = ("national_id_number", "get_vehicles")
+    ordering = ("national_id_number",)
+
+    @admin.display(description="Vehicles")
+    def get_vehicles(self, obj):
+        return [vehicle.registration_number for vehicle in obj.vehicles.all()]

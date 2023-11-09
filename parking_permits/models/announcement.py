@@ -1,9 +1,7 @@
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.mixins import TimestampedModelMixin
-
-from .mixins import UserStampedModelMixin
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
 

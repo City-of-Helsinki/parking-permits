@@ -1,8 +1,6 @@
-import arrow
 from django.contrib.gis.db import models
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
-from encrypted_fields import fields
 
 from .mixins import TimestampedModelMixin
 
@@ -108,9 +106,12 @@ class LowEmissionCriteria(TimestampedModelMixin):
 
 
 class VehicleUser(models.Model):
-    _national_id_number = fields.EncryptedCharField(max_length=50, blank=True)
-    national_id_number = fields.SearchField(
-        _("National identification number"), encrypted_field_name="_national_id_number"
+    national_id_number = models.CharField(
+        _("National identification number"),
+        max_length=50,
+        null=True,
+        blank=True,
+        unique=True,
     )
 
     class Meta:
@@ -155,7 +156,9 @@ class Vehicle(TimestampedModelMixin):
     updated_from_traficom_on = models.DateField(
         _("Update from traficom on"), default=tz.now
     )
-    users = models.ManyToManyField(VehicleUser)
+    users = models.ManyToManyField(
+        VehicleUser, verbose_name=_("Vehicle users"), related_name="vehicles"
+    )
 
     class Meta:
         verbose_name = _("Vehicle")
@@ -164,12 +167,6 @@ class Vehicle(TimestampedModelMixin):
     def save(self, *args, **kwargs):
         self._is_low_emission = self.is_low_emission
         super(Vehicle, self).save(*args, **kwargs)
-
-    def is_due_for_inspection(self):
-        return (
-            self.last_inspection_date is not None
-            and arrow.utcnow().date() > self.last_inspection_date
-        )
 
     @property
     def is_low_emission(self):
@@ -180,9 +177,15 @@ class Vehicle(TimestampedModelMixin):
             self.emission,
         )
 
+    @property
+    def description(self):
+        return f'{_("Vehicle")}: {str(self)}'
+
     def __str__(self):
-        return "%s (%s, %s)" % (
-            self.registration_number,
-            self.manufacturer,
-            self.model,
-        )
+        vehicle_str = "%s" % self.registration_number or ""
+        if self.manufacturer:
+            vehicle_str += " (%s" % self.manufacturer
+            if self.model:
+                vehicle_str += ", %s" % self.model
+            vehicle_str += ")"
+        return vehicle_str

@@ -13,6 +13,7 @@ type ProductNode {
   vatPercentage: Float!
   zone: String!
   lowEmissionDiscount: Float!
+  lowEmissionDiscountPercentage: Float!
   secondaryVehicleIncreaseRate: Float!
   modifiedAt: String
   modifiedBy: String
@@ -40,6 +41,7 @@ type AddressNode {
 type CustomerActivePermit {
   id: ID!
   primaryVehicle: Boolean!
+  monthCount: Int
 }
 
 type CustomerNode {
@@ -49,7 +51,9 @@ type CustomerNode {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressNode
+  primaryAddressApartment: String
   otherAddress: AddressNode
+  otherAddressApartment: String
   zone: String
   email: String
   phoneNumber: String
@@ -147,6 +151,11 @@ type RefundNode {
   order: OrderNode
 }
 
+type OrderItemNode {
+  id: ID!
+  product: ProductNode!
+}
+
 type OrderNode {
   id: ID!
   totalPrice: Float!
@@ -154,7 +163,11 @@ type OrderNode {
   customer: CustomerNode!
   paidTime: String
   paymentType: String
+  addressText: String
+  parkingZoneName: String
+  vehicles: [String]
   orderPermits: [PermitNode]
+  orderItemsContent: [OrderItemNode]
 }
 
 type PageInfo {
@@ -263,6 +276,7 @@ type TemporaryVehicleNode {
 type PermitDetailNode {
   id: ID!
   address: AddressNode
+  addressApartment: String,
   customer: CustomerNode!
   vehicle: VehicleNode
   activeTemporaryVehicle: TemporaryVehicleNode
@@ -439,7 +453,9 @@ input CustomerInput {
   lastName: String
   nationalIdNumber: String
   primaryAddress: AddressInput
+  primaryAddressApartment: String
   otherAddress: AddressInput
+  otherAddressApartment: String
   zone: String
   email: String
   phoneNumber: String
@@ -460,7 +476,7 @@ input VehicleInput {
   consentLowEmissionAccepted: Boolean!
   vehicleClass: String!
   euroClass: Int!
-  emission: Int!
+  emission: Int
   emissionType: String!
   powerType: PowerTypeInput!
 }
@@ -475,6 +491,7 @@ input ResidentPermitInput {
   monthCount: Int
   description: String
   address: AddressInput
+  addressApartment: String
   zone: String
 }
 
@@ -486,7 +503,7 @@ input ProductInput {
   startDate: String!
   endDate: String!
   vatPercentage: Float!
-  lowEmissionDiscount: Float!
+  lowEmissionDiscountPercentage: Float!
 }
 
 input RefundInput {

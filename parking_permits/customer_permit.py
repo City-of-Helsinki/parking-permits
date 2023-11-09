@@ -7,11 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from .constants import (
-    LOW_EMISSION_DISCOUNT,
-    SECONDARY_VEHICLE_PRICE_INCREASE,
-    EventFields,
-)
+from .constants import SECONDARY_VEHICLE_PRICE_INCREASE, EventFields
 from .exceptions import (
     DuplicatePermit,
     InvalidContractType,
@@ -29,10 +25,16 @@ from .models import (
     OrderItem,
     ParkingPermit,
     Refund,
+    Subscription,
     TemporaryVehicle,
     Vehicle,
 )
-from .models.order import OrderPaymentType, OrderStatus, OrderType
+from .models.order import (
+    OrderPaymentType,
+    OrderStatus,
+    OrderType,
+    SubscriptionCancelReason,
+)
 from .models.parking_permit import (
     ContractType,
     ParkingPermitEventFactory,
@@ -162,6 +164,24 @@ class CustomerPermit:
                 if product.quantity:
                     products.append(product)
             permit.products = products
+
+            # automatically change permit status to draft if payment is not completed in configured time
+            # (default 20 minutes)
+            payment_wait_time = (
+                settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
+                + settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
+            )
+            if (
+                permit.status == PAYMENT_IN_PROGRESS
+                and permit.latest_order
+                and tz.localtime(
+                    permit.latest_order.talpa_last_valid_purchase_time
+                    + tz.timedelta(minutes=payment_wait_time)
+                )
+                < tz.now()
+            ):
+                permit.status = DRAFT
+                permit.save()
             permits.append(permit)
         return permits
 
@@ -179,8 +199,7 @@ class CustomerPermit:
                 primary_permit = self.customer_permit_query.get(primary_vehicle=True)
                 contract_type = primary_permit.contract_type
                 primary_vehicle = not primary_permit.primary_vehicle
-                if contract_type == FIXED_PERIOD:
-                    end_time = primary_permit.end_time
+                end_time = primary_permit.end_time
 
             vehicle = self.customer.fetch_vehicle_detail(registration)
             is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
@@ -202,13 +221,22 @@ class CustomerPermit:
                     _("Customer does not have a valid driving licence")
                 )
 
+            start_time = tz.now()
+            if not end_time:
+                end_time = get_end_time(start_time, 1)
+
+            address_apartment, address_apartment_sv = self._get_address_apartments(
+                address
+            )
             permit = ParkingPermit.objects.create(
                 customer=self.customer,
                 address=address,
+                address_apartment=address_apartment,
+                address_apartment_sv=address_apartment_sv,
                 parking_zone=address.zone,
                 primary_vehicle=primary_vehicle,
                 contract_type=contract_type,
-                start_time=tz.now(),
+                start_time=start_time,
                 end_time=end_time,
                 vehicle=Vehicle.objects.get(registration_number=registration),
             )
@@ -235,8 +263,6 @@ class CustomerPermit:
         keys = data.keys()
         fields_to_update = {}
 
-        # TODO: this is a remporary solution for now. It should be removed and the field
-        #  needs to be updated when a notification is received from talpa
         if "order_id" in keys:
             fields_to_update.update(
                 {"order_id": data["order_id"], "status": PAYMENT_IN_PROGRESS}
@@ -272,6 +298,7 @@ class CustomerPermit:
             month_count = data.get("month_count", 1)
             primary, secondary = self._get_primary_and_secondary_permit()
             end_time = get_end_time(primary.start_time, month_count)
+
             if not contract_type:
                 raise InvalidContractType(_("Contract type is required"))
 
@@ -324,7 +351,16 @@ class CustomerPermit:
 
         return self._update_fields_to_all_draft(fields_to_update)
 
-    def end(self, permit_ids, end_type, iban=None, user=None):
+    def end(
+        self,
+        permit_ids,
+        end_type,
+        iban=None,
+        user=None,
+        subscription_cancel_reason=SubscriptionCancelReason.USER_CANCELLED,
+        cancel_from_talpa=True,
+        force_end=False,
+    ):
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
@@ -341,6 +377,7 @@ class CustomerPermit:
                     order_type=OrderType.CREATED,
                     payment_type=OrderPaymentType.ONLINE_PAYMENT,
                     user=user,
+                    create_renew_order_event=False,
                 )
                 total_sum = order.total_price
                 order.order_items.all().delete()
@@ -348,12 +385,13 @@ class CustomerPermit:
                 order = first_permit.latest_order
             if total_sum > 0:
                 refund = Refund.objects.create(
-                    name=str(self.customer),
+                    name=self.customer.full_name,
                     order=order,
                     amount=total_sum,
                     iban=iban,
                     description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
                 )
+                refund.permits.set(permits)
                 send_refund_email(RefundEmailType.CREATED, self.customer, refund)
 
                 for permit in permits:
@@ -362,6 +400,28 @@ class CustomerPermit:
                     )
 
         for permit in permits:
+            if permit.contract_type == ContractType.OPEN_ENDED:
+                subscription = (
+                    Subscription.objects.filter(order_items__permit__pk=permit.pk)
+                    .distinct()
+                    .first()
+                )
+                if subscription:
+                    subscription.cancel(
+                        cancel_reason=subscription_cancel_reason,
+                        cancel_from_talpa=cancel_from_talpa,
+                    )
+            else:
+                # Cancel fixed period permit order when this is the last valid permit in that order
+                latest_order = permit.latest_order
+                if (
+                    latest_order
+                    and not latest_order.order_permits.filter(status=[VALID])
+                    .exclude(pk=permit.pk)
+                    .exists()
+                ):
+                    latest_order.cancel(cancel_from_talpa=cancel_from_talpa)
+
             active_temporary_vehicle = permit.active_temporary_vehicle
             if active_temporary_vehicle:
                 active_temporary_vehicle.is_active = False
@@ -373,7 +433,7 @@ class CustomerPermit:
                     permit,
                 )
 
-            permit.end_permit(end_type)
+            permit.end_permit(end_type, force_end=force_end)
             send_permit_email(
                 PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
             )
@@ -386,6 +446,16 @@ class CustomerPermit:
         OrderItem.objects.filter(permit__in=draft_permits).delete()
         draft_permits.delete()
         return True
+
+    def _get_address_apartments(self, address: Address):
+        customer = self.customer
+        if address == customer.primary_address:
+            return (
+                customer.primary_address_apartment,
+                customer.primary_address_apartment_sv,
+            )
+        else:
+            return customer.other_address_apartment, customer.other_address_apartment_sv
 
     def _update_fields_to_all_draft(self, data):
         permits = self.customer_permit_query.filter(status=DRAFT).all()
@@ -403,9 +473,11 @@ class CustomerPermit:
         permit.save(update_fields=keys)
         permit_diff = permit_differ.stop()
 
-        ParkingPermitEventFactory.make_update_permit_event(
-            permit, created_by=self.customer.user, changes=permit_diff
-        )
+        # Only create an event if the permit is not a draft
+        if permit.status != DRAFT:
+            ParkingPermitEventFactory.make_update_permit_event(
+                permit, created_by=self.customer.user, changes=permit_diff
+            )
 
         return permit
 
@@ -419,7 +491,7 @@ class CustomerPermit:
             unit_price += increase * unit_price
 
         if permit.vehicle.is_low_emission:
-            discount = decimal.Decimal(LOW_EMISSION_DISCOUNT) / 100
+            discount = product.low_emission_discount
             unit_price -= discount * unit_price
 
         product.quantity = quantity
@@ -484,13 +556,12 @@ class CustomerPermit:
         primary.primary_vehicle = secondary.primary_vehicle
 
         update_fields = ["primary_vehicle"]
-        if primary.contract_type == ContractType.FIXED_PERIOD:
-            primary.end_time = get_end_time(primary.start_time, 1)
-            secondary.end_time = get_end_time(primary.start_time, 1)
-            primary.month_count = 1
-            secondary.month_count = 1
-            update_fields.append("end_time")
-            update_fields.append("month_count")
+        primary.end_time = get_end_time(primary.start_time, 1)
+        secondary.end_time = get_end_time(primary.start_time, 1)
+        primary.month_count = 1
+        secondary.month_count = 1
+        update_fields.append("end_time")
+        update_fields.append("month_count")
 
         primary.save(update_fields=update_fields)
         secondary.primary_vehicle = not secondary.primary_vehicle
@@ -501,23 +572,36 @@ class CustomerPermit:
     # but if the start type is FROM then the start time can not be
     # now or in the past also it can not be more than two weeks in future.
     def _get_start_type_and_start_time(self, data):
+        start_time = data.get("start_time", None)
+        is_start_time = bool(start_time)
+
         start_type = data.get("start_type", None)
-        start_time = data.get("start_time", next_day())
 
-        if start_time and not start_type:
-            start_type = FROM
+        if not start_type:
+            start_type = FROM if is_start_time else IMMEDIATELY
 
-        if not data.get("start_time", None) and not start_type:
-            start_type = IMMEDIATELY
+        start_time = start_time or next_day()
+
+        if isinstance(start_time, str):
+            start_time = tz.localtime(parse(start_time))
 
         if start_type == FROM:
-            parsed = tz.localtime(parse(start_time))
             start_time = (
                 two_week_from_now()
-                if parsed.date() > two_week_from_now().date()
-                else parsed
+                if start_time.date() > two_week_from_now().date()
+                else start_time
             )
-        return {"start_type": start_type, "start_time": start_time}
+
+        try:
+            month_count = int(data.get("month_count", 1))
+        except ValueError:
+            month_count = 1
+
+        return {
+            "start_type": start_type,
+            "start_time": start_time,
+            "end_time": get_end_time(start_time, diff_months=month_count),
+        }
 
     def _get_month_count_for_secondary_permit(self, contract_type, count):
         if contract_type == OPEN_ENDED:

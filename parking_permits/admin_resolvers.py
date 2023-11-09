@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import Counter
 from copy import deepcopy
 
@@ -14,7 +15,7 @@ from ariadne import (
 from dateutil.parser import isoparse
 from django.conf import settings
 from django.contrib.gis.geos import Point
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
@@ -33,7 +34,8 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
-from parking_permits.models.vehicle import is_low_emission_vehicle
+from parking_permits.models.customer import generate_ssn
+from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
 from users.models import ParkingPermitGroups
 
 from .constants import EventFields, Origin
@@ -55,6 +57,7 @@ from .exceptions import (
     PermitLimitExceeded,
     SearchError,
     TemporaryVehicleValidationError,
+    TraficomFetchVehicleError,
     UpdatePermitError,
 )
 from .forms import (
@@ -76,7 +79,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .services import kmo
+from .services import kami
 from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
@@ -256,17 +259,13 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
     query_params = data.get("query")
     customer = None
 
-    try:
-        customer = Customer.objects.get(**query_params)
-    except Customer.DoesNotExist:
-        if query_params.get("national_id_number"):
-            # We're searching data from DVV now, so change the event type.
-            audit_msg.event_type = audit.EventType.DVV
-            logger.info("Customer does not exist, searching from DVV...")
-            customer = get_person_info(query_params.get("national_id_number"))
-
-        if not customer:
-            raise ObjectNotFound(_("Person not found"))
+    if national_id_number := query_params.get("national_id_number"):
+        # We're searching data from DVV now, so change the event type.
+        audit_msg.event_type = audit.EventType.DVV
+        logger.info("Searching customer from DVV...")
+        customer = get_person_info(national_id_number)
+    if not customer:
+        raise ObjectNotFound(_("Person not found"))
 
     return customer
 
@@ -300,26 +299,43 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     autotarget=audit.TARGET_RETURN,
 )
 def resolve_vehicle(obj, info, reg_number, national_id_number):
-    vehicle = Traficom().fetch_vehicle_details(reg_number)
+    customer = Customer.objects.get_or_create(national_id_number=national_id_number)[0]
+    customer.fetch_driving_licence_detail()
+    vehicle = customer.fetch_vehicle_detail(reg_number)
     if not settings.TRAFICOM_CHECK:
         return vehicle
-    users_nin = [user._national_id_number for user in vehicle.users.all()]
-    if vehicle and national_id_number in users_nin:
-        return vehicle
-    else:
-        raise ObjectNotFound(_("Vehicle not found for the customer"))
+    is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
+    if not is_user_of_vehicle:
+        raise TraficomFetchVehicleError(
+            _("Customer is not an owner or holder of a vehicle %(registration)s")
+            % {
+                "registration": reg_number,
+            }
+        )
+    has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
+    if not has_valid_driving_licence:
+        raise TraficomFetchVehicleError(
+            _("Customer does not have a valid driving licence for this vehicle")
+        )
+    return vehicle
 
 
 def update_or_create_address(address_info):
     if not address_info:
         return None
-    location = Point(*address_info["location"], srid=settings.SRID)
     address_obj = Address.objects.update_or_create(
-        street_name=address_info["street_name"],
-        street_number=address_info["street_number"],
-        city=address_info["city"].title() if address_info["city"] else "",
         postal_code=address_info["postal_code"],
-        location=location,
+        street_name__iexact=address_info["street_name"],
+        street_number__iexact=address_info["street_number"],
+        defaults={
+            "city": address_info.get("city", "") or "",
+            "city_sv": address_info.get("city_sv", "") or "",
+            "postal_code": address_info["postal_code"],
+            "street_name": address_info["street_name"],
+            "street_name_sv": address_info.get("street_name_sv", "") or "",
+            "street_number": address_info["street_number"],
+            "location": Point(*address_info["location"], srid=settings.SRID),
+        },
     )
     return address_obj[0]
 
@@ -353,9 +369,21 @@ def update_or_create_customer(customer_info):
 
     if primary_address:
         customer_data["primary_address"] = update_or_create_address(primary_address)
+        customer_data["primary_address_apartment"] = customer_info.get(
+            "primary_address_apartment"
+        )
+        customer_data["primary_address_apartment_sv"] = customer_info.get(
+            "primary_address_apartment"
+        )
 
     if other_address:
         customer_data["other_address"] = update_or_create_address(other_address)
+        customer_data["other_address_apartment"] = customer_info.get(
+            "other_address_apartment"
+        )
+        customer_data["other_address_apartment_sv"] = customer_info.get(
+            "other_address_apartment"
+        )
 
     return Customer.objects.update_or_create(
         national_id_number=customer_info["national_id_number"], defaults=customer_data
@@ -370,20 +398,28 @@ def update_or_create_vehicle(vehicle_info):
     except VehiclePowerType.DoesNotExist:
         raise ObjectNotFound(_("Vehicle power type not found"))
 
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
+
+    emission = vehicle_info.get("emission") or 0
+
     vehicle_data = {
-        "registration_number": vehicle_info["registration_number"],
+        "registration_number": registration_number,
         "manufacturer": vehicle_info["manufacturer"],
         "model": vehicle_info["model"],
         "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
         "serial_number": vehicle_info["serial_number"],
         "vehicle_class": vehicle_info["vehicle_class"],
         "euro_class": vehicle_info["euro_class"],
-        "emission": vehicle_info["emission"],
         "emission_type": vehicle_info["emission_type"],
+        "emission": emission,
         "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(
-        registration_number=vehicle_info["registration_number"], defaults=vehicle_data
+        registration_number=registration_number, defaults=vehicle_data
     )[0]
 
 
@@ -410,10 +446,16 @@ def update_or_create_customer_address(customer_info, permit_address):
         raise AddressError(_("Permit address does not have a valid zone"))
 
 
+def extract_street_number(input):
+    street_number_regex = re.compile(r"\d+")
+    street_number = street_number_regex.search(input)
+    return street_number.group(0) if street_number else None
+
+
 @query.field("addressSearch")
 @convert_kwargs_to_snake_case
 def resolve_address_search(obj, info, search_input):
-    return kmo.search_address(search_text=search_input)
+    return kami.search_address(search_text=search_input)
 
 
 @mutation.field("createResidentPermit")
@@ -432,9 +474,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     security_ban = customer_info.get("address_security_ban", False)
     national_id_number = customer_info["national_id_number"]
     if not national_id_number:
-        raise CreatePermitError(
-            _("Customer national id number is mandatory for the permit")
-        )
+        customer_info["national_id_number"] = generate_ssn()
 
     customer = update_or_create_customer(customer_info)
     active_permits = customer.active_permits
@@ -450,7 +490,11 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         )
 
     vehicle_info = permit["vehicle"]
-    registration_number = vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
     if not registration_number:
         raise CreatePermitError(
             _("Vehicle registration number is mandatory for the permit")
@@ -476,11 +520,29 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
-    parking_zone = ParkingZone.objects.get(name=permit["zone"])
+    if active_permits_count == 1:
+        address_info = permit.get("address", None)
+        if address_info:
+            street_name = address_info["street_name"]
+            street_number = address_info["street_number"]
+            active_permit_address = active_permits[0].address
+            if (
+                street_name != active_permit_address.street_name
+                or extract_street_number(street_number)
+                != extract_street_number(active_permit_address.street_number)
+            ):
+                raise CreatePermitError(
+                    _(
+                        "Cannot create permit. User already has a valid existing permit in other address %(address)s."
+                    )
+                    % {"address": str(active_permit_address)}
+                )
+
     permit_address = update_or_create_address(permit.get("address", None))
     if not security_ban:
         update_or_create_customer_address(customer_info, permit_address=permit_address)
 
+    parking_zone = ParkingZone.objects.get(name=permit["zone"])
     if active_permits_count == 1:
         active_parking_zone = active_permits[0].parking_zone
         if parking_zone != active_parking_zone:
@@ -497,12 +559,14 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         customer=customer,
         vehicle=vehicle,
         parking_zone=parking_zone,
-        status=permit["status"],
+        status=permit.get("status"),
         start_time=start_time,
         month_count=month_count,
         end_time=end_time,
-        description=permit["description"],
+        description=permit.get("description"),
         address=permit_address if not security_ban else None,
+        address_apartment=permit.get("address_apartment"),
+        address_apartment_sv=permit.get("address_apartment"),
         primary_vehicle=primary_vehicle,
     )
 
@@ -514,7 +578,9 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
     # when creating from Admin UI, it's considered the payment is completed
     # and the order status should be confirmed
-    Order.objects.create_for_permits([parking_permit], status=OrderStatus.CONFIRMED)
+    Order.objects.create_for_permits(
+        [parking_permit], status=OrderStatus.CONFIRMED, user=request.user
+    )
     try:
         parking_permit.update_parkkihubi_permit()
     except ParkkihubiPermitError:
@@ -621,9 +687,7 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
     if permit.customer.national_id_number != customer_info["national_id_number"]:
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
     vehicle_info = permit_info["vehicle"]
-    vehicle = Vehicle.objects.get(
-        registration_number=vehicle_info["registration_number"]
-    )
+    vehicle = update_or_create_vehicle(vehicle_info)
     is_low_emission = vehicle.is_low_emission
     parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
     price_change_list.extend(
@@ -665,7 +729,11 @@ def resolve_update_resident_permit(
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
 
     vehicle_info = permit_info["vehicle"]
-    registration_number = vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
+    )
     if not registration_number:
         raise UpdatePermitError(
             _("Vehicle registration number is mandatory for the permit")
@@ -730,12 +798,13 @@ def resolve_update_resident_permit(
         if customer_total_price_change < 0:
             logger.info("Creating refund for current order")
             refund = Refund.objects.create(
-                name=str(customer),
+                name=customer.full_name,
                 order=order,
                 amount=-customer_total_price_change,
                 iban=iban,
                 description=f"Refund for updating permit: {permit.id}",
             )
+            refund.permits.add(permit)
             logger.info(f"Refund for lowered permit price created: {refund}")
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
@@ -765,7 +834,9 @@ def resolve_update_resident_permit(
     with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
         permit.status = permit_info["status"]
         permit.vehicle = vehicle
-        permit.description = permit_info["description"]
+        permit.description = permit_info.get("description")
+        permit.address_apartment = permit_info.get("address_apartment")
+        permit.address_apartment_sv = permit_info.get("address_apartment")
         permit.save()
 
     ParkingPermitEventFactory.make_update_permit_event(
@@ -808,9 +879,12 @@ def calculate_total_price_change(
     new_zone, permit, permit_info, total_price_change_by_order
 ):
     vehicle_info = permit_info["vehicle"]
-    vehicle = Vehicle.objects.get(
-        registration_number=vehicle_info["registration_number"]
+    registration_number = (
+        vehicle_info["registration_number"].upper()
+        if vehicle_info["registration_number"]
+        else None
     )
+    vehicle = Vehicle.objects.get(registration_number=registration_number)
     is_low_emission = vehicle.is_low_emission
     price_change_list = permit.get_price_change_list(new_zone, is_low_emission)
     permit_total_price_change = sum(
@@ -860,12 +934,13 @@ def resolve_end_permit(
         if total_sum > 0:
             description = f"Refund for ending permit #{permit.id}"
             refund = Refund.objects.create(
-                name=str(permit.customer),
+                name=permit.customer.full_name,
                 order=order,
                 amount=total_sum,
                 iban=iban,
                 description=description,
             )
+            refund.permits.add(permit)
             send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
@@ -923,7 +998,9 @@ def resolve_update_product(obj, info, product_id, product):
     _product.start_date = product["start_date"]
     _product.end_date = product["end_date"]
     _product.vat_percentage = product["vat_percentage"]
-    _product.low_emission_discount = product["low_emission_discount"]
+    _product.low_emission_discount_percentage = product[
+        "low_emission_discount_percentage"
+    ]
     _product.modified_by = request.user
     _product.save()
     _product.create_talpa_product()
@@ -955,7 +1032,7 @@ def resolve_create_product(obj, info, product):
         start_date=product["start_date"],
         end_date=product["end_date"],
         vat=product["vat_percentage"] / 100,
-        low_emission_discount=product["low_emission_discount"],
+        low_emission_discount=product["low_emission_discount_percentage"] / 100,
         created_by=request.user,
         modified_by=request.user,
     )
@@ -1105,7 +1182,10 @@ def resolve_update_address(obj, info, address_id, address):
     _address.city = address["city"]
     _address.city_sv = address["city_sv"]
     _address.location = location
-    _address.save()
+    try:
+        _address.save()
+    except IntegrityError:
+        raise AddressError(_("This address is already in use"))
     return {"success": True}
 
 
@@ -1125,15 +1205,18 @@ def resolve_delete_address(obj, info, address_id):
 @transaction.atomic
 def resolve_create_address(obj, info, address):
     location = Point(*address["location"], srid=settings.SRID)
-    Address.objects.create(
-        street_name=address["street_name"],
-        street_name_sv=address["street_name_sv"],
-        street_number=address["street_number"],
-        postal_code=address["postal_code"],
-        city=address["city"],
-        city_sv=address["city_sv"],
-        location=location,
-    )
+    try:
+        Address.objects.create(
+            street_name=address["street_name"],
+            street_name_sv=address["street_name_sv"],
+            street_number=address["street_number"],
+            postal_code=address["postal_code"],
+            city=address["city"],
+            city_sv=address["city_sv"],
+            location=location,
+        )
+    except IntegrityError:
+        raise AddressError(_("This address is already in use"))
     return {"success": True}
 
 
@@ -1225,7 +1308,13 @@ def resolve_announcement(obj, info, announcement_id):
 
 
 def post_create_announcement(announcement: Announcement):
-    customers = Customer.objects.filter(zone__in=announcement.parking_zones)
+    customer_ids = (
+        ParkingPermit.objects.filter(parking_zone__in=announcement.parking_zones)
+        .values_list("customer_id", flat=True)
+        .order_by("customer")
+        .distinct()
+    )
+    customers = Customer.objects.filter(id__in=customer_ids)
     send_announcement_email(customers, announcement)
 
 
@@ -1262,6 +1351,7 @@ def add_temporary_vehicle(
     obj, info, permit_id, registration_number, start_time, end_time
 ):
     request = info.context["request"]
+    registration_number = registration_number.upper()
     has_valid_permit = ParkingPermit.objects.filter(
         vehicle__registration_number=registration_number,
         status__in=[ParkingPermitStatus.VALID, ParkingPermitStatus.PAYMENT_IN_PROGRESS],
@@ -1282,9 +1372,29 @@ def add_temporary_vehicle(
             _("Temporary vehicle start time has to be after permit start time")
         )
 
-    tmp_vehicle = Traficom().fetch_vehicle_details(
-        registration_number=registration_number
-    )
+    try:
+        tmp_vehicle = Traficom().fetch_vehicle_details(
+            registration_number=registration_number
+        )
+    except TraficomFetchVehicleError:
+        power_type, power_type_created = VehiclePowerType.objects.get_or_create(
+            identifier="01",
+            name="Bensin",
+        )
+        vehicle_details = {
+            "registration_number": registration_number,
+            "power_type": power_type,
+        }
+        vehicle_users = []
+        user, user_created = VehicleUser.objects.get_or_create(
+            national_id_number=permit.customer.national_id_number
+        )
+        vehicle_users.append(user)
+        tmp_vehicle, vehicle_created = Vehicle.objects.update_or_create(
+            registration_number=registration_number, defaults=vehicle_details
+        )
+        tmp_vehicle.users.set(vehicle_users)
+
     vehicle = TemporaryVehicle.objects.create(
         vehicle=tmp_vehicle,
         end_time=end_time,

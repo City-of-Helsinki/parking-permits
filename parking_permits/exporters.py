@@ -1,4 +1,5 @@
 import abc
+from datetime import date
 
 from django.conf import settings
 from django.utils import timezone as tz
@@ -6,9 +7,11 @@ from django.utils.translation import gettext_lazy as _
 from fpdf import FPDF
 
 from parking_permits.models import Order, ParkingPermit, Product, Refund
+from parking_permits.models.order import OrderPaymentType
 
 DATETIME_FORMAT = "%-d.%-m.%Y, %H:%M"
 DATE_FORMAT = "%-d.%-m.%Y"
+CURRENT_YEAR = date.today().year
 
 MODEL_MAPPING = {
     "permits": ParkingPermit,
@@ -28,6 +31,14 @@ def _format_datetime(dt, default=""):
     return tz.localtime(dt).strftime(DATETIME_FORMAT) if dt else default
 
 
+def _format_percentage(value, default=""):
+    return "%.2f" % value if value else default
+
+
+def _format_price(value):
+    return "%.2f" % value
+
+
 def _get_permit_row(permit):
     customer = permit.customer
     vehicle = permit.vehicle
@@ -37,42 +48,45 @@ def _get_permit_row(permit):
         name,
         customer.national_id_number,
         vehicle.registration_number,
-        str(customer.primary_address) if customer.primary_address else "-",
-        str(customer.other_address) if customer.other_address else "-",
+        str(permit.full_address)
+        if permit.address and permit.address == customer.primary_address
+        else "-",
+        str(permit.full_address)
+        if permit.address and permit.address == customer.other_address
+        else "-",
         permit.parking_zone.name,
         _format_datetime(permit.start_time, "-"),
         _format_datetime(end_time, "-"),
+        _("Primary permit") if permit.primary_vehicle else _("Secondary permit"),
         permit.get_status_display(),
     ]
 
 
 def _get_order_row(order):
     customer = order.customer
-    permit_ids = order.order_items.values_list("permit")
-    permits = ParkingPermit.objects.filter(id__in=permit_ids)
-    name = f"{customer.last_name}, {customer.first_name}"
-    if len(permits) > 0:
-        reg_numbers = ", ".join(
-            [permit.vehicle.registration_number for permit in permits]
-        )
-        zone = permits[0].parking_zone.name
-        address = str(permits[0].address)
+    permits = order.permits.all()
+    try:
         permit_type = permits[0].get_type_display()
-    else:
-        reg_numbers = "-"
-        zone = "-"
-        address = "-"
-        permit_type = "-"
+        permit_ids = ", ".join([str(permit.pk) for permit in permits])
+    except IndexError:
+        permit_type = permit_ids = "-"
+
+    reg_numbers = ", ".join(order.vehicles) if order.vehicles else "-"
+    name = f"{customer.last_name}, {customer.first_name}"
 
     return [
-        name,
+        permit_ids,
         reg_numbers,
-        zone,
-        address,
+        name,
+        order.parking_zone_name or "-",
+        order.address_text or "-",
         permit_type,
         order.id,
+        _("Online payment")
+        if order.payment_type == OrderPaymentType.ONLINE_PAYMENT
+        else _("Cashier payment"),
         _format_datetime(order.paid_time, "-"),
-        order.total_price,
+        _format_price(order.total_payment_price),
     ]
 
 
@@ -94,7 +108,8 @@ def _get_product_row(product):
         product.get_type_display(),
         product.zone.name,
         product.unit_price,
-        product.vat,
+        _format_percentage(product.low_emission_discount_percentage, "-"),
+        _format_percentage(product.vat_percentage, "-"),
         valid_period,
         _format_datetime(product.modified_at),
         product.modified_by,
@@ -112,31 +127,35 @@ PERMIT_HEADERS = [
     _("Name"),
     _("National identification number"),
     _("Registration number"),
-    _("Permanent address"),
-    _("Temporary address"),
-    _("Parking zone"),
+    _("Primary address"),
+    _("Other address"),
+    _("Area"),
     _("Start time"),
     _("End time"),
+    _("Permit order"),
     _("Status"),
 ]
 
 
 LIMITED_PERMIT_HEADERS = [
     _("Registration number"),
-    _("Parking zone"),
+    _("Area"),
     _("Start time"),
     _("End time"),
     _("Status"),
 ]
 
 ORDER_HEADERS = [
-    _("Name"),
-    _("Registration number"),
-    _("Parking zone"),
+    _("Parking permits"),
+    _("Registration numbers"),
+    _("Customer"),
+    _("Area"),
     _("Address"),
     _("Permit type"),
     _("Order number"),
+    _("Order payment type"),
     _("Paid time"),
+    _("Amount"),
 ]
 
 REFUND_HEADERS = [
@@ -150,8 +169,9 @@ REFUND_HEADERS = [
 PRODUCT_HEADERS = [
     _("Product type"),
     _("Parking zone"),
-    _("Price"),
-    _("VAT"),
+    _("Price") + " (€)",
+    _("Low emission discount") + " (%)",
+    _("VAT") + " (%)",
     _("Validity period"),
     _("Modified at"),
     _("Modified by"),
@@ -171,8 +191,24 @@ class DataExporter:
         self.data_type = data_type
         self.queryset = queryset
 
+    def get_metadata(self):
+        return {
+            "metadata": {
+                "copyright": {
+                    "© " + _("City of Helsinki") + ", ",
+                    _("Personal data - Digital and population data services agency")
+                    + ", ",
+                    _("Vehicle information - Transport register, Traficom")
+                    + " "
+                    + str(CURRENT_YEAR),
+                }
+            }
+        }
+
     def get_headers(self):
-        return HEADERS_MAPPING[self.data_type]
+        headers = HEADERS_MAPPING[self.data_type]
+        headers.append(self.get_metadata())
+        return headers
 
     def get_rows(self):
         row_getter = ROW_GETTER_MAPPING[self.data_type]
@@ -192,8 +228,19 @@ class BasePDF(FPDF, metaclass=abc.ABCMeta):
     def footer(self):
         self.set_y(-25)
         self.set_font("Arial", "", 10)
-        self.cell(0, 5, _("City of Helsinki"), 0, 1)
-        self.cell(0, 5, _("Urban Environment Division"), 0, 1)
+        self.cell(0, 5, "© " + _("City of Helsinki"), 0, 1)
+        self.cell(
+            0, 5, _("Personal data - Digital and population data services agency"), 0, 1
+        )
+        self.cell(
+            0,
+            5,
+            _("Vehicle information - Transport register, Traficom")
+            + " "
+            + str(CURRENT_YEAR),
+            0,
+            1,
+        )
 
     @abc.abstractmethod
     def get_title(self):
@@ -224,7 +271,7 @@ class ParkingPermitPDF(BasePDF):
             if permit.customer.first_name
             else "-"
         )
-        address = str(permit.address) if permit.address else "-"
+        address = str(permit.full_address) if permit.full_address else "-"
         permit_end_time = _get_permit_end_time(permit)
 
         return [

@@ -13,6 +13,7 @@ PARKING_ZONE_DESCRIPTION_SV = {
     "B": "Rödbergen/Eira",
     "C": "Gardesstaden/Ulrikasborg/Brunnsparken",
     "D": "Skatudden",
+    "DC": "Sveaborg",
     "E": "Gloet/Kronohagen",
     "F": "Främre Tölö",
     "H": "Bortre Tölö/Mejlans",

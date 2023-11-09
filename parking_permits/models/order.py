@@ -1,58 +1,136 @@
 import logging
+from urllib.parse import urljoin
 
+import requests
+from dateutil.relativedelta import relativedelta
+from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
-from django.utils import timezone
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
-from parking_permits.mixins import TimestampedModelMixin
-
-from ..exceptions import OrderCreationFailed
-from ..utils import diff_months_ceil
+from ..exceptions import (
+    OrderCancelError,
+    OrderCreationFailed,
+    OrderValidationError,
+    SubscriptionCancelError,
+    SubscriptionValidationError,
+)
+from ..services.mail import RefundEmailType, send_refund_email
+from ..utils import (
+    diff_months_ceil,
+    end_date_to_datetime,
+    get_meta_item,
+    start_date_to_datetime,
+)
 from .customer import Customer
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
-    ContractType,
     ParkingPermit,
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
 from .product import Product
+from .refund import Refund
 
 logger = logging.getLogger("db")
 
-
-class SubscriptionStatus(models.TextChoices):
-    CONFIRMED = "CONFIRMED", _("Confirmed")
-    CANCELLED = "CANCELLED", _("Cancelled")
+DATE_FORMAT = "%d.%m.%Y"
 
 
-class Subscription(SerializableMixin, TimestampedModelMixin):
-    customer = models.ForeignKey(
-        Customer, verbose_name=_("Customer"), on_delete=models.PROTECT
-    )
-    talpa_subscription_id = models.UUIDField(
-        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
-    )
-    status = models.CharField(
-        _("Status"), max_length=20, choices=SubscriptionStatus.choices
-    )
-    start_date = models.DateField(_("Start date"))
-    end_date = models.DateField(_("End date"))
-    period_unit = models.CharField(_("Period unit"), max_length=20)
-    period_frequency = models.IntegerField(_("Period frequency"))
+class OrderValidator:
+    @staticmethod
+    def validate_order(order_id, user_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            urljoin(settings.TALPA_ORDER_EXPERIENCE_API, f"admin/{order_id}"),
+            headers=headers,
+        )
+        if response.ok:
+            order = response.json()
+            if order["user"] != str(user_id):
+                logger.error(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+                raise OrderValidationError(
+                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                )
+            logger.info("Talpa order is valid")
+            return order
+        else:
+            logger.error("Talpa order is not valid")
+            raise OrderValidationError("Talpa order is not valid")
 
-    serialize_fields = (
-        {"name": "customer"},
-        {"name": "status"},
-    )
 
-    class Meta:
-        verbose_name = _("Subscription")
-        verbose_name_plural = _("Subscriptions")
+class SubscriptionValidator:
+    @staticmethod
+    def get_subscription_info(data, subscription_id, order_id, order_item_id):
+        for subscription in data.get("subscriptions"):
+            if subscription.get("subscriptionId") == str(subscription_id):
+                meta = subscription.get("meta")
+                meta_item = get_meta_item(meta, "permitId")
+                if not meta_item:
+                    msg = "No permitId key available in meta list of key-value pairs"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                meta_permit_id = meta_item.get("value")
+                meta_subscription_id = meta_item.get("subscriptionId")
+                meta_order_id = meta_item.get("orderId")
+                meta_order_item_id = meta_item.get("orderItemId")
+                if meta_permit_id is None:
+                    msg = "No permitId key available in meta list of key-value pairs"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_subscription_id is None or meta_subscription_id != str(
+                    subscription_id
+                ):
+                    msg = f"Subscription id does not match with the requested subscription id value {subscription_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_order_id is None or meta_order_id != str(order_id):
+                    msg = f"Order id does not match with the requested order id value: {order_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                if meta_order_item_id is None or meta_order_item_id != str(
+                    order_item_id
+                ):
+                    msg = f"Order item id does not match with the requested order item id value: {order_item_id}"
+                    logger.error(msg)
+                    raise SubscriptionValidationError(msg)
+                logger.info("Talpa subscription is valid")
+                return subscription
+        msg = f"Talpa subscription {subscription_id} not found for order {order_id}"
+        logger.error(msg)
+        raise SubscriptionValidationError(msg)
 
-    def __str__(self):
-        return f"Subscription #{self.id} ({self.status})"
+    @staticmethod
+    def validate_subscription(user_id, subscription_id, order_id, order_item_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "user": user_id,
+            "Content-Type": "application/json",
+        }
+        response = requests.get(
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API,
+                f"subscriptions/get-by-order-id/{order_id}",
+            ),
+            headers=headers,
+        )
+        if response.ok:
+            return SubscriptionValidator.get_subscription_info(
+                response.json(), subscription_id, order_id, order_item_id
+            )
+        else:
+            msg = f"Failed to retrieve order {order_id} subscriptions from Talpa"
+            logger.error(msg)
+            raise SubscriptionValidationError(msg)
 
 
 class OrderPaymentType(models.TextChoices):
@@ -70,6 +148,7 @@ class OrderType(models.TextChoices):
     CREATED = "CREATED", _("Created")
     VEHICLE_CHANGED = "VEHICLE_CHANGED", _("Vehicle changed")
     ADDRESS_CHANGED = "ADDRESS_CHANGED", _("Address changed")
+    SUBSCRIPTION_RENEWED = "SUBSCRIPTION_RENEWED", _("Subscription renewed")
 
 
 class OrderManager(SerializableMixin.SerializableManager):
@@ -87,13 +166,19 @@ class OrderManager(SerializableMixin.SerializableManager):
         self._validate_permits(permits)
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
+        first_permit = permits[0]
         order = Order.objects.create(
-            customer=permits[0].customer,
+            customer=first_permit.customer,
             status=status,
             paid_time=paid_time,
+            address_text=str(first_permit.full_address) if first_permit else None,
+            parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
 
         for permit in permits:
+            order.vehicles.append(permit.vehicle.registration_number)
+            order.save()
+            first_order_item = True
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
                 if quantity > 0:
@@ -102,7 +187,9 @@ class OrderManager(SerializableMixin.SerializableManager):
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
-                        end_date = timezone.localdate(permit.current_period_end_time)
+                        end_date = tz.localdate(
+                            permit.current_period_end_time_with_fixed_months(1)
+                        )
                     OrderItem.objects.create(
                         order=order,
                         product=product,
@@ -111,9 +198,12 @@ class OrderManager(SerializableMixin.SerializableManager):
                         payment_unit_price=unit_price,
                         vat=product.vat,
                         quantity=quantity,
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_time=permit.start_time
+                        if first_order_item
+                        else start_date_to_datetime(start_date),
+                        end_time=end_date_to_datetime(end_date),
                     )
+                    first_order_item = False
             ParkingPermitEventFactory.make_create_order_event(
                 permit, order, created_by=kwargs.get("user", None)
             )
@@ -121,14 +211,17 @@ class OrderManager(SerializableMixin.SerializableManager):
         order.permits.add(*permits)
         return order
 
-    def _validate_customer_permits(self, permits):
+    def _validate_customer_permits(self, permits, order_type):
         date_ranges = []
         for permit in permits:
             if permit.status != ParkingPermitStatus.VALID:
                 raise OrderCreationFailed(
                     "Cannot create renewal order for non-valid permits"
                 )
-            if permit.is_open_ended:
+            if (
+                permit.is_open_ended
+                and order_type not in self.model.OPEN_ENDED_RENEWABLE_ORDER_TYPES
+            ):
                 raise OrderCreationFailed(
                     "Cannot create renewal order for open ended permits"
                 )
@@ -137,11 +230,6 @@ class OrderManager(SerializableMixin.SerializableManager):
             end_date = tz.localdate(permit.end_time)
             date_ranges.append([start_date, end_date])
 
-        if all([start_date >= end_date for start_date, end_date in date_ranges]):
-            raise OrderCreationFailed(
-                "Cannot create renewal order. All permits are ending or ended already."
-            )
-
     @transaction.atomic
     def create_renewal_order(
         self,
@@ -149,28 +237,37 @@ class OrderManager(SerializableMixin.SerializableManager):
         status=OrderStatus.DRAFT,
         order_type=OrderType.CREATED,
         payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        create_renew_order_event=True,
         **kwargs,
     ):
         """
         Create new order for updated permits information that affect
         permit prices, e.g. change address or change vehicle.
         """
-        customer_permits = ParkingPermit.objects.active().filter(
-            contract_type=ContractType.FIXED_PERIOD, customer=customer
+        customer_permits = ParkingPermit.objects.filter(
+            customer=customer, status=ParkingPermitStatus.VALID
         )
-        self._validate_customer_permits(customer_permits)
+        self._validate_customer_permits(customer_permits, order_type)
 
+        try:
+            first_permit = customer_permits[0]
+        except IndexError:
+            raise OrderCreationFailed("No valid permits found for renewal order")
         new_order = Order.objects.create(
             customer=customer,
             status=status,
             type=order_type,
             payment_type=payment_type,
+            address_text=str(first_permit.full_address) if first_permit else None,
+            parking_zone_name=first_permit.parking_zone.name if first_permit else None,
         )
         if order_type == OrderType.CREATED:
             new_order.paid_time = tz.now()
             new_order.save()
 
         for permit in customer_permits:
+            new_order.vehicles.append(permit.vehicle.registration_number)
+            new_order.save()
             start_date = tz.localdate(permit.next_period_start_time)
             end_date = tz.localdate(permit.end_time)
             if start_date >= end_date:
@@ -187,21 +284,21 @@ class OrderManager(SerializableMixin.SerializableManager):
             product_detail = next(product_detail_iter, None)
 
             while order_item_detail and product_detail:
-                product, product_quantity, product_date_range = product_detail
+                product, _, product_date_range = product_detail
                 product_start_date, product_end_date = product_date_range
                 (
                     order_item,
-                    order_item_quantity,
+                    _,
                     order_item_date_range,
                 ) = order_item_detail
                 order_item_start_date, order_item_end_date = order_item_date_range
-
+                product_end_date = product_end_date or order_item_end_date
                 # find the period in which the months have the same payment price
                 period_start_date = max(product_start_date, order_item_start_date)
                 period_end_date = min(product_end_date, order_item_end_date)
                 period_quantity = diff_months_ceil(period_start_date, period_end_date)
 
-                if period_start_date >= period_end_date:
+                if period_quantity and period_start_date >= period_end_date:
                     raise ValueError(
                         "Error on product date ranges or order item date ranges"
                     )
@@ -227,8 +324,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                     payment_unit_price=payment_unit_price,
                     vat=product.vat,
                     quantity=period_quantity,
-                    start_date=period_start_date,
-                    end_date=period_end_date,
+                    start_time=start_date_to_datetime(start_date),
+                    end_time=end_date_to_datetime(end_date),
                 )
 
                 if product_end_date < order_item_end_date:
@@ -242,11 +339,12 @@ class OrderManager(SerializableMixin.SerializableManager):
                     product_detail = next(product_detail_iter, None)
                     order_item_detail = next(order_item_detail_iter, None)
 
-            ParkingPermitEventFactory.make_renew_order_event(
-                permit,
-                new_order,
-                created_by=kwargs.get("user", None),
-            )
+            if create_renew_order_event:
+                ParkingPermitEventFactory.make_renew_order_event(
+                    permit,
+                    new_order,
+                    created_by=kwargs.get("user", None),
+                )
 
         # permits should be added to new order after all
         # calculation and processing are done
@@ -255,19 +353,22 @@ class OrderManager(SerializableMixin.SerializableManager):
         return new_order
 
 
-class Order(SerializableMixin, TimestampedModelMixin):
-    subscription = models.ForeignKey(
-        Subscription,
-        verbose_name=_("Subscription"),
-        null=True,
-        blank=True,
-        on_delete=models.PROTECT,
+class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
+    OPEN_ENDED_RENEWABLE_ORDER_TYPES = (
+        OrderType.ADDRESS_CHANGED,
+        OrderType.VEHICLE_CHANGED,
     )
     talpa_order_id = models.UUIDField(
         _("Talpa order id"), unique=True, editable=False, null=True, blank=True
     )
     talpa_checkout_url = models.URLField(_("Talpa checkout url"), blank=True)
+    talpa_logged_in_checkout_url = models.URLField(
+        _("Talpa logged in checkout url"), blank=True
+    )
     talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
+    talpa_last_valid_purchase_time = models.DateTimeField(
+        _("Talpa last valid purchase time"), blank=True, null=True
+    )
     payment_type = models.CharField(
         _("Payment type"),
         max_length=50,
@@ -289,6 +390,13 @@ class Order(SerializableMixin, TimestampedModelMixin):
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
     permits = models.ManyToManyField(
         ParkingPermit, verbose_name=_("permits"), related_name="orders"
+    )
+    address_text = models.CharField(_("Address"), max_length=64, blank=True, null=True)
+    parking_zone_name = models.CharField(
+        _("Parking zone"), max_length=32, blank=True, null=True
+    )
+    vehicles = ArrayField(
+        models.CharField(max_length=24), verbose_name=_("Vehicles"), default=list
     )
     type = models.CharField(
         _("Order type"),
@@ -320,6 +428,10 @@ class Order(SerializableMixin, TimestampedModelMixin):
         return self.permits.all()
 
     @property
+    def order_items_content(self):
+        return self.order_items.all()
+
+    @property
     def total_price(self):
         return sum([item.total_price for item in self.order_items.all()])
 
@@ -343,6 +455,176 @@ class Order(SerializableMixin, TimestampedModelMixin):
     def total_payment_price_vat(self):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
 
+    def _cancel_talpa_order(self):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "user": str(self.customer.user.uuid),
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API, f"{self.talpa_order_id}/cancel"
+            ),
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info(f"Talpa order cancelling successful: {self.talpa_order_id}")
+            return True
+        else:
+            logger.error("Talpa order cancelling failed")
+            logger.error(
+                "Talpa order cancelling failed."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise OrderCancelError(
+                "Talpa order cancelling failed."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @transaction.atomic
+    def cancel(self, cancel_from_talpa=True):
+        logger.info(f"Cancelling order: {self.talpa_order_id}")
+        try:
+            OrderValidator.validate_order(self.talpa_order_id, self.customer.user.uuid)
+        except OrderValidationError as e:
+            logger.error(f"Order validation failed. Error = {e}")
+            return False
+        # Try to cancel order from Talpa as well
+        if cancel_from_talpa:
+            try:
+                self._cancel_talpa_order()
+            except OrderCancelError:
+                logger.warning(
+                    "Talpa order cancelling failed. Continuing the cancel process.."
+                )
+        self.status = OrderStatus.CANCELLED
+        self.save()
+        return True
+
+
+class SubscriptionStatus(models.TextChoices):
+    CONFIRMED = "CONFIRMED", _("Confirmed")
+    CANCELLED = "CANCELLED", _("Cancelled")
+
+
+class SubscriptionCancelReason(models.TextChoices):
+    RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
+    USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
+
+
+class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
+    talpa_subscription_id = models.UUIDField(
+        _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
+    )
+    status = models.CharField(
+        _("Status"), max_length=20, choices=SubscriptionStatus.choices
+    )
+    cancel_reason = models.CharField(
+        _("Cancel reason"),
+        max_length=20,
+        choices=SubscriptionCancelReason.choices,
+        null=True,
+        blank=True,
+    )
+
+    serialize_fields = ({"name": "status"},)
+
+    class Meta:
+        verbose_name = _("Subscription")
+        verbose_name_plural = _("Subscriptions")
+
+    def __str__(self):
+        return f"Subscription #{self.talpa_subscription_id}"
+
+    def _cancel_talpa_subcription(self, customer_id):
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "user": str(customer_id),
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            urljoin(
+                settings.TALPA_ORDER_EXPERIENCE_API,
+                f"subscription/{self.talpa_subscription_id}/cancel",
+            ),
+            headers=headers,
+        )
+        if response.status_code == 200:
+            logger.info(
+                f"Talpa subscription cancelling successful: {self.talpa_subscription_id}"
+            )
+            return True
+        else:
+            logger.error("Talpa subscription cancelling failed")
+            logger.error(
+                "Talpa subscription cancelling failed."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise SubscriptionCancelError(
+                "Talpa subscription cancelling failed."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @transaction.atomic
+    def cancel(self, cancel_reason, cancel_from_talpa=True):
+        logger.info(f"Cancelling subscription: {self.talpa_subscription_id}")
+
+        order_item = self.order_items.first()
+        order = order_item.order
+        talpa_order_id = order.talpa_order_id
+        permit = order_item.permit
+        customer_id = permit.customer.user.uuid
+
+        try:
+            OrderValidator.validate_order(talpa_order_id, customer_id)
+        except OrderValidationError as e:
+            logger.error(f"Order validation failed. Error = {e}")
+            return False
+
+        self.status = SubscriptionStatus.CANCELLED
+        self.cancel_reason = cancel_reason
+        self.save()
+
+        # Create a refund for a remaining full month period, if it was charged already
+        if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
+            logger.info(f"Creating Refund for permit {str(permit.id)}")
+            refund = Refund.objects.create(
+                name=permit.customer.full_name,
+                order=order,
+                amount=order_item.product.unit_price,
+                description=f"Refund for ending permit {str(permit.id)}",
+            )
+            refund.permits.add(permit)
+            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=permit.customer.user
+            )
+            logger.info(f"Refund for permit {str(permit.id)} created successfully")
+
+        # Try to cancel subscription from Talpa as well
+        if cancel_from_talpa:
+            try:
+                self._cancel_talpa_subcription(customer_id)
+            except SubscriptionCancelError:
+                logger.warning(
+                    "Talpa subscription cancelling failed. Continuing the cancel process.."
+                )
+
+        remaining_valid_order_subscriptions = Subscription.objects.filter(
+            order_items__order__talpa_order_id__exact=talpa_order_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        # Mark the order as cancelled if it has no active subscriptions left
+        if not remaining_valid_order_subscriptions.exists():
+            order.cancel(cancel_from_talpa=cancel_from_talpa)
+
+        logger.info(f"Subscription {self.talpa_subscription_id} cancelled successfully")
+        return True
+
 
 class OrderItem(SerializableMixin, TimestampedModelMixin):
     talpa_order_item_id = models.UUIDField(
@@ -353,6 +635,14 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
         verbose_name=_("Order"),
         related_name="order_items",
         on_delete=models.PROTECT,
+    )
+    subscription = models.ForeignKey(
+        Subscription,
+        verbose_name=_("Subscription"),
+        related_name="order_items",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
     )
     product = models.ForeignKey(
         Product, verbose_name=_("Product"), on_delete=models.PROTECT
@@ -369,8 +659,8 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     quantity = models.IntegerField(_("Quantity"))
-    start_date = models.DateField(_("Start date"), null=True, blank=True)
-    end_date = models.DateField(_("End date"), null=True, blank=True)
+    start_time = models.DateTimeField(_("Start time"), null=True, blank=True)
+    end_time = models.DateTimeField(_("End time"), blank=True, null=True)
 
     serialize_fields = (
         {"name": "product", "accessor": lambda x: str(x)},
@@ -431,3 +721,11 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     @property
     def total_payment_price_vat(self):
         return self.total_payment_price * self.vat
+
+    @property
+    def timeframe(self):
+        if self.start_time and self.end_time:
+            start_time = tz.localtime(self.start_time).strftime(DATE_FORMAT)
+            end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
+            return f"{start_time} - {end_time}"
+        return ""

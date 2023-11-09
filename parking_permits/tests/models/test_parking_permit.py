@@ -3,7 +3,8 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase, override_settings
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext_lazy as _
 from freezegun import freeze_time
 
 from parking_permits.constants import ParkingPermitEndType
@@ -19,7 +20,7 @@ from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory
+from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -451,24 +452,33 @@ class ParkingZoneTestCase(TestCase):
             month_count=12,
         )
         with freeze_time(datetime(2021, 4, 15)):
-            price_change_list = permit.get_price_change_list(self.zone_b, True)
-            self.assertEqual(len(price_change_list), 2)
-            self.assertEqual(price_change_list[0]["product"], "Pysäköintialue B")
-            self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
-            self.assertEqual(price_change_list[0]["new_price"], Decimal("15"))
-            self.assertEqual(price_change_list[0]["price_change"], Decimal("-5"))
-            self.assertEqual(price_change_list[0]["price_change_vat"], Decimal("-1.2"))
-            self.assertEqual(price_change_list[0]["month_count"], 2)
-            self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
-            self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 30))
-            self.assertEqual(price_change_list[1]["product"], "Pysäköintialue B")
-            self.assertEqual(price_change_list[1]["previous_price"], Decimal("30"))
-            self.assertEqual(price_change_list[1]["new_price"], Decimal("20"))
-            self.assertEqual(price_change_list[1]["price_change"], Decimal("-10"))
-            self.assertEqual(price_change_list[1]["price_change_vat"], Decimal("-2.4"))
-            self.assertEqual(price_change_list[1]["month_count"], 6)
-            self.assertEqual(price_change_list[1]["start_date"], date(2021, 7, 1))
-            self.assertEqual(price_change_list[1]["end_date"], date(2021, 12, 31))
+            with translation.override("fi"):
+                price_change_list = permit.get_price_change_list(self.zone_b, True)
+                self.assertEqual(len(price_change_list), 2)
+                self.assertEqual(
+                    price_change_list[0]["product"], f'{_("Parking zone")} B'
+                )
+                self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
+                self.assertEqual(price_change_list[0]["new_price"], Decimal("15"))
+                self.assertEqual(price_change_list[0]["price_change"], Decimal("-5"))
+                self.assertEqual(
+                    price_change_list[0]["price_change_vat"], Decimal("-1.2")
+                )
+                self.assertEqual(price_change_list[0]["month_count"], 2)
+                self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
+                self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 30))
+                self.assertEqual(
+                    price_change_list[1]["product"], f'{_("Parking zone")} B'
+                )
+                self.assertEqual(price_change_list[1]["previous_price"], Decimal("30"))
+                self.assertEqual(price_change_list[1]["new_price"], Decimal("20"))
+                self.assertEqual(price_change_list[1]["price_change"], Decimal("-10"))
+                self.assertEqual(
+                    price_change_list[1]["price_change_vat"], Decimal("-2.4")
+                )
+                self.assertEqual(price_change_list[1]["month_count"], 6)
+                self.assertEqual(price_change_list[1]["start_date"], date(2021, 7, 1))
+                self.assertEqual(price_change_list[1]["end_date"], date(2021, 12, 31))
 
     def test_parking_permit_change_price_list_when_prices_go_up(self):
         zone_a_product_list = [
@@ -510,32 +520,39 @@ class ParkingZoneTestCase(TestCase):
             month_count=12,
         )
         with freeze_time(datetime(CURRENT_YEAR, 4, 15)):
-            price_change_list = permit.get_price_change_list(self.zone_b, False)
-            self.assertEqual(len(price_change_list), 2)
-            self.assertEqual(price_change_list[0]["product"], "Pysäköintialue B")
-            self.assertEqual(price_change_list[0]["previous_price"], Decimal("10"))
-            self.assertEqual(price_change_list[0]["new_price"], Decimal("30"))
-            self.assertEqual(price_change_list[0]["price_change"], Decimal("20"))
-            self.assertEqual(price_change_list[0]["price_change_vat"], Decimal("4.8"))
-            self.assertEqual(price_change_list[0]["month_count"], 2)
-            self.assertEqual(
-                price_change_list[0]["start_date"], date(CURRENT_YEAR, 5, 1)
-            )
-            self.assertEqual(
-                price_change_list[0]["end_date"], date(CURRENT_YEAR, 6, 30)
-            )
-            self.assertEqual(price_change_list[1]["product"], "Pysäköintialue B")
-            self.assertEqual(price_change_list[1]["previous_price"], Decimal("15"))
-            self.assertEqual(price_change_list[1]["new_price"], Decimal("40"))
-            self.assertEqual(price_change_list[1]["price_change"], Decimal("25"))
-            self.assertEqual(price_change_list[1]["price_change_vat"], Decimal("6"))
-            self.assertEqual(price_change_list[1]["month_count"], 6)
-            self.assertEqual(
-                price_change_list[1]["start_date"], date(CURRENT_YEAR, 7, 1)
-            )
-            self.assertEqual(
-                price_change_list[1]["end_date"], date(CURRENT_YEAR, 12, 31)
-            )
+            with translation.override("fi"):
+                price_change_list = permit.get_price_change_list(self.zone_b, False)
+                self.assertEqual(len(price_change_list), 2)
+                self.assertEqual(
+                    price_change_list[0]["product"], f'{_("Parking zone")} B'
+                )
+                self.assertEqual(price_change_list[0]["previous_price"], Decimal("10"))
+                self.assertEqual(price_change_list[0]["new_price"], Decimal("30"))
+                self.assertEqual(price_change_list[0]["price_change"], Decimal("20"))
+                self.assertEqual(
+                    price_change_list[0]["price_change_vat"], Decimal("4.8")
+                )
+                self.assertEqual(price_change_list[0]["month_count"], 2)
+                self.assertEqual(
+                    price_change_list[0]["start_date"], date(CURRENT_YEAR, 5, 1)
+                )
+                self.assertEqual(
+                    price_change_list[0]["end_date"], date(CURRENT_YEAR, 6, 30)
+                )
+                self.assertEqual(
+                    price_change_list[1]["product"], f'{_("Parking zone")} B'
+                )
+                self.assertEqual(price_change_list[1]["previous_price"], Decimal("15"))
+                self.assertEqual(price_change_list[1]["new_price"], Decimal("40"))
+                self.assertEqual(price_change_list[1]["price_change"], Decimal("25"))
+                self.assertEqual(price_change_list[1]["price_change_vat"], Decimal("6"))
+                self.assertEqual(price_change_list[1]["month_count"], 6)
+                self.assertEqual(
+                    price_change_list[1]["start_date"], date(CURRENT_YEAR, 7, 1)
+                )
+                self.assertEqual(
+                    price_change_list[1]["end_date"], date(CURRENT_YEAR, 12, 31)
+                )
 
 
 class TestParkingPermit(TestCase):
@@ -552,6 +569,14 @@ class TestParkingPermit(TestCase):
 
     def test_should_return_correct_product_name(self):
         self.assertIsNotNone(self.permit.parking_zone.name)
+
+    def test_checkout_url_if_latest_order_none(self):
+        self.assertIsNone(self.permit.checkout_url)
+
+    def test_checkout_url_if_latest_order_not_none(self):
+        item = OrderItemFactory(permit=self.permit)
+        self.permit.orders.add(item.order)
+        self.assertEqual(self.permit.checkout_url, item.order.talpa_checkout_url)
 
     @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(201))

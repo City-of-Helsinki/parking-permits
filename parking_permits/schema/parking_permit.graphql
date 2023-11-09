@@ -28,7 +28,11 @@ type CustomerNode {
   email: String
   phoneNumber: String
   primaryAddress: AddressNode
+  primaryAddressApartment: String,
+  primaryAddressApartmentSv: String,
   otherAddress: AddressNode
+  otherAddressApartment: String,
+  otherAddressApartmentSv: String,
 }
 
 type VehicleNode {
@@ -63,7 +67,11 @@ type TemporaryVehicleNode {
 type PermitNode {
   id: ID!
   zone: ID!
+  address: AddressNode
+  addressApartment: String,
+  addressApartmentSv: String,
   talpaOrderId: String
+  checkoutUrl: String
   receiptUrl: String
   subscriptionId: String
   vehicle: VehicleNode!

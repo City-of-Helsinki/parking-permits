@@ -153,6 +153,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         null=True,
         blank=True,
     )
+    address_apartment = models.CharField(
+        _("Address apartment"), max_length=32, blank=True, null=True
+    )
+    address_apartment_sv = models.CharField(
+        _("Address apartment (sv)"), max_length=32, blank=True, null=True
+    )
     next_address = models.ForeignKey(
         "Address",
         verbose_name=_("Next address"),
@@ -160,6 +166,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         related_name="next_permits",
         null=True,
         blank=True,
+    )
+    next_address_apartment = models.CharField(
+        _("Next address apartment"), max_length=32, blank=True, null=True
+    )
+    next_address_apartment_sv = models.CharField(
+        _("Next address apartment (sv)"), max_length=32, blank=True, null=True
     )
 
     serialize_fields = (
@@ -183,6 +195,46 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def __str__(self):
         return str(self.id)
+
+    @property
+    def full_address(self):
+        return (
+            f"{self.address.street_name} {self.address.street_number} "
+            f"{self.address_apartment}, "
+            f"{self.address.postal_code} {self.address.city}"
+            if self.address
+            else ""
+        )
+
+    @property
+    def full_address_sv(self):
+        return (
+            f"{self.address.street_name_sv} {self.address.street_number} "
+            f"{self.address_apartment_sv}, "
+            f"{self.address.postal_code} {self.address.city_sv}"
+            if self.address
+            else ""
+        )
+
+    @property
+    def full_next_address(self):
+        return (
+            f"{self.next_address.street_name} {self.next_address.street_number} "
+            f"{self.next_address_apartment}, "
+            f"{self.next_address.postal_code} {self.next_address.city}"
+            if self.next_address
+            else ""
+        )
+
+    @property
+    def full_next_address_sv(self):
+        return (
+            f"{self.next_address.street_name_sv} {self.next_address.street_number} "
+            f"{self.next_address_apartment_sv}, "
+            f"{self.next_address.postal_code} {self.next_address.city_sv}"
+            if self.next_address
+            else ""
+        )
 
     @property
     def is_secondary_vehicle(self):
@@ -231,6 +283,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def receipt_url(self):
         if self.latest_order and self.latest_order.talpa_receipt_url:
             return self.latest_order.talpa_receipt_url
+        return None
+
+    @property
+    def checkout_url(self):
+        if self.latest_order and self.latest_order.talpa_checkout_url:
+            return self.latest_order.talpa_checkout_url
         return None
 
     @property
@@ -301,12 +359,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_end_time(self):
-        end_time = get_end_time(self.start_time, self.months_used)
-        return max(self.start_time, end_time)
+        return self.current_period_end_time_with_fixed_months(self.months_used)
 
     @property
     def current_period_range(self):
-        return self.current_period_start_time, self.current_period_end_time
+        return self.start_time, self.end_time
 
     @property
     def next_period_start_time(self):
@@ -328,6 +385,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return not any(
             address and address.zone == self.parking_zone for address in addresses
         )
+
+    def current_period_end_time_with_fixed_months(self, months):
+        end_time = get_end_time(self.start_time, months)
+        return max(self.start_time, end_time)
 
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
@@ -442,14 +503,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 )
             return price_change_list
 
-    def end_permit(self, end_type):
+    def end_permit(self, end_type, force_end=False):
         if end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:
             end_time = max(self.start_time, timezone.now())
 
         if (
-            self.primary_vehicle
+            not force_end
+            and self.primary_vehicle
             and self.customer.permits.active_after(end_time)
             .exclude(id=self.id)
             .exists()
@@ -481,13 +543,20 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if not self.is_fixed_period:
             order_items = self.latest_order_items
             return [
-                [item, item.quantity, (item.start_date, item.end_date)]
+                [
+                    item,
+                    item.quantity,
+                    (
+                        timezone.localtime(item.start_time).date(),
+                        timezone.localtime(item.end_time).date(),
+                    ),
+                ]
                 for item in order_items
             ]
 
         order_items = self.latest_order_items.filter(
-            end_date__gte=unused_start_date
-        ).order_by("start_date")
+            end_time__date__gte=unused_start_date
+        ).order_by("start_time")
 
         if len(order_items) == 0:
             return []
@@ -497,18 +566,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # unused_start_date
         first_item = order_items[0]
         first_item_unused_quantity = diff_months_ceil(
-            unused_start_date, first_item.end_date
+            unused_start_date, timezone.localtime(first_item.end_time).date()
         )
         first_item_with_quantity = [
             first_item,
             first_item_unused_quantity,
-            (unused_start_date, first_item.end_date),
+            (unused_start_date, timezone.localtime(first_item.end_time).date()),
         ]
 
         return [
             first_item_with_quantity,
             *[
-                [item, item.quantity, (item.start_date, item.end_date)]
+                [
+                    item,
+                    item.quantity,
+                    (
+                        timezone.localtime(item.start_time).date(),
+                        timezone.localtime(item.end_time).date(),
+                    ),
+                ]
                 for item in order_items[1:]
             ],
         ]

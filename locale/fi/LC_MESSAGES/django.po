@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2022-11-29 09:14+0200\n"
+"POT-Creation-Date: 2023-11-01 18:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -66,8 +66,12 @@ msgstr "Henkilöä ei löytynyt"
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
-msgid "Vehicle not found for the customer"
-msgstr "Asiakkaan ajoneuvoa ei löytynyt"
+#, python-format
+msgid "Customer is not an owner or holder of a vehicle %(registration)s"
+msgstr "Et ole ajoneuvon %(registration)s omistaja tai haltija"
+
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
@@ -78,9 +82,6 @@ msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
 msgid "Permit address does not have a valid zone"
 msgstr "Tunnuksen osoitteella ei ole sopivaa aluetta"
 
-msgid "Customer national id number is mandatory for the permit"
-msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
-
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
 
@@ -89,7 +90,7 @@ msgid ""
 "ended"
 msgstr ""
 "Määräaikaisen tunnuksen luonti ei ole mahdollista, jos asiakkaalla on jo "
-"voimassa oleva jatkuvavelotteinen tunnus"
+"voimassa oleva jatkuvaveloitteinen tunnus"
 
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
@@ -97,8 +98,13 @@ msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
-msgid "The validity period of secondary permit cannot exceed the primary one"
-msgstr "Toissijaisen tunnuksen aikaväli ei voi ylittää ensisijaista"
+#, python-format
+msgid ""
+"Cannot create permit. User already has a valid existing permit in other "
+"address %(address)s."
+msgstr ""
+"Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus "
+"toisessa osoitteessa %(address)s."
 
 #, python-format
 msgid ""
@@ -114,6 +120,9 @@ msgstr "Pysäköintitunnusta ei löytynyt"
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
 
+msgid "Customer national id number is mandatory for the permit"
+msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
+
 msgid "User already has a valid other permit for the given vehicle."
 msgstr ""
 "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
@@ -123,10 +132,11 @@ msgid ""
 "not allowed"
 msgstr ""
 "Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
-"(määräaikainen / jatkuvavelotteinen)"
+"(määräaikainen / jatkuvaveloitteinen)"
 
-msgid "IBAN is not provided"
-msgstr "IBAN-tietoa ei annettu"
+msgid "Primary permit cannot be ended if customer has two permits"
+msgstr ""
+"Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
 
 msgid "Product search error"
 msgstr "Tuotteen hakuvirhe"
@@ -142,6 +152,9 @@ msgstr "Tilauksen hakuvirhe"
 
 msgid "Address search error"
 msgstr "Osoitteen hakuvirhe"
+
+msgid "This address is already in use"
+msgstr "Tämä osoite on jo käytössä"
 
 msgid "Announcement search error"
 msgstr "Ilmoituksen hakuvirhe"
@@ -169,10 +182,6 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
-
-#, python-format
-msgid "Customer is not an owner or holder of a vehicle %(registration)s"
-msgstr "Et ole ajoneuvon %(registration)s omistaja tai haltija"
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Puutteelliset ajokorttitiedot"
@@ -208,6 +217,18 @@ msgstr "Lupa evätty"
 msgid "Internal Server Error"
 msgstr "Sisäinen virhe"
 
+msgid "Primary permit"
+msgstr "1. tunnus"
+
+msgid "Secondary permit"
+msgstr "2. tunnus"
+
+msgid "Online payment"
+msgstr "Verkkomaksu"
+
+msgid "Cashier payment"
+msgstr "Kassamaksu"
+
 msgid "Name"
 msgstr "Nimi"
 
@@ -217,14 +238,14 @@ msgstr "Henkilötunnus"
 msgid "Registration number"
 msgstr "Rekisteritunnus"
 
-msgid "Permanent address"
-msgstr "Pysyvä osoite"
+msgid "Primary address"
+msgstr "Vakituinen osoite"
 
-msgid "Temporary address"
-msgstr "Väliaikainen osoite"
+msgid "Other address"
+msgstr "Tilapäinen osoite"
 
-msgid "Parking zone"
-msgstr "Pysäköintialue"
+msgid "Area"
+msgstr "Alue"
 
 msgid "Start time"
 msgstr "Alkuaika"
@@ -232,17 +253,32 @@ msgstr "Alkuaika"
 msgid "End time"
 msgstr "Loppuaika"
 
+msgid "Permit order"
+msgstr "Järjestys"
+
 msgid "Status"
 msgstr "Tila"
+
+msgid "Parking permits"
+msgstr "Pysäköintitunnukset"
+
+msgid "Registration numbers"
+msgstr "Rekisteritunnukset"
+
+msgid "Customer"
+msgstr "Asiakas"
 
 msgid "Address"
 msgstr "Osoite"
 
 msgid "Permit type"
-msgstr "Pysäköintitunnuksen tyyppi"
+msgstr "Tunnustyyppi"
 
 msgid "Order number"
-msgstr "Tilauksen numero"
+msgstr "Tilausnumero"
+
+msgid "Order payment type"
+msgstr "Maksutapa"
 
 msgid "Paid time"
 msgstr "Maksuaika"
@@ -256,8 +292,14 @@ msgstr "IBAN-tilinumero"
 msgid "Product type"
 msgstr "Tuotteen tyyppi"
 
+msgid "Parking zone"
+msgstr "Pysäköintialue"
+
 msgid "Price"
 msgstr "Hinta"
+
+msgid "Low emission discount"
+msgstr "Päästöalennus"
 
 msgid "VAT"
 msgstr "ALV"
@@ -274,20 +316,14 @@ msgstr "Muokkaaja"
 msgid "City of Helsinki"
 msgstr "Helsingin kaupunki"
 
-msgid "Urban Environment Division"
-msgstr "Kaupunkiympäristö"
+msgid "Personal data - Digital and population data services agency"
+msgstr "Henkilötiedot - Digi- ja väestötietovirasto"
 
-msgid "Parking permits"
-msgstr "Pysäköintitunnukset"
+msgid "Vehicle information - Transport register, Traficom"
+msgstr "Ajoneuvon tiedot - Liikenneasioidenrekisteri, Traficom"
 
 msgid "Permit ID"
 msgstr "Tunniste"
-
-msgid "Customer"
-msgstr "Asiakas"
-
-msgid "Area"
-msgstr "Alue"
 
 msgid "Vehicle"
 msgstr "Ajoneuvo"
@@ -296,7 +332,7 @@ msgid "Type"
 msgstr "Tyyppi"
 
 msgid "Resident permit"
-msgstr "Asukaspysäköintitunnus"
+msgstr "Asukastunnus"
 
 msgid "Refunds"
 msgstr "Palautukset"
@@ -313,9 +349,6 @@ msgstr "Lisätiedot"
 msgid "Order ID"
 msgstr "Tilausnumero"
 
-msgid "Order payment type"
-msgstr "Maksutyyppi"
-
 msgid "Order payment time"
 msgstr "Maksuaika"
 
@@ -324,18 +357,6 @@ msgstr "Palautus"
 
 msgid "Order info"
 msgstr "Tilauksen tiedot"
-
-msgid "Primary permit"
-msgstr "1. tunnus"
-
-msgid "Secondary permit"
-msgstr "2. tunnus"
-
-msgid "Time created"
-msgstr "Luonti-aikaleima"
-
-msgid "Time modified"
-msgstr "Muokattu-aikaleima"
 
 msgid "Street name"
 msgstr "Kadunnimi"
@@ -424,11 +445,17 @@ msgstr "Etunimi"
 msgid "Last name"
 msgstr "Sukunimi"
 
-msgid "Primary address"
-msgstr "Pysyvä osoite"
+msgid "Primary address apartment"
+msgstr "Vakituisen osoitteen huoneisto"
 
-msgid "Other address"
-msgstr "Tilapäinen osoite"
+msgid "Primary address apartment (sv)"
+msgstr "Vakituisen osoitteen huoneisto (sv)"
+
+msgid "Other address apartment"
+msgstr "Tilapäisen osoitteen huoneisto"
+
+msgid "Other address apartment (sv)"
+msgstr "Tilapäisen osoitteen huoneisto (sv)"
 
 msgid "Email"
 msgstr "Sähköposti"
@@ -463,38 +490,23 @@ msgstr "Ajokortti"
 msgid "Driving licences"
 msgstr "Ajokortit"
 
+msgid "Time created"
+msgstr "Luonti-aikaleima"
+
+msgid "Time modified"
+msgstr "Muokattu-aikaleima"
+
 msgid "Created by"
 msgstr "Luotu"
+
+msgid "Draft"
+msgstr "Luonnos"
 
 msgid "Confirmed"
 msgstr "Vahvistettu"
 
 msgid "Cancelled"
 msgstr "Peruutettu"
-
-msgid "Talpa subscription id"
-msgstr "Talpan jatkuvaveloitteisen sopimuksen tunniste"
-
-msgid "Period unit"
-msgstr "Aikajakson tuote"
-
-msgid "Period frequency"
-msgstr "Aikajakson väli"
-
-msgid "Subscription"
-msgstr "Sopimus"
-
-msgid "Subscriptions"
-msgstr "Sopimukset"
-
-msgid "Online payment"
-msgstr "Verkkomaksu"
-
-msgid "Cashier payment"
-msgstr "Kassamaksu"
-
-msgid "Draft"
-msgstr "Luonnos"
 
 msgid "Created"
 msgstr "Luotu"
@@ -505,23 +517,35 @@ msgstr "Ajoneuvo vaihtunut"
 msgid "Address changed"
 msgstr "Osoite vaihtunut"
 
+msgid "Subscription renewed"
+msgstr "Sopimus uusittu"
+
 msgid "Talpa order id"
 msgstr "Talpan tilauksen tunniste"
 
 msgid "Talpa checkout url"
 msgstr "Talpan checkoutin url"
 
+msgid "Talpa logged in checkout url"
+msgstr "Talpan sisäänkirjautuneen checkoutin url"
+
 msgid "Talpa receipt_url"
 msgstr "Talpan kuitin url"
 
+msgid "Talpa last valid purchase time"
+msgstr "Talpan viimeisin voimassa oleva ostoaika"
+
 msgid "Payment type"
-msgstr "Maksutyyppi"
+msgstr "Maksutapa"
 
 msgid "Order status"
 msgstr "Tilauksen tila"
 
 msgid "permits"
 msgstr "Pysäköintitunnukset"
+
+msgid "Vehicles"
+msgstr "Ajoneuvot"
 
 msgid "Order type"
 msgstr "Tilaustyyppi"
@@ -531,6 +555,24 @@ msgstr "Tilaus"
 
 msgid "Orders"
 msgstr "Tilaukset"
+
+msgid "Renewal failed"
+msgstr "Tunnuksen uusiminen epäonnistui"
+
+msgid "User cancelled"
+msgstr "Käyttäjän peruuttama"
+
+msgid "Talpa subscription id"
+msgstr "Talpan jatkuvaveloitteisen sopimuksen tunniste"
+
+msgid "Cancel reason"
+msgstr "Peruutussyy"
+
+msgid "Subscription"
+msgstr "Sopimus"
+
+msgid "Subscriptions"
+msgstr "Sopimukset"
 
 msgid "Talpa order item id"
 msgstr "Talpan tilausrivin tunniste"
@@ -563,7 +605,7 @@ msgid "Fixed period"
 msgstr "Määräaikainen"
 
 msgid "Open ended"
-msgstr "Jatkuvavelotteinen"
+msgstr "Jatkuvaveloitteinen"
 
 msgid "Immediately"
 msgstr "Heti"
@@ -613,8 +655,20 @@ msgstr "Kuukaudet (lkm)"
 msgid "Description"
 msgstr "Kuvaus"
 
+msgid "Address apartment"
+msgstr "Osoiteen huoneisto"
+
+msgid "Address apartment (sv)"
+msgstr "Osoiteen huoneisto (sv)"
+
 msgid "Next address"
 msgstr "Tuleva osoite"
+
+msgid "Next address apartment"
+msgstr "Tulevan osoitteen huoneisto"
+
+msgid "Next address apartment (sv)"
+msgstr "Tulevan osoitteen huoneisto (sv)"
 
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
@@ -651,6 +705,14 @@ msgstr "Tunnus #%(permit_id)s päättynyt"
 msgid "Refund #%(refund_id)s created"
 msgstr "Palautus #%(refund_id)s luotu"
 
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
+msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s liitetty tunnukseen"
+
+#, python-format
+msgid "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
+msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s poistettu tunnuksesta"
+
 msgid "Description sv"
 msgstr "Kuvaus (sv)"
 
@@ -662,12 +724,6 @@ msgstr "Pysäköintialueet"
 
 msgid "Resident"
 msgstr "Asukas"
-
-msgid "Year"
-msgstr "Vuosi"
-
-msgid "Prices"
-msgstr "Hinnat"
 
 msgid "Monthly"
 msgstr "Kuukausittainen"
@@ -687,9 +743,6 @@ msgstr "alue"
 msgid "Unit"
 msgstr "Yksikkö"
 
-msgid "Low emission discount"
-msgstr "Päästöalennus"
-
 msgid "Products"
 msgstr "Tuotteet"
 
@@ -698,6 +751,9 @@ msgstr "Avoin"
 
 msgid "Request for approval"
 msgstr "Hyväksyttävänä"
+
+msgid "Permits"
+msgstr "Pysäköintitunnukset"
 
 msgid "Accepted at"
 msgstr "Hyväksytty"
@@ -811,7 +867,7 @@ msgid "VehicleClass"
 msgstr "Ajoneuvoluokka"
 
 msgid "Manufacturer"
-msgstr "Valmistaja"
+msgstr "Merkki"
 
 msgid "Model"
 msgstr "Malli"
@@ -837,9 +893,6 @@ msgstr "Viimeisin katsastuspäivä"
 msgid "Update from traficom on"
 msgstr "Päivitetty Traficomista"
 
-msgid "Vehicles"
-msgstr "Ajoneuvot"
-
 msgid "Not a valid customer address"
 msgstr "Epäkelpo asiakkaan osoite"
 
@@ -848,9 +901,6 @@ msgstr "Osoitetta ei löytynyt"
 
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
-
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
@@ -861,8 +911,8 @@ msgstr "Sinulle on luotu pysäköintitunnus"
 msgid "Your parking permit information has been updated"
 msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
-msgid "Your order has ended"
-msgstr "Tilauksesi on päättynyt"
+msgid "Your order will end"
+msgstr "Tilauksesi päättyy"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
@@ -895,33 +945,49 @@ msgstr ""
 "Ajoneuvoluokkaa %(vehicle_class)s ei tueta rekisteritunnukselle "
 "%(registration_number)s"
 
+#, python-format
+msgid "Vehicle %(registration_number)s is decommissioned"
+msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
+
 msgid ""
-"Could not find any driving license information for given customer from "
-"Traficom"
-msgstr "Asiakkaan ajokorttitietoja ei löydetty Traficomilta"
+"According to the Digital and Population Data Services Agency, you do not "
+"live in the Resident parking area. If you have just moved to a Resident "
+"parking area, contact Digital and Population Data Services Agency."
+msgstr ""
+"Digi- ja väestörekisteritietojen mukaan et asu pysäköintitunnusalueella. Jos "
+"olet juuri muuttanut pysäköintitunnusalueelle, ole yhteydessä DVV:hen, dvv.fi"
 
 msgid "Failed to fetch data from traficom"
 msgstr "Tietojen haku Traficomilta epäonnistui"
 
-msgid "Duration of parking permit"
-msgstr "Pysäköintitunnuksen kesto"
+msgid "pcm"
+msgstr "kk"
+
+msgid "Parking permit type"
+msgstr "Pysäköintitunnuksen tyyppi"
 
 #, python-format
-msgid "Fixed period %(month)d kk"
+msgid "Fixed period %(month)d months"
 msgstr "Määräaikainen %(month)d kk"
+
+msgid "Open ended 1 month"
+msgstr "Jatkuvaveloitteinen 1 kk"
 
 msgid "Parking permit start date*"
 msgstr "Pysäköintitunnuksen alkamispäivä*"
 
 msgid ""
-"* The permit is valid from the selected start date once the payment has been "
-"accepted"
+"* Parking permit is valid from the start date of your choice, "
+"once the payment has been accepted"
 msgstr ""
 "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun "
-"maksusuoritus on hyväksytty."
+"maksusuoritus on hyväksytty"
 
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
+
+msgid "Parking permit period expiration date"
+msgstr "Pysäköintitunnuksen jakson päättymispäivä"
 
 msgid "Failed to create the order"
 msgstr "Tilauksen luonti epäonnistui"

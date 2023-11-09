@@ -1,3 +1,6 @@
+import functools
+import operator
+
 from django import forms
 from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
@@ -91,6 +94,9 @@ class SearchFormBase(forms.Form):
 
 
 class PermitSearchForm(SearchFormBase):
+    # max number of individual terms in text search
+    MAX_TEXT_SEARCH_TOKENS = 6
+
     q = forms.CharField(required=False)
     status = forms.ChoiceField(
         choices=ParkingPermitStatus.choices + [("ALL", "All")],
@@ -134,13 +140,17 @@ class PermitSearchForm(SearchFormBase):
                 query = Q(id=int(q))
             else:
                 if user_role == ParkingPermitGroups.INSPECTORS:
-                    query = Q(vehicle__registration_number=q)
+                    query = Q(vehicle__registration_number__iexact=q)
                 else:
-                    query = (
-                        Q(customer__first_name__icontains=q)
-                        | Q(customer__last_name__icontains=q)
-                        | Q(customer__national_id_number=q)
-                        | Q(vehicle__registration_number=q)
+                    query = functools.reduce(
+                        operator.and_,
+                        [
+                            Q(customer__first_name__icontains=token)
+                            | Q(customer__last_name__icontains=token)
+                            | Q(customer__national_id_number__iexact=token)
+                            | Q(vehicle__registration_number__iexact=q)
+                            for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
+                        ],
                     )
             qs = qs.filter(query)
             has_filters = True
@@ -208,6 +218,9 @@ class RefundSearchForm(SearchFormBase):
 
 
 class OrderSearchForm(SearchFormBase):
+    # max number of individual terms in text search
+    MAX_TEXT_SEARCH_TOKENS = 6
+
     q = forms.CharField(required=False)
     start_date = forms.DateField(required=False)
     end_date = forms.DateField(required=False)
@@ -276,11 +289,15 @@ class OrderSearchForm(SearchFormBase):
             if q.isdigit():
                 query = Q(id=int(q))
             else:
-                query = (
-                    Q(customer__first_name__icontains=q)
-                    | Q(customer__last_name__icontains=q)
-                    | Q(permits__vehicle__registration_number=q)
-                    | Q(customer__national_id_number=q)
+                query = functools.reduce(
+                    operator.and_,
+                    [
+                        Q(customer__first_name__icontains=token)
+                        | Q(customer__last_name__icontains=token)
+                        | Q(customer__national_id_number=token)
+                        | Q(vehicles__icontains=token)
+                        for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
+                    ],
                 )
             qs = qs.filter(query)
             has_filters = True
@@ -300,7 +317,7 @@ class OrderSearchForm(SearchFormBase):
             has_filters = True
 
         if parking_zone:
-            qs = qs.filter(permits__parking_zone__name=parking_zone)
+            qs = qs.filter(parking_zone_name=parking_zone)
             has_filters = True
 
         if contract_types:

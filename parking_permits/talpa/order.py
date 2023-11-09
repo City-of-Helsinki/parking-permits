@@ -5,11 +5,16 @@ import numpy as np
 import requests
 from django.conf import settings
 from django.db import transaction
-from django.utils import timezone
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.exceptions import OrderCreationFailed
-from parking_permits.utils import DefaultOrderedDict, date_time_to_utc
+from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
+from parking_permits.models.order import OrderPaymentType
+from parking_permits.utils import (
+    DefaultOrderedDict,
+    date_time_to_helsinki,
+    format_local_time,
+)
 
 logger = logging.getLogger("db")
 DATE_FORMAT = "%d.%m.%Y"
@@ -26,29 +31,13 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def _get_label(cls, permit):
-        registration_number = permit.vehicle.registration_number
-        manufacturer = permit.vehicle.manufacturer
-        model = permit.vehicle.model
-        car_info = f"Ajoneuvo: {registration_number} {manufacturer} {model}"
-        return car_info
-
-    @classmethod
-    def _get_product_description(cls, order_item):
-        if order_item.start_date and order_item.end_date:
-            start_time = order_item.start_date.strftime(DATE_FORMAT)
-            end_time = order_item.end_date.strftime(DATE_FORMAT)
-            return f"{start_time} - {end_time}"
-        return ""
-
-    @classmethod
     def _create_item_data(cls, order, order_item):
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
-            "productDescription": cls._get_product_description(order_item),
-            "unit": "kk",
-            "startDate": date_time_to_utc(order_item.permit.start_time),
+            "productDescription": order_item.timeframe,
+            "unit": _("pcm"),
+            "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
             "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
             "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
@@ -77,13 +66,16 @@ class TalpaOrderManager:
 
     @classmethod
     def _append_detail_meta(cls, item, permit):
-        start_time = timezone.localtime(permit.start_time).strftime(DATE_FORMAT)
+        start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
         item["meta"] += [
             {"key": "permitId", "value": str(permit.id), "visibleInCheckout": False},
             {
-                "key": "permitDuration",
-                "label": _("Duration of parking permit"),
-                "value": _("Fixed period %(month)d kk") % {"month": permit.month_count},
+                "key": "permitType",
+                "label": _("Parking permit type"),
+                "value": _("Fixed period %(month)d months")
+                % {"month": permit.month_count}
+                if permit.is_fixed_period
+                else _("Open ended 1 month"),
                 "visibleInCheckout": True,
                 "ordinal": 1,
             },
@@ -98,18 +90,27 @@ class TalpaOrderManager:
                 "key": "terms",
                 "label": "",
                 "value": _(
-                    "* The permit is valid from the selected start date once the payment has been accepted"
+                    "* Parking permit is valid from the start date of your choice, once the payment has been accepted"
                 ),
                 "visibleInCheckout": True,
                 "ordinal": 4,
             },
+            {
+                "key": "copyright",
+                "label": "",
+                "value": f'© {_("Vehicle information - Transport register, Traficom")}',
+                "visibleInCheckout": True,
+                "ordinal": 5,
+            },
         ]
         if permit.end_time:
-            end_time = timezone.localtime(permit.end_time).strftime(TIME_FORMAT)
+            end_time = tz.localtime(permit.end_time).strftime(TIME_FORMAT)
             item["meta"].append(
                 {
                     "key": "endDate",
-                    "label": _("Parking permit expiration date"),
+                    "label": _("Parking permit expiration date")
+                    if permit.is_fixed_period
+                    else _("Parking permit period expiration date"),
                     "value": end_time,
                     "visibleInCheckout": True,
                     "ordinal": 3,
@@ -148,7 +149,7 @@ class TalpaOrderManager:
                     if index == 0:
                         item.update(
                             {
-                                "productLabel": cls._get_label(order_item.permit),
+                                "productLabel": order_item.permit.vehicle.description,
                             }
                         )
                     order_items_of_single_permit.append(item)
@@ -158,9 +159,15 @@ class TalpaOrderManager:
             items += order_items_of_single_permit
 
         customer = cls._create_customer_data(order.customer)
+        last_valid_purchase_date_time = (
+            format_local_time(order.talpa_last_valid_purchase_time)
+            if order.talpa_last_valid_purchase_time
+            else ""
+        )
         return {
             "namespace": settings.NAMESPACE,
-            "user": str(order.customer.id),
+            "user": str(order.customer.user.uuid),
+            "lastValidPurchaseDateTime": last_valid_purchase_date_time,
             "priceNet": cls.round_up(float(order.total_payment_price_net)),
             "priceVat": cls.round_up(float(order.total_payment_price_vat)),
             "priceTotal": cls.round_up(float(order.total_payment_price)),
@@ -177,7 +184,46 @@ class TalpaOrderManager:
         return "{:0.2f}".format(np.round(v, 3))
 
     @classmethod
+    def _set_flow_steps(cls, order_id, user_id):
+        data = {
+            "activeStep": 4,
+            "totalSteps": 7,
+        }
+        headers = {
+            "user": user_id,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            f"{settings.TALPA_ORDER_EXPERIENCE_API}{order_id}/flowSteps",
+            data=json.dumps(data, default=str),
+            headers=headers,
+        )
+
+        if response.status_code == 200:
+            logger.info("Talpa flow steps set successfully")
+        else:
+            logger.error(
+                "Failed to set Talpa flow steps."
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise SetTalpaFlowStepsError(
+                "Cannot set Talpa flow steps."
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    @classmethod
+    def _set_order_details(cls, order):
+        payment_period = settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
+        order.talpa_last_valid_purchase_time = tz.localtime(
+            tz.now() + tz.timedelta(minutes=payment_period)
+        )
+        order.payment_type = OrderPaymentType.ONLINE_PAYMENT
+        order.save(update_fields=["talpa_last_valid_purchase_time", "payment_type"])
+
+    @classmethod
     def send_to_talpa(cls, order):
+        cls._set_order_details(order)
         order_data = cls._create_order_data(order)
         order_data_raw = json.dumps(order_data, default=str)
         logger.info(f"Order data sent to talpa: {order_data_raw}")
@@ -197,6 +243,9 @@ class TalpaOrderManager:
             order.talpa_order_id = response_data.get("orderId")
             order.talpa_subscription_id = response_data.get("subscriptionId")
             order.talpa_checkout_url = response_data.get("checkoutUrl")
+            order.talpa_logged_in_checkout_url = response_data.get(
+                "loggedInCheckoutUrl"
+            )
             order.talpa_receipt_url = response_data.get("receiptUrl")
             order.save()
             talpa_order_item_id_mapping = {
@@ -208,4 +257,7 @@ class TalpaOrderManager:
                     str(order_item.id)
                 )
                 order_item.save()
-        return response_data.get("checkoutUrl")
+
+        cls._set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
+
+        return response_data.get("loggedInCheckoutUrl")
