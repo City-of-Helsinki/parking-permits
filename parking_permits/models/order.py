@@ -512,6 +512,7 @@ class SubscriptionStatus(models.TextChoices):
 class SubscriptionCancelReason(models.TextChoices):
     RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
     USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
+    PERMIT_EXPIRED = "PERMIT_EXPIRED", _("Permit expired")
 
 
 class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
