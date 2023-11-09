@@ -731,6 +731,7 @@ class SubscriptionView(APIView):
             CustomerPermit(permit.customer_id).end(
                 [permit.id],
                 ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+                iban="",
                 subscription_cancel_reason=request.data.get("reason"),
                 cancel_from_talpa=False,
                 force_end=True,
