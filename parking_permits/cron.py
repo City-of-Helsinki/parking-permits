@@ -1,16 +1,17 @@
+import datetime
 import logging
 
 from dateutil.relativedelta import relativedelta
+from django.db.models import Q
 from django.utils import timezone as tz
 
+from parking_permits.constants import ParkingPermitEndType
+from parking_permits.customer_permit import CustomerPermit
 from parking_permits.exceptions import ParkkihubiPermitError
 from parking_permits.models import Customer, ParkingPermit
+from parking_permits.models.order import SubscriptionCancelReason
 from parking_permits.models.parking_permit import ParkingPermitStatus
-from parking_permits.services.mail import (
-    PermitEmailType,
-    send_permit_email,
-    send_vehicle_low_emission_discount_email,
-)
+from parking_permits.services.mail import PermitEmailType, send_permit_email
 
 logger = logging.getLogger("django")
 db_logger = logging.getLogger("db")
@@ -18,17 +19,38 @@ db_logger = logging.getLogger("db")
 
 def automatic_expiration_of_permits():
     logger.info("Automatically ending permits started...")
+    now = tz.localtime(tz.now())
     ending_permits = ParkingPermit.objects.filter(
-        end_time__lt=tz.localdate(tz.now()), status=ParkingPermitStatus.VALID
+        Q(end_time__lt=now)
+        | Q(vehicle_changed=True, vehicle_changed_date__lt=now.date()),
+        status=ParkingPermitStatus.VALID,
     )
     for permit in ending_permits:
-        permit.status = ParkingPermitStatus.CLOSED
+        CustomerPermit(permit.customer_id).end(
+            [permit.id],
+            ParkingPermitEndType.IMMEDIATELY,
+            iban="",
+            subscription_cancel_reason=SubscriptionCancelReason.PERMIT_EXPIRED,
+            cancel_from_talpa=True,
+            force_end=True,
+        )
+        permit.refresh_from_db()
+        # Set end time to end of the day
+        permit.end_time = permit.end_time.replace(
+            hour=23,
+            minute=59,
+            second=59,
+            microsecond=999999,
+            tzinfo=datetime.timezone.utc,
+        )
         permit.save()
-        send_permit_email(PermitEmailType.ENDED, permit)
-        if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
-            send_vehicle_low_emission_discount_email(
-                PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, permit
-            )
+        # If the customer has only one permit left, make it primary
+        active_permits = permit.customer.permits.active()
+        if active_permits.count() == 1:
+            active_permit = active_permits.first()
+            active_permit.primary_vehicle = True
+            active_permit.save()
+
     logger.info("Automatically ending permits completed.")
 
 
