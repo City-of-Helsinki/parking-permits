@@ -146,7 +146,7 @@ class Traficom:
             "weight": int(weight.text) if weight else 0,
             "registration_number": registration_number,
             "euro_class": 6,  # It will always be 6 class atm.
-            "emission": float(co2emission) if co2emission else None,
+            "emission": float(co2emission) if co2emission else 0,
             "emission_type": emission_type,
             "serial_number": vehicle_serial_number.text,
             "last_inspection_date": last_inspection_date.text
