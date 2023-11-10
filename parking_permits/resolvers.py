@@ -358,10 +358,7 @@ def resolve_get_vehicle_information(_obj, info, registration):
     is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
     if not is_user_of_vehicle:
         raise TraficomFetchVehicleError(
-            _("Customer is not an owner or holder of a vehicle %(registration)s")
-            % {
-                "registration": registration,
-            }
+            _("Owner/holder data of a vehicle could not be verified")
         )
 
     has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)

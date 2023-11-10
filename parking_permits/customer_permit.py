@@ -205,12 +205,7 @@ class CustomerPermit:
             is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
             if not is_user_of_vehicle:
                 raise TraficomFetchVehicleError(
-                    _(
-                        "Customer is not an owner or holder of a vehicle %(registration)s"
-                    )
-                    % {
-                        "registration": registration,
-                    }
+                    _("Owner/holder data of a vehicle could not be verified")
                 )
 
             has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
