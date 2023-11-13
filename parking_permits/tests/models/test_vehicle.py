@@ -63,6 +63,11 @@ class TestIsLowEmissionVehicle(TestCase):
 
         self.assertIsLowEmissionVehicle(self.vehicle, False)
 
+    def test_should_return_false_if_emission_is_zero(self):
+        self.vehicle.emission = 0
+
+        self.assertIsLowEmissionVehicle(self.vehicle, False)
+
     def test_should_return_false_if_euro_class_below_min_class_limit(self):
         self.vehicle.euro_class = 1
 
@@ -74,7 +79,7 @@ class TestIsLowEmissionVehicle(TestCase):
         self.vehicle.emission_type = EmissionType.NEDC
 
         # emission < max limit
-        self.vehicle.emission = 0
+        self.vehicle.emission = 1
         self.assertIsLowEmissionVehicle(self.vehicle, True)
 
         # emission == max limit
@@ -93,7 +98,7 @@ class TestIsLowEmissionVehicle(TestCase):
         self.vehicle.emission_type = EmissionType.WLTP
 
         # emission < max limit
-        self.vehicle.emission = 0
+        self.vehicle.emission = 1
         self.assertIsLowEmissionVehicle(self.vehicle, True)
 
         # emission == max limit
