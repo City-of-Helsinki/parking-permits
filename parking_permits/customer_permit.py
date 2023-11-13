@@ -1,4 +1,5 @@
 import decimal
+import logging
 import typing
 
 from dateutil.parser import isoparse, parse
@@ -49,6 +50,8 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .utils import ModelDiffer, diff_months_floor, get_end_time
+
+logger = logging.getLogger("db")
 
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
@@ -356,6 +359,9 @@ class CustomerPermit:
         cancel_from_talpa=True,
         force_end=False,
     ):
+        logger.info(
+            f"Ending permits: {','.join([str(permit_id) for permit_id in permit_ids])}"
+        )
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
@@ -440,6 +446,7 @@ class CustomerPermit:
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
         draft_permits.delete()
+        logger.info("Permits ended successfully")
         return True
 
     def _get_address_apartments(self, address: Address):
