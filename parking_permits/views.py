@@ -2,6 +2,7 @@ import csv
 import datetime
 import json
 import logging
+import time
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -617,6 +618,8 @@ class SubscriptionView(APIView):
     )
     @transaction.atomic
     def post(self, request, format=None):
+        # Safety sleep to make sure that previous tasks are finished
+        time.sleep(5)
         logger.info(
             f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
         )
