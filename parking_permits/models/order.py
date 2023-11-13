@@ -483,7 +483,6 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    @transaction.atomic
     def cancel(self, cancel_from_talpa=True):
         logger.info(f"Cancelling order: {self.talpa_order_id}")
         try:
@@ -570,7 +569,6 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    @transaction.atomic
     def cancel(self, cancel_reason, cancel_from_talpa=True):
         logger.info(f"Cancelling subscription: {self.talpa_subscription_id}")
 
