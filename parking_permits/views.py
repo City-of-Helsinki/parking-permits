@@ -595,12 +595,6 @@ class OrderView(APIView):
                 start_time=start_time,
                 end_time=end_time,
             )
-
-            send_permit_email(PermitEmailType.UPDATED, permit)
-            try:
-                permit.update_parkkihubi_permit()
-            except ParkkihubiPermitError:
-                permit.create_parkkihubi_permit()
             logger.info(
                 f"{subscription} is renewed and new order {order} is created with order item {order_item}"
             )
