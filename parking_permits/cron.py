@@ -1,4 +1,3 @@
-import datetime
 import logging
 
 from dateutil.relativedelta import relativedelta
@@ -28,22 +27,12 @@ def automatic_expiration_of_permits():
     for permit in ending_permits:
         CustomerPermit(permit.customer_id).end(
             [permit.id],
-            ParkingPermitEndType.IMMEDIATELY,
+            ParkingPermitEndType.PREVIOUS_DAY_END,
             iban="",
             subscription_cancel_reason=SubscriptionCancelReason.PERMIT_EXPIRED,
             cancel_from_talpa=True,
             force_end=True,
         )
-        permit.refresh_from_db()
-        # Set end time to end of the day
-        permit.end_time = permit.end_time.replace(
-            hour=23,
-            minute=59,
-            second=59,
-            microsecond=999999,
-            tzinfo=datetime.timezone.utc,
-        )
-        permit.save()
         # If the customer has only one permit left, make it primary
         active_permits = permit.customer.permits.active()
         if active_permits.count() == 1:

@@ -21,7 +21,7 @@ class CronTestCase(TestCase):
     def setUp(self):
         self.customer = CustomerFactory(first_name="Stephen", last_name="Strange")
 
-    @freeze_time(tz.make_aware(datetime(2023, 11, 30)))
+    @freeze_time(datetime(2023, 11, 30, 0, 22))
     def test_automatic_expiration_permits(self):
         ParkingPermitFactory(
             customer=self.customer,
@@ -58,19 +58,19 @@ class CronTestCase(TestCase):
         self.assertEqual(draft_permits.count(), 0)
         self.assertEqual(closed_permits.count(), 2)
 
-    @freeze_time(tz.make_aware(datetime(2023, 11, 30)))
+    @freeze_time(datetime(2023, 11, 30, 0, 22))
     def test_automatic_expiration_permits_with_primary_permit_change(self):
         ParkingPermitFactory(
             id=80000010,
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 11, 29, 23, 59, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=True,
         )
         ParkingPermitFactory(
             id=80000020,
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 12, 1, 23, 59, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=False,
         )
@@ -105,12 +105,12 @@ class CronTestCase(TestCase):
             datetime(2023, 11, 29, 23, 59, 59, 999999, tzinfo=dt_tz.utc),
         )
 
-    @freeze_time(tz.make_aware(datetime(2023, 11, 30)))
+    @freeze_time(datetime(2023, 11, 30, 0, 22))
     def test_automatic_expiration_permits_with_permit_vehicle_changed(self):
         ParkingPermitFactory(
             id=80000010,
             customer=self.customer,
-            end_time=datetime(2023, 12, 29, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 12, 29, 23, 59, tzinfo=dt_tz.utc),
             vehicle_changed=True,
             vehicle_changed_date=datetime(2023, 11, 29, tzinfo=dt_tz.utc).date(),
             status=ParkingPermitStatus.VALID,

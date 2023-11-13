@@ -504,7 +504,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return price_change_list
 
     def end_permit(self, end_type, force_end=False):
-        if end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
+        if end_type == ParkingPermitEndType.PREVIOUS_DAY_END:
+            previous_day = timezone.now() - timezone.timedelta(days=1)
+            end_time = previous_day.replace(
+                hour=23,
+                minute=59,
+                second=59,
+                microsecond=999999,
+                tzinfo=timezone.utc,
+            )
+        elif end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:
             end_time = max(self.start_time, timezone.now())
@@ -523,7 +532,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             )
 
         self.end_time = end_time
-        if end_type == ParkingPermitEndType.IMMEDIATELY:
+        if (
+            end_type == ParkingPermitEndType.IMMEDIATELY
+            or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
+        ):
             self.status = ParkingPermitStatus.CLOSED
         self.save()
 
