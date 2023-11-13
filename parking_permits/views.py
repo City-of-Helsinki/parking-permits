@@ -708,6 +708,8 @@ class SubscriptionView(APIView):
             return Response({"message": "Subscription created"}, status=200)
         elif event_type == "SUBSCRIPTION_CANCELLED":
             logger.info(f"Cancelling subscription: {talpa_subscription_id}")
+            if order.status == OrderStatus.CANCELLED:
+                return ok_response(f"Order {talpa_order_id} is already cancelled")
             try:
                 subscription = Subscription.objects.get(
                     talpa_subscription_id=talpa_subscription_id
