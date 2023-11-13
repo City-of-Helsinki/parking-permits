@@ -724,6 +724,10 @@ class SubscriptionView(APIView):
                 )
             order_item = subscription.order_items.first()
             permit = order_item.permit
+            if permit.status == ParkingPermitStatus.CLOSED:
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} permit {permit.id} is already closed"
+                )
             CustomerPermit(permit.customer_id).end(
                 [permit.id],
                 ParkingPermitEndType.AFTER_CURRENT_PERIOD,
@@ -733,9 +737,12 @@ class SubscriptionView(APIView):
                 force_end=True,
             )
             logger.info(
-                f"Subscription {subscription} cancelled and permit ended after current period"
+                f"Subscription {talpa_subscription_id} cancelled and permit ended after current period"
             )
-            return Response({"message": "Subscription cancelled"}, status=200)
+            return Response(
+                {"message": f"Subscription {talpa_subscription_id} cancelled"},
+                status=200,
+            )
         else:
             return bad_request_response(f"Unknown subscription event type {event_type}")
 
