@@ -59,4 +59,4 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def vat(self):
-        return self.amount * VAT_PERCENT
+        return Decimal(self.amount) * VAT_PERCENT
