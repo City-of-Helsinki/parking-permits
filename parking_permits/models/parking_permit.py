@@ -423,6 +423,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             price_change_vat = (diff_price * new_product.vat).quantize(
                 Decimal("0.0001")
             )
+            # if the permit ends more than a month from now, count this month
+            diff_months = (
+                relativedelta(timezone.localdate(self.end_time), timezone.localdate())
+            ).months
+            month_count = 1 if diff_months > 0 else 0
+
             return [
                 {
                     "product": new_product.name,
@@ -432,7 +438,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                     "price_change": diff_price,
                     "start_date": start_date,
                     "end_date": end_date,
-                    "month_count": 1,
+                    "month_count": month_count,
                 }
             ]
 

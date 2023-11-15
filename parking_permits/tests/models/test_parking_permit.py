@@ -426,6 +426,87 @@ class ParkingZoneTestCase(TestCase):
             self.assertEqual(unused_items[1][1], 6)
             self.assertEqual(unused_items[1][2], (date(2021, 7, 1), date(2021, 12, 31)))
 
+    def test_open_ended_parking_permit_change_price_list_when_prices_go_down(self):
+        zone_a_product_list = [
+            [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("20")],
+        ]
+        self._create_zone_products(self.zone_a, zone_a_product_list)
+        high_emission_vehicle = VehicleFactory()
+
+        start_time = timezone.make_aware(datetime(2021, 4, 15))
+        end_time = timezone.make_aware(datetime(2021, 5, 14))
+
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=high_emission_vehicle,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+        # starting immediately
+        with freeze_time(datetime(2021, 4, 15)):
+            with translation.override("fi"):
+                price_change_list = permit.get_price_change_list(self.zone_a, True)
+                self.assertEqual(len(price_change_list), 1)
+                self.assertEqual(
+                    price_change_list[0]["product"], f'{_("Parking zone")} A'
+                )
+                self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
+                self.assertEqual(price_change_list[0]["new_price"], Decimal("10"))
+                self.assertEqual(
+                    price_change_list[0]["price_change"], Decimal("-10.00")
+                )
+                self.assertEqual(
+                    price_change_list[0]["price_change_vat"], Decimal("-2.4")
+                )
+                self.assertEqual(price_change_list[0]["month_count"], 0)
+                self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
+                self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 14))
+
+    def test_open_ended_parking_permit_change_price_list_when_prices_go_down_end_date_in_month(
+        self,
+    ):
+        zone_a_product_list = [
+            [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("20")],
+        ]
+        self._create_zone_products(self.zone_a, zone_a_product_list)
+        high_emission_vehicle = VehicleFactory()
+
+        start_time = timezone.make_aware(datetime(2021, 4, 15))
+        end_time = timezone.make_aware(datetime(2021, 5, 15))
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=high_emission_vehicle,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+        # starting immediately
+        with freeze_time(datetime(2021, 4, 15)):
+            with translation.override("fi"):
+                price_change_list = permit.get_price_change_list(self.zone_a, True)
+                self.assertEqual(len(price_change_list), 1)
+                self.assertEqual(
+                    price_change_list[0]["product"], f'{_("Parking zone")} A'
+                )
+                self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
+                self.assertEqual(price_change_list[0]["new_price"], Decimal("10"))
+                self.assertEqual(
+                    price_change_list[0]["price_change"], Decimal("-10.00")
+                )
+                self.assertEqual(
+                    price_change_list[0]["price_change_vat"], Decimal("-2.4")
+                )
+                self.assertEqual(price_change_list[0]["month_count"], 1)
+                self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
+                self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 14))
+
     def test_parking_permit_change_price_list_when_prices_go_down(self):
         zone_a_product_list = [
             [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("20")],
