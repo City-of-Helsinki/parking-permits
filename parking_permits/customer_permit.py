@@ -486,19 +486,23 @@ class CustomerPermit:
     def _calculate_prices(self, permit, product_with_qty):
         product = product_with_qty[0]
         quantity = product_with_qty[1]
-        unit_price = product.unit_price
+
+        base_price = unit_price = product.unit_price
+        discount_price = base_price - (product.low_emission_discount * unit_price)
 
         if not permit.primary_vehicle:
             increase = decimal.Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
             unit_price += increase * unit_price
 
         if permit.vehicle.is_low_emission:
-            discount = product.low_emission_discount
-            unit_price -= discount * unit_price
+            unit_price = discount_price
 
+        product.base_price = base_price
+        product.discount_price = discount_price
         product.quantity = quantity
         product.unit_price = unit_price
         product.total_price = unit_price * quantity
+
         return product
 
     def _can_buy_permit_for_address(self, address_id):

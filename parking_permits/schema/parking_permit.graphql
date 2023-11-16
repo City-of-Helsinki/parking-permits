@@ -50,6 +50,8 @@ type ProductNode {
   vat: Float!
   quantity: Int!
   unitPrice: Float!
+  basePrice: Float!
+  discountPrice: Float!
   totalPrice: Float!
   endDate: String!
   startDate: String!
