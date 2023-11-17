@@ -384,7 +384,10 @@ class CustomerPermit:
                 order.order_items.all().delete()
             else:
                 order = first_permit.latest_order
-            if total_sum > 0:
+            if (
+                total_sum > 0
+                and first_permit.contract_type == ContractType.FIXED_PERIOD
+            ):
                 refund = Refund.objects.create(
                     name=self.customer.full_name,
                     order=order,
@@ -488,7 +491,7 @@ class CustomerPermit:
         quantity = product_with_qty[1]
 
         base_price = unit_price = product.unit_price
-        discount_price = base_price - (product.low_emission_discount * unit_price)
+        discount_price = base_price - (product.low_emission_discount * base_price)
 
         if not permit.primary_vehicle:
             increase = decimal.Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
