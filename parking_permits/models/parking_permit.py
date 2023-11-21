@@ -18,7 +18,13 @@ from helsinki_gdpr.models import SerializableMixin
 
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
-from ..utils import diff_months_ceil, flatten_dict, get_end_time, get_permit_prices
+from ..utils import (
+    diff_months_ceil,
+    end_date_to_datetime,
+    flatten_dict,
+    get_end_time,
+    get_permit_prices,
+)
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 from .temporary_vehicle import TemporaryVehicle
@@ -511,14 +517,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def end_permit(self, end_type, force_end=False):
         if end_type == ParkingPermitEndType.PREVIOUS_DAY_END:
-            previous_day = timezone.now() - timezone.timedelta(days=1)
-            end_time = previous_day.replace(
-                hour=23,
-                minute=59,
-                second=59,
-                microsecond=999999,
-                tzinfo=timezone.utc,
-            )
+            vehicle_changed_date = self.vehicle_changed_date
+            if vehicle_changed_date:
+                end_time = end_date_to_datetime(vehicle_changed_date)
+            else:
+                previous_day = timezone.localtime() - timezone.timedelta(days=1)
+                end_time = previous_day.replace(
+                    hour=23,
+                    minute=59,
+                    second=59,
+                    microsecond=999999,
+                )
         elif end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
             end_time = self.current_period_end_time
         else:

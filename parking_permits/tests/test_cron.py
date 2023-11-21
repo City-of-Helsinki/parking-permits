@@ -21,31 +21,31 @@ class CronTestCase(TestCase):
     def setUp(self):
         self.customer = CustomerFactory(first_name="Stephen", last_name="Strange")
 
-    @freeze_time(datetime(2023, 11, 30, 0, 22))
+    @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits(self):
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 1)),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29)),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 1)),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29)),
             status=ParkingPermitStatus.VALID,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29)),
             status=ParkingPermitStatus.CLOSED,
         )
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
@@ -58,30 +58,30 @@ class CronTestCase(TestCase):
         self.assertEqual(draft_permits.count(), 0)
         self.assertEqual(closed_permits.count(), 2)
 
-    @freeze_time(datetime(2023, 11, 30, 0, 22))
+    @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits_with_primary_permit_change(self):
         ParkingPermitFactory(
             id=80000010,
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, 23, 59, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29, 23, 59)),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=True,
         )
         ParkingPermitFactory(
             id=80000020,
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, 23, 59, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 1, 23, 59)),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=False,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29)),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 1)),
             status=ParkingPermitStatus.DRAFT,
         )
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
@@ -102,35 +102,35 @@ class CronTestCase(TestCase):
         self.assertEqual(closed_permit.id, 80000010)
         self.assertEqual(
             closed_permit.end_time,
-            datetime(2023, 11, 29, 23, 59, 59, 999999, tzinfo=dt_tz.utc),
+            tz.make_aware(datetime(2023, 11, 29, 23, 59, 59, 999999)),
         )
 
-    @freeze_time(datetime(2023, 11, 30, 0, 22))
+    @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits_with_permit_vehicle_changed(self):
         ParkingPermitFactory(
             id=80000010,
             customer=self.customer,
-            end_time=datetime(2023, 12, 29, 23, 59, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 29, 23, 59)),
             vehicle_changed=True,
-            vehicle_changed_date=datetime(2023, 11, 29, tzinfo=dt_tz.utc).date(),
+            vehicle_changed_date=tz.make_aware(datetime(2023, 11, 29)).date(),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=True,
         )
         ParkingPermitFactory(
             id=80000020,
             customer=self.customer,
-            end_time=datetime(2023, 12, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 29)),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=False,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 11, 29, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 11, 29)),
             status=ParkingPermitStatus.DRAFT,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 12, 1, tzinfo=dt_tz.utc),
+            end_time=tz.make_aware(datetime(2023, 12, 1)),
             status=ParkingPermitStatus.DRAFT,
         )
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
@@ -152,7 +152,7 @@ class CronTestCase(TestCase):
         self.assertEqual(closed_permit.id, 80000010)
         self.assertEqual(
             closed_permit.end_time,
-            datetime(2023, 11, 29, 23, 59, 59, 999999, tzinfo=dt_tz.utc),
+            tz.make_aware(datetime(2023, 11, 29, 23, 59, 59, 999999)),
         )
 
 
