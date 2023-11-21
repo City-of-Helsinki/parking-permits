@@ -6,6 +6,7 @@ import time
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import transaction
 from django.http import (
     Http404,
@@ -619,7 +620,9 @@ class SubscriptionView(APIView):
     @transaction.atomic
     def post(self, request, format=None):
         # Safety sleep to make sure that previous tasks are finished
-        time.sleep(5)
+        wait_buffer = settings.TALPA_WEBHOOK_WAIT_BUFFER_SECONDS
+        if wait_buffer and wait_buffer > 0:
+            time.sleep(wait_buffer)
         logger.info(
             f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
         )
