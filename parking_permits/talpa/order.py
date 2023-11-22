@@ -9,7 +9,7 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
-from parking_permits.models.order import OrderPaymentType
+from parking_permits.models.order import OrderPaymentType, OrderType
 from parking_permits.utils import (
     DefaultOrderedDict,
     date_time_to_helsinki,
@@ -55,7 +55,8 @@ class TalpaOrderManager:
                 },
             ],
         }
-        if order_item.permit.is_open_ended:
+        # Include periodUnit and periodFrequency only for new open ended permits.
+        if order_item.permit.is_open_ended and order.type == OrderType.CREATED:
             item.update(
                 {
                     "periodUnit": TALPA_SUBSCRIPTION_PERIOD_UNIT,
