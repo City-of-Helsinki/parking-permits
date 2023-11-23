@@ -13,7 +13,7 @@ class ParkingZoneTestCase(TestCase):
         self.zone = ParkingZoneFactory()
 
     @freeze_time("2021-12-20")
-    @override_settings(DBUG=True)
+    @override_settings(DEBUG=True)
     def test_zone_resident_products(self):
         ProductFactory(
             zone=self.zone,

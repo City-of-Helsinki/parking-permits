@@ -2,9 +2,11 @@ import csv
 import datetime
 import json
 import logging
+import time
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import transaction
 from django.http import (
     Http404,
@@ -595,12 +597,6 @@ class OrderView(APIView):
                 start_time=start_time,
                 end_time=end_time,
             )
-
-            send_permit_email(PermitEmailType.UPDATED, permit)
-            try:
-                permit.update_parkkihubi_permit()
-            except ParkkihubiPermitError:
-                permit.create_parkkihubi_permit()
             logger.info(
                 f"{subscription} is renewed and new order {order} is created with order item {order_item}"
             )
@@ -623,6 +619,10 @@ class SubscriptionView(APIView):
     )
     @transaction.atomic
     def post(self, request, format=None):
+        # Safety sleep to make sure that previous tasks are finished
+        wait_buffer = settings.TALPA_WEBHOOK_WAIT_BUFFER_SECONDS
+        if wait_buffer and wait_buffer > 0:
+            time.sleep(wait_buffer)
         logger.info(
             f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
         )
@@ -714,6 +714,8 @@ class SubscriptionView(APIView):
             return Response({"message": "Subscription created"}, status=200)
         elif event_type == "SUBSCRIPTION_CANCELLED":
             logger.info(f"Cancelling subscription: {talpa_subscription_id}")
+            if order.status == OrderStatus.CANCELLED:
+                return ok_response(f"Order {talpa_order_id} is already cancelled")
             try:
                 subscription = Subscription.objects.get(
                     talpa_subscription_id=talpa_subscription_id
@@ -728,17 +730,25 @@ class SubscriptionView(APIView):
                 )
             order_item = subscription.order_items.first()
             permit = order_item.permit
+            if permit.status == ParkingPermitStatus.CLOSED:
+                return ok_response(
+                    f"Subscription {talpa_subscription_id} permit {permit.id} is already closed"
+                )
             CustomerPermit(permit.customer_id).end(
                 [permit.id],
                 ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+                iban="",
                 subscription_cancel_reason=request.data.get("reason"),
                 cancel_from_talpa=False,
                 force_end=True,
             )
             logger.info(
-                f"Subscription {subscription} cancelled and permit ended after current period"
+                f"Subscription {talpa_subscription_id} cancelled and permit ended after current period"
             )
-            return Response({"message": "Subscription cancelled"}, status=200)
+            return Response(
+                {"message": f"Subscription {talpa_subscription_id} cancelled"},
+                status=200,
+            )
         else:
             return bad_request_response(f"Unknown subscription event type {event_type}")
 

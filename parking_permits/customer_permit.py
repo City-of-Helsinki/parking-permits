@@ -1,4 +1,5 @@
 import decimal
+import logging
 import typing
 
 from dateutil.parser import isoparse, parse
@@ -49,6 +50,8 @@ from .services.mail import (
     send_vehicle_low_emission_discount_email,
 )
 from .utils import ModelDiffer, diff_months_floor, get_end_time
+
+logger = logging.getLogger("db")
 
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
@@ -205,12 +208,7 @@ class CustomerPermit:
             is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
             if not is_user_of_vehicle:
                 raise TraficomFetchVehicleError(
-                    _(
-                        "Customer is not an owner or holder of a vehicle %(registration)s"
-                    )
-                    % {
-                        "registration": registration,
-                    }
+                    _("Owner/holder data of a vehicle could not be verified")
                 )
 
             has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
@@ -361,6 +359,9 @@ class CustomerPermit:
         cancel_from_talpa=True,
         force_end=False,
     ):
+        logger.info(
+            f"Ending permits: {','.join([str(permit_id) for permit_id in permit_ids])}"
+        )
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
@@ -383,7 +384,10 @@ class CustomerPermit:
                 order.order_items.all().delete()
             else:
                 order = first_permit.latest_order
-            if total_sum > 0:
+            if (
+                total_sum > 0
+                and first_permit.contract_type == ContractType.FIXED_PERIOD
+            ):
                 refund = Refund.objects.create(
                     name=self.customer.full_name,
                     order=order,
@@ -445,6 +449,7 @@ class CustomerPermit:
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
         OrderItem.objects.filter(permit__in=draft_permits).delete()
         draft_permits.delete()
+        logger.info("Permits ended successfully")
         return True
 
     def _get_address_apartments(self, address: Address):
@@ -484,19 +489,23 @@ class CustomerPermit:
     def _calculate_prices(self, permit, product_with_qty):
         product = product_with_qty[0]
         quantity = product_with_qty[1]
-        unit_price = product.unit_price
+
+        base_price = unit_price = product.unit_price
+        discount_price = base_price - (product.low_emission_discount * base_price)
 
         if not permit.primary_vehicle:
             increase = decimal.Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
             unit_price += increase * unit_price
 
         if permit.vehicle.is_low_emission:
-            discount = product.low_emission_discount
-            unit_price -= discount * unit_price
+            unit_price = discount_price
 
+        product.base_price = base_price
+        product.discount_price = discount_price
         product.quantity = quantity
         product.unit_price = unit_price
         product.total_price = unit_price * quantity
+
         return product
 
     def _can_buy_permit_for_address(self, address_id):

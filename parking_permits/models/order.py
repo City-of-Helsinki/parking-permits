@@ -417,7 +417,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         verbose_name_plural = _("Orders")
 
     def __str__(self):
-        return f"Order #{self.id} ({self.status})"
+        return f"Order: {self.id} ({self.status})"
 
     @property
     def is_confirmed(self):
@@ -483,9 +483,8 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    @transaction.atomic
     def cancel(self, cancel_from_talpa=True):
-        logger.info(f"Cancelling order: {self.talpa_order_id}")
+        logger.info(f"Order cancel process started: {self.talpa_order_id}")
         try:
             OrderValidator.validate_order(self.talpa_order_id, self.customer.user.uuid)
         except OrderValidationError as e:
@@ -501,6 +500,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
                 )
         self.status = OrderStatus.CANCELLED
         self.save()
+        logger.info(f"Order {self.talpa_order_id} cancel process done")
         return True
 
 
@@ -512,6 +512,7 @@ class SubscriptionStatus(models.TextChoices):
 class SubscriptionCancelReason(models.TextChoices):
     RENEWAL_FAILED = "RENEWAL_FAILED", _("Renewal failed")
     USER_CANCELLED = "USER_CANCELLED", _("User cancelled")
+    PERMIT_EXPIRED = "PERMIT_EXPIRED", _("Permit expired")
 
 
 class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
@@ -536,7 +537,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         verbose_name_plural = _("Subscriptions")
 
     def __str__(self):
-        return f"Subscription #{self.talpa_subscription_id}"
+        return f"Subscription: {self.talpa_subscription_id}"
 
     def _cancel_talpa_subcription(self, customer_id):
         headers = {
@@ -569,9 +570,10 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    @transaction.atomic
     def cancel(self, cancel_reason, cancel_from_talpa=True):
-        logger.info(f"Cancelling subscription: {self.talpa_subscription_id}")
+        logger.info(
+            f"Subscription cancel process started: {self.talpa_subscription_id}"
+        )
 
         order_item = self.order_items.first()
         order = order_item.order
@@ -622,7 +624,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         if not remaining_valid_order_subscriptions.exists():
             order.cancel(cancel_from_talpa=cancel_from_talpa)
 
-        logger.info(f"Subscription {self.talpa_subscription_id} cancelled successfully")
+        logger.info(f"Subscription {self.talpa_subscription_id} cancel process done")
         return True
 
 

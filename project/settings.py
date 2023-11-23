@@ -17,6 +17,8 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["*"]),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
+    TALPA_NAMESPACE=(str, "asukaspysakointi"),
+    TALPA_API_KEY=(str, ""),
     TALPA_MERCHANT_EXPERIENCE_API=(
         str,
         "",
@@ -25,21 +27,21 @@ env = environ.Env(
     TALPA_ORDER_EXPERIENCE_API=(str, ""),
     TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS=(int, 15),
     TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=(int, 5),
+    TALPA_WEBHOOK_WAIT_BUFFER_SECONDS=(int, 5),
     TALPA_SUBSCRIPTION_PERIOD_UNIT=(str, "monthly"),
-    OPEN_CITY_PROFILE_GRAPHQL_API=(str, "https://profile-api.test.hel.ninja/graphql/"),
     KAMI_URL=(str, "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"),
+    OPEN_CITY_PROFILE_GRAPHQL_API=(str, "https://profile-api.test.hel.ninja/graphql/"),
     TOKEN_AUTH_ACCEPTED_AUDIENCE=(str, ""),
     TOKEN_AUTH_ACCEPTED_SCOPE_PREFIX=(str, ""),
     TOKEN_AUTH_AUTHSERVER_URL=(str, ""),
     TOKEN_AUTH_REQUIRE_SCOPE_PREFIX=(str, ""),
-    TALPA_API_KEY=(str, ""),
-    TALPA_NAMESPACE=(str, "asukaspysakointi"),
     GDPR_API_QUERY_SCOPE=(str, ""),
     GDPR_API_DELETE_SCOPE=(str, ""),
     PARKKIHUBI_DOMAIN=(str, ""),
     PARKKIHUBI_PERMIT_SERIES=(str, ""),
     PARKKIHUBI_TOKEN=(str, ""),
     PARKKIHUBI_OPERATOR_ENDPOINT=(str, ""),
+    DEBUG_SKIP_PARKKIHUBI_SYNC=(bool, False),
     TRAFICOM_ENDPOINT=(str, ""),
     TRAFICOM_USERNAME=(str, ""),
     TRAFICOM_PASSWORD=(str, ""),
@@ -63,11 +65,10 @@ env = environ.Env(
     EMAIL_PORT=(int, 25),
     EMAIL_TIMEOUT=(int, 15),
     DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <noreply_pysakointitunnus@hel.fi>"),
+    THIRD_PARTY_PARKING_PROVIDER_EMAILS=(list, []),
     FIELD_ENCRYPTION_KEYS=(str, ""),
     SENTRY_DSN=(str, ""),
     SENTRY_ENVIRONMENT=(str, ""),
-    THIRD_PARTY_PARKING_PROVIDER_EMAILS=(list, []),
-    DEBUG_SKIP_PARKKIHUBI_SYNC=(bool, False),
 )
 
 if path.exists(".env"):
@@ -191,6 +192,7 @@ TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS = env("TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS")
 TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS = env(
     "TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS"
 )
+TALPA_WEBHOOK_WAIT_BUFFER_SECONDS = env("TALPA_WEBHOOK_WAIT_BUFFER_SECONDS")
 
 # PARKKIHUBI
 PARKKIHUBI_DOMAIN = env("PARKKIHUBI_DOMAIN")

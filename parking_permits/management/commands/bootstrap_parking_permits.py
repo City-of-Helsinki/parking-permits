@@ -10,11 +10,6 @@ class Command(BaseCommand):
         call_command("create_test_address")
         call_command(
             "create_parking_zone_products",
-            start_date="2023-01-01",
-            end_date="2023-05-31",
-        )
-        call_command(
-            "create_parking_zone_products",
             start_date="2023-06-01",
             end_date="2023-11-30",
             price_increment_factor_old_zone=1.5,

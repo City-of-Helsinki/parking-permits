@@ -358,10 +358,7 @@ def resolve_get_vehicle_information(_obj, info, registration):
     is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
     if not is_user_of_vehicle:
         raise TraficomFetchVehicleError(
-            _("Customer is not an owner or holder of a vehicle %(registration)s")
-            % {
-                "registration": registration,
-            }
+            _("Owner/holder data of a vehicle could not be verified")
         )
 
     has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
@@ -411,41 +408,46 @@ def resolve_update_permit_vehicle(
         [item["price_change"] * item["month_count"] for item in price_change_list]
     )
 
-    if permit_total_price_change > 0:
+    is_higher_price = permit_total_price_change > 0
+
+    if is_higher_price:
         permit.next_vehicle = new_vehicle
         permit.save()
     else:
         permit.vehicle = new_vehicle
         permit.save()
 
-    new_order = Order.objects.create_renewal_order(
-        customer,
-        status=OrderStatus.CONFIRMED,
-        order_type=OrderType.VEHICLE_CHANGED,
-        payment_type=OrderPaymentType.ONLINE_PAYMENT,
-        user=request.user,
-        create_renew_order_event=permit_total_price_change > 0,
-    )
-
-    if permit_total_price_change < 0:
-        refund = Refund.objects.create(
-            name=customer.full_name,
-            order=new_order,
-            amount=-permit_total_price_change,
-            iban=iban if iban else "",
-            description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
-        )
-        refund.permits.add(permit)
-        logger.info(f"Refund for updating permits created: {refund}")
-        send_refund_email(RefundEmailType.CREATED, customer, refund)
-        ParkingPermitEventFactory.make_create_refund_event(
-            permit, refund, created_by=request.user
+    if permit_total_price_change:
+        new_order = Order.objects.create_renewal_order(
+            customer,
+            status=OrderStatus.CONFIRMED,
+            order_type=OrderType.VEHICLE_CHANGED,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            user=request.user,
+            create_renew_order_event=is_higher_price,
         )
 
-    if permit_total_price_change > 0:
-        checkout_url = TalpaOrderManager.send_to_talpa(new_order)
-        permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
-        talpa_order_created = True
+        if is_higher_price:
+            """New price is higher: generate a checkout request"""
+            checkout_url = TalpaOrderManager.send_to_talpa(new_order)
+            permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+            talpa_order_created = True
+
+        else:
+            """New price is lower: generate a refund"""
+            refund = Refund.objects.create(
+                name=customer.full_name,
+                order=new_order,
+                amount=abs(permit_total_price_change),
+                iban=iban if iban else "",
+                description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
+            )
+            refund.permits.add(permit)
+            logger.info(f"Refund for updating permits created: {refund}")
+            send_refund_email(RefundEmailType.CREATED, customer, refund)
+            ParkingPermitEventFactory.make_create_refund_event(
+                permit, refund, created_by=request.user
+            )
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None

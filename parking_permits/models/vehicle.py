@@ -47,7 +47,7 @@ def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
 
     if (
         not euro_class
-        or emission is None
+        or emission in (None, 0)
         or euro_class < le_criteria.euro_min_class_limit
     ):
         return False
