@@ -80,6 +80,7 @@ type VehicleNode {
   emission: Int
   emissionType: String
   powerType: VehiclePowerTypeNode
+  restrictions: [String]
 }
 
 type AnnouncementNode {
