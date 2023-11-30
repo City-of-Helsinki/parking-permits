@@ -154,7 +154,9 @@ class CustomerPermit:
             vehicle = permit.vehicle
             # Update vehicle detail from traficom if it wasn't updated today
             if permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now()):
-                self.customer.fetch_vehicle_detail(vehicle.registration_number)
+                vehicle = self.customer.fetch_vehicle_detail(
+                    vehicle.registration_number
+                )
 
             user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
             if not user_of_vehicle:
@@ -242,6 +244,7 @@ class CustomerPermit:
             ParkingPermitEventFactory.make_create_permit_event(
                 permit, created_by=self.customer.user
             )
+
             return permit
 
     def delete(self, permit_id):

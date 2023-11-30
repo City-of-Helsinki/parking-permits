@@ -22,20 +22,19 @@ ssl.match_hostname = lambda cert, hostname: True
 logger = logging.getLogger("db")
 
 
-VEHICLE_RESTRICTIONS = {
-    "03": _("ajokielto"),
-    "07": _("valvontakatsastusvelvollisuus laiminlyöty"),
-    "10": _("määräaikaiskatsastus suorittamatta/hylätty"),
-    "11": _("ajoneuvo anastettu"),
-    "18": _("liikenteestä poisto"),
-    "19": _("lopullinen poisto"),
-    "20": _("rekisteristä poisto"),
-    "22": _("ajoneuvovero erääntynyt"),
-    "23": _("ajoneuvo käyttökiellossa/lisävero"),
-    "24": _("vanha ajoneuvo-/dieselvero erääntynyt"),
-    "25": _("kilpien haltuunotto"),
-    "34": _("ajokielto kilpien haltuunotosta"),
-}
+VEHICLE_RESTRICTIONS = (
+    "03",
+    "07",
+    "10",
+    "11",
+    "18",
+    "20",
+    "22",
+    "23",
+    "24",
+    "25",
+    "34",
+)
 
 # these codes will raise an error and prevent adding a permit
 BLOCKING_VEHICLE_RESTRICTIONS = ("18", "19")
@@ -115,20 +114,16 @@ class Traficom:
             except AttributeError:
                 continue
 
+            if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
+                raise TraficomFetchVehicleError(
+                    _("Vehicle %(registration_number)s is decommissioned")
+                    % {
+                        "registration_number": registration_number,
+                    }
+                )
+
             if restriction_type in VEHICLE_RESTRICTIONS:
-                message = _("Rajoituslaji %(type): %(description)") % {
-                    "type": restriction_type,
-                    "description": VEHICLE_RESTRICTIONS[restriction_type],
-                }
-
-                if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
-                    raise TraficomFetchVehicleError(
-                        message
-                        + " "
-                        + _("Ajoneuvon tiedot - Liikenneasioidenrekisteri, Traficom")
-                    )
-
-                restrictions.append(message)
+                restrictions.append(restriction_type)
 
         vehicle_identity = et.find(".//tunnus")
         motor = et.find(".//moottori")
@@ -182,6 +177,7 @@ class Traficom:
             "last_inspection_date": last_inspection_date.text
             if last_inspection_date is not None
             else None,
+            "restrictions": restrictions or [],
         }
         vehicle_users = []
         for user_nin in user_ssns:
@@ -191,7 +187,6 @@ class Traficom:
             registration_number=registration_number, defaults=vehicle_details
         )[0]
         vehicle.users.set(vehicle_users)
-        vehicle.restrictions = restrictions
         return vehicle
 
     def fetch_driving_licence_details(self, hetu):
