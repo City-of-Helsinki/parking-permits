@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django.contrib.postgres.fields import ArrayField
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
@@ -158,6 +159,12 @@ class Vehicle(TimestampedModelMixin):
     )
     users = models.ManyToManyField(
         VehicleUser, verbose_name=_("Vehicle users"), related_name="vehicles"
+    )
+
+    restrictions = ArrayField(
+        verbose_name=_("Traficom Restrictions"),
+        base_field=models.CharField(max_length=2, blank=True),
+        default=list,
     )
 
     class Meta:
