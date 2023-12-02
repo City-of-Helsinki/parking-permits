@@ -45,6 +45,8 @@ VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
 VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
+NO_DRIVING_LICENSE_ERROR_CODE = "562"
+NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
 
 POWER_TYPE_MAPPER = {
     "01": "Bensin",
@@ -190,9 +192,19 @@ class Traficom:
         return vehicle
 
     def fetch_driving_licence_details(self, hetu):
+        error_code = None
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
-        if driving_licence_et.find("ajooikeusluokat") is None:
+        try:
+            error_code = et.find(".//yleinen/virhe/virhekoodi").text
+        except AttributeError:
+            pass
+        if error_code == NO_DRIVING_LICENSE_ERROR_CODE:
+            raise TraficomFetchVehicleError(_("The person has no driving licence"))
+        if (
+            error_code == NO_VALID_DRIVING_LICENSE_ERROR_CODE
+            or driving_licence_et.find("ajooikeusluokat") is None
+        ):
             raise TraficomFetchVehicleError(_("No valid driving licence"))
 
         driving_licence_categories_et = driving_licence_et.findall(
