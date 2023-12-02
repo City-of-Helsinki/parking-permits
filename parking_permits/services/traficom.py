@@ -193,14 +193,7 @@ class Traficom:
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
         if driving_licence_et.find("ajooikeusluokat") is None:
-            raise TraficomFetchVehicleError(
-                _(
-                    "According to the Digital and Population Data Services Agency, "
-                    "you do not live in the Resident parking area. "
-                    "If you have just moved to a Resident parking area, "
-                    "contact Digital and Population Data Services Agency."
-                )
-            )
+            raise TraficomFetchVehicleError(_("No valid driving licence"))
 
         driving_licence_categories_et = driving_licence_et.findall(
             "viimeisinajooikeus/ajooikeusluokka"
