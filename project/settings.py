@@ -15,6 +15,7 @@ env = environ.Env(
     DEBUG=(bool, False),
     DJANGO_SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
+    CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi", "https://*.hel.ninja"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
     TALPA_NAMESPACE=(str, "asukaspysakointi"),
@@ -213,9 +214,8 @@ TRAFICOM_PALVELU_TUNNUS = env("TRAFICOM_PALVELU_TUNNUS")
 TRAFICOM_VERIFY_SSL = env("TRAFICOM_VERIFY_SSL")
 TRAFICOM_CHECK = env("TRAFICOM_CHECK")
 
-# cors
-CORS_ORIGIN_ALLOW_ALL = True
-
+# CORS
+CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-authorization",  # for passing Helsinki Profile API token form frontend
 ]

@@ -43,6 +43,7 @@ type VehicleNode {
   registrationNumber: String
   emission: Int
   isLowEmission: Boolean
+  restrictions: [String]
 }
 
 type ProductNode {
