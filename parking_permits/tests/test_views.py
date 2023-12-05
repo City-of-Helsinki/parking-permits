@@ -339,7 +339,7 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
 
     def test_resolve_price_view_for_low_emission_vehicle(self):
         unit_price = Decimal(60)
-        low_emission_discount = Decimal(0.5)
+        low_emission_discount = Decimal(0.25)
         permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount
         )
@@ -413,7 +413,7 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
     def test_resolve_price_view_for_secondary_low_emission_vehicle(self):
         secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
-        low_emission_discount = Decimal(0.5)
+        low_emission_discount = Decimal(0.25)
         permit, product = self.prepare_test_data(
             self.permit_id, unit_price, low_emission_discount, primary_permit=False
         )
