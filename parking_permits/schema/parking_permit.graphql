@@ -91,6 +91,7 @@ type PermitNode {
   primaryVehicle: Boolean
   monthsLeft: Int
   currentPeriodEndTime: String
+  canBeRefunded: Boolean
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
   hasRefund: Boolean
