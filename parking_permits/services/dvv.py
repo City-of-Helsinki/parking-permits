@@ -8,7 +8,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import ObjectNotFound
-from parking_permits.models import ParkingZone
+from parking_permits.models import Customer, ParkingZone
 from parking_permits.services.kami import get_address_details, parse_street_data
 
 logger = logging.getLogger("db")
@@ -168,6 +168,12 @@ def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
         other_address = format_address(temporary_address)
         other_apartment = other_address.get("apartment", "")
 
+    customer = Customer.objects.filter(
+        national_id_number=national_id_number, user__is_active=True
+    ).first()
+
+    active_permits = customer.active_permits if customer else []
+
     return {
         "national_id_number": national_id_number,
         "first_name": first_name,
@@ -180,4 +186,5 @@ def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
         "email": "",
         "address_security_ban": False,
         "driver_license_checked": False,
+        "active_permits": active_permits,
     }
