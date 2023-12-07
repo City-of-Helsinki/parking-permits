@@ -669,8 +669,8 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
         {"name": "unit_price"},
         {"name": "vat_percentage"},
         {"name": "quantity"},
-        {"name": "start_date"},
-        {"name": "end_date"},
+        {"name": "start_time"},
+        {"name": "end_time"},
     )
 
     class Meta:
