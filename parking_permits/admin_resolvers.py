@@ -265,7 +265,12 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
         logger.info("Searching customer from DVV...")
         customer = get_person_info(national_id_number)
     if not customer:
-        raise ObjectNotFound(_("Person not found"))
+        # We're searching data from APP now, so change the event type.
+        audit_msg.event_type = audit.EventType.APP
+        logger.info("Searching customer from DB...")
+        customer = Customer.objects.filter(**query_params).first()
+        if not customer:
+            raise ObjectNotFound(_("Customer not found"))
 
     return customer
 
