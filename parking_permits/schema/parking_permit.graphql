@@ -98,6 +98,7 @@ type PermitNode {
   vehicleChanged: Boolean
   zoneChanged: Boolean
   isOrderConfirmed: Boolean
+  totalRefundAmount: Float
 }
 
 type PermitPriceChangeItem {
