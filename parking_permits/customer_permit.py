@@ -206,6 +206,8 @@ class CustomerPermit:
                 primary_vehicle = not primary_permit.primary_vehicle
                 end_time = primary_permit.end_time
 
+            self.customer.fetch_driving_licence_detail()
+
             vehicle = self.customer.fetch_vehicle_detail(registration)
             is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
             if not is_user_of_vehicle:
