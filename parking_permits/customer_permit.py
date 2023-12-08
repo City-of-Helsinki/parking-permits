@@ -495,20 +495,20 @@ class CustomerPermit:
         product = product_with_qty[0]
         quantity = product_with_qty[1]
 
-        base_price = unit_price = product.unit_price
-        discount_price = base_price - (product.low_emission_discount * base_price)
-
-        if permit.vehicle.is_low_emission:
-            unit_price = discount_price
+        base_price = product.unit_price
 
         if not permit.primary_vehicle:
             increase = decimal.Decimal(SECONDARY_VEHICLE_PRICE_INCREASE) / 100
-            unit_price += increase * unit_price
+            base_price += increase * base_price
+
+        discount_price = base_price - (product.low_emission_discount * base_price)
+        unit_price = discount_price if permit.vehicle.is_low_emission else base_price
 
         product.base_price = base_price
         product.discount_price = discount_price
-        product.quantity = quantity
+
         product.unit_price = unit_price
+        product.quantity = quantity
         product.total_price = unit_price * quantity
 
         return product
