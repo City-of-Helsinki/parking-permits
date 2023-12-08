@@ -128,7 +128,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     low_emission_discount = models.DecimalField(
-        _("Low emission discount"), max_digits=6, decimal_places=4
+        _("Low emission discount"), max_digits=12, decimal_places=10
     )
     objects = ProductQuerySet.as_manager()
 
