@@ -13,7 +13,7 @@ from helusers.settings import api_token_auth_settings
 from jose import jwt
 from rest_framework.test import APITestCase
 
-from parking_permits.exceptions import DeletionNotAllowed, TraficomFetchVehicleError
+from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.order import (
     Order,
@@ -1512,9 +1512,10 @@ class SubscriptionViewTestCase(APITestCase):
 )
 class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
     CUSTOMER_SOURCE_ID = "profile-source-id"
+    CUSTOMER_USER_UUID = "e3ae5afa-a20d-421f-899e-7758e6a06abe"
 
     def create_customer(self):
-        user = UserFactory()
+        user = UserFactory(uuid=self.CUSTOMER_USER_UUID)
         customer = CustomerFactory(
             user=user,
             source_system=SourceSystem.HELSINKI_PROFILE,
@@ -1529,7 +1530,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
 
     def assert_customer_deleted(self):
         self.assertFalse(
-            Customer.objects.filter(source_id=self.CUSTOMER_SOURCE_ID).exists()
+            Customer.objects.filter(user__uuid=self.CUSTOMER_USER_UUID).exists()
         )
         self.assertFalse(ParkingPermit.objects.exists())
 
@@ -1576,10 +1577,10 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         auth_header = self.get_auth_header(
             customer.user, [settings.GDPR_API_QUERY_SCOPE], req_mock
         )
-        url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+        url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
         self.client.credentials(HTTP_AUTHORIZATION=auth_header)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 204)
 
     @requests_mock.Mocker()
     def test_get_profile_should_be_forbidden_with_wrong_scope(self, req_mock):
@@ -1587,7 +1588,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         auth_header = self.get_auth_header(
             customer.user, ["testprefix.invalid"], req_mock
         )
-        url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+        url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
         self.client.credentials(HTTP_AUTHORIZATION=auth_header)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
@@ -1601,7 +1602,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             auth_header = self.get_auth_header(
                 customer.user, [settings.GDPR_API_DELETE_SCOPE], req_mock
             )
-            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 204)
@@ -1616,14 +1617,14 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             auth_header = self.get_auth_header(
                 customer.user, ["testprefix.wrong_scope"], req_mock
             )
-            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 403)
             self.assert_customer_not_deleted()
 
     @requests_mock.Mocker()
-    def test_delete_profile_should_be_forbidden_if_customer_cannot_be_deleted(
+    def test_delete_profile_should_return_no_content_if_customer_cannot_be_deleted(
         self, req_mock
     ):
         with freeze_time(datetime.datetime(2020, 1, 1)):
@@ -1638,10 +1639,10 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             auth_header = self.get_auth_header(
                 customer.user, [settings.GDPR_API_DELETE_SCOPE], req_mock
             )
-            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
-            with self.assertRaises(DeletionNotAllowed):
-                self.client.delete(url)
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, 204)
             self.assert_customer_not_deleted()
 
     @requests_mock.Mocker()
@@ -1660,7 +1661,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             auth_header = self.get_auth_header(
                 customer.user, [settings.GDPR_API_DELETE_SCOPE], req_mock
             )
-            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.source_id})
+            url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             # make sure we do not deleted the profile when client specify different types of true values
             true_values = ["true", "True", "TRUE", "1", 1, True]

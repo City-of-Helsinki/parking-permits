@@ -181,7 +181,6 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
         audit_msg.operation = audit.Operation.UPDATE
         audit_msg.message = "User profile was updated automatically."
 
-    customer_obj.fetch_driving_licence_detail()
     return customer_obj
 
 
