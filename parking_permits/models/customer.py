@@ -213,7 +213,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
         This property can be used to check if the deleting is allowed
         via GDPR API triggered from Helsinki Profile or automatic
-        removal process. A customer that can be removed must sadifity
+        removal process. A customer that can be removed must satisfy
         following conditions:
 
         - The last modified time of the customer is more than 2 years ago
