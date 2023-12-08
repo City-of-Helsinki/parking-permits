@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import time
+import uuid
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -31,7 +32,6 @@ from .constants import Origin, ParkingPermitEndType
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
 from .exceptions import (
-    DeletionNotAllowed,
     OrderValidationError,
     ParkkihubiPermitError,
     SubscriptionValidationError,
@@ -776,25 +776,36 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
         add_kwarg=True,
     )
     def get(self, request, *args, audit_msg: AuditMsg = None, **kwargs):
-        obj = self.get_object()
-        audit_msg.target = obj
-        return Response(obj.serialize(), status=200)
+        customer = self.get_object()
+        if not customer:
+            logger.info(f"Customer {customer} not found")
+            return Response(status=204)
+        audit_msg.target = customer
+        return Response(customer.serialize(), status=204)
 
-    def get_object(self) -> Customer:
+    def get_object(self) -> Customer | None:
         try:
+            user_id = self.kwargs["id"]
+            if not self.is_valid_uuid(user_id):
+                return None
             customer = Customer.objects.get(
-                source_system=SourceSystem.HELSINKI_PROFILE, source_id=self.kwargs["id"]
+                source_system=SourceSystem.HELSINKI_PROFILE,
+                user__uuid=user_id,
             )
         except Customer.DoesNotExist:
-            raise Http404
+            return None
         else:
             self.check_object_permissions(self.request, customer)
             return customer
 
     def _delete(self):
         customer = self.get_object()
+        if not customer:
+            logger.info(f"Customer {customer} not found")
+            return Response(status=204)
         if not customer.can_be_deleted:
-            raise DeletionNotAllowed()
+            logger.info(f"Customer {customer} cannot be deleted.")
+            return Response(status=403)
         customer.delete_all_data()
 
     def delete(self, request, *args, **kwargs):
@@ -805,6 +816,13 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
             if dry_run_serializer.data["dry_run"]:
                 transaction.set_rollback(True)
         return Response(status=204)
+
+    def is_valid_uuid(self, value):
+        try:
+            uuid.UUID(str(value))
+            return True
+        except (AttributeError, ValueError):
+            return False
 
 
 @require_preparators
