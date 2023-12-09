@@ -304,7 +304,7 @@ sentry_sdk.init(
 # Debug
 
 # Skip Parkkihubi sync on permit create/update.
-DEBUG_SKIP_PARKKIHUBI_SYNC = DEBUG and env("DEBUG_SKIP_PARKKIHUBI_SYNC")
+DEBUG_SKIP_PARKKIHUBI_SYNC = env("DEBUG_SKIP_PARKKIHUBI_SYNC")
 
 if DEBUG:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
