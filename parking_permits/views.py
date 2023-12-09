@@ -783,7 +783,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
         audit_msg.target = customer
         return Response(customer.serialize(), status=204)
 
-    def get_object(self) -> Customer | None:
+    def get_object(self):
         try:
             user_id = self.kwargs["id"]
             if not self.is_valid_uuid(user_id):
