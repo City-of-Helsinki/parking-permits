@@ -560,6 +560,12 @@ def resolve_change_address(
     request = info.context["request"]
     customer = request.user.customer
     address = validate_customer_address(customer, address_id)
+    if address_id == str(customer.primary_address_id):
+        address_apartment = customer.primary_address_apartment
+        address_apartment_sv = customer.primary_address_apartment_sv
+    else:
+        address_apartment = customer.other_address_apartment
+        address_apartment_sv = customer.other_address_apartment_sv
     new_zone = address.zone
 
     permits = ParkingPermit.objects.active().filter(customer=customer)
@@ -578,10 +584,6 @@ def resolve_change_address(
         raise ParkingZoneError(_("Conflict parking zones for active permits"))
 
     response = {"success": True}
-
-    if permit_zone_ids[0] == new_zone.id:
-        logger.info("No changes to the parking zone")
-        return response
 
     fixed_period_permits = permits.fixed_period()
     if len(fixed_period_permits) > 0:
@@ -624,12 +626,20 @@ def resolve_change_address(
             new_order_status = OrderStatus.DRAFT
             # update permit new zone to next parking zone and use that in price calculation
             fixed_period_permits.update(
-                next_parking_zone=new_zone, next_address=address
+                next_parking_zone=new_zone,
+                next_address=address,
+                next_address_apartment=address_apartment,
+                next_address_apartment_sv=address_apartment_sv,
             )
         else:
             new_order_status = OrderStatus.CONFIRMED
             old_zone_name = fixed_period_permits[0].parking_zone.name
-            fixed_period_permits.update(parking_zone=new_zone, address=address)
+            fixed_period_permits.update(
+                parking_zone=new_zone,
+                address=address,
+                address_apartment=address_apartment,
+                address_apartment_sv=address_apartment_sv,
+            )
             for permit in fixed_period_permits:
                 ParkingPermitEventFactory.make_update_permit_event(
                     permit,
@@ -683,6 +693,8 @@ def resolve_change_address(
         with ModelDiffer(permit, fields=EventFields.PERMIT) as permit_diff:
             permit.parking_zone = new_zone
             permit.address = address
+            permit.address_apartment = address_apartment
+            permit.address_apartment_sv = address_apartment_sv
             permit.save()
 
         ParkingPermitEventFactory.make_update_permit_event(
