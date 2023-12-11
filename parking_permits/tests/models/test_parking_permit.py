@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -658,6 +658,42 @@ class TestParkingPermit(TestCase):
         item = OrderItemFactory(permit=self.permit)
         self.permit.orders.add(item.order)
         self.assertEqual(self.permit.checkout_url, item.order.talpa_checkout_url)
+
+    def test_can_be_refunded_fixed(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+        )
+
+        self.assertTrue(permit.can_be_refunded)
+
+    def test_can_be_refunded_fixed_inactive(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.CLOSED,
+        )
+
+        self.assertFalse(permit.can_be_refunded)
+
+    def test_can_be_refunded_open_ended_already_started(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=timezone.now() - timedelta(days=1),
+            end_time=timezone.now() + timedelta(days=30),
+        )
+
+        self.assertFalse(permit.can_be_refunded)
+
+    def test_can_be_refunded_open_ended_ends_more_than_month(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=timezone.now() - timedelta(days=1),
+            end_time=timezone.now() + timedelta(days=59),
+        )
+
+        self.assertTrue(permit.can_be_refunded)
 
     @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.post", return_value=MockResponse(201))
