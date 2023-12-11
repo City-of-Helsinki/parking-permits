@@ -781,7 +781,7 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
             logger.info(f"Customer {customer} not found")
             return Response(status=204)
         audit_msg.target = customer
-        return Response(customer.serialize(), status=204)
+        return Response(customer.serialize(), status=200)
 
     def get_object(self):
         try:
