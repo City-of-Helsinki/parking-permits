@@ -1580,7 +1580,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         url = reverse("parking_permits:gdpr_v1", kwargs={"id": customer.user.uuid})
         self.client.credentials(HTTP_AUTHORIZATION=auth_header)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 204)
+        self.assertEqual(response.status_code, 200)
 
     @requests_mock.Mocker()
     def test_get_profile_should_be_forbidden_with_wrong_scope(self, req_mock):

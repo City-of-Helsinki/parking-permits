@@ -377,9 +377,28 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def can_be_refunded(self):
-        return self.is_valid and (
-            self.is_fixed_period or self.current_period_start_time > timezone.now()
-        )
+        """Determines if a permit is refundable in principle. The exact amounts refunded
+        may still be zero depending on individual refundable order amounts."""
+
+        # only valid permits can be refunded
+        if not self.is_valid:
+            return False
+
+        # any fixed period permit
+        if self.is_fixed_period:
+            return True
+
+        now = timezone.now()
+
+        # if open ended permit has not yet started
+        if self.current_period_start_time > now:
+            return True
+
+        # if the end period > 1 month: this can happen if Talpa renews permit
+        if self.end_time and self.end_time - relativedelta(months=1) > now:
+            return True
+
+        return False
 
     @property
     def total_refund_amount(self):
