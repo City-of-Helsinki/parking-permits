@@ -2,7 +2,6 @@ import logging
 from urllib.parse import urljoin
 
 import requests
-from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models, transaction
@@ -591,8 +590,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         self.cancel_reason = cancel_reason
         self.save()
 
-        # Create a refund for a remaining full month period, if it was charged already
-        if permit.end_time and permit.end_time - relativedelta(months=1) > tz.now():
+        if permit.can_be_refunded:
             logger.info(f"Creating Refund for permit {str(permit.id)}")
             refund = Refund.objects.create(
                 name=permit.customer.full_name,
