@@ -99,7 +99,7 @@ class TalpaOrderManager:
             {
                 "key": "copyright",
                 "label": "",
-                "value": f'© {_("Vehicle information - Transport register, Traficom")}',
+                "value": _("Source: Transport register, Traficom"),
                 "visibleInCheckout": True,
                 "ordinal": 5,
             },
