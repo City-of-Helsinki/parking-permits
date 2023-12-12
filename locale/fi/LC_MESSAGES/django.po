@@ -318,8 +318,8 @@ msgstr "Helsingin kaupunki"
 msgid "Personal data - Digital and population data services agency"
 msgstr "Henkilötiedot - Digi- ja väestötietovirasto"
 
-msgid "Vehicle information - Transport register, Traficom"
-msgstr "Ajoneuvon tiedot - Liikenneasioidenrekisteri, Traficom"
+msgid "Source: Transport register, Traficom"
+msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
 
 msgid "Permit ID"
 msgstr "Tunniste"
