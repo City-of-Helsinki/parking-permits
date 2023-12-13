@@ -313,8 +313,8 @@ msgstr "Helsingfors stad"
 msgid "Personal data - Digital and population data services agency"
 msgstr "Personuppgifter - Digital- och befolkningsdatatjänstbyrå"
 
-msgid "Vehicle information - Transport register, Traficom"
-msgstr "Fordonsuppgifter - Trafik- och transportregistret, Traficom"
+msgid "Source: Transport register, Traficom"
+msgstr "Källä: Trafik- och transportregistret, Traficom"
 
 msgid "Permit ID"
 msgstr "Permit ID"
