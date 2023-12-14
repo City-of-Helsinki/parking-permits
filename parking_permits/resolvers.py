@@ -46,7 +46,7 @@ from .services.mail import (
 )
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
-from .utils import ModelDiffer, get_user_from_resolver_args
+from .utils import ModelDiffer, get_user_from_resolver_args, is_valid_city
 
 logger = logging.getLogger("db")
 audit_logger = audit.getAuditLoggerAdapter(
@@ -81,9 +81,7 @@ ACTIVE_PERMIT_STATUSES = [
 
 
 def is_valid_address(address):
-    if not address:
-        return False
-    return address.get("city").upper() == "HELSINKI"
+    return address and is_valid_city(address)
 
 
 @query.field("getPermits")

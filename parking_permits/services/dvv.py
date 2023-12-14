@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.exceptions import ObjectNotFound
 from parking_permits.models import Customer, ParkingZone
 from parking_permits.services.kami import get_address_details, parse_street_data
+from parking_permits.utils import is_valid_city
 
 logger = logging.getLogger("db")
 
@@ -120,11 +121,8 @@ def format_address(address_data) -> DvvAddressInfo:
 
 
 def is_valid_address(address):
-    return (
-        address["LahiosoiteS"] != ""
-        and address["PostitoimipaikkaS"]
-        and address["PostitoimipaikkaS"].upper() == "HELSINKI"
-    )
+    address_valid = address and address["LahiosoiteS"] and address["PostitoimipaikkaS"]
+    return address_valid and is_valid_city(address["PostitoimipaikkaS"])
 
 
 def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
