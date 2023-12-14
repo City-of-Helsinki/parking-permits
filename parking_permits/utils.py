@@ -9,6 +9,7 @@ from itertools import chain
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import models
 from django.utils import timezone as tz
 from graphql import GraphQLResolveInfo
@@ -342,3 +343,9 @@ def round_up(v):
         if v
         else "0.00"
     )
+
+
+def is_valid_city(city):
+    if settings.HELSINKI_ADDRESS_CHECK:
+        return city and city.casefold() == "helsinki"
+    return True
