@@ -82,6 +82,26 @@ class GetPersonInfoTestCase(TestCase):
         self.assertEqual(customer["other_address"], None)
         self.assertEqual(customer["other_address_apartment"], "")
 
+    @patch("parking_permits.services.dvv.get_address_details")
+    @patch("requests.post")
+    def test_mock_customer_info_null_swedish_address(
+        self, mock_post, mock_get_address_details
+    ):
+        mock_info = self.get_mock_info()
+        mock_info["Henkilo"]["VakinainenKotimainenLahiosoite"]["LahiosoiteR"] = None
+
+        mock_post.return_value = self.MockResponse(data=mock_info)
+        mock_get_address_details.return_value = {"location": generate_multi_polygon()}
+        customer = get_person_info("12345")
+        self.assertEqual(customer["first_name"], "Heikki")
+        self.assertEqual(customer["last_name"], "Häkkinen")
+        self.assertEqual(customer["primary_address"]["street_name"], "Käsivoide")
+        self.assertEqual(customer["primary_address"]["street_name_sv"], "")
+        self.assertEqual(customer["primary_address"]["street_number"], "1")
+        self.assertEqual(customer["primary_address"]["postal_code"], "10001")
+        self.assertEqual(customer["primary_address"]["city"], "Helsinki")
+        self.assertEqual(customer["primary_address_apartment"], "A6")
+
     def get_mock_info(self, **kwargs):
         return {
             "Henkilo": {
