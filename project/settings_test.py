@@ -10,4 +10,5 @@ LANGUAGE_CODE = "en"
 
 # Debug options. Override these in tests if needed.
 DEBUG_SKIP_PARKKIHUBI_SYNC = True
+HELSINKI_ADDRESS_CHECK = True
 TALPA_WEBHOOK_WAIT_BUFFER_SECONDS = 0
