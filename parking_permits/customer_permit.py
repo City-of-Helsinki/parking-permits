@@ -206,22 +206,24 @@ class CustomerPermit:
                 primary_vehicle = not primary_permit.primary_vehicle
                 end_time = primary_permit.end_time
 
-            self.customer.fetch_driving_licence_detail()
+            if settings.TRAFICOM_CHECK:
+                self.customer.fetch_driving_licence_detail()
 
             vehicle = self.customer.fetch_vehicle_detail(registration)
-            is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
-            if not is_user_of_vehicle:
-                raise TraficomFetchVehicleError(
-                    _("Owner/holder data of a vehicle could not be verified")
-                )
+            if settings.TRAFICOM_CHECK:
+                is_user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
+                if not is_user_of_vehicle:
+                    raise TraficomFetchVehicleError(
+                        _("Owner/holder data of a vehicle could not be verified")
+                    )
 
-            has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
-                vehicle
-            )
-            if not has_valid_licence:
-                raise TraficomFetchVehicleError(
-                    _("Customer does not have a valid driving licence")
+                has_valid_licence = self.customer.has_valid_driving_licence_for_vehicle(
+                    vehicle
                 )
+                if not has_valid_licence:
+                    raise TraficomFetchVehicleError(
+                        _("Customer does not have a valid driving licence")
+                    )
 
             start_time = tz.now()
             if not end_time:

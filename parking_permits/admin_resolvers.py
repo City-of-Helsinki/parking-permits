@@ -305,7 +305,8 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
 )
 def resolve_vehicle(obj, info, reg_number, national_id_number):
     customer = Customer.objects.get_or_create(national_id_number=national_id_number)[0]
-    customer.fetch_driving_licence_detail()
+    if settings.TRAFICOM_CHECK:
+        customer.fetch_driving_licence_detail()
     vehicle = customer.fetch_vehicle_detail(reg_number)
     if not settings.TRAFICOM_CHECK:
         return vehicle
