@@ -97,10 +97,14 @@ def format_address(address_data) -> DvvAddressInfo:
     street_name, street_number, apartment = parse_street_data(
         address_data["LahiosoiteS"]
     )
-    street_name_sv, street_number, apartment_sv = parse_street_data(
-        address_data["LahiosoiteR"]
-    )
+
+    if swedish_address := address_data.get("LahiosoiteR"):
+        street_name_sv, __, apartment_sv = parse_street_data(swedish_address)
+    else:
+        street_name_sv, apartment_sv = "", ""
+
     address_detail = get_address_details(street_name, street_number)
+
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])
     except ParkingZone.DoesNotExist:
