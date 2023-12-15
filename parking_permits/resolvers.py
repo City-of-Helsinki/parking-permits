@@ -81,7 +81,7 @@ ACTIVE_PERMIT_STATUSES = [
 
 
 def is_valid_address(address):
-    return address and is_valid_city(address)
+    return address and is_valid_city(address.get("city"))
 
 
 @query.field("getPermits")

@@ -1408,6 +1408,8 @@ class SubscriptionViewTestCase(APITestCase):
             product=product,
             permit=permit,
             subscription=subscription,
+            quantity=1,
+            unit_price=60.00,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -1435,7 +1437,7 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         refund = Refund.objects.get(order=order)
         self.assertEqual(refund.order, order)
-        self.assertEqual(refund.amount, unit_price)
+        self.assertEqual(refund.amount, Decimal("60.00"))
         self.assertEqual(refund.name, permit.customer.full_name)
         self.assertEqual(refund.status, RefundStatus.OPEN)
 
