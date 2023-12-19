@@ -595,7 +595,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             refund = Refund.objects.create(
                 name=permit.customer.full_name,
                 order=order,
-                amount=order_item.product.unit_price,
+                amount=permit.total_refund_amount,
                 description=f"Refund for ending permit {str(permit.id)}",
             )
             refund.permits.add(permit)
