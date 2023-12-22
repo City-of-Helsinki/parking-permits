@@ -32,7 +32,7 @@ coreschema==0.0.4
     # via
     #   coreapi
     #   drf-yasg
-cryptography==41.0.1
+cryptography==41.0.5
     # via
     #   -r requirements.in
     #   authlib
@@ -161,7 +161,7 @@ uritemplate==4.1.1
     # via
     #   coreapi
     #   drf-yasg
-urllib3==1.26.17
+urllib3==1.26.18
     # via
     #   requests
     #   sentry-sdk
@@ -172,3 +172,4 @@ xmltodict==0.13.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
+setuptools>=65.5.1 # not directly required, pinned by Snyk to avoid a vulnerability
