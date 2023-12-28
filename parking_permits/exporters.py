@@ -195,10 +195,8 @@ class DataExporter:
         return {
             "metadata": {
                 "copyright": {
-                    "© " + _("City of Helsinki") + ", ",
-                    _("Personal data - Digital and population data services agency")
-                    + ", ",
-                    _("Source: Transport register, Traficom") + " " + str(CURRENT_YEAR),
+                    "© " + _("City of Helsinki"),
+                    _("Personal data - Digital and population data services agency"),
                 }
             }
         }
@@ -229,13 +227,6 @@ class BasePDF(FPDF, metaclass=abc.ABCMeta):
         self.cell(0, 5, "© " + _("City of Helsinki"), 0, 1)
         self.cell(
             0, 5, _("Personal data - Digital and population data services agency"), 0, 1
-        )
-        self.cell(
-            0,
-            5,
-            _("Source: Transport register, Traficom") + " " + str(CURRENT_YEAR),
-            0,
-            1,
         )
 
     @abc.abstractmethod
