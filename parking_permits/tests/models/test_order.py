@@ -65,30 +65,30 @@ class TestOrderManager(TestCase):
         self.assertEqual(order_items[1].unit_price, Decimal(50))
         self.assertEqual(order_items[1].quantity, 2)
 
-    @freeze_time("2023-03-15")
     def test_create_for_permits_should_create_order_items_with_start_end_date_for_open_ended_permits(
         self,
     ):
-        start_time = timezone.now()
-        permit = ParkingPermitFactory(
-            parking_zone=self.zone,
-            customer=self.customer,
-            contract_type=ContractType.OPEN_ENDED,
-            status=ParkingPermitStatus.DRAFT,
-            start_time=start_time,
-            month_count=6,
-        )
-        order = Order.objects.create_for_permits([permit])
-        order_items = order.order_items.all().order_by("-quantity")
-        self.assertEqual(order_items.count(), 1)
-        order_item = order_items[0]
-        self.assertEqual(
-            order_item.start_time.date(), timezone.localtime(start_time).date()
-        )
-        self.assertEqual(
-            order_item.end_time.date(),
-            get_end_time(start_time, 1).date(),
-        )
+        with freeze_time(date(CURRENT_YEAR, 3, 5)):
+            start_time = timezone.now()
+            permit = ParkingPermitFactory(
+                parking_zone=self.zone,
+                customer=self.customer,
+                contract_type=ContractType.OPEN_ENDED,
+                status=ParkingPermitStatus.DRAFT,
+                start_time=start_time,
+                month_count=6,
+            )
+            order = Order.objects.create_for_permits([permit])
+            order_items = order.order_items.all().order_by("-quantity")
+            self.assertEqual(order_items.count(), 1)
+            order_item = order_items[0]
+            self.assertEqual(
+                order_item.start_time.date(), timezone.localtime(start_time).date()
+            )
+            self.assertEqual(
+                order_item.end_time.date(),
+                get_end_time(start_time, 1).date(),
+            )
 
     def test_create_renewable_order_should_create_renewal_order(self):
         start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))

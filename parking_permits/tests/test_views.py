@@ -51,7 +51,6 @@ from users.tests.factories.user import UserFactory
 
 from ..models import Customer
 from ..models.common import SourceSystem
-from ..utils import round_up
 from .keys import rsa_key
 
 
@@ -180,10 +179,16 @@ class BaseResolveEndpointTestCase(APITestCase):
     permit_id = "80000001"
 
     def prepare_test_data(
-        self, permit_id, unit_price, low_emission_discount, primary_permit=True
+        self,
+        permit_id,
+        unit_price,
+        low_emission_discount,
+        primary_permit=True,
     ):
-        start_date = datetime.date(2023, 1, 1)
-        end_date = datetime.date(2023, 12, 31)
+        now = datetime.date.today()
+        start_date = datetime.date(now.year, 1, 1)
+        end_date = datetime.date(now.year, 12, 31)
+
         vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
             emission=45,
@@ -198,10 +203,10 @@ class BaseResolveEndpointTestCase(APITestCase):
             euro_min_class_limit=6,
         )
         permit_start_time = datetime.datetime(
-            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+            now.year, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
         )
         permit_end_time = datetime.datetime(
-            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+            now.year, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
         )
         zone_a = ParkingZoneFactory(name="A")
         product_detail_list = [[(start_date, end_date), unit_price]]
@@ -325,17 +330,13 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = product.vat
-        price_vat = unit_price * vat
         self.assertEqual(
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertEqual(
-            response.data.get("priceNet"), round_up(float(unit_price - price_vat))
-        )
-        self.assertEqual(response.data.get("priceVat"), round_up(float(price_vat)))
-        self.assertEqual(response.data.get("priceGross"), round_up(float(unit_price)))
+        self.assertEqual(response.data.get("priceNet"), "48.39")
+        self.assertEqual(response.data.get("priceVat"), "11.61")
+        self.assertEqual(response.data.get("priceGross"), "60.00")
 
     def test_resolve_price_view_for_low_emission_vehicle(self):
         unit_price = Decimal(60)
@@ -353,28 +354,15 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = product.vat
-        low_emission_price = (
-            unit_price - unit_price * low_emission_discount
-        )  # discount price
-        low_emission_price_vat = low_emission_price * vat
         self.assertEqual(
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertEqual(
-            response.data.get("priceGross"), round_up(float(low_emission_price))
-        )
-        self.assertEqual(
-            response.data.get("priceVat"), round_up(float(low_emission_price_vat))
-        )
-        self.assertEqual(
-            response.data.get("priceNet"),
-            round_up(float(low_emission_price - low_emission_price_vat)),
-        )
+        self.assertEqual(response.data.get("priceGross"), "45.00")
+        self.assertEqual(response.data.get("priceVat"), "8.71")
+        self.assertEqual(response.data.get("priceNet"), "36.29")
 
     def test_resolve_price_view_for_secondary_normal_emission_vehicle(self):
-        secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
@@ -390,28 +378,15 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = product.vat
-        secondary_vehicle_price = (
-            unit_price + unit_price * secondary_vehicle_increase_rate
-        )  # secondary vehicle price
-        secondary_vehicle_price_vat = secondary_vehicle_price * vat
         self.assertEqual(
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertEqual(
-            response.data.get("priceGross"), round_up(float(secondary_vehicle_price))
-        )
-        self.assertEqual(
-            response.data.get("priceVat"), round_up(float(secondary_vehicle_price_vat))
-        )
-        self.assertEqual(
-            response.data.get("priceNet"),
-            round_up(float(secondary_vehicle_price - secondary_vehicle_price_vat)),
-        )
+        self.assertEqual(response.data.get("priceGross"), "90.00")
+        self.assertEqual(response.data.get("priceVat"), "17.42")
+        self.assertEqual(response.data.get("priceNet"), "72.58")
 
     def test_resolve_price_view_for_secondary_low_emission_vehicle(self):
-        secondary_vehicle_increase_rate = Decimal(0.5)
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.25)
         permit, product = self.prepare_test_data(
@@ -427,27 +402,13 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         )
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, 200)
-        vat = product.vat
-
-        modified_price = unit_price
-        modified_price -= modified_price * low_emission_discount
-        modified_price += modified_price * secondary_vehicle_increase_rate
-        modified_price_vat = modified_price * vat
-
         self.assertEqual(
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertEqual(
-            response.data.get("priceGross"), round_up(float(modified_price))
-        )
-        self.assertEqual(
-            response.data.get("priceVat"), round_up(float(modified_price_vat))
-        )
-        self.assertEqual(
-            response.data.get("priceNet"),
-            round_up(float(modified_price - modified_price_vat)),
-        )
+        self.assertEqual(response.data.get("priceGross"), "67.50")
+        self.assertEqual(response.data.get("priceVat"), "13.06")
+        self.assertEqual(response.data.get("priceNet"), "54.44")
 
     def test_resolve_price_view_should_return_error_if_permit_products_missing(
         self,
