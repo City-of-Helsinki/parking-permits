@@ -114,6 +114,6 @@ class TestProduct(TestCase):
         pricing = product.get_talpa_pricing(True, False)
         assert pricing == {
             "price_gross": "10.00",
-            "price_net": "16.13",
-            "price_vat": "3.87",
+            "price_net": "8.06",
+            "price_vat": "1.94",
         }

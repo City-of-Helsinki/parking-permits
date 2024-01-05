@@ -186,7 +186,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         }
         """
         price_gross = self.get_modified_unit_price(is_low_emission, is_secondary)
-        price_net = price_gross / (1 + (self.vat or 0))
+        price_net = price_gross / Decimal(1 + (self.vat or 0))
 
         return {
             "price_gross": round_up(price_gross),
