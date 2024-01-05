@@ -92,3 +92,28 @@ class TestProduct(TestCase):
             True, True
         )
         self.assertEqual(secondary_vehicle_low_emission_price, Decimal(7.5))
+
+    def test_get_talpa_pricing(self):
+        product = ProductFactory(
+            unit_price=Decimal(20),
+            vat=0.24,
+        )
+        pricing = product.get_talpa_pricing(False, False)
+        assert pricing == {
+            "price_gross": "20.00",
+            "price_net": "16.13",
+            "price_vat": "3.87",
+        }
+
+    def test_get_talpa_pricing_with_discount(self):
+        product = ProductFactory(
+            unit_price=Decimal(20),
+            low_emission_discount=Decimal(0.5),
+            vat=0.24,
+        )
+        pricing = product.get_talpa_pricing(True, False)
+        assert pricing == {
+            "price_gross": "10.00",
+            "price_net": "16.13",
+            "price_vat": "3.87",
+        }
