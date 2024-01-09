@@ -11,7 +11,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import CreateTalpaProductError, ProductCatalogError
 
-from ..utils import diff_months_ceil, find_next_date
+from ..utils import diff_months_ceil, find_next_date, round_up
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
@@ -176,6 +176,23 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         if is_secondary:
             price += price * self.secondary_vehicle_increase_rate
         return price
+
+    def get_talpa_pricing(self, is_low_emission, is_secondary):
+        """Returns dict of the following price values for Talpa processing e.g.:
+        {
+            "price_gross": "20.00",
+            "price_net": "16.13",
+            "price_vat": "3.87",
+        }
+        """
+        price_gross = self.get_modified_unit_price(is_low_emission, is_secondary)
+        price_net = price_gross / Decimal(1 + (self.vat or 0))
+
+        return {
+            "price_gross": round_up(price_gross),
+            "price_net": round_up(price_net),
+            "price_vat": round_up(price_gross - price_net),
+        }
 
     def get_merchant_id(self):
         headers = {

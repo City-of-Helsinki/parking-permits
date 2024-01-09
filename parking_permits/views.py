@@ -81,7 +81,6 @@ from .utils import (
     get_meta_item,
     get_meta_value,
     get_user_from_api_view_method_args,
-    round_up,
     snake_to_camel_dict,
 )
 
@@ -297,18 +296,14 @@ class TalpaResolvePrice(APIView):
             product = product_with_quantity[0]
             if not product:
                 return bad_request_response("Product not found")
-            price = product.get_modified_unit_price(
-                permit.vehicle.is_low_emission, permit.is_secondary_vehicle
-            )
-            vat = product.vat
-            price_vat = price * vat
             response = snake_to_camel_dict(
                 {
                     "subscription_id": subscription_id,
                     "user_id": user_id,
-                    "price_net": round_up(float(price - price_vat)),
-                    "price_vat": round_up(float(price_vat)),
-                    "price_gross": round_up(float(price)),
+                    **product.get_talpa_pricing(
+                        permit.vehicle.is_low_emission,
+                        permit.is_secondary_vehicle,
+                    ),
                 }
             )
         except Exception as e:
