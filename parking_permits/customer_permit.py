@@ -421,6 +421,7 @@ class CustomerPermit:
                     subscription.cancel(
                         cancel_reason=subscription_cancel_reason,
                         cancel_from_talpa=cancel_from_talpa,
+                        iban=iban,
                     )
             else:
                 # Cancel fixed period permit order when this is the last valid permit in that order

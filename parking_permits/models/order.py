@@ -571,7 +571,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    def cancel(self, cancel_reason, cancel_from_talpa=True):
+    def cancel(self, cancel_reason, cancel_from_talpa=True, iban=""):
         logger.info(
             f"Subscription cancel process started: {self.talpa_subscription_id}"
         )
@@ -598,6 +598,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 name=permit.customer.full_name,
                 order=order,
                 amount=permit.total_refund_amount,
+                iban=iban,
                 description=f"Refund for ending permit {str(permit.id)}",
             )
             refund.permits.add(permit)
