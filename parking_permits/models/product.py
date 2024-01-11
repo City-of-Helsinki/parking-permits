@@ -11,7 +11,13 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import CreateTalpaProductError, ProductCatalogError
 
-from ..utils import diff_months_ceil, find_next_date, round_up
+from ..utils import (
+    calc_net_price,
+    calc_vat_price,
+    diff_months_ceil,
+    find_next_date,
+    round_up,
+)
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
@@ -186,12 +192,13 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         }
         """
         price_gross = self.get_modified_unit_price(is_low_emission, is_secondary)
-        price_net = price_gross / Decimal(1 + (self.vat or 0))
+        price_net = calc_net_price(price_gross, self.vat)
+        price_vat = calc_vat_price(price_gross, self.vat)
 
         return {
             "price_gross": round_up(price_gross),
             "price_net": round_up(price_net),
-            "price_vat": round_up(price_gross - price_net),
+            "price_vat": round_up(price_vat),
         }
 
     def get_merchant_id(self):
