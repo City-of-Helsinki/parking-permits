@@ -18,6 +18,8 @@ from ..exceptions import (
 )
 from ..services.mail import RefundEmailType, send_refund_email
 from ..utils import (
+    calc_net_price,
+    calc_vat_price,
     diff_months_ceil,
     end_date_to_datetime,
     get_meta_item,
@@ -569,7 +571,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    def cancel(self, cancel_reason, cancel_from_talpa=True):
+    def cancel(self, cancel_reason, cancel_from_talpa=True, iban=""):
         logger.info(
             f"Subscription cancel process started: {self.talpa_subscription_id}"
         )
@@ -596,6 +598,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 name=permit.customer.full_name,
                 order=order,
                 amount=permit.total_refund_amount,
+                iban=iban,
                 description=f"Refund for ending permit {str(permit.id)}",
             )
             refund.permits.add(permit)
@@ -696,19 +699,19 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_price_net(self):
-        return self.total_price * (1 - self.vat)
+        return calc_net_price(self.total_price, self.vat)
 
     @property
     def total_price_vat(self):
-        return self.total_price * self.vat
+        return calc_vat_price(self.total_price, self.vat)
 
     @property
     def payment_unit_price_net(self):
-        return self.payment_unit_price * (1 - self.vat)
+        return calc_net_price(self.payment_unit_price, self.vat)
 
     @property
     def payment_unit_price_vat(self):
-        return self.payment_unit_price * self.vat
+        return calc_vat_price(self.payment_unit_price, self.vat)
 
     @property
     def total_payment_price(self):
@@ -716,11 +719,11 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_payment_price_net(self):
-        return self.total_payment_price * (1 - self.vat)
+        return calc_net_price(self.total_payment_price, self.vat)
 
     @property
     def total_payment_price_vat(self):
-        return self.total_payment_price * self.vat
+        return calc_vat_price(self.total_payment_price, self.vat)
 
     @property
     def timeframe(self):

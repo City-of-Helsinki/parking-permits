@@ -1,5 +1,6 @@
 import zoneinfo
 from datetime import date, datetime
+from decimal import Decimal
 
 import pytest
 from django.test import TestCase
@@ -8,6 +9,8 @@ from parking_permits.models import Vehicle
 from parking_permits.tests.factories.vehicle import VehicleFactory
 from parking_permits.utils import (
     ModelDiffer,
+    calc_net_price,
+    calc_vat_price,
     date_time_to_helsinki,
     diff_months_ceil,
     diff_months_floor,
@@ -15,6 +18,20 @@ from parking_permits.utils import (
     flatten_dict,
     get_model_diff,
 )
+
+
+@pytest.mark.parametrize(
+    "gross_price,vat,net_price,vat_price",
+    [
+        pytest.param(100, 0.24, 80.65, 60.00, id="default"),
+        pytest.param(100, None, 100, 100, id="VAT none"),
+        pytest.param(None, 0.24, 0, 0, id="gross none"),
+    ],
+)
+def test_calc_prices(gross_price, vat, net_price, vat_price):
+    delta = Decimal(1.0)
+    assert calc_net_price(gross_price, vat) == pytest.approx(Decimal(net_price), delta)
+    assert calc_vat_price(gross_price, vat) == pytest.approx(Decimal(vat_price), delta)
 
 
 class DateTimeToHelsinkiTestCase(TestCase):

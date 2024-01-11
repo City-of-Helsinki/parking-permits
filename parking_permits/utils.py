@@ -337,6 +337,14 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
     return output
 
 
+def calc_net_price(gross_price, vat):
+    return Decimal(gross_price) / Decimal(1 + (vat or 0)) if gross_price else Decimal(0)
+
+
+def calc_vat_price(gross_price, vat):
+    return gross_price - calc_net_price(gross_price, vat) if gross_price else Decimal(0)
+
+
 def round_up(v):
     return (
         "{:0.2f}".format(Decimal(v).quantize(Decimal(".001"), rounding=ROUND_UP))
