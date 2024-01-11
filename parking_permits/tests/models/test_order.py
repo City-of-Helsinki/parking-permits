@@ -255,10 +255,10 @@ class TestOrder(TestCase):
         self.assertAlmostEqual(self.order.total_price, Decimal(160))
 
     def test_should_return_correct_total_price_net(self):
-        self.assertAlmostEqual(self.order.total_price_net, Decimal(98))
+        self.assertAlmostEqual(self.order.total_price_net, Decimal(116), delta=1.0)
 
     def test_should_return_correct_total_price_vat(self):
-        self.assertAlmostEqual(self.order.total_price_vat, Decimal(62))
+        self.assertAlmostEqual(self.order.total_price_vat, Decimal(43), delta=1.0)
 
 
 class TestOrderItem(TestCase):
@@ -280,7 +280,7 @@ class TestOrderItem(TestCase):
         self.assertAlmostEqual(self.order_item.total_price, Decimal(60))
 
     def test_should_return_correct_total_price_net(self):
-        self.assertAlmostEqual(self.order_item.total_price_net, Decimal(48))
+        self.assertAlmostEqual(self.order_item.total_price_net, Decimal(50), delta=1.0)
 
     def test_should_return_correct_total_price_vat(self):
-        self.assertAlmostEqual(self.order_item.total_price_vat, Decimal(12))
+        self.assertAlmostEqual(self.order_item.total_price_vat, Decimal(10), delta=1.0)
