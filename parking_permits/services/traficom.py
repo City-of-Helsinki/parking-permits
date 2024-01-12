@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models.driving_class import DrivingClass
+from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.vehicle import (
     EmissionType,
     Vehicle,
@@ -77,6 +78,9 @@ class Traficom:
     headers = {"Content-type": "application/xml"}
 
     def fetch_vehicle_details(self, registration_number):
+        if settings.TRAFICOM_MOCK:
+            return self._fetch_vehicle_from_db(registration_number)
+
         et = self._fetch_info(registration_number=registration_number)
         vehicle_detail = et.find(".//ajoneuvonTiedot")
 
@@ -192,6 +196,9 @@ class Traficom:
         return vehicle
 
     def fetch_driving_licence_details(self, hetu):
+        if settings.TRAFICOM_MOCK:
+            return self._fetch_driving_licence_details_form_db(hetu)
+
         error_code = None
         et = self._fetch_info(hetu=hetu)
         driving_licence_et = et.find(".//ajokorttiluokkatieto")
@@ -223,6 +230,28 @@ class Traficom:
         return {
             "driving_classes": driving_classes,
             "issue_date": driving_licence_et.find("ajokortinMyontamisPvm").text,
+        }
+
+    def _fetch_vehicle_from_db(self, registration_number):
+        try:
+            return Vehicle.objects.get(registration_number=registration_number)
+        except Vehicle.DoesNotExist:
+            raise TraficomFetchVehicleError(
+                _(
+                    "Could not find vehicle detail with given %(registration_number)s registration number"
+                )
+                % {"registration_number": registration_number}
+            )
+
+    def _fetch_driving_licence_details_form_db(self, hetu):
+        licence = DrivingLicence.objects.filter(
+            customer__national_id_number=hetu
+        ).first()
+        if licence is None:
+            raise TraficomFetchVehicleError(_("The person has no driving licence"))
+        return {
+            "issue_date": licence.start_date,
+            "driving_classes": licence.driving_classes.all(),
         }
 
     def _fetch_info(self, registration_number=None, hetu=None):
