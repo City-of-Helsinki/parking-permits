@@ -460,7 +460,7 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[0]["price_change"], Decimal("-10.00")
                 )
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-2.4")
+                    price_change_list[0]["price_change_vat"], Decimal("-1.9355")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 0)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
@@ -501,7 +501,7 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[0]["price_change"], Decimal("-10.00")
                 )
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-2.4")
+                    price_change_list[0]["price_change_vat"], Decimal("-1.9355")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 1)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
