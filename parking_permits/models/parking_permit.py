@@ -19,6 +19,7 @@ from helsinki_gdpr.models import SerializableMixin
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import (
+    calc_vat_price,
     diff_months_ceil,
     end_date_to_datetime,
     flatten_dict,
@@ -445,7 +446,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 is_secondary,
             )
             diff_price = new_price - previous_price
-            price_change_vat = (diff_price * new_product.vat).quantize(
+            price_change_vat = calc_vat_price(diff_price, new_product.vat).quantize(
                 Decimal("0.0001")
             )
             # if the permit ends more than a month from now, count this month
