@@ -4,9 +4,9 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .mixins import TimestampedModelMixin, UserStampedModelMixin
+from parking_permits.utils import calc_vat_price
 
-VAT_PERCENT = Decimal(0.24)
+from .mixins import TimestampedModelMixin, UserStampedModelMixin
 
 
 class RefundStatus(models.TextChoices):
@@ -59,4 +59,11 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def vat(self):
-        return Decimal(self.amount) * VAT_PERCENT
+        """Calculate the VAT amount.
+        We need to calculate this based on the products of the individual order items.
+
+        Returns zero if no order items.
+        """
+        return self.amount * 0.24
+        # vat_percent = self.order.order_items.aggregate(models.Avg("vat"))["vat__avg"]
+        # return calc_vat_price(self.amount, vat_percent)
