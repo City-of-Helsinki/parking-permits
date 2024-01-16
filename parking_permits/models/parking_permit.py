@@ -660,16 +660,20 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             logger.debug("Skipped Parkkihubi sync in permit update.")
             return
 
+        payload = json.dumps(self._get_parkkihubi_data(), default=str)
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
-            data=json.dumps(self._get_parkkihubi_data(), default=str),
+            data=payload,
             headers=self._get_parkkihubi_headers(),
         )
+
+        logger.info(f"Update parkkihubi permit, request payload: {payload}")
+
         self.synced_with_parkkihubi = response.status_code == 200
         self.save()
 
         if response.status_code == 200:
-            logger.info("Parkkihubi update permit")
+            logger.info("Parkkihubi update permit successful")
         else:
             logger.error(
                 "Failed to update permit to Parkkihubi."
@@ -686,11 +690,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             logger.debug("Skipped Parkkihubi sync in permit creation.")
             return
 
+        payload = json.dumps(self._get_parkkihubi_data(), default=str)
         response = requests.post(
             settings.PARKKIHUBI_OPERATOR_ENDPOINT,
-            data=json.dumps(self._get_parkkihubi_data(), default=str),
+            data=payload,
             headers=self._get_parkkihubi_headers(),
         )
+
+        logger.info(f"Create parkkihubi permit, request payload: {payload}")
+
         self.synced_with_parkkihubi = response.status_code == 201
         self.save()
 
@@ -754,7 +762,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                     "registration_number": registration_number,
                 }
             )
-
         return {
             "series": settings.PARKKIHUBI_PERMIT_SERIES,
             "domain": settings.PARKKIHUBI_DOMAIN,
