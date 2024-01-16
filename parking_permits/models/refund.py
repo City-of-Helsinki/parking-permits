@@ -64,6 +64,6 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
         Returns zero if no order items.
         """
-        return self.amount * 0.24
-        # vat_percent = self.order.order_items.aggregate(models.Avg("vat"))["vat__avg"]
-        # return calc_vat_price(self.amount, vat_percent)
+        return Decimal(
+            sum([item.total_price_vat for item in self.order.order_items.all()])
+        )
