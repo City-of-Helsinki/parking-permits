@@ -543,7 +543,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("15"))
                 self.assertEqual(price_change_list[0]["price_change"], Decimal("-5"))
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-1.2")
+                    price_change_list[0]["price_change_vat"], Decimal("-0.9677")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 2)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
@@ -555,7 +555,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("20"))
                 self.assertEqual(price_change_list[1]["price_change"], Decimal("-10"))
                 self.assertEqual(
-                    price_change_list[1]["price_change_vat"], Decimal("-2.4")
+                    price_change_list[1]["price_change_vat"], Decimal("-1.9355")
                 )
                 self.assertEqual(price_change_list[1]["month_count"], 6)
                 self.assertEqual(price_change_list[1]["start_date"], date(2021, 7, 1))
@@ -611,7 +611,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("30"))
                 self.assertEqual(price_change_list[0]["price_change"], Decimal("20"))
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("4.8")
+                    price_change_list[0]["price_change_vat"], Decimal("3.8710")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 2)
                 self.assertEqual(
@@ -626,7 +626,9 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[1]["previous_price"], Decimal("15"))
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("40"))
                 self.assertEqual(price_change_list[1]["price_change"], Decimal("25"))
-                self.assertEqual(price_change_list[1]["price_change_vat"], Decimal("6"))
+                self.assertEqual(
+                    price_change_list[1]["price_change_vat"], Decimal("4.8387")
+                )
                 self.assertEqual(price_change_list[1]["month_count"], 6)
                 self.assertEqual(
                     price_change_list[1]["start_date"], date(CURRENT_YEAR, 7, 1)
