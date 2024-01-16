@@ -506,9 +506,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 else:
                     # if the product is different or diff price is different,
                     # create a new price change item
-                    price_change_vat = (diff_price * new_product.vat).quantize(
-                        Decimal("0.0001")
-                    )
+                    price_change_vat = calc_vat_price(
+                        diff_price, new_product.vat
+                    ).quantize(Decimal("0.0001"))
+
                     price_change_list.append(
                         {
                             "product": new_product.name,

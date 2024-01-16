@@ -6,6 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from decimal import ROUND_UP, Decimal
 from itertools import chain
+from typing import Optional, Union
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -16,6 +17,8 @@ from graphql import GraphQLResolveInfo
 from pytz import utc
 
 HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
+
+Currency = Optional[Union[str, float, Decimal]]
 
 
 class DefaultOrderedDict(OrderedDict):
@@ -337,12 +340,40 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
     return output
 
 
-def calc_net_price(gross_price, vat):
-    return Decimal(gross_price) / Decimal(1 + (vat or 0)) if gross_price else Decimal(0)
+def calc_net_price(gross_price: Currency, vat: Currency) -> Decimal:
+    """Returns the net price based on the gross and VAT e.g. 0.24
+
+    Net price is calculated thus:
+
+        gross / (1 + vat)
+
+    For example, gross 100 EUR, VAT 24% would be:
+
+        100 / 1.24 = ~80.64
+
+    If gross or vat is zero or None, returns zero.
+    """
+    return (
+        Decimal(gross_price) / Decimal(1 + (Decimal(vat or 0)))
+        if gross_price and vat
+        else Decimal(0)
+    )
 
 
-def calc_vat_price(gross_price, vat):
-    return gross_price - calc_net_price(gross_price, vat) if gross_price else Decimal(0)
+def calc_vat_price(gross_price: Currency, vat: Currency) -> Decimal:
+    """Returns the VAT price based on the gross and VAT e.g. 0.24
+
+    VAT price is equal to the gross minus the net.
+
+    For example, gross 100 EUR, VAT 24% would be net price of ~80.64.
+
+    VAT price would therefore be 100-80.64 = 19.36.
+    """
+    return (
+        Decimal(gross_price) - calc_net_price(gross_price, vat)
+        if gross_price and vat
+        else Decimal(0)
+    )
 
 
 def round_up(v):

@@ -4,6 +4,8 @@ from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
 
+from parking_permits.utils import calc_vat_price
+
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 
 VAT_PERCENT = Decimal(0.24)
@@ -50,6 +52,10 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
         blank=True,
     )
 
+    # this is hard coded at the moment. At some point should be
+    # a field we can calculate when the refund is generated.
+    vat_percent = VAT_PERCENT
+
     class Meta:
         verbose_name = _("Refund")
         verbose_name_plural = _("Refunds")
@@ -59,4 +65,8 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def vat(self):
-        return Decimal(self.amount) * VAT_PERCENT
+        """Calculate the VAT amount.
+        The VAT amount is hard coded here because we do not know the % of individual
+        unused items in this model. In future this should probably be stored as a separate field.
+        """
+        return calc_vat_price(self.amount, self.vat_percent)
