@@ -438,7 +438,7 @@ class CustomerPermit:
             if active_temporary_vehicle:
                 active_temporary_vehicle.is_active = False
                 active_temporary_vehicle.save()
-            permit.update_parkkihubi_permit()
+
             if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
                 send_vehicle_low_emission_discount_email(
                     PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
@@ -446,6 +446,7 @@ class CustomerPermit:
                 )
 
             permit.end_permit(end_type, force_end=force_end)
+            permit.update_parkkihubi_permit()
             send_permit_email(
                 PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
             )
