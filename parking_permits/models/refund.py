@@ -8,6 +8,8 @@ from parking_permits.utils import calc_vat_price
 
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 
+VAT_PERCENT = Decimal(0.24)
+
 
 class RefundStatus(models.TextChoices):
     OPEN = "OPEN", _("Open")
@@ -50,6 +52,10 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
         blank=True,
     )
 
+    # this is hard coded at the moment. At some point should be
+    # a field we can calculate when the refund is generated.
+    vat_percent = VAT_PERCENT
+
     class Meta:
         verbose_name = _("Refund")
         verbose_name_plural = _("Refunds")
@@ -60,10 +66,7 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
     @property
     def vat(self):
         """Calculate the VAT amount.
-        We need to calculate this based on the products of the individual order items.
-
-        Returns zero if no order items.
+        The VAT amount is hard coded here because we do not know the % of individual
+        unused items in this model. In future this should probably be stored as a separate field.
         """
-        return Decimal(
-            sum([item.total_price_vat for item in self.order.order_items.all()])
-        )
+        return calc_vat_price(self.amount, self.vat_percent)

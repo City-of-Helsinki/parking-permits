@@ -2,21 +2,15 @@ from decimal import Decimal
 
 from django.test import TestCase
 
-from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.refund import RefundFactory
 
 
 class TestRefund(TestCase):
-    def test_vat_no_order_items(self):
-        refund = RefundFactory()
+    def test_vat_zero_amount(self):
+        refund = RefundFactory(amount=0)
         assert refund.vat == Decimal(0)
 
-    def test_vat_with_different_rates(self):
-        order = OrderFactory()
+    def test_vat(self):
+        refund = RefundFactory(amount=100)
 
-        OrderItemFactory(unit_price=10, vat=0.24, order=order, quantity=2)
-        OrderItemFactory(unit_price=10, vat=0.20, order=order, quantity=1)
-
-        refund = RefundFactory(order=order, amount=200)
-
-        self.assertAlmostEqual(refund.vat, Decimal(5.53), delta=Decimal("0.01"))
+        self.assertAlmostEqual(refund.vat, Decimal(19.35), delta=Decimal("0.01"))
