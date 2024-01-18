@@ -940,9 +940,9 @@ msgstr "Palautus on hyväksytty"
 #, python-format
 msgid ""
 "Could not find vehicle detail with given %(registration_number)s "
-"registration number"
+"registration number."
 msgstr ""
-"Rekisteritunnukselle %(registration_number)s ei löytynyt ajoneuvon tietoja"
+"Rekisteritunnukselle %(registration_number)s ei löytynyt ajoneuvon tietoja."
 
 #, python-format
 msgid "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
@@ -954,8 +954,8 @@ msgstr ""
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
 
-msgid "The person has no driving licence"
-msgstr "Henkilölle ei löydy ajokorttia"
+msgid "The person has no driving licence."
+msgstr "Henkilölle ei löydy ajokorttia."
 
 msgid "No valid driving licence"
 msgstr "Voimassaolevaa ajo-oikeutta ei löydy"

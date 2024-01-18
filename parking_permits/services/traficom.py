@@ -77,19 +77,38 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
+    error_messages = {
+        "licence_not_found": _(
+            "The person has no driving licence. Please check your data permissions on Traficom."
+        ),
+        "licence_invalid": _("No valid driving licence"),
+        "traficom_api_error": _("Failed to fetch data from traficom"),
+        "unsupported_vehicle_class": _(
+            "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
+        ),
+        "vehicle_decomissioned": _("Vehicle %(registration_number)s is decommissioned"),
+        "vehicle_not_found": _(
+            "Could not find vehicle detail with given %(registration_number)s registration number. "
+            "Please check your data permissions on Traficom."
+        ),
+    }
+
     def fetch_vehicle_details(self, registration_number):
         if settings.TRAFICOM_MOCK:
             return self._fetch_vehicle_from_db(registration_number)
+
+        logger.info(f"Fetching vehicle details from Traficom: {registration_number}")
 
         et = self._fetch_info(registration_number=registration_number)
         vehicle_detail = et.find(".//ajoneuvonTiedot")
 
         if not vehicle_detail:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
-                )
-                % {"registration_number": registration_number}
+            _handle_fetch_vehicle_error(
+                self._format_error_message(
+                    "vehicle_not_found",
+                    registration_number=registration_number,
+                ),
+                et,
             )
 
         vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
@@ -102,14 +121,13 @@ class Traficom:
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
         if vehicle_class not in VehicleClass:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
-                )
-                % {
-                    "vehicle_class": vehicle_class,
-                    "registration_number": registration_number,
-                }
+            _handle_fetch_vehicle_error(
+                self._format_error_message(
+                    "unsupported_vehicle_class",
+                    registration_number=registration_number,
+                    vehicle_class=vehicle_class,
+                ),
+                et,
             )
 
         restrictions = []
@@ -121,11 +139,12 @@ class Traficom:
                 continue
 
             if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
-                raise TraficomFetchVehicleError(
-                    _("Vehicle %(registration_number)s is decommissioned")
-                    % {
-                        "registration_number": registration_number,
-                    }
+                _handle_fetch_vehicle_error(
+                    self._format_error_message(
+                        "vehicle_decomissioned",
+                        registration_number=registration_number,
+                    ),
+                    et,
                 )
 
             if restriction_type in VEHICLE_RESTRICTIONS:
@@ -197,7 +216,9 @@ class Traficom:
 
     def fetch_driving_licence_details(self, hetu):
         if settings.TRAFICOM_MOCK:
-            return self._fetch_driving_licence_details_form_db(hetu)
+            return self._fetch_driving_licence_details_from_db(hetu)
+
+        logger.info(f"Fetching driving licence details from Trafcom: {hetu}")
 
         error_code = None
         et = self._fetch_info(hetu=hetu)
@@ -207,12 +228,16 @@ class Traficom:
         except AttributeError:
             pass
         if error_code == NO_DRIVING_LICENSE_ERROR_CODE:
-            raise TraficomFetchVehicleError(_("The person has no driving licence"))
+            _handle_fetch_vehicle_error(
+                self._format_error_message("licence_not_found"), et
+            )
         if (
             error_code == NO_VALID_DRIVING_LICENSE_ERROR_CODE
             or driving_licence_et.find("ajooikeusluokat") is None
         ):
-            raise TraficomFetchVehicleError(_("No valid driving licence"))
+            _handle_fetch_vehicle_error(
+                self._format_error_message("licence_invalid"), et
+            )
 
         driving_licence_categories_et = driving_licence_et.findall(
             "viimeisinajooikeus/ajooikeusluokka"
@@ -230,28 +255,6 @@ class Traficom:
         return {
             "driving_classes": driving_classes,
             "issue_date": driving_licence_et.find("ajokortinMyontamisPvm").text,
-        }
-
-    def _fetch_vehicle_from_db(self, registration_number):
-        try:
-            return Vehicle.objects.get(registration_number=registration_number)
-        except Vehicle.DoesNotExist:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
-                )
-                % {"registration_number": registration_number}
-            )
-
-    def _fetch_driving_licence_details_form_db(self, hetu):
-        licence = DrivingLicence.objects.filter(
-            customer__national_id_number=hetu
-        ).first()
-        if licence is None:
-            raise TraficomFetchVehicleError(_("The person has no driving licence"))
-        return {
-            "issue_date": licence.start_date,
-            "driving_classes": licence.driving_classes.all(),
         }
 
     def _fetch_info(self, registration_number=None, hetu=None):
@@ -298,6 +301,44 @@ class Traficom:
         )
         if response.status_code >= 300:
             logger.error(f"Fetching data from traficom failed. Error: {response.text}")
-            raise TraficomFetchVehicleError(_("Failed to fetch data from traficom"))
+            _handle_fetch_vehicle_error(
+                self._format_error_message("traficom_api_error")
+            )
 
         return ET.fromstring(response.text)
+
+    def _fetch_vehicle_from_db(self, registration_number):
+        logger.info(f"Fetching vehicle details from db: {registration_number}")
+        try:
+            return Vehicle.objects.get(registration_number=registration_number)
+        except Vehicle.DoesNotExist:
+            _handle_fetch_vehicle_error(
+                self._format_error_message(
+                    "vehicle_not_found",
+                    registration_number=registration_number,
+                )
+            )
+
+    def _fetch_driving_licence_details_from_db(self, hetu):
+        logger.info(f"Fetching driving licence details from db: {hetu}")
+        licence = DrivingLicence.objects.filter(
+            customer__national_id_number=hetu
+        ).first()
+        if licence is None:
+            _handle_fetch_vehicle_error(self._format_error_message("licence_not_found"))
+        else:
+            return {
+                "issue_date": licence.start_date,
+                "driving_classes": licence.driving_classes.all(),
+            }
+
+    def _format_error_message(self, key, **kwargs):
+        return self.error_messages[key] % kwargs
+
+
+def _handle_fetch_vehicle_error(message, et=None):
+    if et:
+        response = ET.tostring(et, encoding="unicode")
+        logger.error(f"Traficom error: {message}\r\n{response}")
+
+    raise TraficomFetchVehicleError(message)
