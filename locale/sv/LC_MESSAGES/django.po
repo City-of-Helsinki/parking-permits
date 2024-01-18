@@ -66,8 +66,8 @@ msgstr "Ingen kund hittas"
 msgid "Customer search error"
 msgstr "Kundsökningsfel"
 
-msgid "Owner/holder data of a vehicle could not be verified"
-msgstr "Ägar/innehavaruppgifter av fordon kunde inte verifieras"
+msgid "Owner/holder data of a vehicle could not be verified. Please check with Traficom for data transfer restrictions."
+msgstr "Ägar/innehavaruppgifter av fordon kunde inte verifieras. Kontrollera med Traficom för dataöverföringsförbud."
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Kunden har inte ett giltigt körkort för detta fordon"
