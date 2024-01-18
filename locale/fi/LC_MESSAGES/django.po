@@ -66,8 +66,8 @@ msgstr "Henkilöä ei löytynyt"
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
-msgid "Owner/holder data of a vehicle could not be verified"
-msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan"
+msgid "Owner/holder data of a vehicle could not be verified. Please check with Traficom for data transfer restrictions."
+msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan. Tarkistathan Traficomilta tiedonluovutuskiellot."
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
