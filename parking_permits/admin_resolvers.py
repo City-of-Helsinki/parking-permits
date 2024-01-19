@@ -616,7 +616,7 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
         power_type, euro_class, emission_type, emission
     )
 
-    start_time = isoparse(permit["start_time"])
+    start_time = tz.localtime(isoparse(permit["start_time"]))
     permit_start_date = start_time.date()
     end_time = get_end_time(start_time, permit["month_count"])
     permit_end_date = end_time.date()
