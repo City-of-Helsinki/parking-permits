@@ -42,6 +42,7 @@ type CustomerActivePermit {
   id: ID!
   primaryVehicle: Boolean!
   monthCount: Int
+  startTime: String
 }
 
 type CustomerNode {
