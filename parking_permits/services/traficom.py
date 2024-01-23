@@ -197,7 +197,7 @@ class Traficom:
 
     def fetch_driving_licence_details(self, hetu):
         if settings.TRAFICOM_MOCK:
-            return self._fetch_driving_licence_details_form_db(hetu)
+            return self._fetch_driving_licence_details_from_db(hetu)
 
         error_code = None
         et = self._fetch_info(hetu=hetu)
@@ -243,7 +243,7 @@ class Traficom:
                 % {"registration_number": registration_number}
             )
 
-    def _fetch_driving_licence_details_form_db(self, hetu):
+    def _fetch_driving_licence_details_from_db(self, hetu):
         licence = DrivingLicence.objects.filter(
             customer__national_id_number=hetu
         ).first()
