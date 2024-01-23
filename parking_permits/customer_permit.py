@@ -183,7 +183,7 @@ class CustomerPermit:
                     permit.latest_order.talpa_last_valid_purchase_time
                     + tz.timedelta(minutes=payment_wait_time)
                 )
-                < tz.now()
+                < tz.localtime(tz.now())
             ):
                 permit.status = DRAFT
                 permit.save()
