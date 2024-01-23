@@ -24,11 +24,13 @@ class TestTraficom(TestCase):
     def setUpTestData(cls):
         cls.traficom = Traficom()
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle(self):
         with mock.patch("requests.post", return_value=MockResponse(PAYLOAD_VEHICLE_OK)):
             vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
             self.assertEqual(vehicle.registration_number, self.registration_number)
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):
         vehicle = VehicleFactory(registration_number=self.registration_number)
 
@@ -38,6 +40,7 @@ class TestTraficom(TestCase):
             )
             self.assertEqual(fetched_vehicle, vehicle)
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_traficom_api_error(self):
         with mock.patch("requests.post", return_value=MockResponse(status_code=500)):
             self.assertRaises(
@@ -46,6 +49,7 @@ class TestTraficom(TestCase):
                 self.registration_number,
             )
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_vehicle_not_found(self):
         with mock.patch(
             "requests.post", return_value=MockResponse(PAYLOAD_VEHICLE_NOT_FOUND)
@@ -56,6 +60,7 @@ class TestTraficom(TestCase):
                 self.registration_number,
             )
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_unsupported_vehicle_class(self):
         with mock.patch(
             "requests.post",
@@ -67,6 +72,7 @@ class TestTraficom(TestCase):
                 self.registration_number,
             )
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_vehicle_decommissioned(self):
         with mock.patch(
             "requests.post",
@@ -78,25 +84,26 @@ class TestTraficom(TestCase):
                 self.registration_number,
             )
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db(self):
         VehicleFactory(registration_number=self.registration_number)
-        with override_settings(TRAFICOM_MOCK=True):
-            with mock.patch("requests.post") as mock_traficom:
-                vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-                self.assertEqual(vehicle.registration_number, self.registration_number)
-                mock_traficom.assert_not_called()
+        with mock.patch("requests.post") as mock_traficom:
+            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+            mock_traficom.assert_not_called()
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db_not_found(self):
-        with override_settings(TRAFICOM_MOCK=True):
-            with mock.patch("requests.post") as mock_traficom:
-                self.assertRaises(
-                    TraficomFetchVehicleError,
-                    self.traficom.fetch_vehicle_details,
-                    self.registration_number,
-                )
+        with mock.patch("requests.post") as mock_traficom:
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_vehicle_details,
+                self.registration_number,
+            )
 
-                mock_traficom.assert_not_called()
+            mock_traficom.assert_not_called()
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_valid_licence(self):
         with mock.patch(
             "requests.post",
@@ -106,6 +113,7 @@ class TestTraficom(TestCase):
             self.assertEqual(len(result["driving_classes"]), 7)
             self.assertEqual(result["issue_date"], "2023-09-01")
 
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_invalid_licence(self):
         with mock.patch(
             "requests.post",
@@ -117,6 +125,7 @@ class TestTraficom(TestCase):
                 self.hetu,
             )
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_licence_from_db(self):
         customer = CustomerFactory(national_id_number=self.hetu)
         licence = DrivingLicence.objects.create(
@@ -127,23 +136,22 @@ class TestTraficom(TestCase):
         driving_class = DrivingClass.objects.create(identifier="A")
         licence.driving_classes.add(driving_class)
 
-        with override_settings(TRAFICOM_MOCK=True):
-            with mock.patch("requests.post") as mock_traficom:
-                result = self.traficom.fetch_driving_licence_details(self.hetu)
-                self.assertEqual(result["issue_date"], licence.start_date)
-                self.assertEqual(result["driving_classes"].count(), 1)
-                mock_traficom.assert_not_called()
+        with mock.patch("requests.post") as mock_traficom:
+            result = self.traficom.fetch_driving_licence_details(self.hetu)
+            self.assertEqual(result["issue_date"], licence.start_date)
+            self.assertEqual(result["driving_classes"].count(), 1)
+            mock_traficom.assert_not_called()
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_licence_from_db_not_found(self):
-        with override_settings(TRAFICOM_MOCK=True):
-            with mock.patch("requests.post") as mock_traficom:
-                self.assertRaises(
-                    TraficomFetchVehicleError,
-                    self.traficom.fetch_driving_licence_details,
-                    self.hetu,
-                )
+        with mock.patch("requests.post") as mock_traficom:
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_driving_licence_details,
+                self.hetu,
+            )
 
-                mock_traficom.assert_not_called()
+            mock_traficom.assert_not_called()
 
 
 PAYLOAD_INVALID_LICENCE = """
