@@ -170,9 +170,7 @@ def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
         other_address = format_address(temporary_address)
         other_apartment = other_address.get("apartment", "")
 
-    customer = Customer.objects.filter(
-        national_id_number=national_id_number, user__is_active=True
-    ).first()
+    customer = Customer.objects.filter(national_id_number=national_id_number).first()
 
     active_permits = customer.active_permits if customer else []
 
