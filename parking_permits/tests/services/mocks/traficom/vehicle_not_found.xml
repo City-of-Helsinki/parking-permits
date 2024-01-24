@@ -1,0 +1,24 @@
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi />
+        <sekvenssinumero />
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+        <virhe>
+            <virheluokka>info</virheluokka>
+            <virhekoodi>550</virhekoodi>
+            <virheselite>Ajoneuvoa ei löydy rekisteristä, tarkista rekisteritunnus.</virheselite>
+        </virhe>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="1">
+                    <rekisteritunnus>BCI-707</rekisteritunnus>
+                </tunnus>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>
+

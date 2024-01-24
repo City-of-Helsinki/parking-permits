@@ -1,0 +1,171 @@
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi />
+        <sekvenssinumero />
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="2">
+                    <rekisteritunnus>BCI-707</rekisteritunnus>
+                    <valmistenumero>LE500A-027778</valmistenumero>
+                    <jarjestelmatunnus>0024134114</jarjestelmatunnus>
+                </tunnus>
+                <ajoneuvonTiedot>
+                    <ajoneuvoluokka>L3</ajoneuvoluokka>
+                    <merkki>906</merkki>
+                    <merkkiSelvakielinen>Kawasaki</merkkiSelvakielinen>
+                    <mallimerkinta>KLE 500</mallimerkinta>
+                    <tila>3</tila>
+                    <ajoneuvoryhmat>
+                        <ajoneuvoryhma>109</ajoneuvoryhma>
+                    </ajoneuvoryhmat>
+                    <ajoneuvonKaytto>01</ajoneuvonKaytto>
+                    <rekisterointitod1Osa>
+                        <jarjestysnumero>9</jarjestysnumero>
+                        <tulostuspaiva>2024-01-16</tulostuspaiva>
+                    </rekisterointitod1Osa>
+                    <rekisterointitod2Osa>
+                        <jarjestysnumero>9</jarjestysnumero>
+                        <tulostuspaiva>2024-01-16</tulostuspaiva>
+                    </rekisterointitod2Osa>
+                </ajoneuvonTiedot>
+                <ajoneuvonPerustiedot>
+                    <tyyppikoodi>9906251</tyyppikoodi>
+                    <kayttoonottopvm>19930402</kayttoonottopvm>
+                    <yksittainMaahantuotu>1</yksittainMaahantuotu>
+                    <tuontimaa>276</tuontimaa>
+                    <ulkomainenRekisteritunnus>K-WQ1</ulkomainenRekisteritunnus>
+                    <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
+                    <ensirekisterointipvm>2003-06-25</ensirekisterointipvm>
+                </ajoneuvonPerustiedot>
+                <erikoisehdot>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
+                        <teksti>9906251</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
+                        <teksti>KLE 500</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>3002</erikoisehdOsaalue>
+                        <teksti>RENKAAT: 90/90-21, 130/80-17.</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>3002</erikoisehdOsaalue>
+                        <teksti>Vetojärjestelmä: 2X1</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>3006</erikoisehdOsaalue>
+                        <teksti>Kaasuttimen merkki/malli: KEIHIN CVK34</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>3009</erikoisehdOsaalue>
+                        <teksti>Valmistusmaa: JAPANI</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                </erikoisehdot>
+                <omistajatHaltijat>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>290200A905H</omistajanTunnus>
+                        <sukunimiPaayksikko>Hesalainen</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Hessu</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>03</omistajuustyyppi>
+                        <suhteenAlkupvm>2024-01-16</suhteenAlkupvm>
+                        <hallintasuhde>02</hallintasuhde>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Tarkk'ampujankatu 80 A 3a</lahiosoite>
+                        <postinumero>00130</postinumero>
+                        <postitoimipaikka>HELSINKI</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>290574-329E</omistajanTunnus>
+                        <sukunimiPaayksikko>Sandvik</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Kalervo Lauri</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>01</omistajuustyyppi>
+                        <suhteenAlkupvm>2022-06-29</suhteenAlkupvm>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Välskärintie 9 as 9</lahiosoite>
+                        <postinumero>90630</postinumero>
+                        <postitoimipaikka>OULU</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                </omistajatHaltijat>
+                <vakuutustiedot luovutusrajoitus="0">
+                    <vakuutusyhtiokoodi>36</vakuutusyhtiokoodi>
+                    <vakuutustyyppi>01</vakuutustyyppi>
+                    <vakuutusyhtionNimi>Pohjola</vakuutusyhtionNimi>
+                    <vakuutuksenottajanTunnus>290574-329E</vakuutuksenottajanTunnus>
+                    <vakuutuksenottajanNimi>Sandvik, Kalervo Lauri</vakuutuksenottajanNimi>
+                    <vakuutuksenAlkupvm>2022-06-29</vakuutuksenAlkupvm>
+                </vakuutustiedot>
+                <rakenne>
+                    <kilvenMalli>01</kilvenMalli>
+                    <akselienLkm>2</akselienLkm>
+                    <akselitiedot>
+                        <akseli>
+                            <sijainti>1</sijainti>
+                            <ohjaava>true</ohjaava>
+                            <vetava>false</vetava>
+                            <omaMassaKevYlh>95</omaMassaKevYlh>
+                            <tieliikSuurSallMassa>140</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>140</teknSuurSallMassa>
+                        </akseli>
+                        <akseli>
+                            <sijainti>2</sijainti>
+                            <ohjaava>false</ohjaava>
+                            <vetava>true</vetava>
+                            <omaMassaKevYlh>105</omaMassaKevYlh>
+                            <tieliikSuurSallMassa>265</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>265</teknSuurSallMassa>
+                        </akseli>
+                    </akselitiedot>
+                </rakenne>
+                <moottori>
+                    <kayttovoima>01</kayttovoima>
+                    <iskutilavuus>499</iskutilavuus>
+                    <suurinNettoteho>37.0</suurinNettoteho>
+                    <kayttovoimat>
+                        <kayttovoima>
+                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                        </kayttovoima>
+                    </kayttovoimat>
+                </moottori>
+                <massa>
+                    <omamassa>200</omamassa>
+                    <teknSuurSallKokmassa>380</teknSuurSallKokmassa>
+                    <tieliikSuurSallKokmassa>380</tieliikSuurSallKokmassa>
+                </massa>
+                <mitat>
+                    <ajonLeveys>880</ajonLeveys>
+                    <akselivalit>
+                        <akselivali>
+                            <sijainti>1</sijainti>
+                            <pituus>1510</pituus>
+                        </akselivali>
+                    </akselivalit>
+                </mitat>
+                <kori>
+                    <istumapaikkojenLkm>1</istumapaikkojenLkm>
+                </kori>
+                <jarrut>
+                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
+                </jarrut>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>
