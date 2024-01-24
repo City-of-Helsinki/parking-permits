@@ -46,6 +46,17 @@ class TestTraficom(TestCase):
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155.00
 
+    def test_fetch_vehicle_wltp(self):
+        with mock.patch(
+            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_wltp.xml"))
+        ):
+            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+
+            # Emissions
+            assert vehicle.emission_type == EmissionType.WLTP
+            assert vehicle.emission == 155.00
+
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_nedc(self):
         with mock.patch(
