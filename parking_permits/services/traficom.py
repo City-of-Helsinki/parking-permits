@@ -40,7 +40,7 @@ VEHICLE_RESTRICTIONS = (
 # these codes will raise an error and prevent adding a permit
 BLOCKING_VEHICLE_RESTRICTIONS = ("18", "19")
 
-CONSUMPTION_TYPE_NEDC = "4"
+CONSUMPTION_TYPE_NEDC = ("4", "7")
 CONSUMPTION_TYPE_WLTP = "10"
 VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
@@ -142,7 +142,7 @@ class Traficom:
         for e in emissions:
             kulutuslaji = e.find("kulutuslaji").text
             if (
-                kulutuslaji == CONSUMPTION_TYPE_NEDC
+                kulutuslaji in CONSUMPTION_TYPE_NEDC
                 or kulutuslaji == CONSUMPTION_TYPE_WLTP
             ):
                 co2emission = e.find("maara").text

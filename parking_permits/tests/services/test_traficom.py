@@ -6,6 +6,7 @@ from django.test import TestCase, override_settings
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models import DrivingClass, DrivingLicence
+from parking_permits.models.vehicle import EmissionType
 from parking_permits.services.traficom import Traficom
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
@@ -40,6 +41,22 @@ class TestTraficom(TestCase):
         ):
             vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
             self.assertEqual(vehicle.registration_number, self.registration_number)
+
+            # Emissions
+            assert vehicle.emission_type == EmissionType.NEDC
+            assert vehicle.emission == 155.00
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_nedc(self):
+        with mock.patch(
+            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_nedc.xml"))
+        ):
+            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+
+            # Emissions
+            assert vehicle.emission_type == EmissionType.NEDC
+            assert vehicle.emission == 13.00
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):
