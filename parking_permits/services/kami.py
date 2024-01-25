@@ -15,18 +15,20 @@ from parking_permits.models.address import Address
 logger = logging.getLogger("db")
 
 
+def cql_street_name(street_name):
+    # escape single quotes: we need to use 4x the quote because the
+    # value is inside double quotes
+    # see https://docs.geoserver.org/main/en/user/filter/ecql_reference.html#filter-ecql-reference
+    return street_name.replace("'", "''''")
+
+
 def get_wfs_result(street_name="", street_number_token=""):
     street_number_first_part = re.search(r"^\d+", street_number_token)
     street_number = (
         int(street_number_first_part.group()) if street_number_first_part else 0
     )
 
-    # escape single quotes: we need to use 4x the quote because the
-    # value is inside double quotes
-    # see https://docs.geoserver.org/main/en/user/filter/ecql_reference.html#filter-ecql-reference
-    street_name = street_name.replace("'", "''''")
-
-    street_address = f"katunimi=''{street_name}'' AND osoitenumero=''{street_number}''"
+    street_address = f"katunimi=''{cql_street_name(street_name)}'' AND osoitenumero=''{street_number}''"
     query_single_args = [
         "'avoindata:Helsinki_osoiteluettelo'",
         "'geom'",
