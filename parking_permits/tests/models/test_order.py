@@ -271,10 +271,10 @@ class TestOrderItem(TestCase):
         )
 
     def test_should_return_correct_unit_price_net(self):
-        self.assertAlmostEqual(self.order_item.unit_price_net, Decimal(24))
+        self.assertAlmostEqual(self.order_item.unit_price_net, Decimal(25))
 
     def test_should_return_correct_unit_price_vat(self):
-        self.assertAlmostEqual(self.order_item.unit_price_vat, Decimal(6))
+        self.assertAlmostEqual(self.order_item.unit_price_vat, Decimal(5))
 
     def test_should_return_correct_total_price(self):
         self.assertAlmostEqual(self.order_item.total_price, Decimal(60))

@@ -687,11 +687,11 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
 
     @property
     def unit_price_net(self):
-        return self.unit_price * (1 - self.vat)
+        return calc_net_price(self.unit_price, self.vat)
 
     @property
     def unit_price_vat(self):
-        return self.unit_price * self.vat
+        return calc_vat_price(self.unit_price, self.vat)
 
     @property
     def total_price(self):
