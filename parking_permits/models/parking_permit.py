@@ -135,6 +135,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     primary_vehicle = models.BooleanField(default=True)
     vehicle_changed = models.BooleanField(default=False)
     synced_with_parkkihubi = models.BooleanField(default=False)
+    bypass_traficom_validation = models.BooleanField(
+        verbose_name=_("Bypass Traficom validation"),
+        default=False,
+    )
     vehicle_changed_date = models.DateField(
         _("Vehicle changed date"), null=True, blank=True
     )
