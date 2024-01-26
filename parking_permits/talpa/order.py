@@ -14,6 +14,7 @@ from parking_permits.utils import (
     DefaultOrderedDict,
     date_time_to_helsinki,
     format_local_time,
+    round_up,
 )
 
 logger = logging.getLogger("db")
@@ -39,13 +40,13 @@ class TalpaOrderManager:
             "unit": _("pcm"),
             "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "priceNet": cls.round_up(float(order_item.payment_unit_price_net)),
-            "priceVat": cls.round_up(float(order_item.payment_unit_price_vat)),
-            "priceGross": cls.round_up(float(order_item.payment_unit_price)),
+            "priceNet": round_up(order_item.payment_unit_price_net),
+            "priceVat": round_up(order_item.payment_unit_price_vat),
+            "priceGross": round_up(order_item.payment_unit_price),
             "vatPercentage": cls.round_int(float(order_item.vat_percentage)),
-            "rowPriceNet": cls.round_up(float(order_item.total_payment_price_net)),
-            "rowPriceVat": cls.round_up(float(order_item.total_payment_price_vat)),
-            "rowPriceTotal": cls.round_up(float(order_item.total_payment_price)),
+            "rowPriceNet": round_up(order_item.total_payment_price_net),
+            "rowPriceVat": round_up(order_item.total_payment_price_vat),
+            "rowPriceTotal": round_up(order_item.total_payment_price),
             "meta": [
                 {
                     "key": "sourceOrderItemId",
@@ -169,9 +170,9 @@ class TalpaOrderManager:
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.user.uuid),
             "lastValidPurchaseDateTime": last_valid_purchase_date_time,
-            "priceNet": cls.round_up(float(order.total_payment_price_net)),
-            "priceVat": cls.round_up(float(order.total_payment_price_vat)),
-            "priceTotal": cls.round_up(float(order.total_payment_price)),
+            "priceNet": round_up(order.total_payment_price_net),
+            "priceVat": round_up(order.total_payment_price_vat),
+            "priceTotal": round_up(order.total_payment_price),
             "customer": customer,
             "items": items,
         }
@@ -182,7 +183,7 @@ class TalpaOrderManager:
 
     @classmethod
     def round_up(cls, v):
-        return "{:0.2f}".format(np.round(v, 3))
+        return round_up(v)
 
     @classmethod
     def _set_flow_steps(cls, order_id, user_id):
