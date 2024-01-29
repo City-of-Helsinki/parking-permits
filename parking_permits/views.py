@@ -379,11 +379,13 @@ class TalpaResolveRightOfPurchase(APIView):
             permit = ParkingPermit.objects.get(pk=permit_id)
             customer = permit.customer
             if settings.TRAFICOM_CHECK:
-                customer.fetch_driving_licence_detail()
+                customer.fetch_driving_licence_detail(permit)
                 is_driving_licence_active = customer.driving_licence.active
             else:
                 is_driving_licence_active = True
-            vehicle = customer.fetch_vehicle_detail(permit.vehicle.registration_number)
+            vehicle = customer.fetch_vehicle_detail(
+                permit.vehicle.registration_number, permit
+            )
             is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
             has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
                 vehicle
