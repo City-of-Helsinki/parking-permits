@@ -135,8 +135,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         )
         return relativedelta(datetime.today(), date_of_birth).years
 
-    def fetch_vehicle_detail(self, registration_number):
-        return Traficom().fetch_vehicle_details(registration_number)
+    def fetch_vehicle_detail(self, registration_number, permit=None):
+        return Traficom().fetch_vehicle_details(registration_number, permit=permit)
 
     def is_user_of_vehicle(self, vehicle):
         if not settings.TRAFICOM_CHECK:

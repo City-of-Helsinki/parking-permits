@@ -79,8 +79,8 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def fetch_vehicle_details(self, registration_number):
-        if settings.TRAFICOM_MOCK:
+    def fetch_vehicle_details(self, registration_number, permit=None):
+        if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
         et = self._fetch_info(registration_number=registration_number)
@@ -202,8 +202,8 @@ class Traficom:
         vehicle.users.set(vehicle_users)
         return vehicle
 
-    def fetch_driving_licence_details(self, hetu):
-        if settings.TRAFICOM_MOCK:
+    def fetch_driving_licence_details(self, hetu, permit=None):
+        if self._bypass_traficom(permit):
             return self._fetch_driving_licence_details_from_db(hetu)
 
         error_code = None
@@ -260,6 +260,13 @@ class Traficom:
             "issue_date": licence.start_date,
             "driving_classes": licence.driving_classes.all(),
         }
+
+    def _bypass_traficom(self, permit=None):
+        if settings.TRAFICOM_MOCK:
+            return True
+        if permit and permit.bypass_traficom_validation:
+            return True
+        return False
 
     def _fetch_info(self, registration_number=None, hetu=None):
         is_l_type_vehicle = (
