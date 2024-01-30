@@ -158,8 +158,9 @@ class TalpaOrderManager:
                     order_items_of_single_permit.append(item)
 
             # Append details of permit only to the last order item of permit.
-            cls.append_detail_meta(order_items_of_single_permit[-1], permit)
-            items += order_items_of_single_permit
+            if len(order_items_of_single_permit) > 0:
+                cls.append_detail_meta(order_items_of_single_permit[-1], permit)
+                items += order_items_of_single_permit
 
         customer = cls.create_customer_data(order.customer)
         last_valid_purchase_date_time = (
