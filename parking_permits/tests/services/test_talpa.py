@@ -24,7 +24,7 @@ class TestTalpaOrderManager(TestCase):
             vat=Decimal(0.24),
         )
 
-        data = TalpaOrderManager._create_order_data(order_item.order)
+        data = TalpaOrderManager.create_order_data(order_item.order)
         self.assertEqual(data["priceNet"], "193.55")
         self.assertEqual(data["priceVat"], "46.45")
         self.assertEqual(data["priceTotal"], "240.00")
@@ -37,7 +37,7 @@ class TestTalpaOrderManager(TestCase):
             vat=Decimal(0.24),
         )
 
-        data = TalpaOrderManager._create_item_data(order_item.order, order_item)
+        data = TalpaOrderManager.create_item_data(order_item.order, order_item)
 
         self.assertEqual(data["priceNet"], "24.19")
         self.assertEqual(data["priceVat"], "5.81")
