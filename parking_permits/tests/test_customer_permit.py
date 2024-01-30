@@ -3,7 +3,7 @@ from datetime import timezone as dt_tz
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone as tz
 from django.utils.translation import gettext as _
 from freezegun import freeze_time
@@ -104,10 +104,12 @@ class GetCustomerPermitTestCase(TestCase):
             vehicle=self.vehicle_b,
         )
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_customer_a_should_get_only_his_draft_permit(self):
         permits = CustomerPermit(self.customer_a.id).get()
         self.assertEqual(len(permits), 2)
 
+    @override_settings(TRAFICOM_MOCK=True)
     def test_customer_b_should_delete_draft_permit_that_is_created_before_today(self):
         query_set = ParkingPermit.objects.filter(
             customer=self.customer_b, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
