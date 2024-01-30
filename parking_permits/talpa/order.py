@@ -32,7 +32,7 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def _create_item_data(cls, order, order_item):
+    def create_item_data(cls, order, order_item):
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
@@ -67,7 +67,7 @@ class TalpaOrderManager:
         return item
 
     @classmethod
-    def _append_detail_meta(cls, item, permit):
+    def append_detail_meta(cls, item, permit, fixed_end_time=None):
         start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
         item["meta"] += [
             {"key": "permitId", "value": str(permit.id), "visibleInCheckout": False},
@@ -105,8 +105,9 @@ class TalpaOrderManager:
                 "ordinal": 5,
             },
         ]
-        if permit.end_time:
-            end_time = tz.localtime(permit.end_time).strftime(TIME_FORMAT)
+        permit_end_time = fixed_end_time or permit.end_time
+        if permit_end_time:
+            end_time = tz.localtime(permit_end_time).strftime(TIME_FORMAT)
             item["meta"].append(
                 {
                     "key": "endDate",
@@ -121,7 +122,7 @@ class TalpaOrderManager:
         return item
 
     @classmethod
-    def _create_customer_data(cls, customer):
+    def create_customer_data(cls, customer):
         return {
             "firstName": customer.first_name,
             "lastName": customer.last_name,
@@ -129,7 +130,7 @@ class TalpaOrderManager:
         }
 
     @classmethod
-    def _create_order_data(cls, order):
+    def create_order_data(cls, order):
         items = []
         order_items = (
             order.order_items.all()
@@ -147,7 +148,7 @@ class TalpaOrderManager:
             order_items_of_single_permit = []
             for index, order_item in enumerate(order_items_by_permit[permit]):
                 if order_item.quantity:
-                    item = cls._create_item_data(order, order_item)
+                    item = cls.create_item_data(order, order_item)
                     if index == 0:
                         item.update(
                             {
@@ -157,10 +158,10 @@ class TalpaOrderManager:
                     order_items_of_single_permit.append(item)
 
             # Append details of permit only to the last order item of permit.
-            cls._append_detail_meta(order_items_of_single_permit[-1], permit)
+            cls.append_detail_meta(order_items_of_single_permit[-1], permit)
             items += order_items_of_single_permit
 
-        customer = cls._create_customer_data(order.customer)
+        customer = cls.create_customer_data(order.customer)
         last_valid_purchase_date_time = (
             format_local_time(order.talpa_last_valid_purchase_time)
             if order.talpa_last_valid_purchase_time
@@ -186,7 +187,7 @@ class TalpaOrderManager:
         return round_up(v)
 
     @classmethod
-    def _set_flow_steps(cls, order_id, user_id):
+    def set_flow_steps(cls, order_id, user_id):
         data = {
             "activeStep": 4,
             "totalSteps": 7,
@@ -215,7 +216,7 @@ class TalpaOrderManager:
             )
 
     @classmethod
-    def _set_order_details(cls, order):
+    def set_order_details(cls, order):
         payment_period = settings.TALPA_ORDER_PAYMENT_MAX_PERIOD_MINS
         order.talpa_last_valid_purchase_time = tz.localtime(
             tz.now() + tz.timedelta(minutes=payment_period)
@@ -225,8 +226,8 @@ class TalpaOrderManager:
 
     @classmethod
     def send_to_talpa(cls, order):
-        cls._set_order_details(order)
-        order_data = cls._create_order_data(order)
+        cls.set_order_details(order)
+        order_data = cls.create_order_data(order)
         order_data_raw = json.dumps(order_data, default=str)
         logger.info(f"Order data sent to talpa: {order_data_raw}")
         response = requests.post(cls.url, data=order_data_raw, headers=cls.headers)
@@ -260,6 +261,6 @@ class TalpaOrderManager:
                 )
                 order_item.save()
 
-        cls._set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
+        cls.set_flow_steps(order.talpa_order_id, str(order.customer.user.uuid))
 
         return response_data.get("loggedInCheckoutUrl")
