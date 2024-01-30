@@ -1,9 +1,11 @@
 import datetime
+import zoneinfo
 from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
 import requests_mock
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.test import override_settings
 from django.urls import reverse
@@ -47,11 +49,15 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
+from parking_permits.utils import get_meta_value
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
 from ..models.common import SourceSystem
 from .keys import rsa_key
+
+HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
+TIME_FORMAT = "%d.%m.%Y %H:%M"
 
 
 def get_validated_order_data(talpa_order_id, talpa_order_item_id):
@@ -203,10 +209,10 @@ class BaseResolveEndpointTestCase(APITestCase):
             euro_min_class_limit=6,
         )
         permit_start_time = datetime.datetime(
-            now.year, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+            now.year, 1, 20, 14, 26, 0, tzinfo=HELSINKI_TZ
         )
         permit_end_time = datetime.datetime(
-            now.year, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+            now.year, 2, 19, 23, 59, 0, tzinfo=HELSINKI_TZ
         )
         zone_a = ParkingZoneFactory(name="A")
         product_detail_list = [[(start_date, end_date), unit_price]]
@@ -222,6 +228,26 @@ class BaseResolveEndpointTestCase(APITestCase):
             end_time=permit_end_time,
             month_count=1,
             primary_vehicle=primary_permit,
+        )
+        user = UserFactory(uuid=self.user_id)
+        customer = CustomerFactory(user=user)
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        order.permits.add(permit)
+        order.save()
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=self.talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        OrderItemFactory(
+            talpa_order_item_id=self.talpa_order_item_id,
+            order=order,
+            product=product,
+            permit=permit,
+            subscription=subscription,
         )
         return permit, product
 
@@ -499,6 +525,12 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
         self.assertEqual(response.data.get("productName"), product.name)
         self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+        order_item_metas = response.data.get("orderItemMetas")
+        permit_end_time = get_meta_value(order_item_metas, "endDate")
+        fixed_end_time = tz.localtime(
+            permit.end_time + relativedelta(months=1)
+        ).strftime(TIME_FORMAT)
+        self.assertEqual(permit_end_time, fixed_end_time)
 
     def test_resolve_product_view_after_vehicle_change(self):
         unit_price = Decimal(60)
@@ -539,6 +571,12 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
         self.assertEqual(response.data.get("productName"), product.name)
         self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+        order_item_metas = response.data.get("orderItemMetas")
+        permit_end_time = get_meta_value(order_item_metas, "endDate")
+        fixed_end_time = tz.localtime(
+            permit.end_time + relativedelta(months=1)
+        ).strftime(TIME_FORMAT)
+        self.assertEqual(permit_end_time, fixed_end_time)
 
     def test_resolve_product_view_after_address_change(self):
         unit_price = Decimal(60)
@@ -588,6 +626,12 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         )
         self.assertEqual(response.data.get("productName"), product_b.name)
         self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+        order_item_metas = response.data.get("orderItemMetas")
+        permit_end_time = get_meta_value(order_item_metas, "endDate")
+        fixed_end_time = tz.localtime(
+            permit.end_time + relativedelta(months=1)
+        ).strftime(TIME_FORMAT)
+        self.assertEqual(permit_end_time, fixed_end_time)
 
     def test_resolve_product_view_after_primary_permit_ending(self):
         unit_price = Decimal(60)
@@ -612,6 +656,12 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         self.assertEqual(response.data.get("productId"), str(product.talpa_product_id))
         self.assertEqual(response.data.get("productName"), product.name)
         self.assertEqual(response.data.get("productLabel"), permit.vehicle.description)
+        order_item_metas = response.data.get("orderItemMetas")
+        permit_end_time = get_meta_value(order_item_metas, "endDate")
+        fixed_end_time = tz.localtime(
+            permit.end_time + relativedelta(months=1)
+        ).strftime(TIME_FORMAT)
+        self.assertEqual(permit_end_time, fixed_end_time)
 
         permit.refresh_from_db()
         # Check that permit has been marked as primary
