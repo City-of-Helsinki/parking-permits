@@ -120,6 +120,7 @@ type PermitNode {
   endTime: String
   description: String
   type: String
+  bypassTraficomValidation: Boolean
   primaryVehicle: Boolean!
 }
 
