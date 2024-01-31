@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-02 15:09+0200\n"
+"POT-Creation-Date: 2024-01-31 23:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -60,14 +60,14 @@ msgstr "Pysäköintialuetta ei löytynyt tälle sijainnille"
 msgid "Multiple parking zones found for the location"
 msgstr "Useita pysäköintialueita löytyi tälle sijainnille"
 
-msgid "Person not found"
-msgstr "Henkilöä ei löytynyt"
+msgid "Customer not found"
+msgstr "Asiakasta ei löytynyt"
 
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
-msgid "Owner/holder data of a vehicle could not be verified. Please check with Traficom for data transfer restrictions."
-msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan. Tarkistathan Traficomilta tiedonluovutuskiellot."
+msgid "Owner/holder data of a vehicle could not be verified"
+msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan"
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
@@ -181,6 +181,13 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
+
+msgid ""
+"Owner/holder data of a vehicle could not be verified. Please check with "
+"Traficom for data transfer restrictions."
+msgstr ""
+"Omistajuutta/haltijuutta ei pystytty todentamaan. Tarkistathan Traficomilta "
+"tiedonluovutuskiellot."
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Puutteelliset ajokorttitiedot"
@@ -317,9 +324,6 @@ msgstr "Helsingin kaupunki"
 
 msgid "Personal data - Digital and population data services agency"
 msgstr "Henkilötiedot - Digi- ja väestötietovirasto"
-
-msgid "Source: Transport register, Traficom"
-msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
 
 msgid "Permit ID"
 msgstr "Tunniste"
@@ -772,14 +776,23 @@ msgstr "Väliaikaiset ajoneuvot"
 msgid "M1"
 msgstr "M1"
 
+msgid "M1G"
+msgstr "M1G"
+
 msgid "M2"
 msgstr "M2"
 
 msgid "N1"
 msgstr "N1"
 
+msgid "N1G"
+msgstr "N1G"
+
 msgid "N2"
 msgstr "N2"
+
+msgid "N2G"
+msgstr "N2G"
 
 msgid "L3e-A1"
 msgstr "L3e-A1"
@@ -910,6 +923,9 @@ msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
 
+msgid "Person not found"
+msgstr "Henkilöä ei löytynyt"
+
 msgid "New parking permit has been created for you"
 msgstr "Sinulle on luotu pysäköintitunnus"
 
@@ -954,6 +970,10 @@ msgstr ""
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
 
+#, python-format
+msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+msgstr "Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan"
+
 msgid "The person has no driving licence"
 msgstr "Henkilölle ei löydy ajokorttia"
 
@@ -985,6 +1005,9 @@ msgid ""
 msgstr ""
 "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun "
 "maksusuoritus on hyväksytty"
+
+msgid "Source: Transport register, Traficom"
+msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
 
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
