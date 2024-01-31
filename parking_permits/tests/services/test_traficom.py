@@ -46,6 +46,19 @@ class TestTraficom(TestCase):
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155.00
 
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_too_heavy(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_too_heavy.xml")),
+        ):
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_vehicle_details,
+                self.registration_number,
+            )
+
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_wltp(self):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_wltp.xml"))
