@@ -48,6 +48,7 @@ VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
+VEHICLE_MAX_WEIGHT_KG = 4000
 
 POWER_TYPE_MAPPER = {
     "01": "Bensin",
@@ -149,7 +150,15 @@ class Traficom:
         mass = et.find(".//massa")
         module_weight = mass.find("modulinKokonaismassa")
         technical_weight = mass.find("teknSuurSallKokmassa")
-        weight = module_weight if module_weight is not None else technical_weight
+        weight_et = module_weight if module_weight is not None else technical_weight
+        weight = int(weight_et.text) if weight_et.text else 0
+        if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
+            raise TraficomFetchVehicleError(
+                _(
+                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+                )
+                % {"registration_number": registration_number}
+            )
 
         vehicle_power_type = motor.find("kayttovoima")
         vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
@@ -171,7 +180,7 @@ class Traficom:
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
             "model": vehicle_model.text if vehicle_model is not None else "",
-            "weight": int(weight.text) if weight else 0,
+            "weight": weight,
             "registration_number": registration_number,
             "euro_class": 6,  # It will always be 6 class atm.
             "emission": float(co2emission) if co2emission else 0,
