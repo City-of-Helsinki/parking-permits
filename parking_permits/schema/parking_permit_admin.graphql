@@ -290,6 +290,7 @@ type PermitDetailNode {
   endTime: String
   description: String
   consentLowEmissionAccepted: Boolean
+  bypassTraficomValidation: Boolean
   contractType: String
   monthCount: Int
   monthsLeft: Int
@@ -495,6 +496,7 @@ input ResidentPermitInput {
   description: String
   address: AddressInput
   addressApartment: String
+  bypassTraficomValidation: Boolean
   zone: String
 }
 
