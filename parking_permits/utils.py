@@ -65,6 +65,13 @@ class DefaultOrderedDict(OrderedDict):
         )
 
 
+def safe_cast(val, to_type, default=None):
+    try:
+        return to_type(val)
+    except (ValueError, TypeError):
+        return default
+
+
 def diff_months_floor(start_date, end_date):
     if start_date > end_date:
         return 0

@@ -17,6 +17,7 @@ from parking_permits.models.vehicle import (
     VehiclePowerType,
     VehicleUser,
 )
+from parking_permits.utils import safe_cast
 
 ssl.match_hostname = lambda cert, hostname: True
 
@@ -151,7 +152,7 @@ class Traficom:
         module_weight = mass.find("modulinKokonaismassa")
         technical_weight = mass.find("teknSuurSallKokmassa")
         weight_et = module_weight if module_weight is not None else technical_weight
-        weight = int(weight_et.text) if weight_et.text else 0
+        weight = safe_cast(weight_et.text, int, 0) if weight_et.text else 0
         if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
             raise TraficomFetchVehicleError(
                 _(
