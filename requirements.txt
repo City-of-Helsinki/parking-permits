@@ -118,7 +118,7 @@ pyasn1==0.5.0
     #   rsa
 pycparser==2.21
     # via cffi
-pycryptodome==3.19.0
+pycryptodome==3.19.1
     # via django-searchable-encrypted-fields
 python-dateutil==2.8.2
     # via arrow
