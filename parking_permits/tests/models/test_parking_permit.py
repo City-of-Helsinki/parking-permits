@@ -13,7 +13,7 @@ from parking_permits.exceptions import (
     PermitCanNotBeEnded,
     ProductCatalogError,
 )
-from parking_permits.models import Order
+from parking_permits.models import Order, ParkingPermitExtensionRequest
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
@@ -22,6 +22,9 @@ from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.permit_extension_request import (
+    ParkingPermitExtensionRequestFactory,
+)
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
@@ -787,3 +790,87 @@ class TestParkingPermit(TestCase):
             self.permit.create_parkkihubi_permit()
             mock_post.assert_called_once()
             self.assertEqual(mock_post.return_value.status_code, 400)
+
+    def test_can_extend_permit_not_valid(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.CLOSED,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    def test_can_extend_permit_open_ended(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.OPEN_ENDED,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    def test_can_extend_permit_end_date_nont(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=None,
+            ).can_extend_permit,
+        )
+
+    def test_can_extend_permit_end_date_too_late(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=30),
+            ).can_extend_permit,
+        )
+
+    def test_can_extend_permit_existing_pending_request(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        ParkingPermitExtensionRequestFactory(permit=permit)
+
+        self.assertFalse(permit.can_extend_permit)
+
+    def test_can_extend_permit_no_other_requests(self):
+        self.assertTrue(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    def test_can_extend_permit_existing_other_request(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+
+        self.assertTrue(permit.can_extend_permit)
+
+    def test_extend_permit(self):
+        now = timezone.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        permit.extend_permit(3)
+
+        permit.refresh_from_db()
+
+        self.assertEqual(permit.month_count, 4)
+        self.assertEqual(permit.end_time.date(), (now + timedelta(days=120)).date())

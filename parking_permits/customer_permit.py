@@ -15,6 +15,7 @@ from .exceptions import (
     InvalidUserAddress,
     NonDraftPermitUpdateError,
     PermitCanNotBeDeleted,
+    PermitCanNotBeExtended,
     PermitLimitExceeded,
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
@@ -79,6 +80,27 @@ class CustomerPermit:
         self.customer = Customer.objects.get(id=customer_id)
         self.customer_permit_query = ParkingPermit.objects.filter(
             customer=self.customer, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
+        )
+
+    def create_permit_extension_request(self, permit_id, month_count):
+        """Creates a Pending extension request.
+
+        Raises PermitCanNotBeExtended if extensions are not allowed for this permit.
+        """
+        permit, _primary_vehicle = self._get_permit(permit_id)
+        if not permit.can_extend_permit:
+            raise PermitCanNotBeExtended(_("You cannot extend this permit."))
+
+        order = Order.objects.create(
+            customer=permit.customer,
+            status=OrderStatus.CONFIRMED,
+            type=OrderType.CREATED,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+        )
+
+        return permit.permit_extension_requests.create(
+            order=order,
+            month_count=month_count,
         )
 
     def add_temporary_vehicle(self, permit_id, registration, start_time, end_time):

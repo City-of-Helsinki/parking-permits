@@ -8,7 +8,7 @@ import requests_mock
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.test import override_settings
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone as tz
 from freezegun import freeze_time
 from helusers.settings import api_token_auth_settings
@@ -42,6 +42,9 @@ from parking_permits.tests.factories.order import (
     SubscriptionFactory,
 )
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.permit_extension_request import (
+    ParkingPermitExtensionRequestFactory,
+)
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
@@ -99,24 +102,47 @@ def get_validated_subscription_data(
 
 class PaymentViewTestCase(APITestCase):
     talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+    url = reverse_lazy("parking_permits:payment-notify")
+
+    def test_should_extend_permit_on_successful_payment(self):
+        ext_request = ParkingPermitExtensionRequestFactory(
+            order__talpa_order_id=self.talpa_order_id
+        )
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_approved())
+
+    def test_should_not_extend_permit_on_unsuccessful_payment(self):
+        ext_request = ParkingPermitExtensionRequestFactory(
+            order__talpa_order_id=self.talpa_order_id
+        )
+        data = {"eventType": "PAYMENT_NOT_PAID", "orderId": self.talpa_order_id}
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 400)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_rejected())
 
     def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
-        url = reverse("parking_permits:payment-notify")
         data = {
             "eventType": "PAYMENT_PAID",
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 400)
 
     def test_payment_view_should_return_not_found_if_talpa_order_does_not_exist(
         self,
     ):
-        url = reverse("parking_permits:payment-notify")
         data = {
             "eventType": "PAYMENT_PAID",
             "orderId": self.talpa_order_id,
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 404)
 
     @override_settings(DEBUG=True)
@@ -127,9 +153,8 @@ class PaymentViewTestCase(APITestCase):
             talpa_order_id=self.talpa_order_id, status=OrderStatus.DRAFT
         )
         order.permits.add(permit_1, permit_2)
-        url = reverse("parking_permits:payment-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
         permit_1.refresh_from_db()
@@ -161,9 +186,8 @@ class PaymentViewTestCase(APITestCase):
             type=OrderType.SUBSCRIPTION_RENEWED,
         )
         order.permits.add(permit)
-        url = reverse("parking_permits:payment-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
         permit.refresh_from_db()

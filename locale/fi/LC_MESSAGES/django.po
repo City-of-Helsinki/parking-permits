@@ -929,6 +929,9 @@ msgstr "Sinulle on luotu pysäköintitunnus"
 msgid "Your parking permit information has been updated"
 msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
+msgid "Your parking permit has been extended"
+msgstr "Pysäköintitunnuksesi voimassaoloaika on pidennetty"
+
 msgid "Your order will end"
 msgstr "Tilauksesi päättyy"
 

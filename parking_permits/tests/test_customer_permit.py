@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from datetime import timezone as dt_tz
 
 from dateutil.relativedelta import relativedelta
@@ -14,6 +14,7 @@ from parking_permits.exceptions import (
     InvalidUserAddress,
     NonDraftPermitUpdateError,
     PermitCanNotBeDeleted,
+    PermitCanNotBeExtended,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -458,3 +459,36 @@ class UpdateCustomerPermitTestCase(TestCase):
         CustomerPermit(customer.id).update(data, permit_id=permit_id)
         secondary.refresh_from_db()
         self.assertEqual(secondary.month_count, 5)
+
+
+class ExtendCustomerPermitTestCase(TestCase):
+    def test_ok(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        result = CustomerPermit(permit.customer_id).create_permit_extension_request(
+            permit.pk, 3
+        )
+        self.assertTrue(result)
+        ext_request = permit.get_pending_extension_requests().first()
+        self.assertEqual(ext_request.month_count, 3)
+
+    def test_invalid(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+        )
+        self.assertRaises(
+            PermitCanNotBeExtended,
+            CustomerPermit(permit.customer_id).create_permit_extension_request,
+            permit.pk,
+            3,
+        )
+        self.assertFalse(permit.get_pending_extension_requests().exists())

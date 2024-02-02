@@ -11,6 +11,7 @@ from parking_permits.models import (
     Order,
     OrderItem,
     ParkingPermit,
+    ParkingPermitExtensionRequest,
     ParkingZone,
     Product,
     Refund,
@@ -226,6 +227,20 @@ class OrderItemAdmin(admin.ModelAdmin):
     list_select_related = ("order", "subscription", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
     ordering = ("-pk",)
+
+
+@admin.register(ParkingPermitExtensionRequest)
+class ParkingPermitExtensionRequestAdmin(admin.ModelAdmin):
+    raw_id_fields = ("permit", "order")
+    list_filter = ("status",)
+    ordering = ("-created_at",)
+    search_fields = (
+        "permit__customer__first_name",
+        "permit__customer__last_name",
+        "permit__vehicle__registration__number",
+    )
+    list_display = ("permit", "status")
+    list_select_related = True
 
 
 @admin.register(Subscription)
