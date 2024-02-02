@@ -95,6 +95,7 @@ type PermitNode {
   canBeRefunded: Boolean
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
+  canExtendPermit: Boolean
   hasRefund: Boolean
   vehicleChanged: Boolean
   zoneChanged: Boolean
@@ -148,6 +149,7 @@ type Mutation {
   deleteParkingPermit(permitId: ID!): Boolean!
   endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): Boolean
   updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
+  extendParkingPermit(permitId: ID!, monthCount: Int): Boolean
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
   getVehicleInformation(registration: String!): VehicleNode!
   updatePermitVehicle(permitId: ID!, vehicleId: ID!, consentLowEmissionAccepted: Boolean, iban: String): ChangeVehicleResult!

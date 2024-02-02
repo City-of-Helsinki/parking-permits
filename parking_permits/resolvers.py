@@ -290,6 +290,34 @@ def resolve_create_parking_permit(_obj, info, address_id, registration):
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
 
 
+@mutation.field("extendParkingPermit")
+@is_authenticated
+@convert_kwargs_to_snake_case
+@audit_logger.autolog(
+    AuditMsg(
+        "User extended parking permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
+@transaction.atomic
+def resolve_extend_parking_permit(
+    _obj,
+    info,
+    permit_id,
+    month_count,
+    audit_msg: AuditMsg = None,
+):
+    ext_request = CustomerPermit(
+        info.context["request"].user.customer.id
+    ).create_permit_extension_request(
+        permit_id,
+        month_count,
+    )
+    checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order)
+    return {"checkout_url": checkout_url}
+
+
 @mutation.field("updateParkingPermit")
 @is_authenticated
 @convert_kwargs_to_snake_case

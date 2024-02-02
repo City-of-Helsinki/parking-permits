@@ -34,6 +34,10 @@ class PermitCanNotBeDeleted(ParkingPermitBaseException):
     pass
 
 
+class PermitCanNotBeExtended(ParkingPermitBaseException):
+    pass
+
+
 class PermitCanNotBeEnded(ParkingPermitBaseException):
     pass
 

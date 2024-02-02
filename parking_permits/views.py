@@ -445,18 +445,26 @@ class PaymentView(APIView):
         event_type = request.data.get("eventType")
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
+        try:
+            order = Order.objects.get(talpa_order_id=talpa_order_id)
+        except Order.DoesNotExist:
+            return not_found_response(f"Order {talpa_order_id} does not exist")
+
         if event_type == "PAYMENT_PAID":
             logger.info(
                 f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
             )
-            try:
-                order = Order.objects.get(talpa_order_id=talpa_order_id)
-            except Order.DoesNotExist:
-                return not_found_response(f"Order {talpa_order_id} does not exist")
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
             order.paid_time = tz.now()
             order.save()
+
+            for (
+                ext_request
+            ) in order.get_pending_permit_extension_requests().select_related("permit"):
+                ext_request.approve()
+                send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
 
@@ -514,9 +522,15 @@ class PaymentView(APIView):
                     permit.update_parkkihubi_permit()
                 except ParkkihubiPermitError:
                     permit.create_parkkihubi_permit()
+
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
+            for (
+                ext_request
+            ) in order.get_pending_permit_extension_requests().select_related("permit"):
+                ext_request.reject()
+
             return bad_request_response(f"Unknown payment event type {event_type}")
 
 

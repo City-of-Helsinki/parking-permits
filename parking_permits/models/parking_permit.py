@@ -419,6 +419,31 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             address and address.zone == self.parking_zone for address in addresses
         )
 
+    @property
+    def can_extend_permit(self):
+        """Checks if permit can be extended:
+        1. Must be a valid fixed period permit.
+        2. Cannot have any pending requests.
+        3. Must be within 14 days of end time.
+        """
+
+        if self.status != ParkingPermitStatus.VALID:
+            return False
+
+        if self.contract_type != ContractType.FIXED_PERIOD:
+            return False
+
+        if self.end_time is None or self.end_time > timezone.now() + relativedelta(
+            days=14
+        ):
+            return False
+
+        # do database op last
+        return not self.get_pending_extension_requests().exists()
+
+    def get_pending_extension_requests(self):
+        return self.permit_extension_requests.pending()
+
     def current_period_end_time_with_fixed_months(self, months):
         end_time = get_end_time(self.start_time, months)
         return max(self.start_time, end_time)
@@ -580,6 +605,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
         ):
             self.status = ParkingPermitStatus.CLOSED
+        self.save()
+
+    def extend_permit(self, additional_months):
+        """Extends the end time of the permit by given months."""
+        self.month_count += additional_months
+        self.end_time = get_end_time(self.start_time, self.month_count)
         self.save()
 
     def get_refund_amount_for_unused_items(self):

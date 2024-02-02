@@ -14,6 +14,7 @@ class PermitEmailType:
     CREATED = "created"
     UPDATED = "updated"
     ENDED = "ended"
+    EXTENDED = "extended"
     TEMP_VEHICLE_ACTIVATED = "temp_vehicle_activated"
     TEMP_VEHICLE_DEACTIVATED = "temp_vehicle_deactivated"
     EXPIRATION_REMIND = "expiration_remind"
@@ -31,6 +32,8 @@ permit_email_subjects = {
     PermitEmailType.UPDATED: "%s: %s"
     % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
     PermitEmailType.ENDED: "%s: %s" % (SUBJECT_PREFIX, _("Your order will end")),
+    PermitEmailType.EXTENDED: "%s: %s"
+    % (SUBJECT_PREFIX, _("Your parking permit has been extended")),
     PermitEmailType.TEMP_VEHICLE_ACTIVATED: "%s: %s"
     % (SUBJECT_PREFIX, _("Temporary vehicle attached to your permit")),
     PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "%s: %s"
@@ -47,6 +50,7 @@ permit_email_templates = {
     PermitEmailType.CREATED: "emails/permit_created.html",
     PermitEmailType.UPDATED: "emails/permit_updated.html",
     PermitEmailType.ENDED: "emails/permit_ended.html",
+    PermitEmailType.EXTENDED: "emails/permit_extended.html",
     PermitEmailType.TEMP_VEHICLE_ACTIVATED: "emails/temporary_vehicle_activated.html",
     PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "emails/temporary_vehicle_deactivated.html",
     PermitEmailType.EXPIRATION_REMIND: "emails/expiration_remind.html",

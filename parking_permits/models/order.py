@@ -504,6 +504,9 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         logger.info(f"Order {self.talpa_order_id} cancel process done")
         return True
 
+    def get_pending_permit_extension_requests(self):
+        return self.permit_extension_requests.pending()
+
 
 class SubscriptionStatus(models.TextChoices):
     CONFIRMED = "CONFIRMED", _("Confirmed")

@@ -1,0 +1,12 @@
+{% extends "emails/base.html" %}
+{% load i18n %}
+
+{% block title %}{% translate "Your parking permit has been extended" %}{% endblock %}
+
+{% block content %}
+<p>
+    {% translate "Thank you for your order! The parking permit is electronic and parking permit enforcers will identify
+    permit validity based on your vehicle licence plate number." %}
+</p>
+{% include "emails/_permit_info.html" %}
+{% endblock %}
