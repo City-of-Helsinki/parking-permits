@@ -39,6 +39,7 @@ def automatic_expiration_of_permits():
             active_permit = active_permits.first()
             active_permit.primary_vehicle = True
             active_permit.save()
+        logger.info(f"Permit {permit.pk} ended")
 
     logger.info("Automatically ending permits completed.")
 
