@@ -232,12 +232,14 @@ class TalpaResolveProduct(APIView):
             order_item = permit.order_items.first()
             if order_item:
                 order_item_response_data.get("meta").append(
-                    {
-                        "key": "sourceOrderItemId",
-                        "value": str(order_item.id),
-                        "visibleInCheckout": False,
-                        "ordinal": 0,
-                    },
+                    snake_to_camel_dict(
+                        {
+                            "key": "sourceOrderItemId",
+                            "value": str(order_item.id),
+                            "visible_in_checkout": False,
+                            "ordinal": 0,
+                        }
+                    ),
                 )
                 TalpaOrderManager.append_detail_meta(
                     order_item_response_data,
