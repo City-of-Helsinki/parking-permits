@@ -677,6 +677,7 @@ class TestParkingPermit(TestCase):
 
         self.assertFalse(permit.can_be_refunded)
 
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
     def test_can_be_refunded_open_ended_already_started(self):
         permit = ParkingPermitFactory(
             contract_type=ContractType.OPEN_ENDED,
@@ -687,6 +688,7 @@ class TestParkingPermit(TestCase):
 
         self.assertFalse(permit.can_be_refunded)
 
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
     def test_can_be_refunded_open_ended_ends_more_than_month(self):
         permit = ParkingPermitFactory(
             contract_type=ContractType.OPEN_ENDED,

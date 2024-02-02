@@ -76,6 +76,7 @@ from .services.mail import (
     send_permit_email,
     send_vehicle_low_emission_discount_email,
 )
+from .talpa.order import TalpaOrderManager
 from .utils import (
     get_end_time,
     get_meta_item,
@@ -226,6 +227,24 @@ class TalpaResolveProduct(APIView):
             product = product_with_quantity[0]
             if not product:
                 return bad_request_response("Product not found")
+
+            order_item_response_data = {"meta": []}
+            order_item = permit.order_items.first()
+            if order_item:
+                order_item_response_data.get("meta").append(
+                    {
+                        "key": "sourceOrderItemId",
+                        "value": str(order_item.id),
+                        "visibleInCheckout": False,
+                        "ordinal": 0,
+                    },
+                )
+                TalpaOrderManager.append_detail_meta(
+                    order_item_response_data,
+                    permit,
+                    fixed_end_time=permit.end_time + relativedelta(months=1),
+                )
+
             response = snake_to_camel_dict(
                 {
                     "subscription_id": subscription_id,
@@ -233,6 +252,7 @@ class TalpaResolveProduct(APIView):
                     "product_id": str(product.talpa_product_id),
                     "product_name": product.name,
                     "product_label": permit.vehicle.description,
+                    "order_item_metas": order_item_response_data.get("meta"),
                 }
             )
         except Exception as e:
@@ -359,11 +379,13 @@ class TalpaResolveRightOfPurchase(APIView):
             permit = ParkingPermit.objects.get(pk=permit_id)
             customer = permit.customer
             if settings.TRAFICOM_CHECK:
-                customer.fetch_driving_licence_detail()
+                customer.fetch_driving_licence_detail(permit)
                 is_driving_licence_active = customer.driving_licence.active
             else:
                 is_driving_licence_active = True
-            vehicle = customer.fetch_vehicle_detail(permit.vehicle.registration_number)
+            vehicle = customer.fetch_vehicle_detail(
+                permit.vehicle.registration_number, permit
+            )
             is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
             has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
                 vehicle

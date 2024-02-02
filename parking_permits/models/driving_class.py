@@ -15,12 +15,16 @@ ALLOWED_VEHICLE_CLASSES = {
     ),
     "B": (
         VehicleClass.M1,
-        VehicleClass.M2,  # M2 mass less than 3500KG
+        VehicleClass.M1G,
         VehicleClass.N1,
+        VehicleClass.N1G,
         VehicleClass.L6eB,
     ),
-    "C": (VehicleClass.N2,),
-    "D": (VehicleClass.M2,),  # M2 mass not more than 3500 - 4000KG
+    "C": (
+        VehicleClass.N2,
+        VehicleClass.N2G,
+    ),
+    "D": (VehicleClass.M2,),
 }
 
 

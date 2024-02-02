@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-02 15:09+0200\n"
+"POT-Creation-Date: 2024-01-31 23:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -60,14 +60,14 @@ msgstr "Det finns inte parkering zon för det plats"
 msgid "Multiple parking zones found for the location"
 msgstr "Flera parkerings zon till denna plats"
 
-msgid "Person not found"
+msgid "Customer not found"
 msgstr "Ingen kund hittas"
 
 msgid "Customer search error"
 msgstr "Kundsökningsfel"
 
-msgid "Owner/holder data of a vehicle could not be verified. Please check with Traficom for data transfer restrictions."
-msgstr "Ägar/innehavaruppgifter av fordon kunde inte verifieras. Kontrollera med Traficom för dataöverföringsförbud."
+msgid "Owner/holder data of a vehicle could not be verified"
+msgstr "Ägar/innehavaruppgifter av fordon kunde inte verifieras"
 
 msgid "Customer does not have a valid driving licence for this vehicle"
 msgstr "Kunden har inte ett giltigt körkort för detta fordon"
@@ -177,6 +177,13 @@ msgstr ""
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
+
+msgid ""
+"Owner/holder data of a vehicle could not be verified. Please check with "
+"Traficom for data transfer restrictions."
+msgstr ""
+"Ägar/innehavaruppgifter av fordon kunde inte verifieras. Kontrollera med "
+"Traficom för dataöverföringsförbud."
 
 msgid "Customer does not have a valid driving licence"
 msgstr "Kunden har inte giltigt körkort"
@@ -312,9 +319,6 @@ msgstr "Helsingfors stad"
 
 msgid "Personal data - Digital and population data services agency"
 msgstr "Personuppgifter - Digital- och befolkningsdatatjänstbyrå"
-
-msgid "Source: Transport register, Traficom"
-msgstr "Källä: Trafik- och transportregistret, Traficom"
 
 msgid "Permit ID"
 msgstr "Permit ID"
@@ -769,14 +773,23 @@ msgstr "Tillfälliga fordon"
 msgid "M1"
 msgstr "M1"
 
+msgid "M1G"
+msgstr "M1G"
+
 msgid "M2"
 msgstr "M2"
 
 msgid "N1"
 msgstr "N1"
 
+msgid "N1G"
+msgstr "N1G"
+
 msgid "N2"
 msgstr "N2"
+
+msgid "N2G"
+msgstr "N2G"
 
 msgid "L3e-A1"
 msgstr "L3e-A1"
@@ -907,6 +920,9 @@ msgstr "Inga aktiva tillstånd för kunden"
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
 
+msgid "Person not found"
+msgstr "Ingen kund hittas"
+
 msgid "New parking permit has been created for you"
 msgstr "Nytt parkeringstillstånd har skapats åt dig"
 
@@ -952,6 +968,10 @@ msgstr ""
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Fordonet %(registration_number)s är avställd"
 
+#, python-format
+msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+msgstr "Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
+
 msgid "The person has no driving licence"
 msgstr "Personen har inget körkort"
 
@@ -983,6 +1003,9 @@ msgid ""
 msgstr ""
 "* Parkeringpermit är i kraft från den valda startdatum, när betalningen är "
 "godkännt"
+
+msgid "Source: Transport register, Traficom"
+msgstr "Källä: Trafik- och transportregistret, Traficom"
 
 msgid "Parking permit expiration date"
 msgstr "Tillståndet upphör att gälla"

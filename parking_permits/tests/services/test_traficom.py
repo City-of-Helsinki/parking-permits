@@ -9,6 +9,7 @@ from parking_permits.models import DrivingClass, DrivingLicence
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.services.traficom import Traficom
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
 
 
@@ -46,6 +47,19 @@ class TestTraficom(TestCase):
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155.00
 
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_too_heavy(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_too_heavy.xml")),
+        ):
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_vehicle_details,
+                self.registration_number,
+            )
+
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_wltp(self):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_wltp.xml"))
@@ -134,6 +148,29 @@ class TestTraficom(TestCase):
             self.assertEqual(vehicle.registration_number, self.registration_number)
             mock_traficom.assert_not_called()
 
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_from_db_if_permit_bypass_true(self):
+        VehicleFactory(registration_number=self.registration_number)
+        permit = ParkingPermitFactory(bypass_traficom_validation=True)
+        with mock.patch("requests.post") as mock_traficom:
+            vehicle = self.traficom.fetch_vehicle_details(
+                self.registration_number, permit
+            )
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+            mock_traficom.assert_not_called()
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_from_db_if_permit_bypass_false(self):
+        permit = ParkingPermitFactory(bypass_traficom_validation=False)
+        with mock.patch(
+            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+        ) as mock_traficom:
+            vehicle = self.traficom.fetch_vehicle_details(
+                self.registration_number, permit
+            )
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+            mock_traficom.assert_called()
+
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db_not_found(self):
         with mock.patch("requests.post") as mock_traficom:
@@ -183,6 +220,41 @@ class TestTraficom(TestCase):
             self.assertEqual(result["issue_date"], licence.start_date)
             self.assertEqual(result["driving_classes"].count(), 1)
             mock_traficom.assert_not_called()
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_licence_from_db_if_permit_bypass(self):
+        customer = CustomerFactory(national_id_number=self.hetu)
+        permit = ParkingPermitFactory(
+            customer=customer, bypass_traficom_validation=True
+        )
+        licence = DrivingLicence.objects.create(
+            customer=customer,
+            start_date=datetime.date(2023, 6, 3),
+        )
+        assert licence.start_date == datetime.date(2023, 6, 3)
+        driving_class = DrivingClass.objects.create(identifier="A")
+        licence.driving_classes.add(driving_class)
+
+        with mock.patch("requests.post") as mock_traficom:
+            result = self.traficom.fetch_driving_licence_details(self.hetu, permit)
+            self.assertEqual(result["issue_date"], licence.start_date)
+            self.assertEqual(result["driving_classes"].count(), 1)
+            mock_traficom.assert_not_called()
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_valid_licence_if_not_permit_bypass(self):
+        customer = CustomerFactory(national_id_number=self.hetu)
+        permit = ParkingPermitFactory(
+            customer=customer, bypass_traficom_validation=False
+        )
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("licence_ok.xml")),
+        ) as mock_traficom:
+            result = self.traficom.fetch_driving_licence_details(self.hetu, permit)
+            self.assertEqual(len(result["driving_classes"]), 7)
+            self.assertEqual(result["issue_date"], "2023-09-01")
+            mock_traficom.assert_called()
 
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_licence_from_db_not_found(self):

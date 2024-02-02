@@ -135,8 +135,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         )
         return relativedelta(datetime.today(), date_of_birth).years
 
-    def fetch_vehicle_detail(self, registration_number):
-        return Traficom().fetch_vehicle_details(registration_number)
+    def fetch_vehicle_detail(self, registration_number, permit=None):
+        return Traficom().fetch_vehicle_details(registration_number, permit=permit)
 
     def is_user_of_vehicle(self, vehicle):
         if not settings.TRAFICOM_CHECK:
@@ -144,9 +144,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         users_nin = [user.national_id_number for user in vehicle.users.all()]
         return self.national_id_number in users_nin
 
-    def fetch_driving_licence_detail(self):
+    def fetch_driving_licence_detail(self, permit=None):
         licence_details = Traficom().fetch_driving_licence_details(
-            self.national_id_number
+            self.national_id_number,
+            permit=permit,
         )
         driving_licence = DrivingLicence.objects.update_or_create(
             customer=self,

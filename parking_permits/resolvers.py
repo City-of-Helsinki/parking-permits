@@ -448,6 +448,7 @@ def resolve_update_permit_vehicle(
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
+    permit.bypass_traficom_validation = False
     permit.save()
 
     ParkingPermitEventFactory.make_update_permit_event(

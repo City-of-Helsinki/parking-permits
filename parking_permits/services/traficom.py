@@ -17,6 +17,7 @@ from parking_permits.models.vehicle import (
     VehiclePowerType,
     VehicleUser,
 )
+from parking_permits.utils import safe_cast
 
 ssl.match_hostname = lambda cert, hostname: True
 
@@ -48,6 +49,7 @@ VEHICLE_SEARCH = 841
 DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
+VEHICLE_MAX_WEIGHT_KG = 4000
 
 POWER_TYPE_MAPPER = {
     "01": "Bensin",
@@ -77,8 +79,8 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def fetch_vehicle_details(self, registration_number):
-        if settings.TRAFICOM_MOCK:
+    def fetch_vehicle_details(self, registration_number, permit=None):
+        if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
         et = self._fetch_info(registration_number=registration_number)
@@ -149,7 +151,15 @@ class Traficom:
         mass = et.find(".//massa")
         module_weight = mass.find("modulinKokonaismassa")
         technical_weight = mass.find("teknSuurSallKokmassa")
-        weight = module_weight if module_weight is not None else technical_weight
+        weight_et = module_weight if module_weight is not None else technical_weight
+        weight = safe_cast(weight_et.text, int, 0) if weight_et.text else 0
+        if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
+            raise TraficomFetchVehicleError(
+                _(
+                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+                )
+                % {"registration_number": registration_number}
+            )
 
         vehicle_power_type = motor.find("kayttovoima")
         vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
@@ -171,7 +181,7 @@ class Traficom:
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
             "model": vehicle_model.text if vehicle_model is not None else "",
-            "weight": int(weight.text) if weight else 0,
+            "weight": weight,
             "registration_number": registration_number,
             "euro_class": 6,  # It will always be 6 class atm.
             "emission": float(co2emission) if co2emission else 0,
@@ -192,8 +202,8 @@ class Traficom:
         vehicle.users.set(vehicle_users)
         return vehicle
 
-    def fetch_driving_licence_details(self, hetu):
-        if settings.TRAFICOM_MOCK:
+    def fetch_driving_licence_details(self, hetu, permit=None):
+        if self._bypass_traficom(permit):
             return self._fetch_driving_licence_details_from_db(hetu)
 
         error_code = None
@@ -250,6 +260,13 @@ class Traficom:
             "issue_date": licence.start_date,
             "driving_classes": licence.driving_classes.all(),
         }
+
+    def _bypass_traficom(self, permit=None):
+        if settings.TRAFICOM_MOCK:
+            return True
+        if permit and permit.bypass_traficom_validation:
+            return True
+        return False
 
     def _fetch_info(self, registration_number=None, hetu=None):
         is_l_type_vehicle = (

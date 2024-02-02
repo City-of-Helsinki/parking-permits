@@ -571,6 +571,7 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         address_apartment=permit.get("address_apartment"),
         address_apartment_sv=permit.get("address_apartment"),
         primary_vehicle=primary_vehicle,
+        bypass_traficom_validation=permit.get("bypass_traficom_validation", False),
     )
 
     audit_msg.target = parking_permit
@@ -814,10 +815,13 @@ def resolve_update_resident_permit(
             )
             send_refund_email(RefundEmailType.CREATED, customer, refund)
 
+    bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
+
     # Update permit address and zone for all active permits
     for permit in active_permits:
         permit.parking_zone = new_zone
         permit.address = permit_address if not security_ban else None
+        permit.bypass_traficom_validation = bypass_traficom_validation
         permit.save()
 
     # get updated permit info

@@ -8,9 +8,12 @@ from .mixins import TimestampedModelMixin
 
 class VehicleClass(models.TextChoices):
     M1 = "M1", _("M1")
+    M1G = "M1G", _("M1G")
     M2 = "M2", _("M2")
     N1 = "N1", _("N1")
+    N1G = "N1G", _("N1G")
     N2 = "N2", _("N2")
+    N2G = "N2G", _("N2G")
     L3eA1 = "L3e-A1", _("L3e-A1")
     L3eA2 = "L3e-A2", _("L3e-A2")
     L3eA3 = "L3e-A3", _("L3e-A3")
@@ -155,7 +158,7 @@ class Vehicle(TimestampedModelMixin):
         _("Last inspection date"), null=True, blank=True
     )
     updated_from_traficom_on = models.DateField(
-        _("Update from traficom on"), default=tz.now
+        _("Update from traficom on"), null=True, blank=True
     )
     users = models.ManyToManyField(
         VehicleUser, verbose_name=_("Vehicle users"), related_name="vehicles"
