@@ -149,10 +149,11 @@ class Traficom:
                     emission_type = EmissionType.WLTP
 
         mass = et.find(".//massa")
-        module_weight = mass.find("modulinKokonaismassa")
-        technical_weight = mass.find("teknSuurSallKokmassa")
-        weight_et = module_weight if module_weight is not None else technical_weight
-        weight = safe_cast(weight_et.text, int, 0) if weight_et.text else 0
+        weight_et = mass.find("omamassa")
+        try:
+            weight = safe_cast(weight_et.text, int, 0)
+        except AttributeError:
+            weight = 0
         if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
             raise TraficomFetchVehicleError(
                 _(
