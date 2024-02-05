@@ -470,6 +470,12 @@ class ExtendCustomerPermitTestCase(TestCase):
             start_time=now,
             end_time=now + timedelta(days=10),
         )
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
         result = CustomerPermit(permit.customer_id).create_permit_extension_request(
             permit.pk, 3
         )

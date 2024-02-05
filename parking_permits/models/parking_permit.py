@@ -448,6 +448,58 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         end_time = get_end_time(self.start_time, months)
         return max(self.start_time, end_time)
 
+    def get_price_list_for_extended_permit(self, month_count):
+        """Returns price list when purchasing additional months on
+        a fixed-period permit.
+
+        Each item consists of:
+
+        "product": product
+        "price": gross price
+        "start_date": start of period
+        "end_date": end of period
+        """
+
+        # these are unchanged
+        is_secondary = not self.primary_vehicle
+        is_low_emission = self.vehicle.is_low_emission
+
+        # price change affected date range and products
+
+        start_date = timezone.localdate(self.next_period_start_time)
+
+        end_date = timezone.localdate(
+            get_end_time(self.next_period_start_time, month_count)
+        )
+
+        products = (
+            self.parking_zone.products.for_resident()
+            .for_date_range(start_date, end_date)
+            .iterator()
+        )
+
+        # calculate the price change list in the affected date range
+        month_start_date = start_date
+        product = next(products, None)
+        price_list = []
+
+        while month_start_date < end_date and product:
+            price = product.get_modified_unit_price(is_low_emission, is_secondary)
+            price_list.append(
+                {
+                    "product": product,
+                    "price": price,
+                    "start_date": month_start_date,
+                    "end_date": month_start_date + relativedelta(months=1, days=-1),
+                }
+            )
+
+            month_start_date += relativedelta(months=1)
+            if month_start_date > product.end_date:
+                product = next(products, None)
+
+        return price_list
+
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
 
@@ -456,6 +508,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         Args:
             new_zone: new zone used in the permit
             is_low_emission: True if the new vehicle is a low emission one
+            month_count: number of additional months, if change in permit month count
+                (fixed period only)
 
         Returns:
             A list of price change information
@@ -675,13 +729,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             ],
         ]
 
+    def get_products_for_resident(self):
+        if self.next_parking_zone:
+            return self.next_parking_zone.products.for_resident()
+        return self.parking_zone.products.for_resident()
+
     def get_products_with_quantities(self):
         """Return a list of product and quantities for the permit"""
         # TODO: currently, company permit type is not available
-        if self.next_parking_zone:
-            qs = self.next_parking_zone.products.for_resident()
-        else:
-            qs = self.parking_zone.products.for_resident()
+        qs = self.get_products_for_resident()
 
         if self.is_open_ended:
             permit_start_date = timezone.localdate(self.start_time)

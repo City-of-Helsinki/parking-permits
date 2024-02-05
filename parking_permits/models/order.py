@@ -212,6 +212,43 @@ class OrderManager(SerializableMixin.SerializableManager):
         order.permits.add(*permits)
         return order
 
+    def create_for_extended_permit(
+        self,
+        permit,
+        month_count,
+        status=OrderStatus.CONFIRMED,
+        **kwargs,
+    ):
+        paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
+
+        order = self.create(
+            customer=permit.customer,
+            status=status,
+            paid_time=paid_time,
+            address_text=str(permit.full_address),
+            parking_zone_name=permit.parking_zone.name,
+            **kwargs,
+        )
+
+        order_items = [
+            OrderItem(
+                order=order,
+                permit=permit,
+                quantity=1,
+                product=item["product"],
+                unit_price=item["price"],
+                payment_unit_price=item["price"],
+                vat=item["product"].vat,
+                start_time=item["start_date"],
+                end_time=item["end_date"],
+            )
+            for item in permit.get_price_list_for_extended_permit(month_count)
+        ]
+
+        OrderItem.objects.bulk_create(order_items)
+
+        return order
+
     def _validate_customer_permits(self, permits, order_type):
         date_ranges = []
         for permit in permits:
