@@ -791,6 +791,50 @@ class TestParkingPermit(TestCase):
             mock_post.assert_called_once()
             self.assertEqual(mock_post.return_value.status_code, 400)
 
+    @freeze_time("2024-02-05")
+    def test_get_price_list_for_extended_permit(self):
+        now = timezone.now()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=7),
+            month_count=1,
+        )
+
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=60)).date(),
+            unit_price=Decimal("30.00"),
+        )
+
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=61)).date(),
+            end_date=(now + timedelta(days=365)).date(),
+            unit_price=Decimal("40.00"),
+        )
+
+        price_list = permit.get_price_list_for_extended_permit(3)
+
+        self.assertEqual(len(price_list), 3)
+
+        self.assertEqual(price_list[0]["start_date"], date(2024, 3, 5))
+        self.assertEqual(price_list[0]["end_date"], date(2024, 4, 4))
+        self.assertEqual(price_list[0]["price"], Decimal("30.00"))
+
+        self.assertEqual(price_list[1]["start_date"], date(2024, 4, 5))
+        self.assertEqual(price_list[1]["end_date"], date(2024, 5, 4))
+        self.assertEqual(price_list[1]["price"], Decimal("30.00"))
+
+        self.assertEqual(price_list[2]["start_date"], date(2024, 5, 5))
+        self.assertEqual(price_list[2]["end_date"], date(2024, 6, 4))
+        self.assertEqual(price_list[2]["price"], Decimal("40.00"))
+
     def test_can_extend_permit_not_valid(self):
         self.assertFalse(
             ParkingPermitFactory(

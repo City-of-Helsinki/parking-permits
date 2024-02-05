@@ -91,8 +91,9 @@ class CustomerPermit:
         if not permit.can_extend_permit:
             raise PermitCanNotBeExtended(_("You cannot extend this permit."))
 
-        order = Order.objects.create(
-            customer=permit.customer,
+        order = Order.objects.create_for_extended_permit(
+            permit,
+            month_count,
             status=OrderStatus.CONFIRMED,
             type=OrderType.CREATED,
             payment_type=OrderPaymentType.ONLINE_PAYMENT,

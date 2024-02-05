@@ -10,6 +10,7 @@ from parking_permits.exceptions import PermitCanNotBeExtended
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
+from parking_permits.models.product import ProductType
 from parking_permits.resolvers import (
     resolve_change_address,
     resolve_extend_parking_permit,
@@ -19,6 +20,7 @@ from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
 from users.models import User
 
@@ -396,6 +398,12 @@ def test_resolve_extend_parking_permit_ok(rf):
         end_time=now + timedelta(days=10),
     )
 
+    ProductFactory(
+        zone=permit.parking_zone,
+        type=ProductType.RESIDENT,
+        start_date=(now - timedelta(days=360)).date(),
+        end_date=(now + timedelta(days=360)).date(),
+    )
     request.user = customer.user
 
     info = Info(context={"request": request})
