@@ -51,12 +51,9 @@ class ParkingPermitStartType(models.TextChoices):
 
 class ParkingPermitStatus(models.TextChoices):
     DRAFT = "DRAFT", _("Draft")
-    ARRIVED = "ARRIVED", _("Arrived")
-    PROCESSING = "PROCESSING", _("Processing")
-    ACCEPTED = "ACCEPTED", _("Accepted")
-    REJECTED = "REJECTED", _("Rejected")
     PAYMENT_IN_PROGRESS = "PAYMENT_IN_PROGRESS", _("Payment in progress")
     VALID = "VALID", _("Valid")
+    CANCELLED = "CANCELLED", _("Cancelled")
     CLOSED = "CLOSED", _("Closed")
 
 

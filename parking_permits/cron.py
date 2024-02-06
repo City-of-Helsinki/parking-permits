@@ -79,8 +79,6 @@ def automatic_syncing_of_permits_to_parkkihubi():
     statuses_to_sync = [
         ParkingPermitStatus.CLOSED,
         ParkingPermitStatus.VALID,
-        ParkingPermitStatus.ACCEPTED,
-        ParkingPermitStatus.REJECTED,
     ]
     permits = ParkingPermit.objects.filter(
         synced_with_parkkihubi=False, status__in=statuses_to_sync
