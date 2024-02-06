@@ -82,7 +82,13 @@ class CustomerPermit:
             customer=self.customer, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
         )
 
-    def create_permit_extension_request(self, permit_id, month_count):
+    def create_permit_extension_request(
+        self,
+        permit_id,
+        month_count,
+        *,
+        payment_type=OrderPaymentType.ONLINE_PAYMENT,
+    ):
         """Creates a Pending extension request.
 
         Raises PermitCanNotBeExtended if extensions are not allowed for this permit.
@@ -96,7 +102,7 @@ class CustomerPermit:
             month_count,
             status=OrderStatus.CONFIRMED,
             type=OrderType.CREATED,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            payment_type=payment_type,
         )
 
         return permit.permit_extension_requests.create(

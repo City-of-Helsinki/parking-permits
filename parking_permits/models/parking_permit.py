@@ -1,5 +1,7 @@
+import itertools
 import json
 import logging
+import operator
 from decimal import Decimal
 
 import requests
@@ -19,12 +21,14 @@ from helsinki_gdpr.models import SerializableMixin
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import (
+    calc_net_price,
     calc_vat_price,
     diff_months_ceil,
     end_date_to_datetime,
     flatten_dict,
     get_end_time,
     get_permit_prices,
+    round_up,
 )
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
@@ -454,16 +458,50 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         Each item consists of:
 
-        "product": product
-        "price": gross price
+        "product": product instance
         "start_date": start of period
         "end_date": end of period
+        "vat": VAT rate
+        "price": gross price
+        "net_price": net price
+        "vat_price": VAT price
         """
-
-        # these are unchanged
         is_secondary = not self.primary_vehicle
         is_low_emission = self.vehicle.is_low_emission
 
+        for product, grouper in itertools.groupby(
+            self.get_future_product_month_dates(month_count),
+            operator.itemgetter("product"),
+        ):
+            items = list(grouper)
+
+            start_date = min([item["start_date"] for item in items])
+            end_date = max([item["end_date"] for item in items])
+
+            price = product.get_modified_unit_price(is_low_emission, is_secondary)
+
+            month_count = len(items)
+            total_price = price * month_count
+
+            net_price = round_up(calc_net_price(total_price, product.vat))
+            vat_price = round_up(calc_vat_price(total_price, product.vat))
+
+            yield {
+                "product": product,
+                "month_count": month_count,
+                "vat": product.vat,
+                "start_date": start_date,
+                "end_date": end_date,
+                "price": total_price,
+                "unit_price": price,
+                "net_price": net_price,
+                "vat_price": vat_price,
+            }
+
+    def get_future_product_month_dates(self, month_count):
+        """Break down of future start/end times per month from the
+        next period start until the number of months."""
+        # these are unchanged
         # price change affected date range and products
 
         start_date = timezone.localdate(self.next_period_start_time)
@@ -475,30 +513,21 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         products = (
             self.parking_zone.products.for_resident()
             .for_date_range(start_date, end_date)
+            .order_by("start_date")
             .iterator()
         )
-
         # calculate the price change list in the affected date range
-        month_start_date = start_date
         product = next(products, None)
-        price_list = []
 
-        while month_start_date < end_date and product:
-            price = product.get_modified_unit_price(is_low_emission, is_secondary)
-            price_list.append(
-                {
-                    "product": product,
-                    "price": price,
-                    "start_date": month_start_date,
-                    "end_date": month_start_date + relativedelta(months=1, days=-1),
-                }
-            )
-
-            month_start_date += relativedelta(months=1)
-            if month_start_date > product.end_date:
+        while product and start_date < end_date:
+            yield {
+                "product": product,
+                "start_date": start_date,
+                "end_date": start_date + relativedelta(months=1, days=-1),
+            }
+            start_date += relativedelta(months=1)
+            if start_date > product.end_date:
                 product = next(products, None)
-
-        return price_list
 
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed

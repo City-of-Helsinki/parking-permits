@@ -234,10 +234,10 @@ class OrderManager(SerializableMixin.SerializableManager):
             OrderItem(
                 order=order,
                 permit=permit,
-                quantity=1,
+                quantity=item["month_count"],
                 product=item["product"],
-                unit_price=item["price"],
-                payment_unit_price=item["price"],
+                unit_price=item["unit_price"],
+                payment_unit_price=item["unit_price"],
                 vat=item["product"].vat,
                 start_time=item["start_date"],
                 end_time=item["end_date"],

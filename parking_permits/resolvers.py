@@ -256,6 +256,23 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     return permit_price_changes
 
 
+@query.field("getExtendedPriceList")
+@is_authenticated
+@convert_kwargs_to_snake_case
+def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
+    """Returns the updated price list for additional months on a fixed period permit."""
+
+    customer = info.context["request"].user.customer
+    try:
+        permit = (
+            ParkingPermit.objects.active().filter(customer=customer).get(pk=permit_id)
+        )
+    except ParkingPermit.DoesNotExist:
+        raise ObjectNotFound(_("Permit not found"))
+
+    return permit.get_price_list_for_extended_permit(month_count)
+
+
 @mutation.field("deleteParkingPermit")
 @is_authenticated
 @convert_kwargs_to_snake_case

@@ -43,9 +43,9 @@ class Migration(migrations.Migration):
                     "status",
                     models.CharField(
                         choices=[
-                            ("Pending", "Pending"),
-                            ("Approved", "Approved"),
-                            ("Hylätty", "Rejected"),
+                            ("PENDING", "Pending"),
+                            ("APPROVED", "Approved"),
+                            ("REJECTED", "Rejected"),
                         ],
                         default="Pending",
                         max_length=12,

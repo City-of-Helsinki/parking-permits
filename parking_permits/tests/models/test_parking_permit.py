@@ -819,21 +819,27 @@ class TestParkingPermit(TestCase):
             unit_price=Decimal("40.00"),
         )
 
-        price_list = permit.get_price_list_for_extended_permit(3)
+        price_list = list(permit.get_price_list_for_extended_permit(3))
 
-        self.assertEqual(len(price_list), 3)
+        self.assertEqual(len(price_list), 2)
 
+        # 2x first product
         self.assertEqual(price_list[0]["start_date"], date(2024, 3, 5))
-        self.assertEqual(price_list[0]["end_date"], date(2024, 4, 4))
-        self.assertEqual(price_list[0]["price"], Decimal("30.00"))
+        self.assertEqual(price_list[0]["end_date"], date(2024, 5, 4))
+        self.assertEqual(price_list[0]["month_count"], 2)
+        self.assertEqual(price_list[0]["price"], Decimal("60.00"))
+        self.assertEqual(price_list[0]["unit_price"], Decimal("30.00"))
+        self.assertEqual(price_list[0]["net_price"], "48.39")
+        self.assertEqual(price_list[0]["vat_price"], "11.61")
 
-        self.assertEqual(price_list[1]["start_date"], date(2024, 4, 5))
-        self.assertEqual(price_list[1]["end_date"], date(2024, 5, 4))
-        self.assertEqual(price_list[1]["price"], Decimal("30.00"))
-
-        self.assertEqual(price_list[2]["start_date"], date(2024, 5, 5))
-        self.assertEqual(price_list[2]["end_date"], date(2024, 6, 4))
-        self.assertEqual(price_list[2]["price"], Decimal("40.00"))
+        # 1x second product
+        self.assertEqual(price_list[1]["start_date"], date(2024, 5, 5))
+        self.assertEqual(price_list[1]["end_date"], date(2024, 6, 4))
+        self.assertEqual(price_list[1]["month_count"], 1)
+        self.assertEqual(price_list[1]["price"], Decimal("40.00"))
+        self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
+        self.assertEqual(price_list[1]["net_price"], "32.26")
+        self.assertEqual(price_list[1]["vat_price"], "7.74")
 
     def test_can_extend_permit_not_valid(self):
         self.assertFalse(
@@ -853,7 +859,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
-    def test_can_extend_permit_end_date_nont(self):
+    def test_can_extend_permit_end_date_none(self):
         self.assertFalse(
             ParkingPermitFactory(
                 status=ParkingPermitStatus.VALID,

@@ -62,14 +62,24 @@ class TestOrderManager(TestCase):
 
         items = order.order_items.all()
 
-        self.assertEqual(items.count(), 6)
+        self.assertEqual(items.count(), 2)
 
+        # 3x first product
         self.assertEqual(items[0].unit_price, Decimal("30"))
-        self.assertEqual(items[1].unit_price, Decimal("30"))
-        self.assertEqual(items[2].unit_price, Decimal("30"))
-        self.assertEqual(items[3].unit_price, Decimal("50"))
-        self.assertEqual(items[4].unit_price, Decimal("50"))
-        self.assertEqual(items[5].unit_price, Decimal("50"))
+        self.assertEqual(items[0].total_price, Decimal("90"))
+        self.assertEqual(items[0].quantity, 3)
+        self.assertEqual(items[0].start_time.date(), date(self.current_year, 4, 4))
+        self.assertEqual(items[0].end_time.date(), date(self.current_year, 7, 3))
+
+        # 3x second product
+        self.assertEqual(items[1].unit_price, Decimal("50"))
+        self.assertEqual(items[1].total_price, Decimal("150"))
+        self.assertEqual(items[1].quantity, 3)
+        self.assertEqual(items[1].start_time.date(), date(self.current_year, 7, 4))
+        self.assertEqual(items[1].end_time.date(), date(self.current_year, 10, 3))
+
+        # check total price
+        self.assertEqual(order.total_price, Decimal("240"))
 
     def test_create_for_customer_should_create_order_with_items(self):
         start_time = timezone.make_aware(datetime(self.current_year, 3, 15))

@@ -20,9 +20,9 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
     """
 
     class Status(models.TextChoices):
-        PENDING = _("Pending")
-        APPROVED = _("Approved")
-        REJECTED = _("Rejected")
+        PENDING = "PENDING", _("Pending")
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
 
     permit = models.ForeignKey(
         "parking_permits.ParkingPermit",
