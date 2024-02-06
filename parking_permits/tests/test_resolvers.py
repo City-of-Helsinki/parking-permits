@@ -14,6 +14,7 @@ from parking_permits.models.product import ProductType
 from parking_permits.resolvers import (
     resolve_change_address,
     resolve_extend_parking_permit,
+    resolve_get_extended_permit_price_list,
     resolve_update_permit_vehicle,
 )
 from parking_permits.tests.factories.address import AddressFactory
@@ -382,6 +383,36 @@ def test_resolve_change_address_no_change_to_parking_zone(rf):
 
     assert response["success"]
     assert Order.objects.count() == 0
+
+
+@pytest.mark.django_db()
+def test_resolve_get_extended_permit_price_list(rf):
+    request = rf.post("/")
+    customer = CustomerFactory()
+
+    now = timezone.now()
+    permit = ParkingPermitFactory(
+        customer=customer,
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
+        start_time=now,
+        end_time=now + timedelta(days=10),
+    )
+
+    ProductFactory(
+        zone=permit.parking_zone,
+        type=ProductType.RESIDENT,
+        start_date=(now - timedelta(days=360)).date(),
+        end_date=(now + timedelta(days=360)).date(),
+    )
+    request.user = customer.user
+
+    info = Info(context={"request": request})
+
+    with _mock_jwt(request.user):
+        response = resolve_get_extended_permit_price_list(None, info, str(permit.pk), 3)
+
+    assert len(list(response)) == 1
 
 
 @pytest.mark.django_db()
