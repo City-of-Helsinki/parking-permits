@@ -57,8 +57,8 @@ IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
-PROCESSING = ParkingPermitStatus.PROCESSING
 PAYMENT_IN_PROGRESS = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+CANCELLED = ParkingPermitStatus.CANCELLED
 FROM = ParkingPermitStartType.FROM
 FIXED_PERIOD = ContractType.FIXED_PERIOD
 
@@ -174,8 +174,8 @@ class CustomerPermit:
                     products.append(product)
             permit.products = products
 
-            # automatically change permit status to draft if payment is not completed in configured time
-            # (default 20 minutes)
+            # automatically cancel permit and it's latest order if payment is not completed in configured time
+            # (default 15 minutes)
             payment_wait_time_buffer = (
                 settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
             )
@@ -188,7 +188,10 @@ class CustomerPermit:
                 )
                 < tz.localtime(tz.now())
             ):
-                permit.status = DRAFT
+                permit.status = CANCELLED
+                latest_order = permit.latest_order
+                latest_order.status = OrderStatus.CANCELLED
+                latest_order.save()
                 permit.save()
             permits.append(permit)
         return permits
