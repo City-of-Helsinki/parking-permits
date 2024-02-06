@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 23:25+0200\n"
+"POT-Creation-Date: 2024-02-06 15:26+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -619,18 +619,6 @@ msgstr "Heti"
 msgid "From"
 msgstr "Alkaen"
 
-msgid "Arrived"
-msgstr "Saapunut"
-
-msgid "Processing"
-msgstr "Käsittelyssä"
-
-msgid "Accepted"
-msgstr "Hyväksytty"
-
-msgid "Rejected"
-msgstr "Hylätty"
-
 msgid "Payment in progress"
 msgstr "Maksussa"
 
@@ -645,6 +633,9 @@ msgstr "Tuleva ajoneuvo"
 
 msgid "Next parking zone"
 msgstr "Tuleva pysäköintialue"
+
+msgid "Bypass Traficom validation"
+msgstr "Ohita Traficom-tarkistus"
 
 msgid "Vehicle changed date"
 msgstr "Ajoneuvon tietojen muuttamispäivä"
@@ -757,6 +748,12 @@ msgstr "Avoin"
 
 msgid "Request for approval"
 msgstr "Hyväksyttävänä"
+
+msgid "Accepted"
+msgstr "Hyväksytty"
+
+msgid "Rejected"
+msgstr "Hylätty"
 
 msgid "Permits"
 msgstr "Pysäköintitunnukset"
