@@ -341,8 +341,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def can_end_after_current_period(self):
-        return self.is_valid and (
-            self.end_time is None or self.current_period_end_time < self.end_time
+        if not self.is_valid:
+            return False
+
+        if self.end_time is None:
+            return False
+
+        return timezone.localdate(self.current_period_end_time) <= timezone.localdate(
+            self.end_time
         )
 
     @property
