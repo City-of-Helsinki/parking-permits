@@ -244,7 +244,8 @@ class TalpaResolveProduct(APIView):
                 TalpaOrderManager.append_detail_meta(
                     order_item_response_data,
                     permit,
-                    fixed_end_time=permit.end_time + relativedelta(months=1),
+                    fixed_end_time=tz.localtime(permit.end_time)
+                    + relativedelta(months=1),
                 )
 
             response = snake_to_camel_dict(
