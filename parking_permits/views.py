@@ -536,12 +536,25 @@ class OrderView(APIView):
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
 
-        # Always bypass Order cancelled event
-        if event_type == "ORDER_CANCELLED":
-            return ok_response(f"Order {talpa_order_id} cancel bypassed")
-
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
+
+        if event_type == "ORDER_CANCELLED":
+            logger.info(f"Cancelling order: {talpa_order_id}")
+            try:
+                order = Order.objects.get(talpa_order_id=talpa_order_id)
+                order.status = OrderStatus.CANCELLED
+                order.save()
+                order.permits.update(
+                    status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
+                )
+            except Order.DoesNotExist:
+                return not_found_response(f"Order {talpa_order_id} does not exist")
+            logger.info(
+                f"{order} is cancelled and order permits are set to CANCELLED-status"
+            )
+            return Response({"message": "Order cancelled"}, status=200)
+
         if not talpa_subscription_id:
             return bad_request_response(
                 "Talpa subscription id is missing from request data"

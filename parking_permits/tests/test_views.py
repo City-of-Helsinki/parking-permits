@@ -1028,14 +1028,44 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_order_cancellation(self):
+        talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_existing_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2024-02-08T10:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+        order.permits.add(permit)
+        order.save()
+
         url = reverse("parking_permits:order-notify")
         data = {
             "eventType": "ORDER_CANCELLED",
-            "orderId": "d86ca61d-97e9-410a-a1e3-4894873b1b35",
-            "subscriptionId": "f769b803-0bd0-489d-aa81-b35af391f391",
+            "orderId": talpa_existing_order_id,
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        permit.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
+        self.assertEqual(permit.status, ParkingPermitStatus.CANCELLED)
 
     @override_settings(DEBUG=True)
     @patch.object(OrderValidator, "validate_order")
