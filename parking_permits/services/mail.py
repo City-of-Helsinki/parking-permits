@@ -1,9 +1,13 @@
+import logging
+
 from django.conf import settings
 from django.core import mail
 from django.template.loader import render_to_string
 from django.utils import translation
 from django.utils.html import strip_tags
 from django.utils.translation import gettext_lazy as _
+
+logger = logging.getLogger("db")
 
 
 class PermitEmailType:
@@ -53,35 +57,49 @@ permit_email_templates = {
 
 def send_permit_email(action, permit):
     with translation.override(permit.customer.language):
+        logger.info(f"Sending permit {permit.pk} {action} email")
         subject = permit_email_subjects[action]
         template = permit_email_templates[action]
         html_message = render_to_string(template, context={"permit": permit})
         plain_message = strip_tags(html_message)
         recipient_list = [permit.customer.email]
-        mail.send_mail(
-            subject,
-            plain_message,
-            None,
-            recipient_list,
-            html_message=html_message,
-        )
+        try:
+            mail.send_mail(
+                subject,
+                plain_message,
+                None,
+                recipient_list,
+                html_message=html_message,
+            )
+            return True
+        except Exception as e:
+            logger.error("Could not send permit email", exc_info=e)
+            return False
 
 
 def send_vehicle_low_emission_discount_email(action, permit):
     with translation.override("fi"):
+        logger.info(
+            f"Sending vehicle low emission discount email for permit {permit.pk} {action} email"
+        )
         subject = permit_email_subjects[action]
         template = permit_email_templates[action]
         html_message = render_to_string(template, context={"permit": permit})
         plain_message = strip_tags(html_message)
         recipient_list = settings.THIRD_PARTY_PARKING_PROVIDER_EMAILS
         for recipient in recipient_list:
-            mail.send_mail(
-                subject,
-                plain_message,
-                None,
-                [recipient],
-                html_message=html_message,
-            )
+            try:
+                mail.send_mail(
+                    subject,
+                    plain_message,
+                    None,
+                    [recipient],
+                    html_message=html_message,
+                )
+            except Exception as e:
+                logger.error(
+                    "Could not send vehicle low emission discount email", exc_info=e
+                )
 
 
 class RefundEmailType:
@@ -105,18 +123,22 @@ refund_email_templates = {
 
 def send_refund_email(action, customer, refund):
     with translation.override(customer.language):
+        logger.info(f"Sending refund {refund.pk} {action} email")
         subject = refund_email_subjects[action]
         template = refund_email_templates[action]
         html_message = render_to_string(template, context={"refund": refund})
         plain_message = strip_tags(html_message)
         recipient_list = [customer.email]
-        mail.send_mail(
-            subject,
-            plain_message,
-            None,
-            recipient_list,
-            html_message=html_message,
-        )
+        try:
+            mail.send_mail(
+                subject,
+                plain_message,
+                None,
+                recipient_list,
+                html_message=html_message,
+            )
+        except Exception as e:
+            logger.error("Could not send refund email", exc_info=e)
 
 
 def send_announcement_email(customers, announcement):
