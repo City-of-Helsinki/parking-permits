@@ -1091,24 +1091,24 @@ msgstr "Tillfällig fordonsinformation har uppdaterats till ditt tillstånd."
 msgid "Original vehicle has been restored to your permit."
 msgstr "Originalfordonet har återställts till ditt tillstånd."
 
-msgid "THIS IS AUTOMATICALLY SEND MESSAGE, DO NOT RESPOND TO THIS"
+msgid "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY"
 msgstr "DETTA ÄR AUTOMATISKT SKICKA MEDDELANDE, SVARA INTE PÅ DETTA"
 
-msgid "Good partner!"
+msgid "Dear partner!"
 msgstr "Bra partner!"
 
 msgid ""
 "The low-emission vehicle parking benefit has been removed from the vehicle."
 msgstr "Rätten till rabatt har tagits bort från fordonet."
 
-msgid "Kind regards"
+msgid "With kind regards"
 msgstr "Vänliga Hälsningar"
 
-msgid "Urban environment customer service"
+msgid "Urban environmental service"
 msgstr "Stadsmiljö kundservice"
 
 msgid "Tel. 09-310 22111"
 msgstr "Tel. 09-310 22111"
 
-msgid "The right to a discount has been removed from the vehicle"
+msgid "This vehicle is no longer subject to a discount"
 msgstr "Rätten till rabatt har tagits bort från fordonet."

@@ -1088,24 +1088,24 @@ msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
 msgid "Original vehicle has been restored to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
 
-msgid "THIS IS AUTOMATICALLY SEND MESSAGE, DO NOT RESPOND TO THIS"
+msgid "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY"
 msgstr "TÄMÄ ON AUTOMAATTISESTI LÄHETETTY VIESTI, ÄLÄ VASTAA TÄHÄN"
 
-msgid "Good partner!"
+msgid "Dear partner!"
 msgstr "Hyvä yhteistyökumppani!"
 
 msgid ""
 "The low-emission vehicle parking benefit has been removed from the vehicle."
 msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
 
-msgid "Kind regards"
+msgid "With kind regards"
 msgstr "Ystävällisin terveisin"
 
-msgid "Urban environment customer service"
+msgid "Urban environmental service"
 msgstr "Kaupunkiympäristön asiakaspalvelu"
 
 msgid "Tel. 09-310 22111"
 msgstr "Puh. 09-310 22111"
 
-msgid "The right to a discount has been removed from the vehicle"
+msgid "This vehicle is no longer subject to a discount"
 msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
