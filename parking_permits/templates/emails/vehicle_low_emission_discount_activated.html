@@ -1,15 +1,31 @@
-{% extends "emails/base.html" %}
 {% load i18n %}
+<!DOCTYPE html>
+<html lang="fi">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title></title>
+    </head>
 
-{% block title %}{% translate "The vehicle is entitled to a discount" %}{% endblock %}
-
-{% block content %}
-    <p>
-        {% translate "The attached vehicle is entitled to a 50% discount in street parking when paying with parking applications." %}
-    </p>
-    <p>
-        {% translate "Vehicle" %}: {{ permit.vehicle.registration_number }}<br>
-        {% translate "Discount: Low-emission vehicle" %} <br>
-        {% translate "Discount valid from" %}: {% now "j.n.Y, H:i" %}
-    </p>
-{% endblock %}
+    <body>
+        <div>
+            <div>{% translate "The vehicle is entitled to a discount" %}</div>
+            <div>
+                <p>
+                    {% translate "THIS IS AUTOMATICALLY SEND MESSAGE, DO NOT RESPOND TO THIS" %} <br/>
+                    <br/>
+                    {% translate "Good partner!" %} <br/>
+                    <br/>
+                    {% translate "The low-emission vehicle parking benefit has been removed from the vehicle." %} <br/>
+                    <br/>
+                    {{ permit.vehicle.registration_number }} <br/>
+                    <br/>
+                    {% translate "Kind regards" %} <br/>
+                    {% translate "Urban environment customer service" %} <br/>
+                    {% translate "Tel. 09-310 22111" %} <br/>
+                    kaupunkiymparisto@hel.fi
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
