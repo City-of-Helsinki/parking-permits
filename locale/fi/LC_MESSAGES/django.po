@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-06 15:26+0200\n"
+"POT-Creation-Date: 2024-02-09 08:42+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1088,22 +1088,24 @@ msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
 msgid "Original vehicle has been restored to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
 
-#, python-format
+msgid "THIS IS AUTOMATICALLY SEND MESSAGE, DO NOT RESPOND TO THIS"
+msgstr "TÄMÄ ON AUTOMAATTISESTI LÄHETETTY VIESTI, ÄLÄ VASTAA TÄHÄN"
+
+msgid "Good partner!"
+msgstr "Hyvä yhteistyökumppani!"
+
 msgid ""
-"The attached vehicle is entitled to a 50%% discount in street parking when "
-"paying with parking applications."
-msgstr ""
-"Oheinen ajoneuvo on oikeutettu 50%% alennukseen kadunvarsipysäköinnissä "
-"pysäköintisovelluksilla maksettaessa."
-
-msgid "Discount: Low-emission vehicle"
-msgstr "Alennus: Vähäpäästöinen ajoneuvo"
-
-msgid "Discount valid from"
-msgstr "Alennusoikeus voimassa alkaen"
-
-msgid "The right to a discount has been removed from the vehicle."
+"The low-emission vehicle parking benefit has been removed from the vehicle."
 msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
 
-msgid "Discount right ends"
-msgstr "Alennusoikeus päättyy"
+msgid "Kind regards"
+msgstr "Ystävällisin terveisin"
+
+msgid "Urban environment customer service"
+msgstr "Kaupunkiympäristön asiakaspalvelu"
+
+msgid "Tel. 09-310 22111"
+msgstr "Puh. 09-310 22111"
+
+msgid "The right to a discount has been removed from the vehicle"
+msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
