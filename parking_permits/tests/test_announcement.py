@@ -6,6 +6,7 @@ from django.test import TestCase
 
 from parking_permits import admin_resolvers
 from parking_permits.models import Announcement
+from parking_permits.models.parking_permit import ParkingPermitStatus
 from parking_permits.services.mail import send_announcement_email
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
@@ -99,7 +100,11 @@ class PostCreateAnnouncementTest(TestCase):
         zone_a_customer = CustomerFactory(zone=zone_a)
         CustomerFactory(zone=zone_b)
 
-        ParkingPermitFactory(customer=zone_a_customer, parking_zone=zone_a)
+        ParkingPermitFactory(
+            customer=zone_a_customer,
+            parking_zone=zone_a,
+            status=ParkingPermitStatus.VALID,
+        )
 
         # Set the announcement for zone A.
         self.announcement._parking_zones.set([zone_a])
@@ -127,11 +132,61 @@ class PostCreateAnnouncementTest(TestCase):
         CustomerFactory(zone=zone_c)
         expected_customers = [zone_a_customer, zone_b_customer]
 
-        ParkingPermitFactory(customer=zone_a_customer, parking_zone=zone_a)
-        ParkingPermitFactory(customer=zone_b_customer, parking_zone=zone_b)
+        ParkingPermitFactory(
+            customer=zone_a_customer,
+            parking_zone=zone_a,
+            status=ParkingPermitStatus.VALID,
+        )
+        ParkingPermitFactory(
+            customer=zone_b_customer,
+            parking_zone=zone_b,
+            status=ParkingPermitStatus.VALID,
+        )
 
         # Set the announcement for zone A & B.
         self.announcement._parking_zones.set([zone_a, zone_b])
+        admin_resolvers.post_create_announcement(self.announcement)
+
+        # Should have two customers (from zone A & B).
+        mock_send_announcement_email.assert_called_once()
+        customers_arg = mock_send_announcement_email.call_args.args[0]
+        self.assertEqual(len(customers_arg), 2)
+        for idx, customer in enumerate(customers_arg.order_by("zone__name")):
+            self.assertEqual(customer, expected_customers[idx])
+
+    def test_should_get_correct_customers_only_with_valid_status(
+        self, mock_send_announcement_email: MagicMock
+    ):
+        # Create zones A, B and C.
+        zone_a = ParkingZoneFactory(name="A")
+        zone_b = ParkingZoneFactory(name="B")
+        zone_c = ParkingZoneFactory(name="C")
+
+        # Create customers for the zones.
+        zone_a_customer = CustomerFactory(zone=zone_a)
+        zone_b_customer = CustomerFactory(zone=zone_b)
+        zone_c_customer = CustomerFactory(zone=zone_c)
+        expected_customers = [zone_a_customer, zone_b_customer]
+
+        # Create permits for the zones, but only A and B will be valid.
+        ParkingPermitFactory(
+            customer=zone_a_customer,
+            parking_zone=zone_a,
+            status=ParkingPermitStatus.VALID,
+        )
+        ParkingPermitFactory(
+            customer=zone_b_customer,
+            parking_zone=zone_b,
+            status=ParkingPermitStatus.VALID,
+        )
+        ParkingPermitFactory(
+            customer=zone_c_customer,
+            parking_zone=zone_c,
+            status=ParkingPermitStatus.DRAFT,
+        )
+
+        # Set the announcement for zone A, B & C.
+        self.announcement._parking_zones.set([zone_a, zone_b, zone_c])
         admin_resolvers.post_create_announcement(self.announcement)
 
         # Should have two customers (from zone A & B).
