@@ -540,7 +540,6 @@ class OrderView(APIView):
             return bad_request_response("Talpa order id is missing from request data")
 
         if event_type == "ORDER_CANCELLED":
-            logger.info(f"Cancelling order: {talpa_order_id}")
             try:
                 order = Order.objects.get(talpa_order_id=talpa_order_id)
                 order_permits = order.permits.filter(
@@ -551,17 +550,18 @@ class OrderView(APIView):
                     ]
                 )
                 if order_permits:
+                    logger.info(f"Cancelling order: {talpa_order_id}")
                     order.status = OrderStatus.CANCELLED
                     order.save()
                     order_permits.update(
                         status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
                     )
+                    logger.info(
+                        f"{order} is cancelled and order permits are set to CANCELLED-status"
+                    )
             except Order.DoesNotExist:
                 return not_found_response(f"Order {talpa_order_id} does not exist")
-            logger.info(
-                f"{order} is cancelled and order permits are set to CANCELLED-status"
-            )
-            return Response({"message": "Order cancelled"}, status=200)
+            return Response({"message": "Order cancel event processed"}, status=200)
 
         if not talpa_subscription_id:
             return bad_request_response(
