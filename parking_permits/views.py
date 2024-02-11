@@ -543,11 +543,19 @@ class OrderView(APIView):
             logger.info(f"Cancelling order: {talpa_order_id}")
             try:
                 order = Order.objects.get(talpa_order_id=talpa_order_id)
-                order.status = OrderStatus.CANCELLED
-                order.save()
-                order.permits.update(
-                    status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
+                order_permits = order.permits.filter(
+                    status__in=[
+                        ParkingPermitStatus.DRAFT,
+                        ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+                        ParkingPermitStatus.VALID,
+                    ]
                 )
+                if order_permits:
+                    order.status = OrderStatus.CANCELLED
+                    order.save()
+                    order_permits.update(
+                        status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
+                    )
             except Order.DoesNotExist:
                 return not_found_response(f"Order {talpa_order_id} does not exist")
             logger.info(
