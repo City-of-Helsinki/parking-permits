@@ -51,12 +51,9 @@ class ParkingPermitStartType(models.TextChoices):
 
 class ParkingPermitStatus(models.TextChoices):
     DRAFT = "DRAFT", _("Draft")
-    ARRIVED = "ARRIVED", _("Arrived")
-    PROCESSING = "PROCESSING", _("Processing")
-    ACCEPTED = "ACCEPTED", _("Accepted")
-    REJECTED = "REJECTED", _("Rejected")
     PAYMENT_IN_PROGRESS = "PAYMENT_IN_PROGRESS", _("Payment in progress")
     VALID = "VALID", _("Valid")
+    CANCELLED = "CANCELLED", _("Cancelled")
     CLOSED = "CLOSED", _("Closed")
 
 
@@ -344,8 +341,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def can_end_after_current_period(self):
-        return self.is_valid and (
-            self.end_time is None or self.current_period_end_time < self.end_time
+        if not self.is_valid:
+            return False
+
+        if self.end_time is None:
+            return False
+
+        return timezone.localdate(self.current_period_end_time) <= timezone.localdate(
+            self.end_time
         )
 
     @property

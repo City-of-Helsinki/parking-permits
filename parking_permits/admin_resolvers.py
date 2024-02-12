@@ -1316,7 +1316,10 @@ def resolve_announcement(obj, info, announcement_id):
 
 def post_create_announcement(announcement: Announcement):
     customer_ids = (
-        ParkingPermit.objects.filter(parking_zone__in=announcement.parking_zones)
+        ParkingPermit.objects.filter(
+            parking_zone__in=announcement.parking_zones,
+            status=ParkingPermitStatus.VALID,
+        )
         .values_list("customer_id", flat=True)
         .order_by("customer")
         .distinct()

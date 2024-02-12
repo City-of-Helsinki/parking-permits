@@ -244,7 +244,8 @@ class TalpaResolveProduct(APIView):
                 TalpaOrderManager.append_detail_meta(
                     order_item_response_data,
                     permit,
-                    fixed_end_time=permit.end_time + relativedelta(months=1),
+                    fixed_end_time=tz.localtime(permit.end_time)
+                    + relativedelta(months=1),
                 )
 
             response = snake_to_camel_dict(
@@ -535,12 +536,33 @@ class OrderView(APIView):
         talpa_subscription_id = request.data.get("subscriptionId")
         event_type = request.data.get("eventType")
 
-        # Always bypass Order cancelled event
-        if event_type == "ORDER_CANCELLED":
-            return ok_response(f"Order {talpa_order_id} cancel bypassed")
-
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
+
+        if event_type == "ORDER_CANCELLED":
+            try:
+                order = Order.objects.get(talpa_order_id=talpa_order_id)
+                order_permits = order.permits.filter(
+                    status__in=[
+                        ParkingPermitStatus.DRAFT,
+                        ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+                        ParkingPermitStatus.VALID,
+                    ]
+                )
+                if order_permits:
+                    logger.info(f"Cancelling order: {talpa_order_id}")
+                    order.status = OrderStatus.CANCELLED
+                    order.save()
+                    order_permits.update(
+                        status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
+                    )
+                    logger.info(
+                        f"{order} is cancelled and order permits are set to CANCELLED-status"
+                    )
+            except Order.DoesNotExist:
+                return not_found_response(f"Order {talpa_order_id} does not exist")
+            return Response({"message": "Order cancel event processed"}, status=200)
+
         if not talpa_subscription_id:
             return bad_request_response(
                 "Talpa subscription id is missing from request data"

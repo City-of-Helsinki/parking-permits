@@ -1,14 +1,31 @@
-{% extends "emails/base.html" %}
 {% load i18n %}
+<!DOCTYPE html>
+<html lang="fi">
+    <head>
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <title>{% translate "This vehicle is no longer subject to a discount" %}</title>
+    </head>
 
-{% block title %}{% translate "Vehicle discount right expired" %}{% endblock %}
-
-{% block content %}
-    <p>
-        {% translate "The right to a discount has been removed from the vehicle." %}
-    </p>
-    <p>
-        {% translate "Vehicle" %}: {{ permit.vehicle.registration_number }}<br>
-        {% translate "Discount right ends" %}: {% now "j.n.Y, H:i" %}
-    </p>
-{% endblock %}
+    <body>
+        <div>
+            <div>{% translate "This vehicle is no longer subject to a discount" %}</div>
+            <div>
+                <p>
+                    {% translate "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY" %} <br/>
+                    <br/>
+                    {% translate "Dear partner!" %} <br/>
+                    <br/>
+                    {% translate "A low-emission vehicle parking benefit has been removed from the vehicle." %} <br/>
+                    <br/>
+                    {{ permit.vehicle.registration_number }} <br/>
+                    <br/>
+                    {% translate "With kind regards" %} <br/>
+                    {% translate "Urban environmental service" %} <br/>
+                    {% translate "Tel. 09-310 22111" %} <br/>
+                    kaupunkiymparisto@hel.fi
+                </p>
+            </div>
+        </div>
+    </body>
+</html>

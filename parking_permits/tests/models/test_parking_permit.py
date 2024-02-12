@@ -58,6 +58,17 @@ class ParkingZoneTestCase(TestCase):
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 15)))
     def test_should_return_correct_months_used(self):
+        start_time = timezone.now()
+        end_time = get_end_time(start_time, 1)
+
+        open_ended_started_immediately = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=start_time,
+            end_time=end_time,
+        )
+
+        self.assertEqual(open_ended_started_immediately.months_used, 1)
+
         start_time = timezone.make_aware(datetime(2021, 9, 15))
         end_time = get_end_time(start_time, 6)
         fixed_period_permit_started_2_months_ago = ParkingPermitFactory(
@@ -94,6 +105,47 @@ class ParkingZoneTestCase(TestCase):
             start_time=start_time,
         )
         self.assertEqual(open_ended_permit_started_two_years_ago.months_used, 25)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_can_end_after_current_period_end_time_fixed_period(self):
+        start_time = timezone.make_aware(datetime(2024, 1, 1))
+        end_time = get_end_time(start_time, 6)
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+        self.assertTrue(permit.can_end_after_current_period)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_can_end_after_current_period_end_time_fixed_period_current_period_end_time_gt_end_time(
+        self,
+    ):
+        start_time = timezone.make_aware(datetime(2023, 11, 1))
+        end_time = get_end_time(start_time, 1)
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=3,
+        )
+        self.assertFalse(permit.can_end_after_current_period)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_can_end_after_current_period_end_time_open_ended(self):
+        start_time = timezone.make_aware(datetime(2024, 1, 1))
+        end_time = get_end_time(start_time, 1)
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=1,
+        )
+        self.assertTrue(permit.can_end_after_current_period)
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 15)))
     def test_should_return_correct_months_left(self):
@@ -136,6 +188,25 @@ class ParkingZoneTestCase(TestCase):
 
     @freeze_time(timezone.make_aware(datetime(2022, 1, 20)))
     def test_should_return_correct_end_time_of_current_time(self):
+        start_time = timezone.make_aware(datetime(2022, 1, 20))
+        end_time = get_end_time(start_time, 1)
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=1,
+        )
+
+        self.assertEqual(
+            permit.end_time,
+            permit.current_period_end_time,
+        )
+
+        self.assertEqual(
+            permit.current_period_end_time,
+            timezone.make_aware(datetime(2022, 2, 19, 23, 59, 59, 999999)),
+        )
+
         start_time = timezone.make_aware(datetime(2021, 11, 15))
         end_time = get_end_time(start_time, 6)
         permit = ParkingPermitFactory(

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 23:25+0200\n"
+"POT-Creation-Date: 2024-02-11 09:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -614,18 +614,6 @@ msgstr "Genast"
 msgid "From"
 msgstr "Från"
 
-msgid "Arrived"
-msgstr "Anlände"
-
-msgid "Processing"
-msgstr "Under behandling"
-
-msgid "Accepted"
-msgstr "Accepterad"
-
-msgid "Rejected"
-msgstr "Avslå"
-
 msgid "Payment in progress"
 msgstr "Betalning pågår"
 
@@ -640,6 +628,9 @@ msgstr "Nästa fordon"
 
 msgid "Next parking zone"
 msgstr "Nästa parkering zone"
+
+msgid "Bypass Traficom validation"
+msgstr "Bypass Traficom-validering"
 
 msgid "Vehicle changed date"
 msgstr "Fordonet ändringdatum"
@@ -754,6 +745,12 @@ msgstr "Öppna"
 
 msgid "Request for approval"
 msgstr "Acceptabel"
+
+msgid "Accepted"
+msgstr "Accepterad"
+
+msgid "Rejected"
+msgstr "Avslå"
 
 msgid "Permits"
 msgstr "Parkeringstillstånder"
@@ -970,7 +967,8 @@ msgstr "Fordonet %(registration_number)s är avställd"
 
 #, python-format
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
-msgstr "Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
+msgstr ""
+"Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
 
 msgid "The person has no driving licence"
 msgstr "Personen har inget körkort"
@@ -1093,22 +1091,27 @@ msgstr "Tillfällig fordonsinformation har uppdaterats till ditt tillstånd."
 msgid "Original vehicle has been restored to your permit."
 msgstr "Originalfordonet har återställts till ditt tillstånd."
 
-#, python-format
-msgid ""
-"The attached vehicle is entitled to a 50%% discount in street parking when "
-"paying with parking applications."
-msgstr ""
-"Det bifogade fordonet har rätt till 50%% rabatt på gatuparkering när betala "
-"med parkeringsansökningar."
+msgid "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY"
+msgstr "DETTA ÄR AUTOMATISKT SKICKA MEDDELANDE, SVARA INTE PÅ DETTA"
 
-msgid "Discount: Low-emission vehicle"
-msgstr "Rabatt: Fordon med låga utsläpp"
+msgid "Dear partner!"
+msgstr "Bra partner!"
 
-msgid "Discount valid from"
-msgstr "Rabatten giltig från"
+msgid "A low-emission vehicle parking benefit has been added to the vehicle."
+msgstr "En förmån för fordonsparkering med låga utsläpp har lagts till fordonet."
 
-msgid "The right to a discount has been removed from the vehicle."
+msgid "With kind regards"
+msgstr "Vänliga Hälsningar"
+
+msgid "Urban environmental service"
+msgstr "Stadsmiljö kundservice"
+
+msgid "Tel. 09-310 22111"
+msgstr "Tel. 09-310 22111"
+
+msgid "This vehicle is no longer subject to a discount"
 msgstr "Rätten till rabatt har tagits bort från fordonet."
 
-msgid "Discount right ends"
-msgstr "Rabatten till höger upphör"
+msgid ""
+"A low-emission vehicle parking benefit has been removed from the vehicle."
+msgstr "En förmån för fordonsparkering med låga utsläpp har tagits bort från fordonet."

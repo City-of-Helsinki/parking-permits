@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-31 23:25+0200\n"
+"POT-Creation-Date: 2024-02-11 09:55+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -619,18 +619,6 @@ msgstr "Heti"
 msgid "From"
 msgstr "Alkaen"
 
-msgid "Arrived"
-msgstr "Saapunut"
-
-msgid "Processing"
-msgstr "Käsittelyssä"
-
-msgid "Accepted"
-msgstr "Hyväksytty"
-
-msgid "Rejected"
-msgstr "Hylätty"
-
 msgid "Payment in progress"
 msgstr "Maksussa"
 
@@ -645,6 +633,9 @@ msgstr "Tuleva ajoneuvo"
 
 msgid "Next parking zone"
 msgstr "Tuleva pysäköintialue"
+
+msgid "Bypass Traficom validation"
+msgstr "Ohita Traficom-tarkistus"
 
 msgid "Vehicle changed date"
 msgstr "Ajoneuvon tietojen muuttamispäivä"
@@ -757,6 +748,12 @@ msgstr "Avoin"
 
 msgid "Request for approval"
 msgstr "Hyväksyttävänä"
+
+msgid "Accepted"
+msgstr "Hyväksytty"
+
+msgid "Rejected"
+msgstr "Hylätty"
 
 msgid "Permits"
 msgstr "Pysäköintitunnukset"
@@ -1091,22 +1088,27 @@ msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
 msgid "Original vehicle has been restored to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
 
-#, python-format
+msgid "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY"
+msgstr "TÄMÄ ON AUTOMAATTISESTI LÄHETETTY VIESTI, ÄLÄ VASTAA TÄHÄN"
+
+msgid "Dear partner!"
+msgstr "Hyvä yhteistyökumppani!"
+
+msgid "A low-emission vehicle parking benefit has been added to the vehicle."
+msgstr "Ohessa ajoneuvo, jolle on myönnetty vähäpäästöisen auton pysäköintietuus."
+
+msgid "With kind regards"
+msgstr "Ystävällisin terveisin"
+
+msgid "Urban environmental service"
+msgstr "Kaupunkiympäristön asiakaspalvelu"
+
+msgid "Tel. 09-310 22111"
+msgstr "Puh. 09-310 22111"
+
+msgid "This vehicle is no longer subject to a discount"
+msgstr "Ajoneuvolta on poistettu oikeus alennukseen"
+
 msgid ""
-"The attached vehicle is entitled to a 50%% discount in street parking when "
-"paying with parking applications."
-msgstr ""
-"Oheinen ajoneuvo on oikeutettu 50%% alennukseen kadunvarsipysäköinnissä "
-"pysäköintisovelluksilla maksettaessa."
-
-msgid "Discount: Low-emission vehicle"
-msgstr "Alennus: Vähäpäästöinen ajoneuvo"
-
-msgid "Discount valid from"
-msgstr "Alennusoikeus voimassa alkaen"
-
-msgid "The right to a discount has been removed from the vehicle."
-msgstr "Ajoneuvolta on poistettu oikeus alennukseen."
-
-msgid "Discount right ends"
-msgstr "Alennusoikeus päättyy"
+"A low-emission vehicle parking benefit has been removed from the vehicle."
+msgstr "Ohessa ajoneuvo, jolta on poistettu vähäpäästöisen auton pysäköintietuus."

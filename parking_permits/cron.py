@@ -52,8 +52,9 @@ def automatic_expiration_remind_notification_of_permits():
         end_time__lt=now + relativedelta(weeks=1), status=ParkingPermitStatus.VALID
     )
     for permit in expiring_permits:
-        send_permit_email(PermitEmailType.EXPIRATION_REMIND, permit)
-        count += 1
+        success = send_permit_email(PermitEmailType.EXPIRATION_REMIND, permit)
+        if success:
+            count += 1
     logger.info(
         "Automatically sending remind notifications for permits completed. "
         f"{count} notifications sent."
@@ -79,8 +80,6 @@ def automatic_syncing_of_permits_to_parkkihubi():
     statuses_to_sync = [
         ParkingPermitStatus.CLOSED,
         ParkingPermitStatus.VALID,
-        ParkingPermitStatus.ACCEPTED,
-        ParkingPermitStatus.REJECTED,
     ]
     permits = ParkingPermit.objects.filter(
         synced_with_parkkihubi=False, status__in=statuses_to_sync

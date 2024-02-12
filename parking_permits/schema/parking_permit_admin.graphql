@@ -99,12 +99,9 @@ type AnnouncementNode {
 
 enum ParkingPermitStatus {
   DRAFT
-  ARRIVED
-  PROCESSING
-  ACCEPTED
-  REJECTED
   PAYMENT_IN_PROGRESS
   VALID
+  CANCELLED
   CLOSED
 }
 
