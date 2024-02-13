@@ -151,22 +151,23 @@ class CustomerPermit:
             permit.temporary_vehicles.filter(end_time__lt=tz.now()).update(
                 is_active=False
             )
-            vehicle = permit.vehicle
+            # vehicle = permit.vehicle
             # Update vehicle detail from traficom if it wasn't updated today
-            if (
-                not permit.vehicle.updated_from_traficom_on
-                or permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now())
-            ):
-                vehicle = self.customer.fetch_vehicle_detail(
-                    vehicle.registration_number,
-                    permit=permit,
-                )
+            # if (
+            #    not permit.vehicle.updated_from_traficom_on
+            #    or permit.vehicle.updated_from_traficom_on < tz.localdate(tz.now())
+            # ):
+            #    vehicle = self.customer.fetch_vehicle_detail(
+            #        vehicle.registration_number,
+            #        permit=permit,
+            #    )
 
-            user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
-            if not user_of_vehicle:
-                permit.vehicle_changed = True
-                permit.vehicle_changed_date = tz.localdate(tz.now())
-                permit.save()
+            # Temporarily disable vehicle user check
+            # user_of_vehicle = self.customer.is_user_of_vehicle(vehicle)
+            # if not user_of_vehicle:
+            #    permit.vehicle_changed = True
+            #    permit.vehicle_changed_date = tz.localdate(tz.now())
+            #    permit.save()
             products = []
             for product_with_qty in permit.get_products_with_quantities():
                 product = self._calculate_prices(permit, product_with_qty)
