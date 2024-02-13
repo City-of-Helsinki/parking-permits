@@ -68,8 +68,19 @@ class TalpaOrderManager:
         return item
 
     @classmethod
-    def append_detail_meta(cls, item, permit, fixed_end_time=None):
+    def append_detail_meta(cls, item, permit, fixed_end_time=None, ext_request=None):
         start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
+        if ext_request:
+            permit_type = _("Fixed period, extension %(month)d month(s)") % {
+                "month": ext_request.month_count
+            }
+        elif permit.is_fixed_period:
+            permit_type = _("Fixed period %(month)d months") % {
+                "month": permit.month_count
+            }
+        else:
+            permit_type = _("Open ended 1 month")
+
         item["meta"] += [
             snake_to_camel_dict(
                 {
@@ -82,10 +93,7 @@ class TalpaOrderManager:
                 {
                     "key": "permitType",
                     "label": _("Parking permit type"),
-                    "value": _("Fixed period %(month)d months")
-                    % {"month": permit.month_count}
-                    if permit.is_fixed_period
-                    else _("Open ended 1 month"),
+                    "value": permit_type,
                     "visible_in_checkout": True,
                     "ordinal": 1,
                 }
@@ -121,7 +129,11 @@ class TalpaOrderManager:
                 }
             ),
         ]
-        permit_end_time = fixed_end_time or permit.end_time
+        if ext_request:
+            permit_end_time = ext_request.get_end_time()
+        else:
+            permit_end_time = fixed_end_time or permit.end_time
+
         if permit_end_time:
             end_time = tz.localtime(permit_end_time).strftime(TIME_FORMAT)
             item["meta"].append(
@@ -148,7 +160,7 @@ class TalpaOrderManager:
         }
 
     @classmethod
-    def create_order_data(cls, order):
+    def create_order_data(cls, order, ext_request=None):
         items = []
         order_items = (
             order.order_items.all()
@@ -177,7 +189,11 @@ class TalpaOrderManager:
 
             # Append details of permit only to the last order item of permit.
             if len(order_items_of_single_permit) > 0:
-                cls.append_detail_meta(order_items_of_single_permit[-1], permit)
+                cls.append_detail_meta(
+                    order_items_of_single_permit[-1],
+                    permit,
+                    ext_request=ext_request,
+                )
                 items += order_items_of_single_permit
 
         customer = cls.create_customer_data(order.customer)
@@ -244,9 +260,9 @@ class TalpaOrderManager:
         order.save(update_fields=["talpa_last_valid_purchase_time", "payment_type"])
 
     @classmethod
-    def send_to_talpa(cls, order):
+    def send_to_talpa(cls, order, ext_request=None):
         cls.set_order_details(order)
-        order_data = cls.create_order_data(order)
+        order_data = cls.create_order_data(order, ext_request)
         order_data_raw = json.dumps(order_data, default=str)
         logger.info(f"Order data sent to talpa: {order_data_raw}")
         response = requests.post(cls.url, data=order_data_raw, headers=cls.headers)

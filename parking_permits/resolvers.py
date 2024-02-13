@@ -331,7 +331,7 @@ def resolve_extend_parking_permit(
         permit_id,
         month_count,
     )
-    checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order)
+    checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order, ext_request)
     return {"checkout_url": checkout_url}
 
 

@@ -1,3 +1,4 @@
+from dateutil.relativedelta import relativedelta
 from django.core.validators import MaxValueValidator
 from django.db import models
 from django.utils import timezone
@@ -57,6 +58,11 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
 
     def is_pending(self):
         return self.status == self.Status.PENDING
+
+    def get_end_time(self):
+        return self.permit.current_period_end_time + relativedelta(
+            months=self.month_count
+        )
 
     def approve(self):
         self.set_status(self.Status.APPROVED)
