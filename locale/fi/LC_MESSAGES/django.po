@@ -993,6 +993,9 @@ msgstr "Pysäköintitunnuksen tyyppi"
 msgid "Fixed period %(month)d months"
 msgstr "Määräaikainen %(month)d kk"
 
+msgid "Fixed period, extension %(month)d months"
+msgstr "Määräaikainen, jatkoaika %(month)d kk"
+
 msgid "Open ended 1 month"
 msgstr "Jatkuvaveloitteinen 1 kk"
 
