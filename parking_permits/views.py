@@ -379,29 +379,30 @@ class TalpaResolveRightOfPurchase(APIView):
             return bad_request_response("User id is missing from request data")
 
         try:
-            permit = ParkingPermit.objects.get(pk=permit_id)
-            customer = permit.customer
-            if settings.TRAFICOM_CHECK:
-                customer.fetch_driving_licence_detail(permit)
-                is_driving_licence_active = customer.driving_licence.active
-            else:
-                is_driving_licence_active = True
-            vehicle = customer.fetch_vehicle_detail(
-                permit.vehicle.registration_number, permit
-            )
-            is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
-            has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
-                vehicle
-            )
+            # Temporarily disabled traficom checks
+            permit = ParkingPermit.objects.get(pk=permit_id)  # noqa: F841
+            # customer = permit.customer
+            # if settings.TRAFICOM_CHECK:
+            #    customer.fetch_driving_licence_detail(permit)
+            #    is_driving_licence_active = customer.driving_licence.active
+            # else:
+            #     is_driving_licence_active = True
+            # vehicle = customer.fetch_vehicle_detail(
+            #     permit.vehicle.registration_number, permit
+            # )
+            # is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
+            # has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
+            #     vehicle
+            # )
             order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
             is_valid_subscription = (
                 order_item.subscription.status == SubscriptionStatus.CONFIRMED
             )
             right_of_purchase = (
                 is_valid_subscription
-                and is_user_of_vehicle
-                and is_driving_licence_active
-                and has_valid_driving_licence
+                # and is_user_of_vehicle
+                # and is_driving_licence_active
+                # and has_valid_driving_licence
             )
             res = snake_to_camel_dict(
                 {
