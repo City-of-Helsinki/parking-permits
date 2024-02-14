@@ -20,8 +20,7 @@ class TestPermitExtensionRequest(TestCase):
         self.assertEqual(self.ext_request.permit.month_count, 4)
         self.assertFalse(ParkingPermitExtensionRequest.objects.pending().exists())
 
-    def test_reject(self):
-        self.ext_request.reject()
-        self.assertTrue(self.ext_request.is_rejected())
-        self.assertEqual(self.ext_request.permit.month_count, 1)
+    def test_cancel(self):
+        self.ext_request.cancel()
+        self.assertTrue(self.ext_request.is_cancelled())
         self.assertFalse(ParkingPermitExtensionRequest.objects.pending().exists())

@@ -126,7 +126,7 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
         ext_request.refresh_from_db()
-        self.assertTrue(ext_request.is_rejected())
+        self.assertTrue(ext_request.is_cancelled())
 
     def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
         data = {

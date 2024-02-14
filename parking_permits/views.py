@@ -525,10 +525,8 @@ class PaymentView(APIView):
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
-            for (
-                ext_request
-            ) in order.get_pending_permit_extension_requests().select_related("permit"):
-                ext_request.reject()
+            for ext_request in order.get_pending_permit_extension_requests():
+                ext_request.cancel()
 
             return bad_request_response(f"Unknown payment event type {event_type}")
 

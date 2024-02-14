@@ -23,7 +23,7 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
     class Status(models.TextChoices):
         PENDING = "PENDING", _("Pending")
         APPROVED = "APPROVED", _("Approved")
-        REJECTED = "REJECTED", _("Rejected")
+        CANCELLED = "CANCELLED", _("Cancelled")
 
     permit = models.ForeignKey(
         "parking_permits.ParkingPermit",
@@ -53,11 +53,11 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
     def is_approved(self):
         return self.status == self.Status.APPROVED
 
-    def is_rejected(self):
-        return self.status == self.Status.REJECTED
-
     def is_pending(self):
         return self.status == self.Status.PENDING
+
+    def is_cancelled(self):
+        return self.status == self.Status.CANCELLED
 
     def get_end_time(self):
         return self.permit.current_period_end_time + relativedelta(
@@ -68,8 +68,8 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
         self.set_status(self.Status.APPROVED)
         self.permit.extend_permit(self.month_count)
 
-    def reject(self):
-        self.set_status(self.Status.REJECTED)
+    def cancel(self):
+        self.set_status(self.Status.CANCELLED)
 
     def set_status(self, new_status, commit=True):
         self.status = new_status
