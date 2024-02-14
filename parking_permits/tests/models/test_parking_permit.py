@@ -237,6 +237,31 @@ class ParkingZoneTestCase(TestCase):
         )
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
+    def test_should_cancel_all_extensions_on_end_permit(self):
+        start_time = timezone.make_aware(datetime(2021, 11, 15))
+        end_time = get_end_time(start_time, 6)
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+        approved = ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+        pending = ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.PENDING
+        )
+
+        permit.end_permit(ParkingPermitEndType.IMMEDIATELY)
+
+        approved.refresh_from_db()
+        assert approved.is_approved()
+
+        pending.refresh_from_db()
+        assert pending.is_cancelled()
+
+    @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
     def test_should_set_end_time_to_now_if_end_permit_immediately(self):
         start_time = timezone.make_aware(datetime(2021, 11, 15))
         end_time = get_end_time(start_time, 6)
@@ -734,6 +759,12 @@ class TestParkingPermit(TestCase):
         item = OrderItemFactory(permit=self.permit)
         self.permit.orders.add(item.order)
         self.assertEqual(self.permit.checkout_url, item.order.talpa_checkout_url)
+
+    def test_checkout_url_if_latest_order_and_pending_request(self):
+        ext_request = ParkingPermitExtensionRequestFactory(permit=self.permit)
+        item = OrderItemFactory(permit=self.permit)
+        self.permit.orders.add(item.order)
+        self.assertEqual(self.permit.checkout_url, ext_request.order.talpa_checkout_url)
 
     def test_can_be_refunded_fixed(self):
         permit = ParkingPermitFactory(

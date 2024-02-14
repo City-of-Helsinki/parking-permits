@@ -282,7 +282,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         Multiple orders can be created for the same permit
         when, for example, the vehicle or the address of
         the permit is changed.
+
+        If extension request order, returns that order instead
         """
+        if order := self.latest_extension_request_order:
+            return order
+
         return self.orders.latest("id") if self.orders.exists() else None
 
     @property
@@ -304,13 +309,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return None
 
     @property
+    def has_pending_extension_request(self):
+        return self.get_pending_extension_requests().exists()
+
+    @property
+    def latest_extension_request_order(self):
+        if ext_request := self.permit_extension_requests.select_related(
+            "order"
+        ).first():
+            return ext_request.order
+        return None
+
+    @property
     def latest_order_items(self):
         """Get latest order items for the permit"""
         return self.order_items.filter(order=self.latest_order)
 
     @property
     def latest_order_item(self):
-        return self.latest_order_items.first() or None
+        return self.latest_order_items.first()
 
     @property
     def permit_prices(self):
@@ -443,7 +460,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return False
 
         # do database op last
-        return not self.get_pending_extension_requests().exists()
+        return not self.has_pending_extension_request
 
     def get_pending_extension_requests(self):
         return self.permit_extension_requests.pending()
@@ -688,6 +705,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
         ):
             self.status = ParkingPermitStatus.CLOSED
+
+        self.cancel_extension_requests()
         self.save()
 
     def extend_permit(self, additional_months):
@@ -695,6 +714,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.month_count += additional_months
         self.end_time = get_end_time(self.start_time, self.month_count)
         self.save()
+
+    def cancel_extension_requests(self):
+        for ext_request in self.get_pending_extension_requests():
+            ext_request.cancel()
 
     def get_refund_amount_for_unused_items(self):
         total = Decimal(0)

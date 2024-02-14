@@ -71,7 +71,7 @@ class TalpaOrderManager:
     def append_detail_meta(cls, item, permit, fixed_end_time=None, ext_request=None):
         start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
         if ext_request:
-            permit_type = _("Fixed period, extension %(month)d month(s)") % {
+            permit_type = _("Fixed period, extension %(month)d months") % {
                 "month": ext_request.month_count
             }
         elif permit.is_fixed_period:

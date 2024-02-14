@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
                         choices=[
                             ("PENDING", "Pending"),
                             ("APPROVED", "Approved"),
-                            ("REJECTED", "Rejected"),
+                            ("CANCELLED", "Cancelled"),
                         ],
                         default="Pending",
                         max_length=12,
