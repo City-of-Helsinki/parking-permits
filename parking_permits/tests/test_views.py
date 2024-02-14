@@ -4,6 +4,7 @@ from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
+import pytest
 import requests_mock
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -761,6 +762,9 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
             "ParkingPermit matching query does not exist.",
         )
 
+    @pytest.mark.skip(
+        reason="Temporary skip Traficom checks until vehicle user data is quaranteed to be available always"
+    )
     @override_settings(
         DEBUG=True,
         TRAFICOM_CHECK=False,
