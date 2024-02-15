@@ -324,10 +324,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return None
 
     @property
-    def has_pending_extension_request(self):
-        return self.get_pending_extension_requests().exists()
-
-    @property
     def latest_extension_request_order(self):
         if ext_request := self.permit_extension_requests.select_related(
             "order"
@@ -493,26 +489,46 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         1. Must be a valid fixed period permit.
         2. Cannot have any pending requests.
         3. Must be within 14 days of end time.
+        4. PERMIT_EXTENSIONS_ENABLED flag is True.
         """
-        if not settings.PERMIT_EXTENSIONS_ENABLED:
-            return False
+        return self._can_extend_parking_permit(is_date_restriction=True)
 
-        if self.status != ParkingPermitStatus.VALID:
-            return False
+    @property
+    def can_admin_extend_permit(self):
+        """Checks if permit can be extended:
+        1. Must be a valid fixed period permit.
+        2. Cannot have any pending requests.
+        3. PERMIT_EXTENSIONS_ENABLED flag is True.
+        """
+        return self._can_extend_parking_permit(is_date_restriction=False)
 
-        if self.contract_type != ContractType.FIXED_PERIOD:
-            return False
-
-        if self.end_time is None or self.end_time > timezone.now() + relativedelta(
-            days=14
+    def _can_extend_parking_permit(self, *, is_date_restriction=True):
+        if not all(
+            (
+                settings.PERMIT_EXTENSIONS_ENABLED,
+                self.status == ParkingPermitStatus.VALID,
+                self.contract_type == ContractType.FIXED_PERIOD,
+                self.end_time is not None,
+            )
         ):
+            return False
+
+        if is_date_restriction and timezone.localdate(
+            self.end_time
+        ) > timezone.localdate(timezone.now() + relativedelta(days=14)):
             return False
 
         # do database op last
         return not self.has_pending_extension_request
 
     def get_pending_extension_requests(self):
+        """Returns all PENDING extension requests."""
         return self.permit_extension_requests.pending()
+
+    @property
+    def has_pending_extension_request(self):
+        """Returns True if any PENDING extension requests."""
+        return self.get_pending_extension_requests().exists()
 
     def current_period_end_time_with_fixed_months(self, months):
         end_time = get_end_time(self.start_time, months)
@@ -566,15 +582,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def get_future_product_month_dates(self, month_count):
         """Break down of future start/end times per month from the
-        next period start until the number of months."""
-        # these are unchanged
-        # price change affected date range and products
+        period after the current end of the permit until the number of months."""
 
-        start_date = timezone.localdate(self.next_period_start_time)
-
-        end_date = timezone.localdate(
-            get_end_time(self.next_period_start_time, month_count)
+        from_date = self.end_time.replace(hour=0, minute=0, second=0) + relativedelta(
+            days=1
         )
+
+        start_date = timezone.localdate(from_date)
+        end_date = timezone.localdate(get_end_time(from_date, month_count))
 
         products = (
             self.parking_zone.products.for_resident()
@@ -585,6 +600,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # calculate the price change list in the affected date range
         product = next(products, None)
 
+        # for each product in our range, find the start and end dates
+        # of whole months within that range
         while product and start_date < end_date:
             yield {
                 "product": product,
@@ -592,6 +609,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 "end_date": start_date + relativedelta(months=1, days=-1),
             }
             start_date += relativedelta(months=1)
+
             if start_date > product.end_date:
                 product = next(products, None)
 
@@ -769,8 +787,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.update_or_create_parkkihubi_permit()
 
     def cancel_extension_requests(self):
-        for ext_request in self.get_pending_extension_requests():
-            ext_request.cancel()
+        self.permit_extension_requests.cancel_pending()
 
     def get_refund_amount_for_unused_items(self):
         total = Decimal(0)
