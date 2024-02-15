@@ -485,6 +485,29 @@ class ExtendCustomerPermitTestCase(TestCase):
         self.assertEqual(ext_request.month_count, 3)
 
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_exceeds_max_month_count(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        self.assertRaises(
+            PermitCanNotBeExtended,
+            CustomerPermit(permit.customer_id).create_permit_extension_request,
+            permit.pk,
+            13,
+        )
+        self.assertFalse(permit.get_pending_extension_requests().exists())
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_invalid(self):
         now = tz.now()
         permit = ParkingPermitFactory(

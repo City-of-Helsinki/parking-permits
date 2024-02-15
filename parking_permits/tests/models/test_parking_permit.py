@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from dateutil.relativedelta import relativedelta
 from django.test import TestCase, override_settings
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
@@ -871,6 +872,60 @@ class TestParkingPermit(TestCase):
         self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
         self.assertEqual(price_list[1]["net_price"], "32.26")
         self.assertEqual(price_list[1]["vat_price"], "7.74")
+
+    def test_max_extension_month_count_for_primary_vehicle(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+        )
+        self.assertEqual(permit.max_extension_month_count, 12)
+
+    def test_max_extension_month_count_for_secondary_vehicle(self):
+        now = timezone.now()
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            end_time=now + relativedelta(months=4, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 2)
+
+    def test_max_extension_month_count_for_secondary_vehicle_zero(self):
+        now = timezone.now()
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 0)
+
+    def test_max_extension_month_count_for_secondary_vehicle_one_month(self):
+        now = timezone.now()
+        start_time = now - relativedelta(days=3)
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=start_time + relativedelta(months=3, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 1)
 
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_not_valid(self):
