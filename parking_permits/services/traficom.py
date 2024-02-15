@@ -83,16 +83,25 @@ class Traficom:
         if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
-        et = self._fetch_info(registration_number=registration_number)
+        # Fetch vehicle details from Traficom using normal vehicle type
+        et = self._fetch_info(
+            registration_number=registration_number, is_l_type_vehicle=False
+        )
         vehicle_detail = et.find(".//ajoneuvonTiedot")
 
         if not vehicle_detail:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
-                )
-                % {"registration_number": registration_number}
+            # If normal vehicle was not found, fetch vehicle details from Traficom using light weight vehicle type
+            et = self._fetch_info(
+                registration_number=registration_number, is_l_type_vehicle=True
             )
+            vehicle_detail = et.find(".//ajoneuvonTiedot")
+            if not vehicle_detail:
+                raise TraficomFetchVehicleError(
+                    _(
+                        "Could not find vehicle detail with given %(registration_number)s registration number"
+                    )
+                    % {"registration_number": registration_number}
+                )
 
         vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
         vehicle_sub_class = vehicle_detail.findall("ajoneuvoryhmat/ajoneuvoryhma")
@@ -269,10 +278,7 @@ class Traficom:
             return True
         return False
 
-    def _fetch_info(self, registration_number=None, hetu=None):
-        is_l_type_vehicle = (
-            len(registration_number) == 6 if registration_number else False
-        )
+    def _fetch_info(self, registration_number=None, hetu=None, is_l_type_vehicle=False):
         vehicle_payload = f"""
             <laji>{LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE}</laji>
             <rekisteritunnus>{registration_number}</rekisteritunnus>
