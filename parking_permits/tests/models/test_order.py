@@ -51,7 +51,7 @@ class TestOrderManager(TestCase):
             permit = ParkingPermitFactory(
                 status=ParkingPermitStatus.VALID,
                 contract_type=ContractType.FIXED_PERIOD,
-                start_time=now,
+                start_time=now - timedelta(days=23),
                 end_time=now + timedelta(days=7),
                 month_count=1,
                 parking_zone=self.zone,
@@ -66,20 +66,20 @@ class TestOrderManager(TestCase):
 
         # 3x first product
         self.assertEqual(items[0].unit_price, Decimal("30"))
-        self.assertEqual(items[0].total_price, Decimal("90"))
-        self.assertEqual(items[0].quantity, 3)
-        self.assertEqual(items[0].start_time.date(), date(self.current_year, 4, 4))
-        self.assertEqual(items[0].end_time.date(), date(self.current_year, 7, 3))
+        self.assertEqual(items[0].total_price, Decimal("120"))
+        self.assertEqual(items[0].quantity, 4)
+        self.assertEqual(items[0].start_time.date(), date(self.current_year, 3, 12))
+        self.assertEqual(items[0].end_time.date(), date(self.current_year, 7, 11))
 
         # 3x second product
         self.assertEqual(items[1].unit_price, Decimal("50"))
-        self.assertEqual(items[1].total_price, Decimal("150"))
-        self.assertEqual(items[1].quantity, 3)
-        self.assertEqual(items[1].start_time.date(), date(self.current_year, 7, 4))
-        self.assertEqual(items[1].end_time.date(), date(self.current_year, 10, 3))
+        self.assertEqual(items[1].total_price, Decimal("100"))
+        self.assertEqual(items[1].quantity, 2)
+        self.assertEqual(items[1].start_time.date(), date(self.current_year, 7, 12))
+        self.assertEqual(items[1].end_time.date(), date(self.current_year, 9, 11))
 
         # check total price
-        self.assertEqual(order.total_price, Decimal("240"))
+        self.assertEqual(order.total_price, Decimal("220"))
 
     def test_create_for_customer_should_create_order_with_items(self):
         start_time = timezone.make_aware(datetime(self.current_year, 3, 15))

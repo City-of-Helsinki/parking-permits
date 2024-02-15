@@ -54,6 +54,7 @@ from .exceptions import (
     ObjectNotFound,
     ParkingZoneError,
     ParkkihubiPermitError,
+    PermitCanNotBeExtended,
     PermitLimitExceeded,
     SearchError,
     TemporaryVehicleValidationError,
@@ -898,6 +899,63 @@ def calculate_total_price_change(
         [item["price_change"] * item["month_count"] for item in price_change_list]
     )
     total_price_change_by_order.update({permit.latest_order: permit_total_price_change})
+
+
+@query.field("getExtendedPriceList")
+@is_customer_service
+@convert_kwargs_to_snake_case
+def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
+    """Returns the updated price list for additional months on a fixed period permit."""
+
+    try:
+        permit = ParkingPermit.objects.active().get(pk=permit_id)
+    except ParkingPermit.DoesNotExist as e:
+        raise ObjectNotFound from e
+    return permit.get_price_list_for_extended_permit(month_count)
+
+
+@mutation.field("extendPermit")
+@is_customer_service
+@convert_kwargs_to_snake_case
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin extended resident permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
+@transaction.atomic
+def resolve_extend_parking_permit(
+    _obj,
+    info,
+    permit_id,
+    month_count,
+    audit_msg: AuditMsg = None,
+):
+    try:
+        permit = ParkingPermit.objects.active().get(id=permit_id)
+    except ParkingPermit.DoesNotExist as e:
+        raise ObjectNotFound from e
+
+    audit_msg.target = permit
+    if not permit.can_admin_extend_permit:
+        raise PermitCanNotBeExtended(_("You cannot extend this permit."))
+
+    order = Order.objects.create_for_extended_permit(
+        permit,
+        month_count,
+        status=OrderStatus.CONFIRMED,
+        type=OrderType.CREATED,
+    )
+
+    ext_request = permit.permit_extension_requests.create(
+        order=order,
+        month_count=month_count,
+    )
+
+    # approve and extend permit immediately
+    ext_request.approve()
+    return {"success": True}
 
 
 @mutation.field("endPermit")

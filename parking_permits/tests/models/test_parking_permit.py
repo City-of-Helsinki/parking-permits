@@ -833,7 +833,7 @@ class TestParkingPermit(TestCase):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
-            start_time=now,
+            start_time=now - timedelta(days=23),
             end_time=now + timedelta(days=7),
             month_count=1,
         )
@@ -859,8 +859,8 @@ class TestParkingPermit(TestCase):
         self.assertEqual(len(price_list), 2)
 
         # 2x first product
-        self.assertEqual(price_list[0]["start_date"], date(2024, 3, 5))
-        self.assertEqual(price_list[0]["end_date"], date(2024, 5, 4))
+        self.assertEqual(price_list[0]["start_date"], date(2024, 2, 13))
+        self.assertEqual(price_list[0]["end_date"], date(2024, 4, 12))
         self.assertEqual(price_list[0]["month_count"], 2)
         self.assertEqual(price_list[0]["price"], Decimal("60.00"))
         self.assertEqual(price_list[0]["unit_price"], Decimal("30.00"))
@@ -868,8 +868,8 @@ class TestParkingPermit(TestCase):
         self.assertEqual(price_list[0]["vat_price"], "11.61")
 
         # 1x second product
-        self.assertEqual(price_list[1]["start_date"], date(2024, 5, 5))
-        self.assertEqual(price_list[1]["end_date"], date(2024, 6, 4))
+        self.assertEqual(price_list[1]["start_date"], date(2024, 4, 13))
+        self.assertEqual(price_list[1]["end_date"], date(2024, 5, 12))
         self.assertEqual(price_list[1]["month_count"], 1)
         self.assertEqual(price_list[1]["price"], Decimal("40.00"))
         self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
@@ -1013,6 +1013,67 @@ class TestParkingPermit(TestCase):
         )
 
         self.assertTrue(permit.can_extend_permit)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_admin_extend_permit_not_valid(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.CLOSED,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_admin_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_admin_extend_permit_open_ended(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.OPEN_ENDED,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_admin_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_admin_extend_permit_end_date_none(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=None,
+            ).can_admin_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_admin_extend_permit_end_date_too_late(self):
+        self.assertTrue(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=30),
+            ).can_admin_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_admin_extend_permit_existing_pending_request(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        ParkingPermitExtensionRequestFactory(permit=permit)
+
+        self.assertFalse(permit.can_admin_extend_permit)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=False)
+    def test_can_admin_extend_permit_feature_disabled(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_admin_extend_permit,
+        )
 
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.patch", return_value=MockResponse(200))
