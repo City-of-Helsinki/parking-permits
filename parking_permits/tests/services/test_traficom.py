@@ -45,7 +45,18 @@ class TestTraficom(TestCase):
 
             # Emissions
             assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 155.00
+            assert vehicle.emission == 155
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_light_weight_vehicle(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("light_weight_vehicle.xml")),
+        ):
+            registration_number = "NV-298"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+            self.assertEqual(vehicle.registration_number, registration_number)
+            self.assertEqual(vehicle.weight, 244)
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
@@ -69,7 +80,7 @@ class TestTraficom(TestCase):
 
             # Emissions
             assert vehicle.emission_type == EmissionType.WLTP
-            assert vehicle.emission == 155.00
+            assert vehicle.emission == 155
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_nedc(self):
@@ -81,7 +92,7 @@ class TestTraficom(TestCase):
 
             # Emissions
             assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 13.00
+            assert vehicle.emission == 13
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):
