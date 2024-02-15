@@ -51,7 +51,7 @@ class TalpaOrderManager:
                 {
                     "key": "sourceOrderItemId",
                     "value": str(order_item.id),
-                    "visibleInCheckout": "false",
+                    "visibleInCheckout": False,
                     "ordinal": 0,
                 },
             ],
@@ -84,20 +84,20 @@ class TalpaOrderManager:
             {
                 "key": "permitId",
                 "value": str(permit.id),
-                "visibleInCheckout": "false",
+                "visibleInCheckout": False,
             },
             {
                 "key": "permitType",
                 "label": _("Parking permit type"),
                 "value": permit_type,
-                "visibleInCheckout": "true",
+                "visibleInCheckout": True,
                 "ordinal": 1,
             },
             {
                 "key": "startDate",
                 "label": _("Parking permit start date*"),
                 "value": start_time,
-                "visibleInCheckout": "true",
+                "visibleInCheckout": True,
                 "ordinal": 2,
             },
             {
@@ -107,14 +107,14 @@ class TalpaOrderManager:
                     "* Parking permit is valid from the start date of your choice, "
                     "once the payment has been accepted"
                 ),
-                "visibleInCheckout": "true",
+                "visibleInCheckout": True,
                 "ordinal": 4,
             },
             {
                 "key": "copyright",
                 "label": "",
                 "value": _("Source: Transport register, Traficom"),
-                "visibleInCheckout": "true",
+                "visibleInCheckout": True,
                 "ordinal": 5,
             },
         ]
@@ -132,7 +132,7 @@ class TalpaOrderManager:
                     if permit.is_fixed_period
                     else _("Parking permit period expiration date"),
                     "value": end_time,
-                    "visibleInCheckout": "true",
+                    "visibleInCheckout": True,
                     "ordinal": 3,
                 }
             )

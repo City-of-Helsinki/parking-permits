@@ -95,7 +95,7 @@ def get_validated_subscription_data(
                 "subscriptionId": talpa_subscription_id,
                 "key": "permitId",
                 "value": permit_id,
-                "visibleInCheckout": "false",
+                "visibleInCheckout": False,
             }
         ],
     }
@@ -300,7 +300,7 @@ class BaseResolveEndpointTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -557,7 +557,7 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         ).strftime(TIME_FORMAT)
         self.assertEqual(permit_end_time, fixed_end_time)
         permit_id_meta = get_meta_item(order_item_metas, "permitId")
-        self.assertEqual(permit_id_meta.get("visibleInCheckout"), "false")
+        self.assertEqual(permit_id_meta.get("visibleInCheckout"), False)
 
     def test_resolve_product_view_after_vehicle_change(self):
         unit_price = Decimal(60)
@@ -773,7 +773,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit_id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -837,7 +837,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -961,7 +961,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitType",
                         "value": "Määräaikainen 1 kk",
                         "label": "Pysäköintitunnuksen kesto",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "1",
                     },
                     {
@@ -971,7 +971,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "endDate",
                         "value": "11.10.2023 23:59",
                         "label": "Pysäköintitunnuksen päättymispäivä",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "3",
                     },
                     {
@@ -981,7 +981,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "startDate",
                         "value": "11.09.2023",
                         "label": "Pysäköintitunnuksen alkamispäivä*",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "2",
                     },
                     {
@@ -992,7 +992,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "value": "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, "
                         + "kun maksusuoritus on hyväksytty.",
                         "label": "",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "4",
                     },
                     {
@@ -1002,7 +1002,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "sourceOrderItemId",
                         "value": "243",
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": "0",
                     },
                     {
@@ -1012,7 +1012,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],

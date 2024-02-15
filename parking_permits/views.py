@@ -235,7 +235,7 @@ class TalpaResolveProduct(APIView):
                     {
                         "key": "sourceOrderItemId",
                         "value": str(order_item.id),
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": 0,
                     }
                 )
