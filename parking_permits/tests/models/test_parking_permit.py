@@ -872,6 +872,7 @@ class TestParkingPermit(TestCase):
         self.assertEqual(price_list[1]["net_price"], "32.26")
         self.assertEqual(price_list[1]["vat_price"], "7.74")
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_not_valid(self):
         self.assertFalse(
             ParkingPermitFactory(
@@ -881,6 +882,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_open_ended(self):
         self.assertFalse(
             ParkingPermitFactory(
@@ -890,6 +892,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_end_date_none(self):
         self.assertFalse(
             ParkingPermitFactory(
@@ -899,6 +902,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_end_date_too_late(self):
         self.assertFalse(
             ParkingPermitFactory(
@@ -908,6 +912,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_existing_pending_request(self):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
@@ -918,6 +923,17 @@ class TestParkingPermit(TestCase):
 
         self.assertFalse(permit.can_extend_permit)
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=False)
+    def test_can_extend_permit_feature_disabled(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_no_other_requests(self):
         self.assertTrue(
             ParkingPermitFactory(
@@ -927,6 +943,7 @@ class TestParkingPermit(TestCase):
             ).can_extend_permit,
         )
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_existing_other_request(self):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
@@ -939,6 +956,7 @@ class TestParkingPermit(TestCase):
 
         self.assertTrue(permit.can_extend_permit)
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_extend_permit(self):
         now = timezone.now()
         permit = ParkingPermitFactory(
