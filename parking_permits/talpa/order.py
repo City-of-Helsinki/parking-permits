@@ -15,7 +15,6 @@ from parking_permits.utils import (
     date_time_to_helsinki,
     format_local_time,
     round_up,
-    snake_to_camel_dict,
 )
 
 logger = logging.getLogger("db")
@@ -52,7 +51,7 @@ class TalpaOrderManager:
                 {
                     "key": "sourceOrderItemId",
                     "value": str(order_item.id),
-                    "visibleInCheckout": False,
+                    "visibleInCheckout": "false",
                     "ordinal": 0,
                 },
             ],
@@ -82,52 +81,42 @@ class TalpaOrderManager:
             permit_type = _("Open ended 1 month")
 
         item["meta"] += [
-            snake_to_camel_dict(
-                {
-                    "key": "permitId",
-                    "value": str(permit.id),
-                    "visible_in_checkout": False,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "permitType",
-                    "label": _("Parking permit type"),
-                    "value": permit_type,
-                    "visible_in_checkout": True,
-                    "ordinal": 1,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "startDate",
-                    "label": _("Parking permit start date*"),
-                    "value": start_time,
-                    "visible_in_checkout": True,
-                    "ordinal": 2,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "terms",
-                    "label": "",
-                    "value": _(
-                        "* Parking permit is valid from the start date of your choice, "
-                        "once the payment has been accepted"
-                    ),
-                    "visible_in_checkout": True,
-                    "ordinal": 4,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "copyright",
-                    "label": "",
-                    "value": _("Source: Transport register, Traficom"),
-                    "visible_in_checkout": True,
-                    "ordinal": 5,
-                }
-            ),
+            {
+                "key": "permitId",
+                "value": str(permit.id),
+                "visibleInCheckout": "false",
+            },
+            {
+                "key": "permitType",
+                "label": _("Parking permit type"),
+                "value": permit_type,
+                "visibleInCheckout": "true",
+                "ordinal": 1,
+            },
+            {
+                "key": "startDate",
+                "label": _("Parking permit start date*"),
+                "value": start_time,
+                "visibleInCheckout": "true",
+                "ordinal": 2,
+            },
+            {
+                "key": "terms",
+                "label": "",
+                "value": _(
+                    "* Parking permit is valid from the start date of your choice, "
+                    "once the payment has been accepted"
+                ),
+                "visibleInCheckout": "true",
+                "ordinal": 4,
+            },
+            {
+                "key": "copyright",
+                "label": "",
+                "value": _("Source: Transport register, Traficom"),
+                "visibleInCheckout": "true",
+                "ordinal": 5,
+            },
         ]
         if ext_request:
             permit_end_time = ext_request.get_end_time()
@@ -137,17 +126,15 @@ class TalpaOrderManager:
         if permit_end_time:
             end_time = tz.localtime(permit_end_time).strftime(TIME_FORMAT)
             item["meta"].append(
-                snake_to_camel_dict(
-                    {
-                        "key": "endDate",
-                        "label": _("Parking permit expiration date")
-                        if permit.is_fixed_period
-                        else _("Parking permit period expiration date"),
-                        "value": end_time,
-                        "visible_in_checkout": True,
-                        "ordinal": 3,
-                    }
-                )
+                {
+                    "key": "endDate",
+                    "label": _("Parking permit expiration date")
+                    if permit.is_fixed_period
+                    else _("Parking permit period expiration date"),
+                    "value": end_time,
+                    "visibleInCheckout": "true",
+                    "ordinal": 3,
+                }
             )
         return item
 

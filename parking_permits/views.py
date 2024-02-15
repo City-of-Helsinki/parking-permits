@@ -232,14 +232,12 @@ class TalpaResolveProduct(APIView):
             order_item = permit.order_items.first()
             if order_item:
                 order_item_response_data.get("meta").append(
-                    snake_to_camel_dict(
-                        {
-                            "key": "sourceOrderItemId",
-                            "value": str(order_item.id),
-                            "visible_in_checkout": False,
-                            "ordinal": 0,
-                        }
-                    ),
+                    {
+                        "key": "sourceOrderItemId",
+                        "value": str(order_item.id),
+                        "visibleInCheckout": "false",
+                        "ordinal": 0,
+                    }
                 )
                 TalpaOrderManager.append_detail_meta(
                     order_item_response_data,
@@ -248,24 +246,20 @@ class TalpaResolveProduct(APIView):
                     + relativedelta(months=1),
                 )
 
-            response = snake_to_camel_dict(
-                {
-                    "subscription_id": subscription_id,
-                    "user_id": user_id,
-                    "product_id": str(product.talpa_product_id),
-                    "product_name": product.name,
-                    "product_label": permit.vehicle.description,
-                    "order_item_metas": order_item_response_data.get("meta"),
-                }
-            )
+            response = {
+                "subscriptionId": subscription_id,
+                "userId": user_id,
+                "productId": str(product.talpa_product_id),
+                "productName": product.name,
+                "productLabel": permit.vehicle.description,
+                "orderItemMetas": order_item_response_data.get("meta"),
+            }
         except Exception as e:
-            response = snake_to_camel_dict(
-                {
-                    "error_message": str(e),
-                    "subscription_id": subscription_id,
-                    "user_id": user_id,
-                }
-            )
+            response = {
+                "errorMessage": str(e),
+                "subscriptionId": subscription_id,
+                "userId": user_id,
+            }
         logger.info(f"Resolve product response = {json.dumps(response, default=str)}")
         return Response(response)
 
