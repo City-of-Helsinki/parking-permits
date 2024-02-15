@@ -238,12 +238,12 @@ class CustomerPermit:
         if self._can_buy_permit_for_address(address.id):
             contract_type = OPEN_ENDED
             primary_vehicle = True
-            end_time = None
+            primary_end_time = None
             if self.customer_permit_query.count():
                 primary_permit = self.customer_permit_query.get(primary_vehicle=True)
                 contract_type = primary_permit.contract_type
                 primary_vehicle = not primary_permit.primary_vehicle
-                end_time = primary_permit.end_time
+                primary_end_time = primary_permit.end_time
 
             if settings.TRAFICOM_CHECK:
                 self.customer.fetch_driving_licence_detail()
@@ -268,8 +268,9 @@ class CustomerPermit:
                     )
 
             start_time = tz.now()
-            if not end_time:
-                end_time = get_end_time(start_time, 1)
+            end_time = get_end_time(start_time, 1)
+            if primary_end_time:
+                end_time = min(end_time, primary_end_time)
 
             address_apartment, address_apartment_sv = self._get_address_apartments(
                 address

@@ -153,10 +153,12 @@ class CreateCustomerPermitTestCase(TestCase):
         self.customer_c = CustomerFactory(
             first_name="Firstname C", last_name="Lastname 3"
         )
+
         self.customer_a_zone = self.customer_a.primary_address.zone
         self.zone = ParkingZoneFactory()
         power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
         self.vehicle_a = VehicleFactory(power_type=power_type)
+        self.vehicle_b = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
@@ -179,10 +181,12 @@ class CreateCustomerPermitTestCase(TestCase):
         )
         self.customer_c_valid_primary_permit = ParkingPermitFactory(
             customer=self.customer_c,
+            address=self.customer_c.primary_address,
             status=VALID,
             primary_vehicle=True,
             contract_type=FIXED_PERIOD,
             parking_zone=self.customer_c.primary_address.zone,
+            end_time=date(2022, 3, 6),
             vehicle=self.vehicle_a,
         )
 
@@ -190,6 +194,30 @@ class CreateCustomerPermitTestCase(TestCase):
         address = AddressFactory()
         with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.customer_a.id).create(address.id, "ABC-123")
+
+    @override_settings(TRAFICOM_MOCK=True, TRAFICOM_CHECK=False)
+    def test_primary_permit(self):
+        permit = CustomerPermit(self.customer_b.id).create(
+            self.customer_b.primary_address.id,
+            self.vehicle_a.registration_number,
+        )
+
+        self.assertTrue(permit.primary_vehicle)
+        self.assertEqual(permit.customer, self.customer_b)
+        self.assertEqual(permit.vehicle, self.vehicle_a)
+        self.assertEqual(permit.end_time.date(), date(2022, 2, 6))
+
+    @override_settings(TRAFICOM_MOCK=True, TRAFICOM_CHECK=False)
+    def test_secondary_permit(self):
+        permit = CustomerPermit(self.customer_c.id).create(
+            self.customer_c.primary_address.id,
+            self.vehicle_b.registration_number,
+        )
+
+        self.assertFalse(permit.primary_vehicle)
+        self.assertEqual(permit.customer, self.customer_c)
+        self.assertEqual(permit.vehicle, self.vehicle_b)
+        self.assertEqual(permit.end_time.date(), date(2022, 2, 6))
 
 
 class DeleteCustomerPermitTestCase(TestCase):
