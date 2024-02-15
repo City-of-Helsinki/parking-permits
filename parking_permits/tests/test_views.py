@@ -53,7 +53,7 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
-from parking_permits.utils import get_meta_value
+from parking_permits.utils import get_meta_item, get_meta_value
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
@@ -556,6 +556,8 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
             permit.end_time + relativedelta(months=1)
         ).strftime(TIME_FORMAT)
         self.assertEqual(permit_end_time, fixed_end_time)
+        permit_id_meta = get_meta_item(order_item_metas, "permitId")
+        self.assertEqual(permit_id_meta.get("visibleInCheckout"), "false")
 
     def test_resolve_product_view_after_vehicle_change(self):
         unit_price = Decimal(60)
