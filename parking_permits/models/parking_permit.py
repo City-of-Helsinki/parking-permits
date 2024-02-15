@@ -447,6 +447,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         2. Cannot have any pending requests.
         3. Must be within 14 days of end time.
         """
+        if not settings.PERMIT_EXTENSIONS_ENABLED:
+            return False
 
         if self.status != ParkingPermitStatus.VALID:
             return False

@@ -462,6 +462,7 @@ class UpdateCustomerPermitTestCase(TestCase):
 
 
 class ExtendCustomerPermitTestCase(TestCase):
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_ok(self):
         now = tz.now()
         permit = ParkingPermitFactory(
@@ -483,6 +484,7 @@ class ExtendCustomerPermitTestCase(TestCase):
         ext_request = permit.get_pending_extension_requests().first()
         self.assertEqual(ext_request.month_count, 3)
 
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_invalid(self):
         now = tz.now()
         permit = ParkingPermitFactory(
