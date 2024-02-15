@@ -10,6 +10,25 @@ class TestPermitExtensionRequest(TestCase):
     def setUp(self):
         self.ext_request = ParkingPermitExtensionRequestFactory(month_count=3)
 
+    def test_pending(self):
+        ParkingPermitExtensionRequestFactory(
+            status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+        assert ParkingPermitExtensionRequest.objects.pending().count() == 1
+
+    def test_cancel_pending(self):
+        approved = ParkingPermitExtensionRequestFactory(
+            status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+        ParkingPermitExtensionRequest.objects.cancel_pending()
+
+        self.ext_request.refresh_from_db()
+
+        self.assertTrue(self.ext_request.is_cancelled())
+
+        approved.refresh_from_db()
+        self.assertFalse(approved.is_cancelled())
+
     def test_is_pending(self):
         self.assertTrue(self.ext_request.is_pending())
         self.assertTrue(ParkingPermitExtensionRequest.objects.pending().exists())

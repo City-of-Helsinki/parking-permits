@@ -11,6 +11,12 @@ class ParkingPermitExtensionRequestQuerySet(models.QuerySet):
     def pending(self):
         return self.filter(status=self.model.Status.PENDING)
 
+    def cancel_pending(self):
+        """Cancels any PENDING requests in queryset."""
+        return self.pending().update(
+            status=self.model.Status.CANCELLED, status_changed_at=timezone.now()
+        )
+
 
 class ParkingPermitExtensionRequest(TimestampedModelMixin):
     """Manages state for handling permit extension requests.

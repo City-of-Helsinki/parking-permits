@@ -24,6 +24,7 @@ from ..utils import (
     calc_net_price,
     calc_vat_price,
     diff_months_ceil,
+    diff_months_floor,
     end_date_to_datetime,
     flatten_dict,
     get_end_time,
@@ -59,6 +60,9 @@ class ParkingPermitStatus(models.TextChoices):
     VALID = "VALID", _("Valid")
     CANCELLED = "CANCELLED", _("Cancelled")
     CLOSED = "CLOSED", _("Closed")
+
+
+MAX_MONTHS = 12
 
 
 class ParkingPermitQuerySet(models.QuerySet):
@@ -439,6 +443,34 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return not any(
             address and address.zone == self.parking_zone for address in addresses
         )
+
+    @property
+    def max_extension_month_count(self):
+        """Returns the maximum number of months you can extend the permit.
+
+        For a primary vehicle, this is up to 12.
+
+        For a secondary vehicle, this is the end date of the primary vehicle,
+        not counting any value less than one month (if month count less than 1,
+        then it should not be logically possible to extend the permit).
+        """
+        if self.primary_vehicle:
+            return MAX_MONTHS
+
+        if (
+            primary_permit := self._default_manager.filter(
+                status=ParkingPermitStatus.VALID,
+                customer=self.customer,
+            )
+            .exclude(pk=self.pk)
+            .first()
+        ):
+            return diff_months_floor(
+                timezone.localtime(self.current_period_end_time),
+                timezone.localtime(primary_permit.end_date),
+            )
+
+        return MAX_MONTHS
 
     @property
     def can_extend_permit(self):

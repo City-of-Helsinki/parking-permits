@@ -526,9 +526,7 @@ class PaymentView(APIView):
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
-            for ext_request in order.get_pending_permit_extension_requests():
-                ext_request.cancel()
-
+            order.permit_extension_requests.cancel_pending()
             return bad_request_response(f"Unknown payment event type {event_type}")
 
 
@@ -572,6 +570,14 @@ class OrderView(APIView):
                     logger.info(
                         f"{order} is cancelled and order permits are set to CANCELLED-status"
                     )
+                elif order.permit_extension_requests.cancel_pending():
+                    logger.info(f"Cancelling order: {talpa_order_id}")
+                    order.status = OrderStatus.CANCELLED
+                    order.save()
+                    logger.info(
+                        f"{order} is cancelled and permit extensions are set to CANCELLED-status"
+                    )
+
             except Order.DoesNotExist:
                 return not_found_response(f"Order {talpa_order_id} does not exist")
             return Response({"message": "Order cancel event processed"}, status=200)
