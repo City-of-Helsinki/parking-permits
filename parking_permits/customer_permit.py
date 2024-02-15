@@ -97,6 +97,9 @@ class CustomerPermit:
         if not permit.can_extend_permit:
             raise PermitCanNotBeExtended(_("You cannot extend this permit."))
 
+        if month_count > permit.max_extension_month_count:
+            raise PermitCanNotBeExtended(_("Month count exceeds maximum"))
+
         order = Order.objects.create_for_extended_permit(
             permit,
             month_count,

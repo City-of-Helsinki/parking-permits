@@ -96,6 +96,7 @@ type PermitNode {
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
   canExtendPermit: Boolean
+  maxExtensionMonthCount: Int
   hasPendingExtensionRequest: Boolean
   hasRefund: Boolean
   vehicleChanged: Boolean

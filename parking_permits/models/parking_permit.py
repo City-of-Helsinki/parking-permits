@@ -458,16 +458,20 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return MAX_MONTHS
 
         if (
-            primary_permit := self._default_manager.filter(
+            primary_permit := self._meta.default_manager.filter(
                 status=ParkingPermitStatus.VALID,
                 customer=self.customer,
+                primary_vehicle=True,
             )
             .exclude(pk=self.pk)
             .first()
         ):
-            return diff_months_floor(
-                timezone.localtime(self.current_period_end_time),
-                timezone.localtime(primary_permit.end_date),
+            return max(
+                diff_months_floor(
+                    timezone.localtime(self.current_period_end_time),
+                    timezone.localtime(primary_permit.end_time),
+                ),
+                0,
             )
 
         return MAX_MONTHS
