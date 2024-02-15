@@ -1057,6 +1057,38 @@ class OrderViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 404)
 
+    def test_order_cancellation_of_permit_extension(self):
+        talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        order = OrderFactory(
+            talpa_order_id=talpa_existing_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2024-02-08T10:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+
+        ext_request = ParkingPermitExtensionRequestFactory(
+            permit__customer=customer, order=order
+        )
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "ORDER_CANCELLED",
+            "orderId": talpa_existing_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        # Order and permit statuses should change to cancelled
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_cancelled())
+
     def test_order_cancellation(self):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
