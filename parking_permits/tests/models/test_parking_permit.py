@@ -1011,8 +1011,10 @@ class TestParkingPermit(TestCase):
 
         self.assertTrue(permit.can_extend_permit)
 
-    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
-    def test_extend_permit(self):
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
+    @patch("requests.patch", return_value=MockResponse(200))
+    @patch("requests.post", return_value=MockResponse(201))
+    def test_extend_permit(self, mock_post, mock_patch):
         now = timezone.now()
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
@@ -1023,6 +1025,32 @@ class TestParkingPermit(TestCase):
         )
 
         permit.extend_permit(3)
+
+        mock_patch.assert_called_once()
+        mock_post.assert_not_called()
+
+        permit.refresh_from_db()
+
+        self.assertEqual(permit.month_count, 4)
+        self.assertEqual(permit.end_time.date(), (now + timedelta(days=120)).date())
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
+    @patch("requests.patch", return_value=MockResponse(404))
+    @patch("requests.post", return_value=MockResponse(201))
+    def test_extend_permit_create_new_parkkihubi_permit(self, mock_post, mock_patch):
+        now = timezone.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        permit.extend_permit(3)
+
+        mock_patch.assert_called_once()
+        mock_post.assert_called_once()
 
         permit.refresh_from_db()
 

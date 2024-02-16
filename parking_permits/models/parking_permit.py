@@ -749,9 +749,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def extend_permit(self, additional_months):
         """Extends the end time of the permit by given months."""
+
         self.month_count += additional_months
         self.end_time = get_end_time(self.start_time, self.month_count)
         self.save()
+
+        self.update_or_create_parkkihubi_permit()
 
     def cancel_extension_requests(self):
         for ext_request in self.get_pending_extension_requests():
@@ -838,6 +841,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             permit_start_date = timezone.localdate(self.start_time)
             permit_end_date = timezone.localdate(self.end_time)
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
+
+    def update_or_create_parkkihubi_permit(self):
+        """Attempts to update Parkkihubi with permit details, if
+        not found should create a new permit there."""
+        try:
+            self.update_parkkihubi_permit()
+        except ParkkihubiPermitError:
+            self.create_parkkihubi_permit()
 
     def update_parkkihubi_permit(self):
         if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
