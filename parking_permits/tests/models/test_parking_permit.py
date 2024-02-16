@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from dateutil.relativedelta import relativedelta
 from django.test import TestCase, override_settings
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
@@ -13,7 +14,7 @@ from parking_permits.exceptions import (
     PermitCanNotBeEnded,
     ProductCatalogError,
 )
-from parking_permits.models import Order
+from parking_permits.models import Order, ParkingPermitExtensionRequest
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
@@ -22,6 +23,9 @@ from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.permit_extension_request import (
+    ParkingPermitExtensionRequestFactory,
+)
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
@@ -232,6 +236,31 @@ class ParkingZoneTestCase(TestCase):
             permit.current_period_end_time,
             timezone.make_aware(datetime(2022, 2, 19, 23, 59, 59, 999999)),
         )
+
+    @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
+    def test_should_cancel_all_extensions_on_end_permit(self):
+        start_time = timezone.make_aware(datetime(2021, 11, 15))
+        end_time = get_end_time(start_time, 6)
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+        approved = ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+        pending = ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.PENDING
+        )
+
+        permit.end_permit(ParkingPermitEndType.IMMEDIATELY)
+
+        approved.refresh_from_db()
+        assert approved.is_approved()
+
+        pending.refresh_from_db()
+        assert pending.is_cancelled()
 
     @freeze_time(timezone.make_aware(datetime(2021, 11, 20, 12, 10, 50)))
     def test_should_set_end_time_to_now_if_end_permit_immediately(self):
@@ -732,6 +761,12 @@ class TestParkingPermit(TestCase):
         self.permit.orders.add(item.order)
         self.assertEqual(self.permit.checkout_url, item.order.talpa_checkout_url)
 
+    def test_checkout_url_if_latest_order_and_pending_request(self):
+        ext_request = ParkingPermitExtensionRequestFactory(permit=self.permit)
+        item = OrderItemFactory(permit=self.permit)
+        self.permit.orders.add(item.order)
+        self.assertEqual(self.permit.checkout_url, ext_request.order.talpa_checkout_url)
+
     def test_can_be_refunded_fixed(self):
         permit = ParkingPermitFactory(
             contract_type=ContractType.FIXED_PERIOD,
@@ -787,3 +822,209 @@ class TestParkingPermit(TestCase):
             self.permit.create_parkkihubi_permit()
             mock_post.assert_called_once()
             self.assertEqual(mock_post.return_value.status_code, 400)
+
+    @freeze_time("2024-02-05")
+    def test_get_price_list_for_extended_permit(self):
+        now = timezone.now()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=7),
+            month_count=1,
+        )
+
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=60)).date(),
+            unit_price=Decimal("30.00"),
+        )
+
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=61)).date(),
+            end_date=(now + timedelta(days=365)).date(),
+            unit_price=Decimal("40.00"),
+        )
+
+        price_list = list(permit.get_price_list_for_extended_permit(3))
+
+        self.assertEqual(len(price_list), 2)
+
+        # 2x first product
+        self.assertEqual(price_list[0]["start_date"], date(2024, 3, 5))
+        self.assertEqual(price_list[0]["end_date"], date(2024, 5, 4))
+        self.assertEqual(price_list[0]["month_count"], 2)
+        self.assertEqual(price_list[0]["price"], Decimal("60.00"))
+        self.assertEqual(price_list[0]["unit_price"], Decimal("30.00"))
+        self.assertEqual(price_list[0]["net_price"], "48.39")
+        self.assertEqual(price_list[0]["vat_price"], "11.61")
+
+        # 1x second product
+        self.assertEqual(price_list[1]["start_date"], date(2024, 5, 5))
+        self.assertEqual(price_list[1]["end_date"], date(2024, 6, 4))
+        self.assertEqual(price_list[1]["month_count"], 1)
+        self.assertEqual(price_list[1]["price"], Decimal("40.00"))
+        self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
+        self.assertEqual(price_list[1]["net_price"], "32.26")
+        self.assertEqual(price_list[1]["vat_price"], "7.74")
+
+    def test_max_extension_month_count_for_primary_vehicle(self):
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+        )
+        self.assertEqual(permit.max_extension_month_count, 12)
+
+    def test_max_extension_month_count_for_secondary_vehicle(self):
+        now = timezone.now()
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            end_time=now + relativedelta(months=4, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 2)
+
+    def test_max_extension_month_count_for_secondary_vehicle_zero(self):
+        now = timezone.now()
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 0)
+
+    def test_max_extension_month_count_for_secondary_vehicle_one_month(self):
+        now = timezone.now()
+        start_time = now - relativedelta(days=3)
+        primary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=start_time + relativedelta(months=3, days=-1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            end_time=now + relativedelta(months=1, days=-1),
+        )
+        self.assertEqual(secondary.max_extension_month_count, 1)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_not_valid(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.CLOSED,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_open_ended(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.OPEN_ENDED,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_end_date_none(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=None,
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_end_date_too_late(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=30),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_existing_pending_request(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        ParkingPermitExtensionRequestFactory(permit=permit)
+
+        self.assertFalse(permit.can_extend_permit)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=False)
+    def test_can_extend_permit_feature_disabled(self):
+        self.assertFalse(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_no_other_requests(self):
+        self.assertTrue(
+            ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                end_time=timezone.now() + timedelta(days=9),
+            ).can_extend_permit,
+        )
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_existing_other_request(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        ParkingPermitExtensionRequestFactory(
+            permit=permit, status=ParkingPermitExtensionRequest.Status.APPROVED
+        )
+
+        self.assertTrue(permit.can_extend_permit)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_extend_permit(self):
+        now = timezone.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        permit.extend_permit(3)
+
+        permit.refresh_from_db()
+
+        self.assertEqual(permit.month_count, 4)
+        self.assertEqual(permit.end_time.date(), (now + timedelta(days=120)).date())

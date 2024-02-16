@@ -232,14 +232,12 @@ class TalpaResolveProduct(APIView):
             order_item = permit.order_items.first()
             if order_item:
                 order_item_response_data.get("meta").append(
-                    snake_to_camel_dict(
-                        {
-                            "key": "sourceOrderItemId",
-                            "value": str(order_item.id),
-                            "visible_in_checkout": False,
-                            "ordinal": 0,
-                        }
-                    ),
+                    {
+                        "key": "sourceOrderItemId",
+                        "value": str(order_item.id),
+                        "visibleInCheckout": False,
+                        "ordinal": 0,
+                    }
                 )
                 TalpaOrderManager.append_detail_meta(
                     order_item_response_data,
@@ -248,24 +246,20 @@ class TalpaResolveProduct(APIView):
                     + relativedelta(months=1),
                 )
 
-            response = snake_to_camel_dict(
-                {
-                    "subscription_id": subscription_id,
-                    "user_id": user_id,
-                    "product_id": str(product.talpa_product_id),
-                    "product_name": product.name,
-                    "product_label": permit.vehicle.description,
-                    "order_item_metas": order_item_response_data.get("meta"),
-                }
-            )
+            response = {
+                "subscriptionId": subscription_id,
+                "userId": user_id,
+                "productId": str(product.talpa_product_id),
+                "productName": product.name,
+                "productLabel": permit.vehicle.description,
+                "orderItemMetas": order_item_response_data.get("meta"),
+            }
         except Exception as e:
-            response = snake_to_camel_dict(
-                {
-                    "error_message": str(e),
-                    "subscription_id": subscription_id,
-                    "user_id": user_id,
-                }
-            )
+            response = {
+                "errorMessage": str(e),
+                "subscriptionId": subscription_id,
+                "userId": user_id,
+            }
         logger.info(f"Resolve product response = {json.dumps(response, default=str)}")
         return Response(response)
 
@@ -445,18 +439,26 @@ class PaymentView(APIView):
         event_type = request.data.get("eventType")
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
+        try:
+            order = Order.objects.get(talpa_order_id=talpa_order_id)
+        except Order.DoesNotExist:
+            return not_found_response(f"Order {talpa_order_id} does not exist")
+
         if event_type == "PAYMENT_PAID":
             logger.info(
                 f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
             )
-            try:
-                order = Order.objects.get(talpa_order_id=talpa_order_id)
-            except Order.DoesNotExist:
-                return not_found_response(f"Order {talpa_order_id} does not exist")
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
             order.paid_time = tz.now()
             order.save()
+
+            for (
+                ext_request
+            ) in order.get_pending_permit_extension_requests().select_related("permit"):
+                ext_request.approve()
+                send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+
             for permit in order.permits.all():
                 permit.status = ParkingPermitStatus.VALID
 
@@ -514,9 +516,11 @@ class PaymentView(APIView):
                     permit.update_parkkihubi_permit()
                 except ParkkihubiPermitError:
                     permit.create_parkkihubi_permit()
+
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
+            order.permit_extension_requests.cancel_pending()
             return bad_request_response(f"Unknown payment event type {event_type}")
 
 
@@ -560,6 +564,14 @@ class OrderView(APIView):
                     logger.info(
                         f"{order} is cancelled and order permits are set to CANCELLED-status"
                     )
+                elif order.permit_extension_requests.cancel_pending():
+                    logger.info(f"Cancelling order: {talpa_order_id}")
+                    order.status = OrderStatus.CANCELLED
+                    order.save()
+                    logger.info(
+                        f"{order} is cancelled and permit extensions are set to CANCELLED-status"
+                    )
+
             except Order.DoesNotExist:
                 return not_found_response(f"Order {talpa_order_id} does not exist")
             return Response({"message": "Order cancel event processed"}, status=200)

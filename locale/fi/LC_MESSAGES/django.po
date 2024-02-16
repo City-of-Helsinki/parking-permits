@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-11 09:55+0200\n"
+"POT-Creation-Date: 2024-02-15 11:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -171,6 +171,12 @@ msgstr "Aloitusaika ei voi olla menneisyydessä"
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr ""
 "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
+
+msgid "You cannot extend this permit."
+msgstr "Et voi ostaa lisäaikaa tälle pysäköintitunnukselle."
+
+msgid "Month count exceeds maximum"
+msgstr "Kuukausimäärä ylittää sallitun määrän"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
@@ -719,6 +725,12 @@ msgstr "Alue (2D)"
 msgid "Parking zones"
 msgstr "Pysäköintialueet"
 
+msgid "Pending"
+msgstr "Avoin"
+
+msgid "Approved"
+msgstr "Hyväksytty"
+
 msgid "Resident"
 msgstr "Asukas"
 
@@ -917,6 +929,9 @@ msgstr "Osoitetta ei löytynyt"
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 
+msgid "Permit not found"
+msgstr "Pysäköintitunnusta ei löytynyt"
+
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
 
@@ -931,6 +946,9 @@ msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
 msgid "Your order will end"
 msgstr "Tilauksesi päättyy"
+
+msgid "Your parking permit has been extended"
+msgstr "Pysäköintitunnuksesi voimassaoloaikaa on pidennetty"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
@@ -983,8 +1001,9 @@ msgstr "Tietojen haku Traficomilta epäonnistui"
 msgid "pcm"
 msgstr "kk"
 
-msgid "Parking permit type"
-msgstr "Pysäköintitunnuksen tyyppi"
+#, python-format
+msgid "Fixed period, extension %(month)d months"
+msgstr "Määräaikainen, jatkoaika %(month)d kk"
 
 #, python-format
 msgid "Fixed period %(month)d months"
@@ -992,6 +1011,9 @@ msgstr "Määräaikainen %(month)d kk"
 
 msgid "Open ended 1 month"
 msgstr "Jatkuvaveloitteinen 1 kk"
+
+msgid "Parking permit type"
+msgstr "Pysäköintitunnuksen tyyppi"
 
 msgid "Parking permit start date*"
 msgstr "Pysäköintitunnuksen alkamispäivä*"
@@ -1095,7 +1117,8 @@ msgid "Dear partner!"
 msgstr "Hyvä yhteistyökumppani!"
 
 msgid "A low-emission vehicle parking benefit has been added to the vehicle."
-msgstr "Ohessa ajoneuvo, jolle on myönnetty vähäpäästöisen auton pysäköintietuus."
+msgstr ""
+"Ohessa ajoneuvo, jolle on myönnetty vähäpäästöisen auton pysäköintietuus."
 
 msgid "With kind regards"
 msgstr "Ystävällisin terveisin"
@@ -1111,4 +1134,5 @@ msgstr "Ajoneuvolta on poistettu oikeus alennukseen"
 
 msgid ""
 "A low-emission vehicle parking benefit has been removed from the vehicle."
-msgstr "Ohessa ajoneuvo, jolta on poistettu vähäpäästöisen auton pysäköintietuus."
+msgstr ""
+"Ohessa ajoneuvo, jolta on poistettu vähäpäästöisen auton pysäköintietuus."

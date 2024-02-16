@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from datetime import timezone as dt_tz
 
 from dateutil.relativedelta import relativedelta
@@ -14,6 +14,7 @@ from parking_permits.exceptions import (
     InvalidUserAddress,
     NonDraftPermitUpdateError,
     PermitCanNotBeDeleted,
+    PermitCanNotBeExtended,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -152,10 +153,12 @@ class CreateCustomerPermitTestCase(TestCase):
         self.customer_c = CustomerFactory(
             first_name="Firstname C", last_name="Lastname 3"
         )
+
         self.customer_a_zone = self.customer_a.primary_address.zone
         self.zone = ParkingZoneFactory()
         power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
         self.vehicle_a = VehicleFactory(power_type=power_type)
+        self.vehicle_b = VehicleFactory(power_type=power_type)
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
@@ -178,10 +181,12 @@ class CreateCustomerPermitTestCase(TestCase):
         )
         self.customer_c_valid_primary_permit = ParkingPermitFactory(
             customer=self.customer_c,
+            address=self.customer_c.primary_address,
             status=VALID,
             primary_vehicle=True,
             contract_type=FIXED_PERIOD,
             parking_zone=self.customer_c.primary_address.zone,
+            end_time=date(2022, 3, 6),
             vehicle=self.vehicle_a,
         )
 
@@ -189,6 +194,30 @@ class CreateCustomerPermitTestCase(TestCase):
         address = AddressFactory()
         with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
             CustomerPermit(self.customer_a.id).create(address.id, "ABC-123")
+
+    @override_settings(TRAFICOM_MOCK=True, TRAFICOM_CHECK=False)
+    def test_primary_permit(self):
+        permit = CustomerPermit(self.customer_b.id).create(
+            self.customer_b.primary_address.id,
+            self.vehicle_a.registration_number,
+        )
+
+        self.assertTrue(permit.primary_vehicle)
+        self.assertEqual(permit.customer, self.customer_b)
+        self.assertEqual(permit.vehicle, self.vehicle_a)
+        self.assertEqual(permit.end_time.date(), date(2022, 2, 6))
+
+    @override_settings(TRAFICOM_MOCK=True, TRAFICOM_CHECK=False)
+    def test_secondary_permit(self):
+        permit = CustomerPermit(self.customer_c.id).create(
+            self.customer_c.primary_address.id,
+            self.vehicle_b.registration_number,
+        )
+
+        self.assertFalse(permit.primary_vehicle)
+        self.assertEqual(permit.customer, self.customer_c)
+        self.assertEqual(permit.vehicle, self.vehicle_b)
+        self.assertEqual(permit.end_time.date(), date(2022, 2, 6))
 
 
 class DeleteCustomerPermitTestCase(TestCase):
@@ -458,3 +487,67 @@ class UpdateCustomerPermitTestCase(TestCase):
         CustomerPermit(customer.id).update(data, permit_id=permit_id)
         secondary.refresh_from_db()
         self.assertEqual(secondary.month_count, 5)
+
+
+class ExtendCustomerPermitTestCase(TestCase):
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_ok(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        result = CustomerPermit(permit.customer_id).create_permit_extension_request(
+            permit.pk, 3
+        )
+        self.assertTrue(result)
+        ext_request = permit.get_pending_extension_requests().first()
+        self.assertEqual(ext_request.month_count, 3)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_exceeds_max_month_count(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        self.assertRaises(
+            PermitCanNotBeExtended,
+            CustomerPermit(permit.customer_id).create_permit_extension_request,
+            permit.pk,
+            13,
+        )
+        self.assertFalse(permit.get_pending_extension_requests().exists())
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_invalid(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+        )
+        self.assertRaises(
+            PermitCanNotBeExtended,
+            CustomerPermit(permit.customer_id).create_permit_extension_request,
+            permit.pk,
+            3,
+        )
+        self.assertFalse(permit.get_pending_extension_requests().exists())

@@ -256,6 +256,23 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     return permit_price_changes
 
 
+@query.field("getExtendedPriceList")
+@is_authenticated
+@convert_kwargs_to_snake_case
+def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
+    """Returns the updated price list for additional months on a fixed period permit."""
+
+    customer = info.context["request"].user.customer
+    try:
+        permit = (
+            ParkingPermit.objects.active().filter(customer=customer).get(pk=permit_id)
+        )
+    except ParkingPermit.DoesNotExist:
+        raise ObjectNotFound(_("Permit not found"))
+
+    return permit.get_price_list_for_extended_permit(month_count)
+
+
 @mutation.field("deleteParkingPermit")
 @is_authenticated
 @convert_kwargs_to_snake_case
@@ -288,6 +305,34 @@ def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = N
 def resolve_create_parking_permit(_obj, info, address_id, registration):
     request = info.context["request"]
     return CustomerPermit(request.user.customer.id).create(address_id, registration)
+
+
+@mutation.field("extendParkingPermit")
+@is_authenticated
+@convert_kwargs_to_snake_case
+@audit_logger.autolog(
+    AuditMsg(
+        "User extended parking permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    autotarget=audit.TARGET_RETURN,
+)
+@transaction.atomic
+def resolve_extend_parking_permit(
+    _obj,
+    info,
+    permit_id,
+    month_count,
+    audit_msg: AuditMsg = None,
+):
+    ext_request = CustomerPermit(
+        info.context["request"].user.customer.id
+    ).create_permit_extension_request(
+        permit_id,
+        month_count,
+    )
+    checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order, ext_request)
+    return {"checkout_url": checkout_url}
 
 
 @mutation.field("updateParkingPermit")

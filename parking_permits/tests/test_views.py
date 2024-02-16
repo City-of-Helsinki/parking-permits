@@ -9,7 +9,7 @@ import requests_mock
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.test import override_settings
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone as tz
 from freezegun import freeze_time
 from helusers.settings import api_token_auth_settings
@@ -43,6 +43,9 @@ from parking_permits.tests.factories.order import (
     SubscriptionFactory,
 )
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.permit_extension_request import (
+    ParkingPermitExtensionRequestFactory,
+)
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
@@ -50,7 +53,7 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
-from parking_permits.utils import get_meta_value
+from parking_permits.utils import get_meta_item, get_meta_value
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
@@ -92,7 +95,7 @@ def get_validated_subscription_data(
                 "subscriptionId": talpa_subscription_id,
                 "key": "permitId",
                 "value": permit_id,
-                "visibleInCheckout": "false",
+                "visibleInCheckout": False,
             }
         ],
     }
@@ -100,24 +103,47 @@ def get_validated_subscription_data(
 
 class PaymentViewTestCase(APITestCase):
     talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+    url = reverse_lazy("parking_permits:payment-notify")
+
+    def test_should_extend_permit_on_successful_payment(self):
+        ext_request = ParkingPermitExtensionRequestFactory(
+            order__talpa_order_id=self.talpa_order_id
+        )
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_approved())
+
+    def test_should_not_extend_permit_on_unsuccessful_payment(self):
+        ext_request = ParkingPermitExtensionRequestFactory(
+            order__talpa_order_id=self.talpa_order_id
+        )
+        data = {"eventType": "PAYMENT_NOT_PAID", "orderId": self.talpa_order_id}
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 400)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_cancelled())
 
     def test_payment_view_should_return_bad_request_if_talpa_order_id_missing(self):
-        url = reverse("parking_permits:payment-notify")
         data = {
             "eventType": "PAYMENT_PAID",
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 400)
 
     def test_payment_view_should_return_not_found_if_talpa_order_does_not_exist(
         self,
     ):
-        url = reverse("parking_permits:payment-notify")
         data = {
             "eventType": "PAYMENT_PAID",
             "orderId": self.talpa_order_id,
         }
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 404)
 
     @override_settings(DEBUG=True)
@@ -128,9 +154,8 @@ class PaymentViewTestCase(APITestCase):
             talpa_order_id=self.talpa_order_id, status=OrderStatus.DRAFT
         )
         order.permits.add(permit_1, permit_2)
-        url = reverse("parking_permits:payment-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
         permit_1.refresh_from_db()
@@ -162,9 +187,8 @@ class PaymentViewTestCase(APITestCase):
             type=OrderType.SUBSCRIPTION_RENEWED,
         )
         order.permits.add(permit)
-        url = reverse("parking_permits:payment-notify")
         data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
-        response = self.client.post(url, data)
+        response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         order.refresh_from_db()
         permit.refresh_from_db()
@@ -276,7 +300,7 @@ class BaseResolveEndpointTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -532,6 +556,8 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
             permit.end_time + relativedelta(months=1)
         ).strftime(TIME_FORMAT)
         self.assertEqual(permit_end_time, fixed_end_time)
+        permit_id_meta = get_meta_item(order_item_metas, "permitId")
+        self.assertEqual(permit_id_meta.get("visibleInCheckout"), False)
 
     def test_resolve_product_view_after_vehicle_change(self):
         unit_price = Decimal(60)
@@ -747,7 +773,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit_id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -811,7 +837,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -935,7 +961,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitType",
                         "value": "Määräaikainen 1 kk",
                         "label": "Pysäköintitunnuksen kesto",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "1",
                     },
                     {
@@ -945,7 +971,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "endDate",
                         "value": "11.10.2023 23:59",
                         "label": "Pysäköintitunnuksen päättymispäivä",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "3",
                     },
                     {
@@ -955,7 +981,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "startDate",
                         "value": "11.09.2023",
                         "label": "Pysäköintitunnuksen alkamispäivä*",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "2",
                     },
                     {
@@ -966,7 +992,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "value": "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, "
                         + "kun maksusuoritus on hyväksytty.",
                         "label": "",
-                        "visibleInCheckout": "true",
+                        "visibleInCheckout": True,
                         "ordinal": "4",
                     },
                     {
@@ -976,7 +1002,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "sourceOrderItemId",
                         "value": "243",
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": "0",
                     },
                     {
@@ -986,7 +1012,7 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
                         "key": "permitId",
                         "value": permit.id,
                         "label": None,
-                        "visibleInCheckout": "false",
+                        "visibleInCheckout": False,
                         "ordinal": None,
                     },
                 ],
@@ -1030,6 +1056,38 @@ class OrderViewTestCase(APITestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 404)
+
+    def test_order_cancellation_of_permit_extension(self):
+        talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        order = OrderFactory(
+            talpa_order_id=talpa_existing_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2024-02-08T10:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+
+        ext_request = ParkingPermitExtensionRequestFactory(
+            permit__customer=customer, order=order
+        )
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "ORDER_CANCELLED",
+            "orderId": talpa_existing_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        # Order and permit statuses should change to cancelled
+        self.assertEqual(order.status, OrderStatus.CANCELLED)
+
+        ext_request.refresh_from_db()
+        self.assertTrue(ext_request.is_cancelled())
 
     def test_order_cancellation(self):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"

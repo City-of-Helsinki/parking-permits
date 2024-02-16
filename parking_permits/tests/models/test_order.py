@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 
 from django.test import TestCase
@@ -23,31 +23,67 @@ from parking_permits.tests.factories.vehicle import (
 from parking_permits.tests.factories.zone import ParkingZoneFactory
 from parking_permits.utils import get_end_time
 
-CURRENT_YEAR = date.today().year
-
 
 class TestOrderManager(TestCase):
     def setUp(self):
         self.zone = ParkingZoneFactory()
+        self.current_year = date.today().year
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
-            start_date=date(CURRENT_YEAR, 1, 1),
-            end_date=date(CURRENT_YEAR, 6, 30),
+            start_date=date(self.current_year, 1, 1),
+            end_date=date(self.current_year, 6, 30),
             unit_price=Decimal(30),
         )
         ProductFactory(
             zone=self.zone,
             type=ProductType.RESIDENT,
-            start_date=date(CURRENT_YEAR, 7, 1),
-            end_date=date(CURRENT_YEAR, 12, 31),
+            start_date=date(self.current_year, 7, 1),
+            end_date=date(self.current_year, 12, 31),
             unit_price=Decimal(50),
         )
         self.customer = CustomerFactory(zone=self.zone)
 
+    def test_get_price_list_for_extended_permit(self):
+        with freeze_time(date(self.current_year, 3, 5)):
+            now = timezone.now()
+
+            permit = ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                start_time=now,
+                end_time=now + timedelta(days=7),
+                month_count=1,
+                parking_zone=self.zone,
+                customer=self.customer,
+            )
+
+            order = Order.objects.create_for_extended_permit(permit, month_count=6)
+
+        items = order.order_items.all()
+
+        self.assertEqual(items.count(), 2)
+
+        # 3x first product
+        self.assertEqual(items[0].unit_price, Decimal("30"))
+        self.assertEqual(items[0].total_price, Decimal("90"))
+        self.assertEqual(items[0].quantity, 3)
+        self.assertEqual(items[0].start_time.date(), date(self.current_year, 4, 4))
+        self.assertEqual(items[0].end_time.date(), date(self.current_year, 7, 3))
+
+        # 3x second product
+        self.assertEqual(items[1].unit_price, Decimal("50"))
+        self.assertEqual(items[1].total_price, Decimal("150"))
+        self.assertEqual(items[1].quantity, 3)
+        self.assertEqual(items[1].start_time.date(), date(self.current_year, 7, 4))
+        self.assertEqual(items[1].end_time.date(), date(self.current_year, 10, 3))
+
+        # check total price
+        self.assertEqual(order.total_price, Decimal("240"))
+
     def test_create_for_customer_should_create_order_with_items(self):
-        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
-        end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
+        start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
+        end_time = get_end_time(start_time, 6)  # end at self.current_year-09-14 23:59
         permit = ParkingPermitFactory(
             parking_zone=self.zone,
             customer=self.customer,
@@ -68,7 +104,7 @@ class TestOrderManager(TestCase):
     def test_create_for_permits_should_create_order_items_with_start_end_date_for_open_ended_permits(
         self,
     ):
-        with freeze_time(date(CURRENT_YEAR, 3, 5)):
+        with freeze_time(date(self.current_year, 3, 5)):
             start_time = timezone.now()
             permit = ParkingPermitFactory(
                 parking_zone=self.zone,
@@ -91,8 +127,8 @@ class TestOrderManager(TestCase):
             )
 
     def test_create_renewable_order_should_create_renewal_order(self):
-        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
-        end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
+        start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
+        end_time = get_end_time(start_time, 6)  # end at self.current_year-09-14 23:59
 
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
@@ -131,7 +167,7 @@ class TestOrderManager(TestCase):
         permit.vehicle = low_emission_vehicle
         permit.save()
 
-        with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
+        with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
             new_order = Order.objects.create_renewal_order(self.customer)
             order_items = new_order.order_items.all().order_by("start_time")
             self.assertEqual(order_items.count(), 2)
@@ -143,8 +179,8 @@ class TestOrderManager(TestCase):
             self.assertEqual(order_items[1].quantity, 2)
 
     def test_create_renewable_order_should_raise_error_for_draft_permits(self):
-        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
-        end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
+        start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
+        end_time = get_end_time(start_time, 6)  # end at self.current_year-09-14 23:59
         permit = ParkingPermitFactory(
             parking_zone=self.zone,
             customer=self.customer,
@@ -155,12 +191,12 @@ class TestOrderManager(TestCase):
             month_count=6,
         )
         Order.objects.create_for_permits([permit])
-        with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
+        with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
             with self.assertRaises(OrderCreationFailed):
                 Order.objects.create_renewal_order(self.customer)
 
     def test_create_renewable_order_should_raise_error_for_open_ended_permits(self):
-        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
+        start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
         end_time = get_end_time(start_time, 6)  # end at 2022-09-14 23:59
         permit = ParkingPermitFactory(
             parking_zone=self.zone,
@@ -174,15 +210,15 @@ class TestOrderManager(TestCase):
         Order.objects.create_for_permits([permit])
         permit.status = ParkingPermitStatus.VALID
         permit.save()
-        with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
+        with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
             with self.assertRaises(OrderCreationFailed):
                 Order.objects.create_renewal_order(self.customer)
 
     def test_create_renewable_order_should_allow_open_ended_permits_vehicle_change(
         self,
     ):
-        start_time = timezone.make_aware(datetime(CURRENT_YEAR, 3, 15))
-        end_time = get_end_time(start_time, 6)  # end at CURRENT_YEAR-09-14 23:59
+        start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
+        end_time = get_end_time(start_time, 6)  # end at self.current_year-09-14 23:59
 
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
@@ -221,7 +257,7 @@ class TestOrderManager(TestCase):
         permit.vehicle = low_emission_vehicle
         permit.save()
 
-        with freeze_time(timezone.make_aware(datetime(CURRENT_YEAR, 5, 5))):
+        with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
             new_order = Order.objects.create_renewal_order(
                 self.customer,
                 order_type=OrderType.VEHICLE_CHANGED,

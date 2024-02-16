@@ -1,5 +1,7 @@
+import itertools
 import json
 import logging
+import operator
 from decimal import Decimal
 
 import requests
@@ -19,12 +21,15 @@ from helsinki_gdpr.models import SerializableMixin
 from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import (
+    calc_net_price,
     calc_vat_price,
     diff_months_ceil,
+    diff_months_floor,
     end_date_to_datetime,
     flatten_dict,
     get_end_time,
     get_permit_prices,
+    round_up,
 )
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
@@ -55,6 +60,9 @@ class ParkingPermitStatus(models.TextChoices):
     VALID = "VALID", _("Valid")
     CANCELLED = "CANCELLED", _("Cancelled")
     CLOSED = "CLOSED", _("Closed")
+
+
+MAX_MONTHS = 12
 
 
 class ParkingPermitQuerySet(models.QuerySet):
@@ -278,7 +286,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         Multiple orders can be created for the same permit
         when, for example, the vehicle or the address of
         the permit is changed.
+
+        If extension request order, returns that order instead
         """
+        if order := self.latest_extension_request_order:
+            return order
+
         return self.orders.latest("id") if self.orders.exists() else None
 
     @property
@@ -300,13 +313,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return None
 
     @property
+    def has_pending_extension_request(self):
+        return self.get_pending_extension_requests().exists()
+
+    @property
+    def latest_extension_request_order(self):
+        if ext_request := self.permit_extension_requests.select_related(
+            "order"
+        ).first():
+            return ext_request.order
+        return None
+
+    @property
     def latest_order_items(self):
         """Get latest order items for the permit"""
         return self.order_items.filter(order=self.latest_order)
 
     @property
     def latest_order_item(self):
-        return self.latest_order_items.first() or None
+        return self.latest_order_items.first()
 
     @property
     def permit_prices(self):
@@ -419,9 +444,145 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             address and address.zone == self.parking_zone for address in addresses
         )
 
+    @property
+    def max_extension_month_count(self):
+        """Returns the maximum number of months you can extend the permit.
+
+        For a primary vehicle, this is up to 12.
+
+        For a secondary vehicle, this is the end date of the primary vehicle,
+        not counting any value less than one month (if month count less than 1,
+        then it should not be logically possible to extend the permit).
+        """
+        if self.primary_vehicle:
+            return MAX_MONTHS
+
+        if (
+            primary_permit := self._meta.default_manager.filter(
+                status=ParkingPermitStatus.VALID,
+                customer=self.customer,
+                primary_vehicle=True,
+            )
+            .exclude(pk=self.pk)
+            .first()
+        ):
+            return max(
+                diff_months_floor(
+                    timezone.localtime(self.current_period_end_time),
+                    timezone.localtime(primary_permit.end_time),
+                ),
+                0,
+            )
+
+        return MAX_MONTHS
+
+    @property
+    def can_extend_permit(self):
+        """Checks if permit can be extended:
+        1. Must be a valid fixed period permit.
+        2. Cannot have any pending requests.
+        3. Must be within 14 days of end time.
+        """
+        if not settings.PERMIT_EXTENSIONS_ENABLED:
+            return False
+
+        if self.status != ParkingPermitStatus.VALID:
+            return False
+
+        if self.contract_type != ContractType.FIXED_PERIOD:
+            return False
+
+        if self.end_time is None or self.end_time > timezone.now() + relativedelta(
+            days=14
+        ):
+            return False
+
+        # do database op last
+        return not self.has_pending_extension_request
+
+    def get_pending_extension_requests(self):
+        return self.permit_extension_requests.pending()
+
     def current_period_end_time_with_fixed_months(self, months):
         end_time = get_end_time(self.start_time, months)
         return max(self.start_time, end_time)
+
+    def get_price_list_for_extended_permit(self, month_count):
+        """Returns price list when purchasing additional months on
+        a fixed-period permit.
+
+        Each item consists of:
+
+        "product": product instance
+        "start_date": start of period
+        "end_date": end of period
+        "vat": VAT rate
+        "price": gross price
+        "net_price": net price
+        "vat_price": VAT price
+        """
+        is_secondary = not self.primary_vehicle
+        is_low_emission = self.vehicle.is_low_emission
+
+        for product, grouper in itertools.groupby(
+            self.get_future_product_month_dates(month_count),
+            operator.itemgetter("product"),
+        ):
+            items = list(grouper)
+
+            start_date = min([item["start_date"] for item in items])
+            end_date = max([item["end_date"] for item in items])
+
+            price = product.get_modified_unit_price(is_low_emission, is_secondary)
+
+            month_count = len(items)
+            total_price = price * month_count
+
+            net_price = round_up(calc_net_price(total_price, product.vat))
+            vat_price = round_up(calc_vat_price(total_price, product.vat))
+
+            yield {
+                "product": product,
+                "month_count": month_count,
+                "vat": product.vat,
+                "start_date": start_date,
+                "end_date": end_date,
+                "price": total_price,
+                "unit_price": price,
+                "net_price": net_price,
+                "vat_price": vat_price,
+            }
+
+    def get_future_product_month_dates(self, month_count):
+        """Break down of future start/end times per month from the
+        next period start until the number of months."""
+        # these are unchanged
+        # price change affected date range and products
+
+        start_date = timezone.localdate(self.next_period_start_time)
+
+        end_date = timezone.localdate(
+            get_end_time(self.next_period_start_time, month_count)
+        )
+
+        products = (
+            self.parking_zone.products.for_resident()
+            .for_date_range(start_date, end_date)
+            .order_by("start_date")
+            .iterator()
+        )
+        # calculate the price change list in the affected date range
+        product = next(products, None)
+
+        while product and start_date < end_date:
+            yield {
+                "product": product,
+                "start_date": start_date,
+                "end_date": start_date + relativedelta(months=1, days=-1),
+            }
+            start_date += relativedelta(months=1)
+            if start_date > product.end_date:
+                product = next(products, None)
 
     def get_price_change_list(self, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
@@ -431,6 +592,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         Args:
             new_zone: new zone used in the permit
             is_low_emission: True if the new vehicle is a low emission one
+            month_count: number of additional months, if change in permit month count
+                (fixed period only)
 
         Returns:
             A list of price change information
@@ -580,7 +743,19 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
         ):
             self.status = ParkingPermitStatus.CLOSED
+
+        self.cancel_extension_requests()
         self.save()
+
+    def extend_permit(self, additional_months):
+        """Extends the end time of the permit by given months."""
+        self.month_count += additional_months
+        self.end_time = get_end_time(self.start_time, self.month_count)
+        self.save()
+
+    def cancel_extension_requests(self):
+        for ext_request in self.get_pending_extension_requests():
+            ext_request.cancel()
 
     def get_refund_amount_for_unused_items(self):
         total = Decimal(0)
@@ -644,13 +819,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             ],
         ]
 
+    def get_products_for_resident(self):
+        if self.next_parking_zone:
+            return self.next_parking_zone.products.for_resident()
+        return self.parking_zone.products.for_resident()
+
     def get_products_with_quantities(self):
         """Return a list of product and quantities for the permit"""
         # TODO: currently, company permit type is not available
-        if self.next_parking_zone:
-            qs = self.next_parking_zone.products.for_resident()
-        else:
-            qs = self.parking_zone.products.for_resident()
+        qs = self.get_products_for_resident()
 
         if self.is_open_ended:
             permit_start_date = timezone.localdate(self.start_time)

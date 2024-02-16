@@ -1,20 +1,28 @@
 import dataclasses
 import decimal
 import unittest
+from datetime import timedelta
 
 import pytest
+from django.test import override_settings
+from django.utils import timezone
 
-from parking_permits.models import Order, Refund
+from parking_permits.exceptions import PermitCanNotBeExtended
+from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
+from parking_permits.models.product import ProductType
 from parking_permits.resolvers import (
     resolve_change_address,
+    resolve_extend_parking_permit,
+    resolve_get_extended_permit_price_list,
     resolve_update_permit_vehicle,
 )
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
 from users.models import User
 
@@ -27,6 +35,27 @@ class Info:
 @dataclasses.dataclass
 class Auth:
     user: User
+
+
+def _mock_talpa():
+    return unittest.mock.patch(
+        "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
+        return_value="https://talpa.fi",
+    )
+
+
+def _mock_jwt(user):
+    return unittest.mock.patch(
+        "helusers.oidc.RequestJWTAuthentication.authenticate",
+        return_value=Auth(user=user),
+    )
+
+
+def _mock_price_change_list(price_change_list):
+    return unittest.mock.patch(
+        "parking_permits.models.ParkingPermit.get_price_change_list",
+        return_value=price_change_list,
+    )
 
 
 @pytest.mark.django_db()
@@ -57,18 +86,9 @@ def test_update_permit_vehicle_high_to_low_emission(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
+        _mock_price_change_list(price_change_list),
+        _mock_jwt(request.user),
+        _mock_talpa(),
     ):
         response = resolve_update_permit_vehicle(
             None, info, str(permit.pk), str(new_vehicle.pk)
@@ -115,18 +135,9 @@ def test_update_permit_vehicle_low_to_high_emission(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
     ):
         response = resolve_update_permit_vehicle(
             None, info, str(permit.pk), str(new_vehicle.pk)
@@ -170,18 +181,9 @@ def test_update_open_ended_permit_vehicle_high_to_low_emission(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
     ):
         response = resolve_update_permit_vehicle(
             None, info, str(permit.pk), str(new_vehicle.pk)
@@ -225,18 +227,9 @@ def test_update_permit_vehicle_high_to_high_emission(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
     ):
         response = resolve_update_permit_vehicle(
             None, info, str(permit.pk), str(new_vehicle.pk)
@@ -282,18 +275,9 @@ def test_resolve_change_address_change_to_parking_zone_with_higher_price(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
     ):
         response = resolve_change_address(None, info, str(address.pk))
 
@@ -325,18 +309,9 @@ def test_resolve_change_address_change_to_parking_zone_same_price(rf):
     info = Info(context={"request": request})
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=[],
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list([]),
+        _mock_talpa(),
     ):
         response = resolve_change_address(None, info, str(address.pk))
 
@@ -377,18 +352,9 @@ def test_resolve_change_address_change_to_parking_zone_with_refund(rf):
     ]
 
     with (
-        unittest.mock.patch(
-            "helusers.oidc.RequestJWTAuthentication.authenticate",
-            return_value=Auth(user=request.user),
-        ),
-        unittest.mock.patch(
-            "parking_permits.models.ParkingPermit.get_price_change_list",
-            return_value=price_change_list,
-        ),
-        unittest.mock.patch(
-            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
-            return_value="https://talpa.fi",
-        ),
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
     ):
         response = resolve_change_address(None, info, str(address.pk))
 
@@ -413,11 +379,103 @@ def test_resolve_change_address_no_change_to_parking_zone(rf):
 
     info = Info(context={"request": request})
 
-    with unittest.mock.patch(
-        "helusers.oidc.RequestJWTAuthentication.authenticate",
-        return_value=Auth(user=request.user),
-    ):
+    with _mock_jwt(request.user):
         response = resolve_change_address(None, info, str(address.pk))
 
     assert response["success"]
     assert Order.objects.count() == 0
+
+
+@pytest.mark.django_db()
+def test_resolve_get_extended_permit_price_list(rf):
+    request = rf.post("/")
+    customer = CustomerFactory()
+
+    now = timezone.now()
+    permit = ParkingPermitFactory(
+        customer=customer,
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
+        start_time=now,
+        end_time=now + timedelta(days=10),
+    )
+
+    ProductFactory(
+        zone=permit.parking_zone,
+        type=ProductType.RESIDENT,
+        start_date=(now - timedelta(days=360)).date(),
+        end_date=(now + timedelta(days=360)).date(),
+    )
+    request.user = customer.user
+
+    info = Info(context={"request": request})
+
+    with _mock_jwt(request.user):
+        response = resolve_get_extended_permit_price_list(None, info, str(permit.pk), 3)
+
+    assert len(list(response)) == 1
+
+
+@pytest.mark.django_db()
+@override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+def test_resolve_extend_parking_permit_ok(rf):
+    request = rf.post("/")
+    customer = CustomerFactory()
+
+    now = timezone.now()
+    permit = ParkingPermitFactory(
+        customer=customer,
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
+        start_time=now,
+        end_time=now + timedelta(days=10),
+    )
+
+    ProductFactory(
+        zone=permit.parking_zone,
+        type=ProductType.RESIDENT,
+        start_date=(now - timedelta(days=360)).date(),
+        end_date=(now + timedelta(days=360)).date(),
+    )
+    request.user = customer.user
+
+    info = Info(context={"request": request})
+
+    with (
+        _mock_jwt(request.user),
+        _mock_talpa(),
+    ):
+        response = resolve_extend_parking_permit(None, info, str(permit.pk), 3)
+
+    assert response["checkout_url"] == "https://talpa.fi"
+
+    assert ParkingPermitExtensionRequest.objects.count() == 1
+
+    ext_request = ParkingPermitExtensionRequest.objects.first()
+    assert ext_request.month_count == 3
+    assert ext_request.permit == permit
+
+
+@pytest.mark.django_db()
+def test_resolve_extend_parking_permit_invalid(rf):
+    request = rf.post("/")
+    customer = CustomerFactory()
+
+    now = timezone.now()
+    permit = ParkingPermitFactory(
+        customer=customer,
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
+        start_time=now,
+        end_time=now + timedelta(days=30),
+    )
+
+    request.user = customer.user
+
+    info = Info(context={"request": request})
+
+    with _mock_jwt(request.user):
+        with pytest.raises(PermitCanNotBeExtended):
+            resolve_extend_parking_permit(None, info, str(permit.pk), 3)
+
+    assert ParkingPermitExtensionRequest.objects.count() == 0

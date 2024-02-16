@@ -15,6 +15,7 @@ from .exceptions import (
     InvalidUserAddress,
     NonDraftPermitUpdateError,
     PermitCanNotBeDeleted,
+    PermitCanNotBeExtended,
     PermitLimitExceeded,
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
@@ -79,6 +80,37 @@ class CustomerPermit:
         self.customer = Customer.objects.get(id=customer_id)
         self.customer_permit_query = ParkingPermit.objects.filter(
             customer=self.customer, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
+        )
+
+    def create_permit_extension_request(
+        self,
+        permit_id,
+        month_count,
+        *,
+        payment_type=OrderPaymentType.ONLINE_PAYMENT,
+    ):
+        """Creates a Pending extension request.
+
+        Raises PermitCanNotBeExtended if extensions are not allowed for this permit.
+        """
+        permit, _primary_vehicle = self._get_permit(permit_id)
+        if not permit.can_extend_permit:
+            raise PermitCanNotBeExtended(_("You cannot extend this permit."))
+
+        if month_count > permit.max_extension_month_count:
+            raise PermitCanNotBeExtended(_("Month count exceeds maximum"))
+
+        order = Order.objects.create_for_extended_permit(
+            permit,
+            month_count,
+            status=OrderStatus.CONFIRMED,
+            type=OrderType.CREATED,
+            payment_type=payment_type,
+        )
+
+        return permit.permit_extension_requests.create(
+            order=order,
+            month_count=month_count,
         )
 
     def add_temporary_vehicle(self, permit_id, registration, start_time, end_time):
@@ -206,12 +238,12 @@ class CustomerPermit:
         if self._can_buy_permit_for_address(address.id):
             contract_type = OPEN_ENDED
             primary_vehicle = True
-            end_time = None
+            primary_end_time = None
             if self.customer_permit_query.count():
                 primary_permit = self.customer_permit_query.get(primary_vehicle=True)
                 contract_type = primary_permit.contract_type
                 primary_vehicle = not primary_permit.primary_vehicle
-                end_time = primary_permit.end_time
+                primary_end_time = primary_permit.end_time
 
             if settings.TRAFICOM_CHECK:
                 self.customer.fetch_driving_licence_detail()
@@ -236,8 +268,9 @@ class CustomerPermit:
                     )
 
             start_time = tz.now()
-            if not end_time:
-                end_time = get_end_time(start_time, 1)
+            end_time = get_end_time(start_time, 1)
+            if primary_end_time:
+                end_time = min(end_time, primary_end_time)
 
             address_apartment, address_apartment_sv = self._get_address_apartments(
                 address

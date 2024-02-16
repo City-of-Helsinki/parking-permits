@@ -95,6 +95,9 @@ type PermitNode {
   canBeRefunded: Boolean
   canEndImmediately: Boolean
   canEndAfterCurrentPeriod: Boolean
+  canExtendPermit: Boolean
+  maxExtensionMonthCount: Int
+  hasPendingExtensionRequest: Boolean
   hasRefund: Boolean
   vehicleChanged: Boolean
   zoneChanged: Boolean
@@ -118,10 +121,20 @@ type PermitPriceChangeResult {
   priceChanges: [PermitPriceChangeItem]!
 }
 
+type PermitExtendedPriceResult {
+  startDate: String!
+  endDate: String!
+  vat: Float!
+  price: Float!
+  netPrice: Float!
+  vatPrice: Float!
+}
+
 type Query {
   profile: CustomerNode!
   getPermits: [PermitNode]
   getUpdateAddressPriceChanges(addressId: ID!): [PermitPriceChangeResult]
+  getExtendedPriceList(permitId: ID!, monthCount: Int): [PermitExtendedPriceResult]
 }
 
 enum PermitEndType {
@@ -142,12 +155,17 @@ type ChangeVehicleResult {
   checkoutUrl: String
 }
 
+type ExtendParkingPermitResult {
+  checkoutUrl: String
+}
+
 type Mutation {
   createParkingPermit(addressId: ID!, registration: String!): PermitNode!
   createOrder: TalpaOrderNode!
   deleteParkingPermit(permitId: ID!): Boolean!
   endParkingPermit(permitIds: [String]!, endType: PermitEndType!, iban: String): Boolean
   updateParkingPermit(input: ParkingPermitInput!, permitId: ID): [PermitNode]!
+  extendParkingPermit(permitId: ID!, monthCount: Int): ExtendParkingPermitResult!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
   getVehicleInformation(registration: String!): VehicleNode!
   updatePermitVehicle(permitId: ID!, vehicleId: ID!, consentLowEmissionAccepted: Boolean, iban: String): ChangeVehicleResult!

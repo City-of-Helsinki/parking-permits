@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-11 09:55+0200\n"
+"POT-Creation-Date: 2024-02-15 11:37+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -167,6 +167,12 @@ msgstr "Starttiden kan inte ligga i det förflutna"
 
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
+
+msgid "You cannot extend this permit."
+msgstr "Du kan inte förlänga detta tillstånd."
+
+msgid "Month count exceeds maximum"
+msgstr "Antalet månader överstiger gränsen"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
@@ -716,6 +722,12 @@ msgstr "Zone (2D)"
 msgid "Parking zones"
 msgstr "Parkeringzon"
 
+msgid "Pending"
+msgstr "Öppen"
+
+msgid "Approved"
+msgstr "Godkänd"
+
 msgid "Resident"
 msgstr "Bosatt"
 
@@ -914,6 +926,9 @@ msgstr "Adressen hittades inte"
 msgid "No active permits for the customer"
 msgstr "Inga aktiva tillstånd för kunden"
 
+msgid "Permit not found"
+msgstr "Tillstånd hittades inte"
+
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
 
@@ -928,6 +943,9 @@ msgstr "Parkeringtillståndet informationen har uppdaterats"
 
 msgid "Your order will end"
 msgstr "Ditt parkeringstillstånd kommer att avslutas"
+
+msgid "Your parking permit has been extended"
+msgstr "Ditt parkeringstillstånd har förlängts"
 
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tillfälligt fordon kopplat till ditt tillstånd"
@@ -982,8 +1000,9 @@ msgstr "Datahämtning från Traficomilta misslyckades"
 msgid "pcm"
 msgstr "pm"
 
-msgid "Parking permit type"
-msgstr "Typ av tillstånd"
+#, python-format
+msgid "Fixed period, extension %(month)d months"
+msgstr "Temporär, förlängning %(month)d månad"
 
 #, python-format
 msgid "Fixed period %(month)d months"
@@ -991,6 +1010,9 @@ msgstr "Temporär %(month)d månad"
 
 msgid "Open ended 1 month"
 msgstr "Löpande debitering 1 månad"
+
+msgid "Parking permit type"
+msgstr "Typ av tillstånd"
 
 msgid "Parking permit start date*"
 msgstr "Tillståndet börjar gälla*"
@@ -1098,7 +1120,8 @@ msgid "Dear partner!"
 msgstr "Bra partner!"
 
 msgid "A low-emission vehicle parking benefit has been added to the vehicle."
-msgstr "En förmån för fordonsparkering med låga utsläpp har lagts till fordonet."
+msgstr ""
+"En förmån för fordonsparkering med låga utsläpp har lagts till fordonet."
 
 msgid "With kind regards"
 msgstr "Vänliga Hälsningar"
@@ -1114,4 +1137,6 @@ msgstr "Rätten till rabatt har tagits bort från fordonet."
 
 msgid ""
 "A low-emission vehicle parking benefit has been removed from the vehicle."
-msgstr "En förmån för fordonsparkering med låga utsläpp har tagits bort från fordonet."
+msgstr ""
+"En förmån för fordonsparkering med låga utsläpp har tagits bort från "
+"fordonet."

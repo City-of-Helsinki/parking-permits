@@ -15,7 +15,6 @@ from parking_permits.utils import (
     date_time_to_helsinki,
     format_local_time,
     round_up,
-    snake_to_camel_dict,
 )
 
 logger = logging.getLogger("db")
@@ -68,74 +67,74 @@ class TalpaOrderManager:
         return item
 
     @classmethod
-    def append_detail_meta(cls, item, permit, fixed_end_time=None):
+    def append_detail_meta(cls, item, permit, fixed_end_time=None, ext_request=None):
         start_time = tz.localtime(permit.start_time).strftime(DATE_FORMAT)
+        if ext_request:
+            permit_type = _("Fixed period, extension %(month)d months") % {
+                "month": ext_request.month_count
+            }
+        elif permit.is_fixed_period:
+            permit_type = _("Fixed period %(month)d months") % {
+                "month": permit.month_count
+            }
+        else:
+            permit_type = _("Open ended 1 month")
+
         item["meta"] += [
-            snake_to_camel_dict(
-                {
-                    "key": "permitId",
-                    "value": str(permit.id),
-                    "visible_in_checkout": False,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "permitType",
-                    "label": _("Parking permit type"),
-                    "value": _("Fixed period %(month)d months")
-                    % {"month": permit.month_count}
-                    if permit.is_fixed_period
-                    else _("Open ended 1 month"),
-                    "visible_in_checkout": True,
-                    "ordinal": 1,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "startDate",
-                    "label": _("Parking permit start date*"),
-                    "value": start_time,
-                    "visible_in_checkout": True,
-                    "ordinal": 2,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "terms",
-                    "label": "",
-                    "value": _(
-                        "* Parking permit is valid from the start date of your choice, "
-                        "once the payment has been accepted"
-                    ),
-                    "visible_in_checkout": True,
-                    "ordinal": 4,
-                }
-            ),
-            snake_to_camel_dict(
-                {
-                    "key": "copyright",
-                    "label": "",
-                    "value": _("Source: Transport register, Traficom"),
-                    "visible_in_checkout": True,
-                    "ordinal": 5,
-                }
-            ),
+            {
+                "key": "permitId",
+                "value": str(permit.id),
+                "visibleInCheckout": False,
+            },
+            {
+                "key": "permitType",
+                "label": _("Parking permit type"),
+                "value": permit_type,
+                "visibleInCheckout": True,
+                "ordinal": 1,
+            },
+            {
+                "key": "startDate",
+                "label": _("Parking permit start date*"),
+                "value": start_time,
+                "visibleInCheckout": True,
+                "ordinal": 2,
+            },
+            {
+                "key": "terms",
+                "label": "",
+                "value": _(
+                    "* Parking permit is valid from the start date of your choice, "
+                    "once the payment has been accepted"
+                ),
+                "visibleInCheckout": True,
+                "ordinal": 4,
+            },
+            {
+                "key": "copyright",
+                "label": "",
+                "value": _("Source: Transport register, Traficom"),
+                "visibleInCheckout": True,
+                "ordinal": 5,
+            },
         ]
-        permit_end_time = fixed_end_time or permit.end_time
+        if ext_request:
+            permit_end_time = ext_request.get_end_time()
+        else:
+            permit_end_time = fixed_end_time or permit.end_time
+
         if permit_end_time:
             end_time = tz.localtime(permit_end_time).strftime(TIME_FORMAT)
             item["meta"].append(
-                snake_to_camel_dict(
-                    {
-                        "key": "endDate",
-                        "label": _("Parking permit expiration date")
-                        if permit.is_fixed_period
-                        else _("Parking permit period expiration date"),
-                        "value": end_time,
-                        "visible_in_checkout": True,
-                        "ordinal": 3,
-                    }
-                )
+                {
+                    "key": "endDate",
+                    "label": _("Parking permit expiration date")
+                    if permit.is_fixed_period
+                    else _("Parking permit period expiration date"),
+                    "value": end_time,
+                    "visibleInCheckout": True,
+                    "ordinal": 3,
+                }
             )
         return item
 
@@ -148,7 +147,7 @@ class TalpaOrderManager:
         }
 
     @classmethod
-    def create_order_data(cls, order):
+    def create_order_data(cls, order, ext_request=None):
         items = []
         order_items = (
             order.order_items.all()
@@ -177,7 +176,11 @@ class TalpaOrderManager:
 
             # Append details of permit only to the last order item of permit.
             if len(order_items_of_single_permit) > 0:
-                cls.append_detail_meta(order_items_of_single_permit[-1], permit)
+                cls.append_detail_meta(
+                    order_items_of_single_permit[-1],
+                    permit,
+                    ext_request=ext_request,
+                )
                 items += order_items_of_single_permit
 
         customer = cls.create_customer_data(order.customer)
@@ -244,9 +247,9 @@ class TalpaOrderManager:
         order.save(update_fields=["talpa_last_valid_purchase_time", "payment_type"])
 
     @classmethod
-    def send_to_talpa(cls, order):
+    def send_to_talpa(cls, order, ext_request=None):
         cls.set_order_details(order)
-        order_data = cls.create_order_data(order)
+        order_data = cls.create_order_data(order, ext_request)
         order_data_raw = json.dumps(order_data, default=str)
         logger.info(f"Order data sent to talpa: {order_data_raw}")
         response = requests.post(cls.url, data=order_data_raw, headers=cls.headers)
