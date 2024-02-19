@@ -18,7 +18,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import (
     calc_net_price,
@@ -52,6 +51,12 @@ class ContractType(models.TextChoices):
 class ParkingPermitStartType(models.TextChoices):
     IMMEDIATELY = "IMMEDIATELY", _("Immediately")
     FROM = "FROM", _("From")
+
+
+class ParkingPermitEndType(models.TextChoices):
+    IMMEDIATELY = "IMMEDIATELY", _("Immediately")
+    AFTER_CURRENT_PERIOD = "AFTER_CURRENT_PERIOD", _("After current period")
+    PREVIOUS_DAY_END = "PREVIOUS_DAY_END", _("Previous day end")
 
 
 class ParkingPermitStatus(models.TextChoices):
@@ -157,6 +162,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         _("Start type"),
         max_length=16,
         choices=ParkingPermitStartType.choices,
+        default=ParkingPermitStartType.IMMEDIATELY,
+    )
+    end_type = models.CharField(
+        _("End type"),
+        max_length=32,
+        choices=ParkingPermitEndType.choices,
         default=ParkingPermitStartType.IMMEDIATELY,
     )
     month_count = models.IntegerField(_("Month count"), default=1)
@@ -707,6 +718,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return price_change_list
 
     def end_permit(self, end_type, force_end=False):
+        self.end_type = end_type
         if end_type == ParkingPermitEndType.PREVIOUS_DAY_END:
             vehicle_changed_date = self.vehicle_changed_date
             if vehicle_changed_date:
