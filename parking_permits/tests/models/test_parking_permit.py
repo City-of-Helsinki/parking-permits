@@ -8,7 +8,6 @@ from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 from freezegun import freeze_time
 
-from parking_permits.constants import ParkingPermitEndType
 from parking_permits.exceptions import (
     ParkkihubiPermitError,
     PermitCanNotBeEnded,
@@ -16,7 +15,11 @@ from parking_permits.exceptions import (
 )
 from parking_permits.models import Order, ParkingPermitExtensionRequest
 from parking_permits.models.order import OrderStatus
-from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermitEndType,
+    ParkingPermitStatus,
+)
 from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories import ParkingZoneFactory
