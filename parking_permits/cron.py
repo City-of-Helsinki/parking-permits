@@ -4,12 +4,14 @@ from dateutil.relativedelta import relativedelta
 from django.db.models import Q
 from django.utils import timezone as tz
 
-from parking_permits.constants import ParkingPermitEndType
 from parking_permits.customer_permit import CustomerPermit
 from parking_permits.exceptions import ParkkihubiPermitError
 from parking_permits.models import Customer, ParkingPermit
 from parking_permits.models.order import SubscriptionCancelReason
-from parking_permits.models.parking_permit import ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ParkingPermitEndType,
+    ParkingPermitStatus,
+)
 from parking_permits.services.mail import PermitEmailType, send_permit_email
 
 logger = logging.getLogger("django")

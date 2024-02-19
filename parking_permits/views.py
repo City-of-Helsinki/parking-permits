@@ -28,7 +28,7 @@ from rest_framework.views import APIView
 import audit_logger as audit
 from audit_logger import AuditMsg
 
-from .constants import Origin, ParkingPermitEndType
+from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
 from .exceptions import (
@@ -55,7 +55,11 @@ from .models.order import (
     SubscriptionStatus,
     SubscriptionValidator,
 )
-from .models.parking_permit import ParkingPermit, ParkingPermitStatus
+from .models.parking_permit import (
+    ParkingPermit,
+    ParkingPermitEndType,
+    ParkingPermitStatus,
+)
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
