@@ -523,19 +523,27 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
 
     def cancel(self, cancel_from_talpa=True):
         logger.info(f"Order cancel process started: {self.talpa_order_id}")
-        try:
-            OrderValidator.validate_order(self.talpa_order_id, self.customer.user.uuid)
-        except OrderValidationError as e:
-            logger.error(f"Order validation failed. Error = {e}")
-            return False
-        # Try to cancel order from Talpa as well
-        if cancel_from_talpa:
+        if (
+            self.talpa_order_id
+            and self.customer
+            and self.customer.user
+            and self.customer.user.uuid
+        ):
             try:
-                self._cancel_talpa_order()
-            except OrderCancelError:
-                logger.warning(
-                    "Talpa order cancelling failed. Continuing the cancel process.."
+                OrderValidator.validate_order(
+                    self.talpa_order_id, self.customer.user.uuid
                 )
+            except OrderValidationError as e:
+                logger.error(f"Order validation failed. Error = {e}")
+                return False
+            # Try to cancel order from Talpa as well
+            if cancel_from_talpa:
+                try:
+                    self._cancel_talpa_order()
+                except OrderCancelError:
+                    logger.warning(
+                        "Talpa order cancelling failed. Continuing the cancel process.."
+                    )
         self.status = OrderStatus.CANCELLED
         self.save()
         logger.info(f"Order {self.talpa_order_id} cancel process done")
@@ -622,11 +630,12 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         permit = order_item.permit
         customer_id = permit.customer.user.uuid
 
-        try:
-            OrderValidator.validate_order(talpa_order_id, customer_id)
-        except OrderValidationError as e:
-            logger.error(f"Order validation failed. Error = {e}")
-            return False
+        if talpa_order_id and customer_id:
+            try:
+                OrderValidator.validate_order(talpa_order_id, customer_id)
+            except OrderValidationError as e:
+                logger.error(f"Order validation failed. Error = {e}")
+                return False
 
         self.status = SubscriptionStatus.CANCELLED
         self.cancel_reason = cancel_reason
