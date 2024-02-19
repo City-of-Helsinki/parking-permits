@@ -599,6 +599,10 @@ class OrderView(APIView):
             order_item = subscription.order_items.first()
             permit = order_item.permit
 
+            if not permit or not permit.customer or not permit.customer.user:
+                return bad_request_response(
+                    f"Permit {permit} or customer {permit.customer} or user {permit.customer.user} is missing"
+                )
             try:
                 validated_order_data = OrderValidator.validate_order(
                     talpa_order_id, permit.customer.user.uuid
@@ -715,6 +719,10 @@ class SubscriptionView(APIView):
             order = Order.objects.get(talpa_order_id=talpa_order_id)
         except Order.DoesNotExist:
             return not_found_response(f"Order {talpa_order_id} does not exist")
+        if not order.customer or not order.customer.user:
+            return bad_request_response(
+                f"Order {talpa_order_id} customer or user is missing"
+            )
         try:
             OrderValidator.validate_order(talpa_order_id, order.customer.user.uuid)
         except OrderValidationError as e:
