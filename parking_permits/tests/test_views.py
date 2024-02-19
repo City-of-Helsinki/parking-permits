@@ -31,6 +31,7 @@ from parking_permits.models.order import (
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermit,
+    ParkingPermitEndType,
     ParkingPermitStatus,
 )
 from parking_permits.models.product import ProductType
@@ -1103,6 +1104,7 @@ class OrderViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            end_type=ParkingPermitEndType.IMMEDIATELY,
         )
         order = OrderFactory(
             talpa_order_id=talpa_existing_order_id,
@@ -1129,6 +1131,90 @@ class OrderViewTestCase(APITestCase):
         # Order and permit statuses should change to cancelled
         self.assertEqual(order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.CANCELLED)
+
+    def test_order_cancellation_permit_ending_after_current_period(self):
+        talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+            end_type=ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_existing_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2024-02-08T10:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+        order.permits.add(permit)
+        order.save()
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "ORDER_CANCELLED",
+            "orderId": talpa_existing_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        permit.refresh_from_db()
+        # Order and permit statuses should not change
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+
+    def test_order_cancellation_permit_ending_previous_day_end(self):
+        talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+            end_type=ParkingPermitEndType.PREVIOUS_DAY_END,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_existing_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=tz.make_aware(
+                datetime.datetime.strptime(
+                    "2024-02-08T10:00:00.000Z", "%Y-%m-%dT%H:%M:%S.%fZ"
+                )
+            ),
+        )
+        order.permits.add(permit)
+        order.save()
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "ORDER_CANCELLED",
+            "orderId": talpa_existing_order_id,
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        order.refresh_from_db()
+        permit.refresh_from_db()
+        # Order and permit statuses should not change
+        self.assertEqual(order.status, OrderStatus.CONFIRMED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
 
     def test_order_cancellation_for_closed_permit(self):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"

@@ -556,7 +556,8 @@ class OrderView(APIView):
                         ParkingPermitStatus.DRAFT,
                         ParkingPermitStatus.PAYMENT_IN_PROGRESS,
                         ParkingPermitStatus.VALID,
-                    ]
+                    ],
+                    end_type=ParkingPermitEndType.IMMEDIATELY,
                 )
                 if order_permits:
                     logger.info(f"Cancelling order: {talpa_order_id}")
