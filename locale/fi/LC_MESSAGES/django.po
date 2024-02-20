@@ -1085,7 +1085,7 @@ msgid ""
 "permit enforcers will identify permit validity based on your vehicle licence "
 "plate number."
 msgstr ""
-"Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
+"Kiitos tilauksestasi! Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
 "olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
 
 msgid ""
