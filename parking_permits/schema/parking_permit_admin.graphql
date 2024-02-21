@@ -251,7 +251,7 @@ input SearchItem {
   value: String!
 }
 
-union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode
+union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode | ParkingPermitExtensionRequestNode
 
 type ContentTypeNode {
   id: ID!
@@ -276,6 +276,12 @@ type TemporaryVehicleNode {
   startTime: String!
   endTime: String!
   isActive: Boolean!
+}
+
+type ParkingPermitExtensionRequestNode {
+  id: ID!
+  monthCount: Int!
+  status: String!
 }
 
 type PermitDetailNode {

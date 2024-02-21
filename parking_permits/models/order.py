@@ -247,6 +247,14 @@ class OrderManager(SerializableMixin.SerializableManager):
 
         OrderItem.objects.bulk_create(order_items)
 
+        start_time, end_time = min([order.start_time for order in order_items]), max(
+            [order.end_time for order in order_items]
+        )
+
+        ParkingPermitEventFactory.make_create_ext_request_order_event(
+            permit, order, start_time, end_time, created_by=kwargs.get("user", None)
+        )
+
         return order
 
     def _validate_customer_permits(self, permits, order_type):

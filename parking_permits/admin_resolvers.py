@@ -28,6 +28,7 @@ from parking_permits.models import (
     LowEmissionCriteria,
     Order,
     ParkingPermit,
+    ParkingPermitExtensionRequest,
     ParkingZone,
     Product,
     Refund,
@@ -184,6 +185,8 @@ def resolve_gfk_type(obj, *_):
         return "RefundNode"
     if isinstance(obj, TemporaryVehicle):
         return "TemporaryVehicleNode"
+    if isinstance(obj, ParkingPermitExtensionRequest):
+        return "ParkingPermitExtensionRequestNode"
     return None
 
 
@@ -955,6 +958,12 @@ def resolve_extend_parking_permit(
 
     # approve and extend permit immediately
     ext_request.approve()
+
+    ParkingPermitEventFactory.make_admin_create_ext_request_event(
+        ext_request,
+        created_by=info.context["request"].user,
+    )
+
     return {"success": True}
 
 

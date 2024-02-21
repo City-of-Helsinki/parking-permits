@@ -103,7 +103,7 @@ class CustomerPermit:
         order = Order.objects.create_for_extended_permit(
             permit,
             month_count,
-            status=OrderStatus.CONFIRMED,
+            status=OrderStatus.DRAFT,
             type=OrderType.CREATED,
             payment_type=payment_type,
         )

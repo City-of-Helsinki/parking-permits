@@ -8,7 +8,11 @@ from freezegun import freeze_time
 from parking_permits.exceptions import OrderCreationFailed
 from parking_permits.models import Order
 from parking_permits.models.order import OrderStatus, OrderType
-from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermitEvent,
+    ParkingPermitStatus,
+)
 from parking_permits.models.product import ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories.customer import CustomerFactory
@@ -80,6 +84,19 @@ class TestOrderManager(TestCase):
 
         # check total price
         self.assertEqual(order.total_price, Decimal("220"))
+
+        # check order
+        event = ParkingPermitEvent.objects.get()
+
+        self.assertEqual(
+            event.validity_period.lower.date(),
+            date(self.current_year, 3, 13),
+        )
+
+        self.assertEqual(
+            event.validity_period.upper.date(),
+            date(self.current_year, 9, 12),
+        )
 
     def test_create_for_customer_should_create_order_with_items(self):
         start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
