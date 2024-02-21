@@ -1013,11 +1013,21 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
         CREATE_PERMIT = "create_permit"
         UPDATE_PERMIT = "update_permit"
         END_PERMIT = "end_permit"
+
         CREATE_ORDER = "create_order"
         RENEW_ORDER = "renew_order"
         CREATE_REFUND = "create_refund"
+
         ADD_TEMPORARY_VEHICLE = "add_temporary_vehicle"
         REMOVE_TEMPORARY_VEHICLE = "remove_temporary_vehicle"
+
+        CREATE_CUSTOMER_PERMIT_EXTENSION_REQUEST = (
+            "create_customer_permit_extension_request"
+        )
+        CREATE_ADMIN_PERMIT_EXTENSION_REQUEST = "create_admin_permit_extension_request"
+
+        APPROVE_PERMIT_EXTENSION_REQUEST = "approve_permit_extension_request"
+        CANCEL_PERMIT_EXTENSION_REQUEST = "cancel_permit_extension_request"
 
     type = models.CharField(
         max_length=16, choices=EventType.choices, verbose_name=_("Event type")
@@ -1044,6 +1054,62 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
 
 
 class ParkingPermitEventFactory:
+    @staticmethod
+    def make_admin_create_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop(
+                "Permit extension #%(ext_request_id)s created by admin"
+            ),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CREATE_ADMIN_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_customer_create_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop(
+                "Permit extension #%(ext_request_id)s created by customer"
+            ),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.extension_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CREATE_CUSTOMER_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_approve_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop("Permit extension #%(ext_request_id)s approved"),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.APPROVE_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_cancel_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop("Permit extension #%(ext_request_id)s cancelled"),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.extension_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CANCEL_PERMIT_EXTENSION_REQUEST,
+        )
+
     @staticmethod
     def make_create_permit_event(permit: ParkingPermit, created_by=None):
         return ParkingPermitEvent.objects.create(
@@ -1091,6 +1157,21 @@ class ParkingPermitEventFactory:
             message="Order #%(order_id)s created",
             context={"order_id": order.id},
             validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.CREATE_ORDER,
+        )
+
+    @staticmethod
+    def make_create_ext_request_order_event(
+        permit: ParkingPermit, order, start_time, end_time, created_by=None
+    ):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s created",
+            context={"order_id": order.id},
+            validity_period=(start_time, end_time),
             type=ParkingPermitEvent.EventType.CREATED,
             created_by=created_by,
             related_object=order,

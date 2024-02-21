@@ -58,6 +58,7 @@ from .models.order import (
 from .models.parking_permit import (
     ParkingPermit,
     ParkingPermitEndType,
+    ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
 from .serializers import (
@@ -461,6 +462,7 @@ class PaymentView(APIView):
                 ext_request
             ) in order.get_pending_permit_extension_requests().select_related("permit"):
                 ext_request.approve()
+                ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
                 send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
 
             for permit in order.permits.all():
@@ -569,12 +571,17 @@ class OrderView(APIView):
                     logger.info(
                         f"{order} is cancelled and order permits are set to CANCELLED-status"
                     )
-                elif order.permit_extension_requests.cancel_pending():
+                elif ext_requests := order.get_pending_permit_extension_requests():
+                    for ext_request in ext_requests:
+                        ext_request.cancel()
+                        ParkingPermitEventFactory.make_cancel_ext_request_event(
+                            ext_request
+                        )
                     logger.info(f"Cancelling order: {talpa_order_id}")
                     order.status = OrderStatus.CANCELLED
                     order.save()
                     logger.info(
-                        f"{order} is cancelled and permit extensions are set to CANCELLED-status"
+                        f"{order} is cancelled and permit extensions set to CANCELLED-status"
                     )
 
             except Order.DoesNotExist:

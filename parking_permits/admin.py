@@ -19,6 +19,7 @@ from parking_permits.models import (
     TemporaryVehicle,
     Vehicle,
 )
+from parking_permits.models.parking_permit import ParkingPermitEvent
 from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 
@@ -131,6 +132,23 @@ class ParkingPermitAdmin(admin.ModelAdmin):
     ordering = (
         "customer__first_name",
         "customer__last_name",
+    )
+
+
+@admin.register(ParkingPermitEvent)
+class ParkingPermitEventAdmin(admin.ModelAdmin):
+    date_hierarchy = "created_at"
+    search_fields = (
+        "parking_permit__customer__first_name",
+        "parking_permit__customer__last_name",
+        "parking_permit__customer__national_id_number",
+    )
+    ordering = ("-created_at",)
+    list_display = ("parking_permit", "key", "type", "created_at")
+    list_filter = ("key", "type")
+    raw_id_fields = (
+        "created_by",
+        "modified_by",
     )
 
 
