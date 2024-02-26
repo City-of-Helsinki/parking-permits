@@ -50,6 +50,8 @@ DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
 VEHICLE_MAX_WEIGHT_KG = 4000
+EURO_CLASS = 6  # Default value for vehicles with emission data
+EURO_CLASS_WITHOUT_EMISSIONS = 5  # Default value for vehicles without emission data
 
 POWER_TYPE_MAPPER = {
     "01": "Bensin",
@@ -156,6 +158,9 @@ class Traficom:
                 co2emission = e.find("maara").text
                 if kulutuslaji in CONSUMPTION_TYPE_WLTP:
                     emission_type = EmissionType.WLTP
+        euro_class = EURO_CLASS
+        if not co2emission:
+            euro_class = EURO_CLASS_WITHOUT_EMISSIONS
 
         mass = et.find(".//massa")
         weight_et = mass.find("omamassa")
@@ -193,7 +198,7 @@ class Traficom:
             "model": vehicle_model.text if vehicle_model is not None else "",
             "weight": weight,
             "registration_number": registration_number,
-            "euro_class": 6,  # It will always be 6 class atm.
+            "euro_class": euro_class,
             "emission": float(co2emission) if co2emission else 0,
             "emission_type": emission_type,
             "serial_number": vehicle_serial_number.text,
