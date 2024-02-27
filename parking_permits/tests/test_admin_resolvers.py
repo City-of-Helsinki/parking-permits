@@ -10,12 +10,18 @@ from django.utils import timezone
 from parking_permits.admin_resolvers import (
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
+    update_or_create_customer,
     update_or_create_vehicle,
 )
-from parking_permits.exceptions import ObjectNotFound, PermitCanNotBeExtended
+from parking_permits.exceptions import (
+    AddressError,
+    ObjectNotFound,
+    PermitCanNotBeExtended,
+)
 from parking_permits.models import ParkingPermitExtensionRequest
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
+from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -56,6 +62,98 @@ def mock_jwt(admin_user):
         "helusers.oidc.RequestJWTAuthentication.authenticate",
         return_value=Auth(user=admin_user),
     )
+
+
+@pytest.fixture()
+def customer_info():
+    return {
+        "first_name": "Hessu",
+        "last_name": "Hessalainen",
+        "national_id_number": "290200A905H",
+        "primary_address": {
+            "postal_code": "00100",
+            "city": "Helsinki",
+            "city_sv": "Helsingfors",
+            "street_name": "Mannerheimintie",
+            "street_name_sv": "Mannerheimsgatan",
+            "street_number": "5",
+            "location": (1000, 1000),
+        },
+        "primary_address_apartment": "1A",
+        "email": "hessu.hessalainen@gmail.com",
+        "phone_number": "045 1234 567",
+        "address_security_ban": False,
+        "driver_license_checked": True,
+    }
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer(customer_info):
+    customer = update_or_create_customer(customer_info)
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == "Hessu"
+    assert customer.primary_address.street_name == "Mannerheimintie"
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer_missing_primary_address(customer_info):
+    del customer_info["primary_address"]
+    with pytest.raises(AddressError):
+        update_or_create_customer(customer_info)
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer_missing_primary_address_other_address(
+    customer_info,
+):
+    customer_info["other_address"] = customer_info["primary_address"]
+    del customer_info["primary_address"]
+
+    customer = update_or_create_customer(customer_info)
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == "Hessu"
+    assert customer.primary_address is None
+    assert customer.other_address.street_name == "Mannerheimintie"
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer_address_security_ban(customer_info):
+    customer = update_or_create_customer(
+        {**customer_info, "address_security_ban": True}
+    )
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == ""
+    assert customer.primary_address is None
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer_missing_address_security_ban(customer_info):
+    del customer_info["primary_address"]
+    customer = update_or_create_customer(
+        {**customer_info, "address_security_ban": True}
+    )
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == ""
+    assert customer.primary_address is None
+
+
+@pytest.mark.django_db()
+def test_update_or_create_new_customer_hetu_lowercase(customer_info):
+    customer = update_or_create_customer(
+        {**customer_info, "national_id_number": "290200a905h"}
+    )
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == "Hessu"
+    assert customer.primary_address.street_name == "Mannerheimintie"
+
+
+@pytest.mark.django_db()
+def test_update_or_create_existing_customer(customer_info):
+    CustomerFactory(national_id_number="290200A905H")
+    customer = update_or_create_customer(customer_info)
+    assert customer.national_id_number == "290200A905H"
+    assert customer.first_name == "Hessu"
+    assert customer.primary_address.street_name == "Mannerheimintie"
 
 
 @pytest.mark.django_db()

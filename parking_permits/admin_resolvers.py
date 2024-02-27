@@ -308,7 +308,9 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     autotarget=audit.TARGET_RETURN,
 )
 def resolve_vehicle(obj, info, reg_number, national_id_number):
-    customer = Customer.objects.get_or_create(national_id_number=national_id_number)[0]
+    customer = Customer.objects.get_or_create(
+        national_id_number=national_id_number.upper()
+    )[0]
     if settings.TRAFICOM_CHECK:
         customer.fetch_driving_licence_detail()
     vehicle = customer.fetch_vehicle_detail(reg_number)
@@ -357,7 +359,6 @@ def update_or_create_customer(customer_info):
     customer_data = {
         "first_name": customer_info.get("first_name", ""),
         "last_name": customer_info.get("last_name", ""),
-        "national_id_number": customer_info["national_id_number"],
         "email": customer_info["email"],
         "phone_number": customer_info["phone_number"],
         "address_security_ban": customer_info["address_security_ban"],
@@ -392,8 +393,10 @@ def update_or_create_customer(customer_info):
             "other_address_apartment"
         )
 
+    national_id_number = customer_info["national_id_number"].upper()
+
     return Customer.objects.update_or_create(
-        national_id_number=customer_info["national_id_number"], defaults=customer_data
+        national_id_number=national_id_number, defaults=customer_data
     )[0]
 
 
