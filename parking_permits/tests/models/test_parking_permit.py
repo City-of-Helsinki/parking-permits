@@ -32,6 +32,7 @@ from parking_permits.tests.factories.permit_extension_request import (
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
     LowEmissionCriteriaFactory,
+    TemporaryVehicleFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
@@ -424,6 +425,39 @@ class ParkingZoneTestCase(TestCase):
         self.assertEqual(products_with_quantities[1][1], 2)
         self.assertEqual(products_with_quantities[2][0].id, products[2].id)
         self.assertEqual(products_with_quantities[2][1], 4)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_active_temporary_vehicles_active_in_time_range(self):
+        vehicle = TemporaryVehicleFactory(
+            start_time=datetime(2023, 12, 20),
+            end_time=datetime(2024, 1, 29),
+            is_active=True,
+        )
+        permit = ParkingPermitFactory()
+        permit.temp_vehicles.add(vehicle)
+        self.assertEqual(permit.active_temporary_vehicle, vehicle)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_active_temporary_vehicles_not_active(self):
+        vehicle = TemporaryVehicleFactory(
+            start_time=datetime(2023, 12, 20),
+            end_time=datetime(2024, 1, 29),
+            is_active=False,
+        )
+        permit = ParkingPermitFactory()
+        permit.temp_vehicles.add(vehicle)
+        self.assertEqual(permit.active_temporary_vehicle, None)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_active_temporary_vehicles_not_in_time_range(self):
+        vehicle = TemporaryVehicleFactory(
+            start_time=datetime(2024, 1, 3),
+            end_time=datetime(2024, 1, 29),
+            is_active=True,
+        )
+        permit = ParkingPermitFactory()
+        permit.temp_vehicles.add(vehicle)
+        self.assertEqual(permit.active_temporary_vehicle, None)
 
     def test_get_products_with_quantities_should_return_products_with_quantities_for_fix_period_with_mid_month_start(
         self,
