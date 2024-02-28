@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-15 11:37+0200\n"
+"POT-Creation-Date: 2024-02-23 11:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -132,6 +132,9 @@ msgstr ""
 "Det är inte tillåtet att byta adress för olika typer av tillstånd "
 "(tidsbegränsad / obestämd tid)."
 
+msgid "You cannot extend this permit."
+msgstr "Du kan inte förlänga detta tillstånd."
+
 msgid "Primary permit cannot be ended if customer has two permits"
 msgstr "Primärt tillstånd kan inte avslutas om kunden har två tillstånd"
 
@@ -167,9 +170,6 @@ msgstr "Starttiden kan inte ligga i det förflutna"
 
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
-
-msgid "You cannot extend this permit."
-msgstr "Du kan inte förlänga detta tillstånd."
 
 msgid "Month count exceeds maximum"
 msgstr "Antalet månader överstiger gränsen"
@@ -620,6 +620,12 @@ msgstr "Genast"
 msgid "From"
 msgstr "Från"
 
+msgid "After current period"
+msgstr "Efter nuvarande period"
+
+msgid "Previous day end"
+msgstr "Föregående dags slut"
+
 msgid "Payment in progress"
 msgstr "Betalning pågår"
 
@@ -646,6 +652,9 @@ msgstr "Kontraktstyp"
 
 msgid "Start type"
 msgstr "Alkamistyyppi"
+
+msgid "End type"
+msgstr "Sluttyp"
 
 msgid "Month count"
 msgstr "Månad (st)"
@@ -686,6 +695,22 @@ msgstr "Slutade"
 
 msgid "Event type"
 msgstr "Event typ"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s created by admin"
+msgstr "Begäran om förlängning av tillstånd #%(ext_request_id)s skapad av admin"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s created by customer"
+msgstr "Begäran om förlängning av tillstånd #%(ext_request_id)s skapad av kund"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s approved"
+msgstr "Begäran om förlängning av tillstånd #%(ext_request_id)s godkänd"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s cancelled"
+msgstr "Begäran om förlängning av tillstånd #%(ext_request_id)s avbruten"
 
 #, python-format
 msgid "Permit #%(permit_id)s created"

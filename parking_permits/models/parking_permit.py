@@ -18,7 +18,6 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..constants import ParkingPermitEndType
 from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
 from ..utils import (
     calc_net_price,
@@ -52,6 +51,12 @@ class ContractType(models.TextChoices):
 class ParkingPermitStartType(models.TextChoices):
     IMMEDIATELY = "IMMEDIATELY", _("Immediately")
     FROM = "FROM", _("From")
+
+
+class ParkingPermitEndType(models.TextChoices):
+    IMMEDIATELY = "IMMEDIATELY", _("Immediately")
+    AFTER_CURRENT_PERIOD = "AFTER_CURRENT_PERIOD", _("After current period")
+    PREVIOUS_DAY_END = "PREVIOUS_DAY_END", _("Previous day end")
 
 
 class ParkingPermitStatus(models.TextChoices):
@@ -157,6 +162,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         _("Start type"),
         max_length=16,
         choices=ParkingPermitStartType.choices,
+        default=ParkingPermitStartType.IMMEDIATELY,
+    )
+    end_type = models.CharField(
+        _("End type"),
+        max_length=32,
+        choices=ParkingPermitEndType.choices,
         default=ParkingPermitStartType.IMMEDIATELY,
     )
     month_count = models.IntegerField(_("Month count"), default=1)
@@ -311,10 +322,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.latest_order and self.latest_order.talpa_checkout_url:
             return self.latest_order.talpa_checkout_url
         return None
-
-    @property
-    def has_pending_extension_request(self):
-        return self.get_pending_extension_requests().exists()
 
     @property
     def latest_extension_request_order(self):
@@ -482,26 +489,46 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         1. Must be a valid fixed period permit.
         2. Cannot have any pending requests.
         3. Must be within 14 days of end time.
+        4. PERMIT_EXTENSIONS_ENABLED flag is True.
         """
-        if not settings.PERMIT_EXTENSIONS_ENABLED:
-            return False
+        return self._can_extend_parking_permit(is_date_restriction=True)
 
-        if self.status != ParkingPermitStatus.VALID:
-            return False
+    @property
+    def can_admin_extend_permit(self):
+        """Checks if permit can be extended:
+        1. Must be a valid fixed period permit.
+        2. Cannot have any pending requests.
+        3. PERMIT_EXTENSIONS_ENABLED flag is True.
+        """
+        return self._can_extend_parking_permit(is_date_restriction=False)
 
-        if self.contract_type != ContractType.FIXED_PERIOD:
-            return False
-
-        if self.end_time is None or self.end_time > timezone.now() + relativedelta(
-            days=14
+    def _can_extend_parking_permit(self, *, is_date_restriction=True):
+        if not all(
+            (
+                settings.PERMIT_EXTENSIONS_ENABLED,
+                self.status == ParkingPermitStatus.VALID,
+                self.contract_type == ContractType.FIXED_PERIOD,
+                self.end_time is not None,
+            )
         ):
+            return False
+
+        if is_date_restriction and timezone.localdate(
+            self.end_time
+        ) > timezone.localdate(timezone.now() + relativedelta(days=14)):
             return False
 
         # do database op last
         return not self.has_pending_extension_request
 
     def get_pending_extension_requests(self):
+        """Returns all PENDING extension requests."""
         return self.permit_extension_requests.pending()
+
+    @property
+    def has_pending_extension_request(self):
+        """Returns True if any PENDING extension requests."""
+        return self.get_pending_extension_requests().exists()
 
     def current_period_end_time_with_fixed_months(self, months):
         end_time = get_end_time(self.start_time, months)
@@ -555,15 +582,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def get_future_product_month_dates(self, month_count):
         """Break down of future start/end times per month from the
-        next period start until the number of months."""
-        # these are unchanged
-        # price change affected date range and products
+        period after the current end of the permit until the number of months."""
 
-        start_date = timezone.localdate(self.next_period_start_time)
-
-        end_date = timezone.localdate(
-            get_end_time(self.next_period_start_time, month_count)
+        from_date = self.end_time.replace(hour=0, minute=0, second=0) + relativedelta(
+            days=1
         )
+
+        start_date = timezone.localdate(from_date)
+        end_date = timezone.localdate(get_end_time(from_date, month_count))
 
         products = (
             self.parking_zone.products.for_resident()
@@ -574,6 +600,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # calculate the price change list in the affected date range
         product = next(products, None)
 
+        # for each product in our range, find the start and end dates
+        # of whole months within that range
         while product and start_date < end_date:
             yield {
                 "product": product,
@@ -581,6 +609,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 "end_date": start_date + relativedelta(months=1, days=-1),
             }
             start_date += relativedelta(months=1)
+
             if start_date > product.end_date:
                 product = next(products, None)
 
@@ -707,6 +736,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return price_change_list
 
     def end_permit(self, end_type, force_end=False):
+        self.end_type = end_type
         if end_type == ParkingPermitEndType.PREVIOUS_DAY_END:
             vehicle_changed_date = self.vehicle_changed_date
             if vehicle_changed_date:
@@ -757,8 +787,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.update_or_create_parkkihubi_permit()
 
     def cancel_extension_requests(self):
-        for ext_request in self.get_pending_extension_requests():
-            ext_request.cancel()
+        self.permit_extension_requests.cancel_pending()
 
     def get_refund_amount_for_unused_items(self):
         total = Decimal(0)
@@ -984,11 +1013,21 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
         CREATE_PERMIT = "create_permit"
         UPDATE_PERMIT = "update_permit"
         END_PERMIT = "end_permit"
+
         CREATE_ORDER = "create_order"
         RENEW_ORDER = "renew_order"
         CREATE_REFUND = "create_refund"
+
         ADD_TEMPORARY_VEHICLE = "add_temporary_vehicle"
         REMOVE_TEMPORARY_VEHICLE = "remove_temporary_vehicle"
+
+        CREATE_CUSTOMER_PERMIT_EXTENSION_REQUEST = (
+            "create_customer_permit_extension_request"
+        )
+        CREATE_ADMIN_PERMIT_EXTENSION_REQUEST = "create_admin_permit_extension_request"
+
+        APPROVE_PERMIT_EXTENSION_REQUEST = "approve_permit_extension_request"
+        CANCEL_PERMIT_EXTENSION_REQUEST = "cancel_permit_extension_request"
 
     type = models.CharField(
         max_length=16, choices=EventType.choices, verbose_name=_("Event type")
@@ -1015,6 +1054,62 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
 
 
 class ParkingPermitEventFactory:
+    @staticmethod
+    def make_admin_create_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop(
+                "Permit extension #%(ext_request_id)s created by admin"
+            ),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CREATE_ADMIN_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_customer_create_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop(
+                "Permit extension #%(ext_request_id)s created by customer"
+            ),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.extension_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CREATE_CUSTOMER_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_approve_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop("Permit extension #%(ext_request_id)s approved"),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.permit.current_period_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.APPROVE_PERMIT_EXTENSION_REQUEST,
+        )
+
+    @staticmethod
+    def make_cancel_ext_request_event(ext_request, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=ext_request.permit,
+            message=gettext_noop("Permit extension #%(ext_request_id)s cancelled"),
+            context={"ext_request_id": ext_request.pk},
+            created_by=created_by,
+            related_object=ext_request,
+            validity_period=ext_request.extension_range,
+            type=ParkingPermitEvent.EventType.UPDATED,
+            key=ParkingPermitEvent.EventKey.CANCEL_PERMIT_EXTENSION_REQUEST,
+        )
+
     @staticmethod
     def make_create_permit_event(permit: ParkingPermit, created_by=None):
         return ParkingPermitEvent.objects.create(
@@ -1062,6 +1157,21 @@ class ParkingPermitEventFactory:
             message="Order #%(order_id)s created",
             context={"order_id": order.id},
             validity_period=permit.current_period_range,
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            related_object=order,
+            key=ParkingPermitEvent.EventKey.CREATE_ORDER,
+        )
+
+    @staticmethod
+    def make_create_ext_request_order_event(
+        permit: ParkingPermit, order, start_time, end_time, created_by=None
+    ):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message="Order #%(order_id)s created",
+            context={"order_id": order.id},
+            validity_period=(start_time, end_time),
             type=ParkingPermitEvent.EventType.CREATED,
             created_by=created_by,
             related_object=order,

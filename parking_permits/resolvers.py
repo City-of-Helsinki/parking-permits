@@ -325,12 +325,18 @@ def resolve_extend_parking_permit(
     month_count,
     audit_msg: AuditMsg = None,
 ):
-    ext_request = CustomerPermit(
-        info.context["request"].user.customer.id
-    ).create_permit_extension_request(
+    user = info.context["request"].user
+
+    ext_request = CustomerPermit(user.customer.id).create_permit_extension_request(
         permit_id,
         month_count,
     )
+
+    ParkingPermitEventFactory.make_customer_create_ext_request_event(
+        ext_request,
+        created_by=user,
+    )
+
     checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order, ext_request)
     return {"checkout_url": checkout_url}
 

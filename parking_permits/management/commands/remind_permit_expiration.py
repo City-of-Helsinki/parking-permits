@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-# from parking_permits.cron import automatic_expiration_remind_notification_of_permits
+from parking_permits.cron import automatic_expiration_remind_notification_of_permits
 
 
 class Command(BaseCommand):
@@ -10,5 +10,5 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS("Reminding of permit expiration started...")
         )
-        # automatic_expiration_remind_notification_of_permits()
+        automatic_expiration_remind_notification_of_permits()
         self.stdout.write(self.style.SUCCESS("Reminding of permit expiration done."))

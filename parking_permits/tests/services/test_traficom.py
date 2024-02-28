@@ -3,11 +3,13 @@ import pathlib
 from unittest import mock
 
 from django.test import TestCase, override_settings
+from freezegun import freeze_time
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models import DrivingClass, DrivingLicence
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.services.traficom import Traficom
+from parking_permits.tests.factories import LowEmissionCriteriaFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
@@ -43,7 +45,8 @@ class TestTraficom(TestCase):
             vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
             self.assertEqual(vehicle.registration_number, self.registration_number)
 
-            # Emissions
+            # Euro-class and emissions
+            assert vehicle.euro_class == 6
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155
 
@@ -69,6 +72,27 @@ class TestTraficom(TestCase):
                 self.traficom.fetch_vehicle_details,
                 self.registration_number,
             )
+
+    @override_settings(TRAFICOM_MOCK=False)
+    @freeze_time(datetime.datetime(2024, 6, 1))
+    def test_fetch_vehicle_without_emissions(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_without_emissions.xml")),
+        ):
+            LowEmissionCriteriaFactory(
+                nedc_max_emission_limit=37,
+                wltp_max_emission_limit=50,
+                start_date=datetime.datetime(2024, 1, 1),
+                end_date=datetime.datetime(2024, 12, 31),
+                euro_min_class_limit=6,
+            )
+
+            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
+            self.assertEqual(vehicle.registration_number, self.registration_number)
+            self.assertEqual(vehicle.emission, 0)
+            self.assertEqual(vehicle.euro_class, 5)
+            self.assertEqual(vehicle.is_low_emission, False)
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_wltp(self):

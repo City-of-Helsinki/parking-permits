@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-15 11:36+0200\n"
+"POT-Creation-Date: 2024-02-23 11:17+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -133,6 +133,9 @@ msgstr ""
 "Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
 "(määräaikainen / jatkuvaveloitteinen)"
 
+msgid "You cannot extend this permit."
+msgstr "Et voi ostaa lisäaikaa tälle pysäköintitunnukselle."
+
 msgid "Primary permit cannot be ended if customer has two permits"
 msgstr ""
 "Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
@@ -171,9 +174,6 @@ msgstr "Aloitusaika ei voi olla menneisyydessä"
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr ""
 "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
-
-msgid "You cannot extend this permit."
-msgstr "Et voi ostaa lisäaikaa tälle pysäköintitunnukselle."
 
 msgid "Month count exceeds maximum"
 msgstr "Kuukausimäärä ylittää sallitun määrän"
@@ -625,6 +625,12 @@ msgstr "Heti"
 msgid "From"
 msgstr "Alkaen"
 
+msgid "After current period"
+msgstr "Nykyisen jakson jälkeen"
+
+msgid "Previous day end"
+msgstr "Edellisen päivän loppu"
+
 msgid "Payment in progress"
 msgstr "Maksussa"
 
@@ -651,6 +657,9 @@ msgstr "Sopimustyyppi"
 
 msgid "Start type"
 msgstr "Alkamistyyppi"
+
+msgid "End type"
+msgstr "Loppumistyyppi"
 
 msgid "Month count"
 msgstr "Kuukaudet (lkm)"
@@ -691,6 +700,22 @@ msgstr "Päättynyt"
 
 msgid "Event type"
 msgstr "Tapahtumatyyppi"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s created by admin"
+msgstr "Admin luonut tunnuksen jatkon #%(ext_request_id)s"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s created by customer"
+msgstr "Asiakas luonut tunnuksen jatkon #%(ext_request_id)s"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s approved"
+msgstr "Tunnuksen jatko #%(ext_request_id)s hyväksytty"
+
+#, python-format
+msgid "Permit extension #%(ext_request_id)s cancelled"
+msgstr "Tunnuksen jatko #%(ext_request_id)s peruutettu"
 
 #, python-format
 msgid "Permit #%(permit_id)s created"
@@ -1085,8 +1110,8 @@ msgid ""
 "permit enforcers will identify permit validity based on your vehicle licence "
 "plate number."
 msgstr ""
-"Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
-"olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
+"Kiitos tilauksestasi! Pysäköintitunnus on sähköinen ja pysäköinninvalvonta "
+"tunnistaa voimassa olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
 
 msgid ""
 "Your refund has been accepted and will appear on the account you reported "

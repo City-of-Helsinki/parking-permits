@@ -60,15 +60,13 @@ class CronTestCase(TestCase):
 
     @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits_with_primary_permit_change(self):
-        ParkingPermitFactory(
-            id=80000010,
+        first = ParkingPermitFactory(
             customer=self.customer,
             end_time=tz.make_aware(datetime(2023, 11, 29, 23, 59)),
             status=ParkingPermitStatus.VALID,
             primary_vehicle=True,
         )
-        ParkingPermitFactory(
-            id=80000020,
+        second = ParkingPermitFactory(
             customer=self.customer,
             end_time=tz.make_aware(datetime(2023, 12, 1, 23, 59)),
             status=ParkingPermitStatus.VALID,
@@ -93,13 +91,13 @@ class CronTestCase(TestCase):
         automatic_expiration_of_permits()
         self.assertEqual(valid_permits.all().count(), 1)
         valid_permit = valid_permits.first()
-        self.assertEqual(valid_permit.id, 80000020)
+        self.assertEqual(valid_permit.id, second.id)
         self.assertEqual(valid_permit.primary_vehicle, True)
         self.assertEqual(draft_permits.all().count(), 0)
         closed_permits = closed_permits.all()
         self.assertEqual(closed_permits.count(), 1)
         closed_permit = closed_permits.first()
-        self.assertEqual(closed_permit.id, 80000010)
+        self.assertEqual(closed_permit.id, first.id)
         self.assertEqual(
             closed_permit.end_time,
             tz.make_aware(datetime(2023, 11, 29, 23, 59, 59, 999999)),

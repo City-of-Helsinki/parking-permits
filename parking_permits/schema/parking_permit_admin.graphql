@@ -119,6 +119,9 @@ type PermitNode {
   type: String
   bypassTraficomValidation: Boolean
   primaryVehicle: Boolean!
+  canAdminExtendPermit: Boolean
+  maxExtensionMonthCount: Int
+  hasPendingExtensionRequest: Boolean
 }
 
 type LimitedPermitNode {
@@ -131,6 +134,8 @@ type LimitedPermitNode {
   startTime: String
   endTime: String
   description: String
+  canAdminExtendPermit: Boolean
+  maxExtensionMonthCount: Int
   type: String
   primaryVehicle: Boolean!
 }
@@ -246,7 +251,7 @@ input SearchItem {
   value: String!
 }
 
-union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode
+union ParkingPermitEventGFK = RefundNode | OrderNode | TemporaryVehicleNode | ParkingPermitExtensionRequestNode
 
 type ContentTypeNode {
   id: ID!
@@ -273,6 +278,12 @@ type TemporaryVehicleNode {
   isActive: Boolean!
 }
 
+type ParkingPermitExtensionRequestNode {
+  id: ID!
+  monthCount: Int!
+  status: String!
+}
+
 type PermitDetailNode {
   id: ID!
   address: AddressNode
@@ -280,6 +291,8 @@ type PermitDetailNode {
   customer: CustomerNode!
   vehicle: VehicleNode
   activeTemporaryVehicle: TemporaryVehicleNode
+  canAdminExtendPermit: Boolean
+  maxExtensionMonthCount: Int
   primaryVehicle: Boolean!
   parkingZone: ZoneNode
   status: ParkingPermitStatus!
@@ -373,6 +386,16 @@ input CustomerRetrieveInput {
   nationalIdNumber: String
 }
 
+type PermitExtendedPriceResult {
+  startDate: String!
+  endDate: String!
+  vat: Float!
+  unitPrice: Float!
+  price: Float!
+  netPrice: Float!
+  vatPrice: Float!
+}
+
 type Query {
   permits(
     pageInput: PageInput!
@@ -429,6 +452,7 @@ type Query {
     orderBy: OrderByInput
   ): PagedAnnouncements!
   announcement(announcementId: ID!): AnnouncementNode!
+  getExtendedPriceList(permitId: ID!, monthCount: Int): [PermitExtendedPriceResult]
 }
 
 input AddressInput {
@@ -564,4 +588,5 @@ type Mutation {
   requestForApproval(ids: [ID]!): Int
   acceptRefunds(ids: [ID]!): Int
   createAnnouncement(announcement: AnnouncementInput!): MutationResponse
+  extendPermit(permitId: ID!, monthCount: Int): MutationResponse
 }

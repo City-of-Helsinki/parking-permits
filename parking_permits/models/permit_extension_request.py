@@ -66,9 +66,15 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
         return self.status == self.Status.CANCELLED
 
     def get_end_time(self):
-        return self.permit.current_period_end_time + relativedelta(
-            months=self.month_count
+        return (
+            self.permit.end_time + relativedelta(months=self.month_count)
+            if self.permit.end_time
+            else None
         )
+
+    @property
+    def extension_range(self):
+        return self.permit.end_time, self.get_end_time()
 
     def approve(self):
         self.set_status(self.Status.APPROVED)
