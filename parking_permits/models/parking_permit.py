@@ -284,7 +284,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def active_temporary_vehicle(self):
-        return self.temporary_vehicles.filter(is_active=True).first()
+        now = timezone.now()
+        return self.temporary_vehicles.filter(
+            is_active=True, start_time__lte=now, end_time__gte=now
+        ).first()
 
     @property
     def consent_low_emission_accepted(self):
