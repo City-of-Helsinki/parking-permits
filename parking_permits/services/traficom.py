@@ -145,6 +145,9 @@ class Traficom:
                 restrictions.append(restriction_type)
 
         vehicle_identity = et.find(".//tunnus")
+        registration_number_et = et.find(".//rekisteritunnus")
+        if registration_number_et is not None and registration_number_et.text:
+            registration_number = registration_number_et.text
         motor = et.find(".//moottori")
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
@@ -191,6 +194,7 @@ class Traficom:
             defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
         )
         vehicle_details = {
+            "registration_number": registration_number,
             "updated_from_traficom_on": str(tz.now().date()),
             "power_type": power_type[0],
             "vehicle_class": vehicle_class,
@@ -284,6 +288,9 @@ class Traficom:
         return False
 
     def _fetch_info(self, registration_number=None, hetu=None, is_l_type_vehicle=False):
+        registration_number = (
+            registration_number.strip().upper() if registration_number else ""
+        )
         vehicle_payload = f"""
             <laji>{LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE}</laji>
             <rekisteritunnus>{registration_number}</rekisteritunnus>

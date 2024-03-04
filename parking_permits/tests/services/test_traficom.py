@@ -42,8 +42,34 @@ class TestTraficom(TestCase):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
         ):
-            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
+
+            # Euro-class and emissions
+            assert vehicle.euro_class == 6
+            assert vehicle.emission_type == EmissionType.NEDC
+            assert vehicle.emission == 155
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_lower_case(self):
+        with mock.patch(
+            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("bci-707")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
+
+            # Euro-class and emissions
+            assert vehicle.euro_class == 6
+            assert vehicle.emission_type == EmissionType.NEDC
+            assert vehicle.emission == 155
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_with_spaces(self):
+        with mock.patch(
+            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707   ")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
 
             # Euro-class and emissions
             assert vehicle.euro_class == 6
@@ -70,7 +96,7 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -88,8 +114,8 @@ class TestTraficom(TestCase):
                 euro_min_class_limit=6,
             )
 
-            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
             self.assertEqual(vehicle.emission, 0)
             self.assertEqual(vehicle.euro_class, 5)
             self.assertEqual(vehicle.is_low_emission, False)
@@ -99,8 +125,8 @@ class TestTraficom(TestCase):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_wltp.xml"))
         ):
-            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
 
             # Emissions
             assert vehicle.emission_type == EmissionType.WLTP
@@ -111,8 +137,8 @@ class TestTraficom(TestCase):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_nedc.xml"))
         ):
-            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("111-500")
+            self.assertEqual(vehicle.registration_number, "111-500")
 
             # Emissions
             assert vehicle.emission_type == EmissionType.NEDC
@@ -120,14 +146,12 @@ class TestTraficom(TestCase):
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):
-        vehicle = VehicleFactory(registration_number=self.registration_number)
+        vehicle = VehicleFactory(registration_number="BCI-707")
 
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
         ):
-            fetched_vehicle = self.traficom.fetch_vehicle_details(
-                self.registration_number
-            )
+            fetched_vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(fetched_vehicle, vehicle)
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -136,7 +160,7 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -148,7 +172,7 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -160,7 +184,7 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -172,26 +196,24 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db(self):
-        VehicleFactory(registration_number=self.registration_number)
+        VehicleFactory(registration_number="BCI-707")
         with mock.patch("requests.post") as mock_traficom:
-            vehicle = self.traficom.fetch_vehicle_details(self.registration_number)
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707")
+            self.assertEqual(vehicle.registration_number, "BCI-707")
             mock_traficom.assert_not_called()
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_from_db_if_permit_bypass_true(self):
-        VehicleFactory(registration_number=self.registration_number)
+        VehicleFactory(registration_number="BCI-707")
         permit = ParkingPermitFactory(bypass_traficom_validation=True)
         with mock.patch("requests.post") as mock_traficom:
-            vehicle = self.traficom.fetch_vehicle_details(
-                self.registration_number, permit
-            )
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707", permit)
+            self.assertEqual(vehicle.registration_number, "BCI-707")
             mock_traficom.assert_not_called()
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -200,10 +222,8 @@ class TestTraficom(TestCase):
         with mock.patch(
             "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
         ) as mock_traficom:
-            vehicle = self.traficom.fetch_vehicle_details(
-                self.registration_number, permit
-            )
-            self.assertEqual(vehicle.registration_number, self.registration_number)
+            vehicle = self.traficom.fetch_vehicle_details("BCI-707", permit)
+            self.assertEqual(vehicle.registration_number, "BCI-707")
             mock_traficom.assert_called()
 
     @override_settings(TRAFICOM_MOCK=True)
@@ -212,7 +232,7 @@ class TestTraficom(TestCase):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
-                self.registration_number,
+                "BCI-707",
             )
 
             mock_traficom.assert_not_called()
