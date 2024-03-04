@@ -1217,7 +1217,7 @@ class ParkingPermitEventFactory:
             context={
                 "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
             },
-            validity_period=permit.current_period_range,
+            validity_period=temp_vehicle.period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
             created_by=created_by,
             related_object=temp_vehicle,
@@ -1234,7 +1234,7 @@ class ParkingPermitEventFactory:
             context={
                 "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
             },
-            validity_period=permit.current_period_range,
+            validity_period=temp_vehicle.period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
             created_by=created_by,
             related_object=temp_vehicle,

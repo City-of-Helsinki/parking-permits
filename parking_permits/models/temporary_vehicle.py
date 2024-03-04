@@ -22,3 +22,7 @@ class TemporaryVehicle(TimestampedModelMixin):
 
     def __str__(self):
         return str(self.vehicle)
+
+    @property
+    def period_range(self):
+        return self.start_time, self.end_time
