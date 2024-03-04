@@ -1,6 +1,7 @@
 import datetime
 
 from django.test import TestCase
+from django.utils import timezone
 from freezegun import freeze_time
 
 from parking_permits.models.vehicle import (
@@ -10,9 +11,29 @@ from parking_permits.models.vehicle import (
 )
 from parking_permits.tests.factories import LowEmissionCriteriaFactory
 from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
+
+
+@freeze_time(datetime.datetime(2024, 3, 1, 9, 0))
+class TestTemporaryVehicle(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        now = timezone.now()
+        cls.temp_vehicle = TemporaryVehicleFactory(
+            start_time=now, end_time=now + datetime.timedelta(days=7)
+        )
+
+    def test_period_range(self):
+        self.assertEqual(
+            self.temp_vehicle.period_range,
+            (
+                self.temp_vehicle.start_time,
+                self.temp_vehicle.end_time,
+            ),
+        )
 
 
 @freeze_time(datetime.datetime(2020, 6, 1))
