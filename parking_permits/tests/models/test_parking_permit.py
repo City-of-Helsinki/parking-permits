@@ -1109,6 +1109,7 @@ class TestParkingPermit(TestCase):
             ).can_admin_extend_permit,
         )
 
+    @freeze_time("2024-3-4")
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.patch", return_value=MockResponse(200))
     @patch("requests.post", return_value=MockResponse(201))
@@ -1130,8 +1131,9 @@ class TestParkingPermit(TestCase):
         permit.refresh_from_db()
 
         self.assertEqual(permit.month_count, 4)
-        self.assertEqual(permit.end_time.date(), (now + timedelta(days=120)).date())
+        self.assertEqual(permit.end_time.date(), date(2024, 7, 3))
 
+    @freeze_time("2024-3-4")
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
     @patch("requests.patch", return_value=MockResponse(404))
     @patch("requests.post", return_value=MockResponse(201))
@@ -1153,4 +1155,4 @@ class TestParkingPermit(TestCase):
         permit.refresh_from_db()
 
         self.assertEqual(permit.month_count, 4)
-        self.assertEqual(permit.end_time.date(), (now + timedelta(days=120)).date())
+        self.assertEqual(permit.end_time.date(), date(2024, 7, 3))

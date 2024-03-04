@@ -253,11 +253,12 @@ class ParkingPermitExtensionRequestAdmin(admin.ModelAdmin):
     list_filter = ("status",)
     ordering = ("-created_at",)
     search_fields = (
+        "permit__id",
         "permit__customer__first_name",
         "permit__customer__last_name",
-        "permit__vehicle__registration__number",
+        "permit__vehicle__registration_number",
     )
-    list_display = ("permit", "status")
+    list_display = ("permit", "status", "month_count")
     list_select_related = True
 
 
