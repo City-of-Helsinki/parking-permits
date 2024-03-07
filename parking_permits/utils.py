@@ -115,7 +115,24 @@ def get_end_time(start_time, diff_months):
     # add 1 month minus one day
     end_time = start_time + relativedelta(months=diff_months, days=-1)
 
-    # ensure end time is 23:59 on that last day
+    return normalize_end_time(end_time)
+
+
+def increment_end_time(end_time, months=1):
+    """Increment the end time based on the current value (rather than start time).
+
+    Example: 1st Jan 23:59 -> 1st Feb 23:59.
+    Should account for DST changes.
+    """
+
+    end_time = end_time.astimezone(tz.get_default_timezone())
+    end_time += relativedelta(months=months)
+    return normalize_end_time(end_time)
+
+
+def normalize_end_time(end_time):
+    """Should ensure that the end time is always 23:59 of that day,
+    accounting for DST."""
     return tz.make_aware(
         end_time.replace(
             hour=23,
