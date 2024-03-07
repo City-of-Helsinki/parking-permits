@@ -56,7 +56,7 @@ class LowEmissionCriteriaFactory(factory.django.DjangoModelFactory):
 
 
 class TemporaryVehicleFactory(factory.django.DjangoModelFactory):
-    vehicle = factory.SubFactory(Vehicle)
+    vehicle = factory.SubFactory(VehicleFactory)
     start_time = factory.LazyFunction(
         lambda: fake.date_time_between(
             start_date="-2d", end_date="-1d", tzinfo=pytz.utc

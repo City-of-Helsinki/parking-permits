@@ -267,7 +267,12 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
         # We're searching data from DVV now, so change the event type.
         audit_msg.event_type = audit.EventType.DVV
         logger.info("Searching customer from DVV...")
-        customer = get_person_info(national_id_number)
+        if customer := get_person_info(national_id_number):
+            if primary_address := customer.get("primary_address"):
+                customer["primary_address"] = update_or_create_address(primary_address)
+            if other_address := customer.get("other_address"):
+                customer["other_address"] = update_or_create_address(other_address)
+
     if not customer:
         # We're searching data from APP now, so change the event type.
         audit_msg.event_type = audit.EventType.APP

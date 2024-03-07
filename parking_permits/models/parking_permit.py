@@ -284,7 +284,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def active_temporary_vehicle(self):
-        return self.temporary_vehicles.filter(is_active=True).first()
+        now = timezone.now()
+        return self.temporary_vehicles.filter(
+            is_active=True, start_time__lte=now, end_time__gte=now
+        ).first()
 
     @property
     def consent_low_emission_accepted(self):
@@ -1214,7 +1217,7 @@ class ParkingPermitEventFactory:
             context={
                 "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
             },
-            validity_period=permit.current_period_range,
+            validity_period=temp_vehicle.period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
             created_by=created_by,
             related_object=temp_vehicle,
@@ -1231,7 +1234,7 @@ class ParkingPermitEventFactory:
             context={
                 "temp_vehicle_reg_number": temp_vehicle.vehicle.registration_number
             },
-            validity_period=permit.current_period_range,
+            validity_period=temp_vehicle.period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
             created_by=created_by,
             related_object=temp_vehicle,

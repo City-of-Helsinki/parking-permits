@@ -114,8 +114,9 @@ class CustomerPermit:
         )
 
     def add_temporary_vehicle(self, permit_id, registration, start_time, end_time):
+        registration = registration.upper().strip()
         has_valid_permit = self.customer_permit_query.filter(
-            vehicle__registration_number=registration
+            vehicle__registration_number__iexact=registration
         ).exists()
 
         if has_valid_permit:
@@ -143,7 +144,7 @@ class CustomerPermit:
             )
 
         vehicle = TemporaryVehicle.objects.create(
-            vehicle=Vehicle.objects.get(registration_number=registration),
+            vehicle=Vehicle.objects.get(registration_number__iexact=registration),
             end_time=end_time,
             start_time=start_time,
         )

@@ -15,6 +15,7 @@ from parking_permits.exceptions import (
     NonDraftPermitUpdateError,
     PermitCanNotBeDeleted,
     PermitCanNotBeExtended,
+    TemporaryVehicleValidationError,
 )
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -32,6 +33,7 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
@@ -60,6 +62,120 @@ def get_future(days=1):
 
 def get_end_time(start, month=0):
     return tz.localtime(start + relativedelta(months=month))
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+class RemoveTemporaryVehicleTestCase(TestCase):
+    def test_remove_temporary_vehicle(self):
+        permit = ParkingPermitFactory()
+        temp_vehicle = TemporaryVehicleFactory()
+        permit.temp_vehicles.add(temp_vehicle)
+
+        CustomerPermit(permit.customer.pk).remove_temporary_vehicle(permit.pk)
+
+        temp_vehicle.refresh_from_db()
+        self.assertFalse(temp_vehicle.is_active)
+
+
+@freeze_time(tz.make_aware(datetime(2024, 1, 7)))
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+class AddTemporaryVehicleTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.permit = ParkingPermitFactory(
+            status=VALID,
+            primary_vehicle=True,
+        )
+        cls.vehicle = VehicleFactory()
+        cls.start_time = tz.now()
+        cls.end_time = cls.start_time + timedelta(days=7)
+
+    def test_add_temporary_vehicle(self):
+        self.assertTrue(
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+                self.permit.pk,
+                self.vehicle.registration_number,
+                self.start_time.isoformat(),
+                self.end_time.isoformat(),
+            )
+        )
+
+        temp_vehicle = self.permit.temp_vehicles.get()
+        self.assertEqual(temp_vehicle.vehicle, self.vehicle)
+
+    def test_add_temporary_vehicle_registration_exists(self):
+        self.permit.vehicle = self.vehicle
+        self.permit.save()
+
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_registration_exists_other_case(self):
+        self.permit.vehicle = self.vehicle
+        self.permit.save()
+
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number.lower(),
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_starts_before_permit(self):
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            (self.permit.start_time - timedelta(days=3)).isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_more_than_one_over_a_year(self):
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=self.start_time - timedelta(days=30 * 24)
+        )
+        self.permit.temp_vehicles.set(temp_vehicles)
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.count(), 3)
+
+    def test_add_temporary_vehicle_more_than_one_in_a_year(self):
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=self.start_time - timedelta(days=30)
+        )
+        self.permit.temp_vehicles.set(temp_vehicles)
+
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.count(), 2)
 
 
 @freeze_time(tz.make_aware(datetime(2022, 1, 7)))
