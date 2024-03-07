@@ -128,6 +128,7 @@ class ParkingPermitAdmin(admin.ModelAdmin):
         "end_time",
         "contract_type",
     )
+    list_filter = ("contract_type",)
     list_select_related = ("customer", "vehicle", "parking_zone")
     ordering = (
         "customer__first_name",

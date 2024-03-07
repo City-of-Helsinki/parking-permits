@@ -470,10 +470,7 @@ class PaymentView(APIView):
 
                 # Subscription renewed type order has always only one permit
                 if order.type == OrderType.SUBSCRIPTION_RENEWED:
-                    if not permit.end_time:
-                        permit.end_time = permit.current_period_end_time()
-                    permit.end_time = permit.end_time + relativedelta(months=1)
-                    permit.save()
+                    permit.renew_open_ended_permit()
                     send_permit_email(PermitEmailType.UPDATED, permit)
 
                 if order.type == OrderType.VEHICLE_CHANGED:

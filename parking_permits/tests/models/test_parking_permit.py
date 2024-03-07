@@ -2,6 +2,7 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+import pytz
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase, override_settings
 from django.utils import timezone, translation
@@ -775,7 +776,7 @@ class ParkingZoneTestCase(TestCase):
                 )
 
 
-class TestParkingPermit(TestCase):
+class ParkingPermitTestCase(TestCase):
     def setUp(self):
         self.permit = ParkingPermitFactory()
 
@@ -1156,3 +1157,75 @@ class TestParkingPermit(TestCase):
 
         self.assertEqual(permit.month_count, 4)
         self.assertEqual(permit.end_time.date(), date(2024, 7, 3))
+
+    @freeze_time("2024-1-28")
+    def test_renew_parking_permit(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            end_time=timezone.make_aware(datetime(2024, 1, 31, 21, 59), pytz.UTC),
+            month_count=1,
+        )
+
+        permit.renew_open_ended_permit()
+        permit.refresh_from_db()
+
+        # should be 23:59 Helsinki time i.e. UTC + 2 hours
+        self.assertEqual(
+            permit.end_time.isoformat(),
+            "2024-02-29T21:59:59.999999+00:00",
+        )
+
+        self.assertEqual(
+            timezone.localtime(permit.end_time).isoformat(),
+            "2024-02-29T23:59:59.999999+02:00",
+        )
+
+    @freeze_time("2024-3-7")
+    def test_renew_parking_permit_dst_to_summer(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            end_time=timezone.make_aware(datetime(2024, 3, 10, 21, 59), pytz.UTC),
+            month_count=1,
+        )
+
+        permit.renew_open_ended_permit()
+        permit.refresh_from_db()
+
+        # should be 23:59 Helsinki time i.e. UTC + 2 hours
+        self.assertEqual(
+            permit.end_time.isoformat(),
+            "2024-04-10T20:59:59.999999+00:00",
+        )
+
+        self.assertEqual(
+            timezone.localtime(permit.end_time).isoformat(),
+            "2024-04-10T23:59:59.999999+03:00",
+        )
+
+    @freeze_time("2024-10-15")
+    def test_renew_parking_permit_dst_to_winter(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            end_time=timezone.make_aware(datetime(2024, 10, 12, 20, 59), pytz.UTC),
+            month_count=1,
+        )
+
+        permit.renew_open_ended_permit()
+        permit.refresh_from_db()
+
+        # should be 23:59 Helsinki time i.e. UTC + 2 hours
+        self.assertEqual(
+            permit.end_time.isoformat(),
+            "2024-11-12T21:59:59.999999+00:00",
+        )
+
+        self.assertEqual(
+            timezone.localtime(permit.end_time).isoformat(),
+            "2024-11-12T23:59:59.999999+02:00",
+        )
