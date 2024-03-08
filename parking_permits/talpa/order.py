@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
 from parking_permits.models.order import OrderPaymentType, OrderType
+from parking_permits.talpa.pricing import Pricing
 from parking_permits.utils import (
     DefaultOrderedDict,
     date_time_to_helsinki,
@@ -33,6 +34,16 @@ class TalpaOrderManager:
 
     @classmethod
     def create_item_data(cls, order, order_item):
+        unit_pricing = Pricing.calculate(
+            order_item.payment_unit_price,
+            order_item.vat,
+        )
+
+        row_pricing = Pricing.calculate(
+            order_item.total_payment_price,
+            order_item.vat,
+        )
+
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
@@ -40,13 +51,13 @@ class TalpaOrderManager:
             "unit": _("pcm"),
             "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "priceNet": round_up(order_item.payment_unit_price_net),
-            "priceVat": round_up(order_item.payment_unit_price_vat),
-            "priceGross": round_up(order_item.payment_unit_price),
             "vatPercentage": cls.round_int(float(order_item.vat_percentage)),
-            "rowPriceNet": round_up(order_item.total_payment_price_net),
-            "rowPriceVat": round_up(order_item.total_payment_price_vat),
-            "rowPriceTotal": round_up(order_item.total_payment_price),
+            "priceNet": unit_pricing.format_net(),
+            "priceVat": unit_pricing.format_vat(),
+            "priceGross": unit_pricing.format_gross(),
+            "rowPriceNet": row_pricing.format_net(),
+            "rowPriceVat": row_pricing.format_vat(),
+            "rowPriceTotal": row_pricing.format_gross(),
             "meta": [
                 {
                     "key": "sourceOrderItemId",
@@ -64,7 +75,7 @@ class TalpaOrderManager:
                     "periodFrequency": "1",
                 }
             )
-        return item
+        return item, row_pricing
 
     @classmethod
     def append_detail_meta(cls, item, permit, fixed_end_time=None, ext_request=None):
@@ -158,6 +169,8 @@ class TalpaOrderManager:
         for order_item in order_items:
             order_items_by_permit[order_item.permit].append(order_item)
 
+        total_pricing = Pricing()
+
         for permit in sorted(
             set([item.permit for item in order_items]),
             key=lambda p: p.is_secondary_vehicle,
@@ -165,7 +178,7 @@ class TalpaOrderManager:
             order_items_of_single_permit = []
             for index, order_item in enumerate(order_items_by_permit[permit]):
                 if order_item.quantity:
-                    item = cls.create_item_data(order, order_item)
+                    item, pricing = cls.create_item_data(order, order_item)
                     if index == 0:
                         item.update(
                             {
@@ -173,6 +186,7 @@ class TalpaOrderManager:
                             }
                         )
                     order_items_of_single_permit.append(item)
+                    total_pricing += pricing
 
             # Append details of permit only to the last order item of permit.
             if len(order_items_of_single_permit) > 0:
@@ -189,13 +203,14 @@ class TalpaOrderManager:
             if order.talpa_last_valid_purchase_time
             else ""
         )
+
         return {
             "namespace": settings.NAMESPACE,
             "user": str(order.customer.user.uuid),
             "lastValidPurchaseDateTime": last_valid_purchase_date_time,
-            "priceNet": round_up(order.total_payment_price_net),
-            "priceVat": round_up(order.total_payment_price_vat),
-            "priceTotal": round_up(order.total_payment_price),
+            "priceNet": total_pricing.format_net(),
+            "priceVat": total_pricing.format_vat(),
+            "priceTotal": total_pricing.format_gross(),
             "customer": customer,
             "items": items,
         }
