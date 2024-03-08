@@ -383,12 +383,16 @@ def calc_vat_price(gross_price: Currency, vat: Currency) -> Decimal:
     )
 
 
-def round_up(v):
-    return (
-        "{:0.2f}".format(Decimal(v).quantize(Decimal(".001"), rounding=ROUND_UP))
-        if v
-        else "0.00"
-    )
+def quantize(value) -> Decimal:
+    return Decimal(value or 0).quantize(Decimal(".001"), rounding=ROUND_UP)
+
+
+def format_currency(value) -> str:
+    return "{:0.2f}".format(value)
+
+
+def round_up(value) -> str:
+    return format_currency(quantize(value))
 
 
 def is_valid_city(city):
