@@ -12,7 +12,11 @@ from parking_permits.cron import (
     automatic_remove_obsolete_customer_data,
 )
 from parking_permits.models import Customer
-from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermit,
+    ParkingPermitStatus,
+)
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 
@@ -179,26 +183,43 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
             customer=self.customer,
             end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
             end_time=datetime(2023, 4, 6, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
             end_time=datetime(2023, 3, 30, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
             end_time=datetime(2023, 4, 13, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+        )
+        ParkingPermitFactory(
+            customer=self.customer,
+            end_time=datetime(2023, 4, 12, tzinfo=dt_tz.utc),
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
         )
         ParkingPermitFactory(
             customer=self.customer,
             end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.CLOSED,
+            contract_type=ContractType.FIXED_PERIOD,
+        )
+        ParkingPermitFactory(
+            customer=self.customer,
+            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
+            status=ParkingPermitStatus.CLOSED,
+            contract_type=ContractType.OPEN_ENDED,
         )
 
     @freeze_time(tz.make_aware(datetime(2023, 3, 30)))
@@ -206,6 +227,6 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
     def test_automatic_expiration_remind_targets(self, mock_method):
         mock_method.return_value = None
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
-        self.assertEqual(valid_permits.count(), 4)
+        self.assertEqual(valid_permits.count(), 5)
         expiring_permits = automatic_expiration_remind_notification_of_permits()
         self.assertEqual(expiring_permits.count(), 2)
