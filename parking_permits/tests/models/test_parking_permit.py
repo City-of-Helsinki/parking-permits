@@ -13,12 +13,14 @@ from parking_permits.exceptions import (
     ParkkihubiPermitError,
     PermitCanNotBeEnded,
     ProductCatalogError,
+    TemporaryVehicleValidationError,
 )
 from parking_permits.models import Order, ParkingPermitExtensionRequest
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermitEndType,
+    ParkingPermitEvent,
     ParkingPermitStatus,
 )
 from parking_permits.models.product import ProductType
@@ -39,6 +41,7 @@ from parking_permits.tests.factories.vehicle import (
 )
 from parking_permits.tests.models.test_product import MockResponse
 from parking_permits.utils import get_end_time
+from users.tests.factories.user import UserFactory
 
 CURRENT_YEAR = date.today().year
 
@@ -1229,3 +1232,239 @@ class ParkingPermitTestCase(TestCase):
             timezone.localtime(permit.end_time).isoformat(),
             "2024-11-12T23:59:59.999999+02:00",
         )
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_parse_temporary_vehicle_times(self):
+        now = timezone.now()
+
+        start_time = now.isoformat()
+        end_time = (now + timedelta(days=3)).isoformat()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=27),
+            month_count=1,
+        )
+
+        start_dt, end_dt = permit.parse_temporary_vehicle_times(start_time, end_time)
+        self.assertEqual(start_dt.isoformat(), "2024-03-15T09:00:00+02:00")
+        self.assertEqual(end_dt.isoformat(), "2024-03-18T09:00:00+02:00")
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_parse_temporary_vehicle_times_start_time_before_now(self):
+        now = timezone.now()
+
+        start_time = (now - timedelta(days=3)).isoformat()
+        end_time = (now + timedelta(days=6)).isoformat()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=27),
+            month_count=1,
+        )
+
+        start_dt, end_dt = permit.parse_temporary_vehicle_times(start_time, end_time)
+        self.assertEqual(start_dt.isoformat(), "2024-03-15T09:00:00+02:00")
+        self.assertEqual(end_dt.isoformat(), "2024-03-21T09:00:00+02:00")
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_parse_temporary_vehicle_times_end_time_less_than_hour(self):
+        now = timezone.now()
+
+        start_time = end_time = now.isoformat()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=27),
+            month_count=1,
+        )
+
+        start_dt, end_dt = permit.parse_temporary_vehicle_times(start_time, end_time)
+        self.assertEqual(start_dt.isoformat(), "2024-03-15T09:00:00+02:00")
+        self.assertEqual(end_dt.isoformat(), "2024-03-15T10:00:00+02:00")
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_parse_temporary_vehicle_times_start_time_before_permit(self):
+        now = timezone.now()
+
+        start_time = now.isoformat()
+        end_time = (now + timedelta(days=3)).isoformat()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now + timedelta(days=3),
+            end_time=now + timedelta(days=27),
+            month_count=1,
+        )
+
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            permit.parse_temporary_vehicle_times,
+            start_time,
+            end_time,
+        )
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_is_temporary_vehicle_limit_exceeded_true(self):
+        now = timezone.now()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=now - timedelta(days=30)
+        )
+
+        permit.temp_vehicles.set(temp_vehicles)
+
+        self.assertTrue(permit.is_temporary_vehicle_limit_exceeded())
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki")
+    def test_is_temporary_vehicle_limit_exceeded_false(self):
+        now = timezone.now()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            1, start_time=now - timedelta(days=30)
+        )
+
+        permit.temp_vehicles.set(temp_vehicles)
+
+        self.assertFalse(permit.is_temporary_vehicle_limit_exceeded())
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
+    @patch("requests.patch", return_value=MockResponse(200))
+    def test_add_temporary_vehicle(self, mock_patch):
+        start_time = now = timezone.now()
+
+        end_time = now + timedelta(days=3)
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=27),
+            month_count=1,
+        )
+
+        vehicle = VehicleFactory()
+
+        user = UserFactory()
+
+        self.assertTrue(
+            permit.add_temporary_vehicle(
+                user,
+                vehicle,
+                start_time,
+                end_time,
+                check_limit=True,
+            )
+        )
+
+        self.assertTrue(ParkingPermitEvent.objects.filter(created_by=user).exists())
+
+        mock_patch.assert_called_once()
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
+    @patch("requests.patch", return_value=MockResponse(200))
+    def test_add_temporary_vehicle_limit_exceeded(self, mock_patch):
+        start_time = now = timezone.now()
+        end_time = start_time + timedelta(days=3)
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=now - timedelta(days=30)
+        )
+
+        permit.temp_vehicles.set(temp_vehicles)
+
+        vehicle = VehicleFactory()
+
+        user = UserFactory()
+
+        self.assertRaises(
+            TemporaryVehicleValidationError,
+            permit.add_temporary_vehicle,
+            user,
+            vehicle,
+            start_time,
+            end_time,
+            check_limit=True,
+        )
+
+        self.assertFalse(ParkingPermitEvent.objects.filter(created_by=user).exists())
+
+        mock_patch.assert_not_called()
+
+    @freeze_time("2024-3-15 9:00+02:00")
+    @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
+    @patch("requests.patch", return_value=MockResponse(200))
+    def test_add_temporary_vehicle_limit_exceeded_no_check(self, mock_patch):
+        start_time = now = timezone.now()
+        end_time = start_time + timedelta(days=3)
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=now - timedelta(days=30)
+        )
+
+        permit.temp_vehicles.set(temp_vehicles)
+
+        vehicle = VehicleFactory()
+
+        user = UserFactory()
+
+        self.assertTrue(
+            permit.add_temporary_vehicle(
+                user,
+                vehicle,
+                start_time,
+                end_time,
+                check_limit=False,
+            )
+        )
+
+        self.assertTrue(ParkingPermitEvent.objects.filter(created_by=user).exists())
+
+        mock_patch.assert_called_once()
