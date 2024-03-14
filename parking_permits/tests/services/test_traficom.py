@@ -88,6 +88,17 @@ class TestTraficom(TestCase):
             self.assertEqual(vehicle.weight, 244)
 
     @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_light_weight_vehicle_L3e(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("light_weight_vehicle_L3e.xml")),
+        ):
+            registration_number = "GN-347"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+            self.assertEqual(vehicle.registration_number, registration_number)
+            self.assertEqual(vehicle.weight, 220)
+
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(
             "requests.post",
