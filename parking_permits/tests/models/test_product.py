@@ -63,7 +63,10 @@ class TestProduct(TestCase):
         with translation.override("fi"):
             self.assertEqual(self.product.name, f'{_("Parking zone")} A')
 
-    @patch("requests.post", return_value=MockResponse(201, {"productId": uuid.uuid4()}))
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201, {"productId": uuid.uuid4()}),
+    )
     def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(
         self, mock_post
     ):
