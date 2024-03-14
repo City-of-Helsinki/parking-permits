@@ -293,9 +293,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     @property
     def active_temporary_vehicle(self):
         now = timezone.now()
-        return self.temporary_vehicles.filter(
-            is_active=True, start_time__lte=now, end_time__gte=now
-        ).first()
+        return (
+            self.temporary_vehicles.filter(
+                is_active=True,
+                start_time__lte=now,
+                end_time__gte=now,
+            )
+            .select_related("vehicle")
+            .first()
+        )
 
     @property
     def consent_low_emission_accepted(self):
@@ -1051,42 +1057,52 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def _get_parkkihubi_data(self):
         subjects = []
-        start_time = str(self.start_time)
-        end_time = (
-            str(get_end_time(self.start_time, 30))
-            if not self.end_time
-            else str(self.end_time)
-        )
-        registration_number = self.vehicle.registration_number
 
-        active_temporary_vehicle = self.active_temporary_vehicle
-        if active_temporary_vehicle:
+        permit_start_time = self.start_time
+        permit_end_time = self.end_time or get_end_time(self.start_time, 1)
+
+        # should maybe be permit_start_time.isoformat() ?
+
+        permit_start_time_str = str(permit_start_time)
+        permit_end_time_str = str(permit_end_time)
+
+        registration_number = self.vehicle.registration_number
+        temp_vehicle = self.active_temporary_vehicle
+
+        if temp_vehicle:
+            temp_vehicle_start_time = temp_vehicle.start_time
+            temp_vehicle_end_time = min(temp_vehicle.end_time, permit_end_time)
+
+            temp_vehicle_start_time_str = str(temp_vehicle_start_time)
+            temp_vehicle_end_time_str = str(temp_vehicle_end_time)
+
             subjects.append(
                 {
-                    "start_time": str(start_time),
-                    "end_time": str(self.active_temporary_vehicle.start_time),
+                    "start_time": permit_start_time_str,
+                    "end_time": temp_vehicle_start_time_str,
                     "registration_number": registration_number,
                 }
             )
             subjects.append(
                 {
-                    "start_time": str(self.active_temporary_vehicle.start_time),
-                    "end_time": str(self.active_temporary_vehicle.end_time),
-                    "registration_number": self.active_temporary_vehicle.vehicle.registration_number,
+                    "start_time": temp_vehicle_start_time_str,
+                    "end_time": temp_vehicle_end_time_str,
+                    "registration_number": temp_vehicle.vehicle.registration_number,
                 }
             )
-            subjects.append(
-                {
-                    "start_time": str(self.active_temporary_vehicle.end_time),
-                    "end_time": str(end_time),
-                    "registration_number": registration_number,
-                }
-            )
+            if permit_end_time > temp_vehicle_end_time:
+                subjects.append(
+                    {
+                        "start_time": temp_vehicle_end_time_str,
+                        "end_time": permit_end_time_str,
+                        "registration_number": registration_number,
+                    }
+                )
         else:
             subjects.append(
                 {
-                    "start_time": str(start_time),
-                    "end_time": str(end_time),
+                    "start_time": permit_start_time_str,
+                    "end_time": permit_end_time_str,
                     "registration_number": registration_number,
                 }
             )
@@ -1094,12 +1110,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             "series": settings.PARKKIHUBI_PERMIT_SERIES,
             "domain": settings.PARKKIHUBI_DOMAIN,
             "external_id": str(self.id),
-            "properties": {"permit_type": self.type},
+            "properties": {"permit_type": str(self.type)},
             "subjects": subjects,
             "areas": [
                 {
-                    "start_time": start_time,
-                    "end_time": end_time,
+                    "start_time": permit_start_time_str,
+                    "end_time": permit_end_time_str,
                     "area": self.parking_zone.name,
                 }
             ],
