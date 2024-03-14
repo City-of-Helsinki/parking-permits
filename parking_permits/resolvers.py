@@ -9,9 +9,7 @@ from ariadne import (
     snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
-from dateutil.parser import isoparse
 from django.db import transaction
-from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 import audit_logger as audit
@@ -25,7 +23,6 @@ from .exceptions import (
     AddressError,
     ObjectNotFound,
     ParkingZoneError,
-    TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
 )
 from .models import Address, Customer, Refund, Vehicle
@@ -561,8 +558,6 @@ def resolve_add_temporary_vehicle(
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
     customer = request.user.customer
-    if tz.localtime(isoparse(start_time)) < tz.now():
-        raise TemporaryVehicleValidationError(_("Start time cannot be in the past"))
     vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
     has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
     if not has_valid_licence:

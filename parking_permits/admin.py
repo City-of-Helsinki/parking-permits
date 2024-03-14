@@ -128,6 +128,7 @@ class ParkingPermitAdmin(admin.ModelAdmin):
         "end_time",
         "contract_type",
     )
+    list_filter = ("contract_type",)
     list_select_related = ("customer", "vehicle", "parking_zone")
     ordering = (
         "customer__first_name",
@@ -168,6 +169,13 @@ class VehicleAdmin(admin.ModelAdmin):
         "model",
     )
     ordering = ("registration_number",)
+    raw_id_fields = ("users",)
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        form.base_fields["users"].required = False
+        form.base_fields["restrictions"].required = False
+        return form
 
 
 @admin.register(Refund)

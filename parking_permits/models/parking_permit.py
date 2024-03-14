@@ -2,9 +2,12 @@ import itertools
 import json
 import logging
 import operator
+from datetime import datetime
 from decimal import Decimal
+from typing import Tuple
 
 import requests
+from dateutil.parser import isoparse
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -18,7 +21,11 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import ParkkihubiPermitError, PermitCanNotBeEnded
+from ..exceptions import (
+    ParkkihubiPermitError,
+    PermitCanNotBeEnded,
+    TemporaryVehicleValidationError,
+)
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -28,6 +35,7 @@ from ..utils import (
     flatten_dict,
     get_end_time,
     get_permit_prices,
+    increment_end_time,
     round_up,
 )
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
@@ -780,6 +788,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.cancel_extension_requests()
         self.save()
 
+    def renew_open_ended_permit(self):
+        """Add month to open-ended permit after subscription renewal"""
+        if self.contract_type != ContractType.OPEN_ENDED:
+            raise ValueError("This permit is not open-ended so cannot be renewed")
+        self.end_time = increment_end_time(
+            self.end_time or self.current_period_end_time(), months=1
+        )
+        self.save()
+
     def extend_permit(self, additional_months):
         """Extends the end time of the permit by given months."""
 
@@ -802,6 +819,90 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         for order_item, quantity, date_range in unused_order_items:
             total += order_item.unit_price * quantity
         return total
+
+    def parse_temporary_vehicle_times(
+        self,
+        start_time: str,
+        end_time: str,
+    ) -> Tuple[datetime, datetime]:
+        """Returns start and and end times for a temporary vehicle, checking
+        times against the permit.
+
+        Parses input strings. If start time less than current time, should be same as
+        current time. If end time less than start time + 1 hour, should be start time + 1 hour.
+
+        Start and end times should be returned in local time zone.
+
+        If start time is less than the permit start time, will raise a TemporaryVehicleValidationError.
+        """
+
+        now = timezone.localtime()
+
+        start_dt = max(timezone.localtime(isoparse(start_time)), now)
+
+        if start_dt < timezone.localtime(self.start_time):
+            raise TemporaryVehicleValidationError(
+                _("Temporary vehicle start time has to be after permit start time")
+            )
+
+        end_dt = max(
+            timezone.localtime(isoparse(end_time)),
+            start_dt + timezone.timedelta(hours=1),
+        )
+
+        return start_dt, end_dt
+
+    def add_temporary_vehicle(
+        self,
+        user,
+        vehicle,
+        start_time: datetime,
+        end_time: datetime,
+        *,
+        check_limit: bool,
+    ):
+        """Add a new temporary vehicle, creating an event and updating Parkkihubi.
+
+        If `check_limit` is `True` and limit is exceeded, will raise a TemporaryVehicleValidationError.
+
+        """
+        if check_limit and self.is_temporary_vehicle_limit_exceeded():
+            raise TemporaryVehicleValidationError(
+                _(
+                    "Can not have more than 2 temporary vehicles in 365 days from first one."
+                )
+            )
+
+        from .temporary_vehicle import TemporaryVehicle
+
+        temp_vehicle = TemporaryVehicle.objects.create(
+            vehicle=vehicle,
+            end_time=end_time,
+            start_time=start_time,
+        )
+
+        self.temp_vehicles.add(temp_vehicle)
+
+        ParkingPermitEventFactory.make_add_temporary_vehicle_event(
+            self, temp_vehicle, user
+        )
+        self.update_parkkihubi_permit()
+
+        return temp_vehicle
+
+    def is_temporary_vehicle_limit_exceeded(self) -> bool:
+        """Check limit of temporary vehicles. A user can only
+        have max 2 temp vehicles over 12 months."""
+        return (
+            len(
+                self.temp_vehicles.filter(
+                    start_time__gte=get_end_time(timezone.now(), -12)
+                )
+                .order_by("-start_time")
+                .values("pk")[:2]
+            )
+            == 2
+        )
 
     def get_unused_order_items(self):
         unused_start_date = timezone.localdate(self.next_period_start_time)

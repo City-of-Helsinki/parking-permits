@@ -198,7 +198,9 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(permit.start_time, permit_start_time)
         self.assertEqual(
             permit.end_time,
-            datetime.datetime(2023, 11, 11, 23, 59, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(
+                2023, 11, 12, 21, 59, 59, 999999, tzinfo=datetime.timezone.utc
+            ),
         )
 
 

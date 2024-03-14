@@ -8,6 +8,7 @@ from django.test import override_settings
 from django.utils import timezone
 
 from parking_permits.admin_resolvers import (
+    add_temporary_vehicle,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
     update_or_create_customer,
@@ -154,6 +155,38 @@ def test_update_or_create_existing_customer(customer_info):
     assert customer.national_id_number == "290200A905H"
     assert customer.first_name == "Hessu"
     assert customer.primary_address.street_name == "Mannerheimintie"
+
+
+@pytest.mark.django_db()
+def test_add_temporary_vehicle(info, mock_jwt, settings):
+    settings.TRAFICOM_MOCK = True
+    now = timezone.now()
+    permit = ParkingPermitFactory(
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.OPEN_ENDED,
+        start_time=now,
+        end_time=now + relativedelta(months=1, days=-1),
+        month_count=1,
+    )
+
+    vehicle = VehicleFactory()
+    start_time = now + relativedelta(days=1)
+    end_time = now + relativedelta(days=15)
+
+    with mock_jwt:
+        add_temporary_vehicle(
+            None,
+            info,
+            permit.pk,
+            vehicle.registration_number,
+            start_time.isoformat(),
+            end_time.isoformat(),
+        )
+
+    temp_vehicle = permit.temp_vehicles.get()
+    assert temp_vehicle.vehicle == vehicle
+    assert temp_vehicle.start_time == start_time
+    assert temp_vehicle.end_time == end_time
 
 
 @pytest.mark.django_db()

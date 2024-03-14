@@ -1449,13 +1449,7 @@ def add_temporary_vehicle(
 
     permit = ParkingPermit.objects.get(id=permit_id)
 
-    if tz.localtime(isoparse(start_time)) < tz.now():
-        raise TemporaryVehicleValidationError(_("Start time cannot be in the past"))
-
-    if tz.localtime(isoparse(start_time)) < permit.start_time:
-        raise TemporaryVehicleValidationError(
-            _("Temporary vehicle start time has to be after permit start time")
-        )
+    start_time, end_time = permit.parse_temporary_vehicle_times(start_time, end_time)
 
     try:
         tmp_vehicle = Traficom().fetch_vehicle_details(
@@ -1480,16 +1474,14 @@ def add_temporary_vehicle(
         )
         tmp_vehicle.users.set(vehicle_users)
 
-    vehicle = TemporaryVehicle.objects.create(
-        vehicle=tmp_vehicle,
-        end_time=end_time,
-        start_time=start_time,
+    permit.add_temporary_vehicle(
+        request.user,
+        tmp_vehicle,
+        start_time,
+        end_time,
+        check_limit=False,
     )
-    permit.temp_vehicles.add(vehicle)
-    ParkingPermitEventFactory.make_add_temporary_vehicle_event(
-        permit, vehicle, request.user
-    )
-    permit.update_parkkihubi_permit()
+
     send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
     return {"success": True}
 

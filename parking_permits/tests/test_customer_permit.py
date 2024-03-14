@@ -102,6 +102,8 @@ class AddTemporaryVehicleTestCase(TestCase):
 
         temp_vehicle = self.permit.temp_vehicles.get()
         self.assertEqual(temp_vehicle.vehicle, self.vehicle)
+        self.assertEqual(temp_vehicle.start_time, self.start_time)
+        self.assertEqual(temp_vehicle.end_time, self.end_time)
 
     def test_add_temporary_vehicle_registration_exists(self):
         self.permit.vehicle = self.vehicle
@@ -133,13 +135,45 @@ class AddTemporaryVehicleTestCase(TestCase):
 
         self.assertFalse(self.permit.temp_vehicles.exists())
 
+    def test_add_temporary_vehicle_starts_before_now(self):
+        now = tz.now()
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            (now - timedelta(hours=1)).isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertTrue(self.permit.temp_vehicles.exists())
+
+        vehicle = self.permit.temp_vehicles.first()
+        self.assertEqual(vehicle.start_time, now)
+
+    def test_add_temporary_vehicle_ends_before_starts(self):
+        now = tz.now()
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            (now - timedelta(hours=1)).isoformat(),
+        )
+
+        self.assertTrue(self.permit.temp_vehicles.exists())
+
+        vehicle = self.permit.temp_vehicles.first()
+        self.assertEqual(vehicle.start_time, now)
+        self.assertEqual(vehicle.end_time, now + timedelta(hours=1))
+
     def test_add_temporary_vehicle_starts_before_permit(self):
+        self.permit.start_time = self.permit.start_time + timedelta(days=3)
+        self.permit.save()
+
         self.assertRaises(
             TemporaryVehicleValidationError,
             CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
             self.permit.pk,
             self.vehicle.registration_number,
-            (self.permit.start_time - timedelta(days=3)).isoformat(),
+            self.start_time.isoformat(),
             self.end_time.isoformat(),
         )
 

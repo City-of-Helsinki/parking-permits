@@ -9,6 +9,7 @@ from parking_permits.exceptions import ParkkihubiPermitError
 from parking_permits.models import Customer, ParkingPermit
 from parking_permits.models.order import SubscriptionCancelReason
 from parking_permits.models.parking_permit import (
+    ContractType,
     ParkingPermitEndType,
     ParkingPermitStatus,
 )
@@ -51,7 +52,9 @@ def automatic_expiration_remind_notification_of_permits():
     count = 0
     now = tz.localdate(tz.now())
     expiring_permits = ParkingPermit.objects.filter(
-        end_time__lt=now + relativedelta(weeks=1), status=ParkingPermitStatus.VALID
+        end_time__lt=now + relativedelta(weeks=1),
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
     )
     for permit in expiring_permits:
         success = send_permit_email(PermitEmailType.EXPIRATION_REMIND, permit)
