@@ -14,6 +14,7 @@ class VehicleClass(models.TextChoices):
     N1G = "N1G", _("N1G")
     N2 = "N2", _("N2")
     N2G = "N2G", _("N2G")
+    L3e = "L3e", _("L3e")
     L3eA1 = "L3e-A1", _("L3e-A1")
     L3eA2 = "L3e-A2", _("L3e-A2")
     L3eA3 = "L3e-A3", _("L3e-A3")
