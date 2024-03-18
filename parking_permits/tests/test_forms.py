@@ -1,3 +1,4 @@
+from datetime import timedelta
 from datetime import timezone as dt_tz
 
 import pytest
@@ -23,7 +24,10 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.refund import RefundFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
+    VehicleFactory,
+)
 from users.models import ParkingPermitGroups
 
 
@@ -251,6 +255,26 @@ class PermitSearchFormTextSearch(TestCase):
         vehicle = VehicleFactory(registration_number=registration_number)
 
         permit = ParkingPermitFactory(vehicle=vehicle)
+        form = PermitSearchForm({"q": "ylh-371"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), permit)
+
+    def test_search_temp_vehicle_lower_case(self):
+        registration_number = "YLH-371"
+        now = timezone.now()
+        temp_vehicle = TemporaryVehicleFactory(
+            vehicle__registration_number=registration_number,
+            is_active=True,
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=3),
+        )
+
+        permit = ParkingPermitFactory()
+        permit.temp_vehicles.add(temp_vehicle)
         form = PermitSearchForm({"q": "ylh-371"})
 
         self.assertTrue(form.is_valid())
