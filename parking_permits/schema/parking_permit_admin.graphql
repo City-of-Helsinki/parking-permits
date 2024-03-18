@@ -122,6 +122,7 @@ type PermitNode {
   canAdminExtendPermit: Boolean
   maxExtensionMonthCount: Int
   hasPendingExtensionRequest: Boolean
+  tempVehicleRegistrationNumber: String
 }
 
 type LimitedPermitNode {
@@ -138,6 +139,7 @@ type LimitedPermitNode {
   maxExtensionMonthCount: Int
   type: String
   primaryVehicle: Boolean!
+  tempVehicleRegistrationNumber: String
 }
 
 type RefundNode {
