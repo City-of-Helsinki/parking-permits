@@ -139,8 +139,8 @@ class PermitSearchForm(SearchFormBase):
         now = timezone.now()
 
         fields = [
-            "temp_vehicle_registration_number",
             "vehicle__registration_number",
+            "temp_vehicles__vehicle__registration_number",
         ]
 
         if self.cleaned_data.get("user_role") != ParkingPermitGroups.INSPECTORS:
@@ -165,7 +165,7 @@ class PermitSearchForm(SearchFormBase):
             query = query | Q(pk=q)
 
         qs = qs.annotate(
-            temp_vehicle_registration_number=Subquery(
+            active_temporary_vehicle_registration_number=Subquery(
                 TemporaryVehicle.objects.filter(
                     parkingpermit__pk=OuterRef("pk"),
                     is_active=True,
