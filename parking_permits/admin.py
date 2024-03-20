@@ -1,4 +1,6 @@
 from django.contrib.gis import admin
+from django.urls import reverse
+from django.utils.html import format_html
 
 from parking_permits.models import (
     Address,
@@ -115,7 +117,13 @@ class LowEmissionCriteriaAdmin(admin.ModelAdmin):
 
 @admin.register(ParkingPermit)
 class ParkingPermitAdmin(admin.ModelAdmin):
-    search_fields = ("customer__first_name", "customer__last_name")
+    search_fields = (
+        "pk",
+        "customer__first_name",
+        "customer__last_name",
+        "customer__national_id_number",
+        "vehicle__registration_number",
+    )
     list_display = (
         "id",
         "customer",
@@ -128,12 +136,26 @@ class ParkingPermitAdmin(admin.ModelAdmin):
         "end_time",
         "contract_type",
     )
-    list_filter = ("contract_type",)
+    list_filter = ("contract_type", "status")
     list_select_related = ("customer", "vehicle", "parking_zone")
     ordering = (
         "customer__first_name",
         "customer__last_name",
     )
+    raw_id_fields = (
+        "address",
+        "customer",
+        "vehicle",
+        "next_vehicle",
+        "temp_vehicles",
+    )
+    readonly_fields = ("latest_order",)
+
+    @admin.display()
+    def latest_order(self, instance):
+        order = instance.latest_order
+        url = reverse("admin:parking_permits_order_change", args=[order.pk])
+        return format_html('<a href="{}">{}</a>', url, order)
 
 
 @admin.register(ParkingPermitEvent)
@@ -221,7 +243,7 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_filter = ("status",)
+    list_filter = ("status", "type")
     list_display = (
         "id",
         "customer",
@@ -235,6 +257,18 @@ class OrderAdmin(admin.ModelAdmin):
     readonly_fields = (
         "talpa_order_id",
         "total_payment_price",
+    )
+    search_fields = (
+        "customer__last_name",
+        "customer__first_name",
+        "customer__national_id_number",
+        "talpa_order_id",
+    )
+    raw_id_fields = (
+        "customer",
+        "created_by",
+        "modified_by",
+        "permits",
     )
     ordering = ("-created_at",)
 

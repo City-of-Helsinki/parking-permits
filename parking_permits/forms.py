@@ -6,6 +6,7 @@ from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
 from django.db.models import OuterRef, Q, Subquery, Value
 from django.db.models.functions import Concat
+from django.utils import timezone
 
 from parking_permits.models import (
     Address,
@@ -13,6 +14,7 @@ from parking_permits.models import (
     Customer,
     LowEmissionCriteria,
     Product,
+    TemporaryVehicle,
 )
 from parking_permits.models.order import Order, OrderPaymentType
 from parking_permits.models.parking_permit import (
@@ -111,7 +113,9 @@ class PermitSearchForm(SearchFormBase):
         return {
             "name": ["customer__first_name", "customer__last_name"],
             "nationalIdNumber": ["customer__national_id_number"],
-            "registrationNumber": ["vehicle__registration_number"],
+            "registrationNumber": [
+                "vehicle__registration_number",
+            ],
             "primaryAddress": [
                 "customer__primary_address__street_name",
                 "customer__primary_address__street_number",
@@ -127,35 +131,56 @@ class PermitSearchForm(SearchFormBase):
         }
 
     def filter_queryset(self, qs):
-        has_filters = False
         q = self.cleaned_data.get("q")
-        status = self.cleaned_data.get("status")
-        user_role = self.cleaned_data.get("user_role")
 
-        if status and status != "ALL" and q:
+        if not q:
+            return self.get_empty_queryset()
+
+        now = timezone.now()
+
+        fields = [
+            "vehicle__registration_number",
+            "temp_vehicles__vehicle__registration_number",
+        ]
+
+        if self.cleaned_data.get("user_role") != ParkingPermitGroups.INSPECTORS:
+            fields += [
+                "customer__first_name",
+                "customer__last_name",
+                "customer__national_id_number",
+            ]
+
+        query = functools.reduce(
+            operator.and_,
+            [
+                functools.reduce(
+                    operator.or_,
+                    [Q(**{f"{field}__icontains": token}) for field in fields],
+                )
+                for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
+            ],
+        )
+
+        if q.isdigit():
+            query = query | Q(pk=q)
+
+        qs = qs.annotate(
+            active_temporary_vehicle_registration_number=Subquery(
+                TemporaryVehicle.objects.filter(
+                    parkingpermit__pk=OuterRef("pk"),
+                    is_active=True,
+                    start_time__lte=now,
+                    end_time__gte=now,
+                ).values("vehicle__registration_number")[:1]
+            )
+        ).filter(query)
+
+        status = self.cleaned_data.get("status") or "ALL"
+
+        if status != "ALL":
             qs = qs.filter(status=status)
-            has_filters = True
-        if q:
-            if q.isdigit():
-                query = Q(id=int(q))
-            else:
-                if user_role == ParkingPermitGroups.INSPECTORS:
-                    query = Q(vehicle__registration_number__iexact=q)
-                else:
-                    query = functools.reduce(
-                        operator.and_,
-                        [
-                            Q(customer__first_name__icontains=token)
-                            | Q(customer__last_name__icontains=token)
-                            | Q(customer__national_id_number__iexact=token)
-                            | Q(vehicle__registration_number__iexact=q)
-                            for token in q.split()[: self.MAX_TEXT_SEARCH_TOKENS]
-                        ],
-                    )
-            qs = qs.filter(query)
-            has_filters = True
 
-        return qs if has_filters else self.get_empty_queryset()
+        return qs.select_related("customer", "vehicle").distinct()
 
 
 class RefundSearchForm(SearchFormBase):

@@ -48,6 +48,7 @@ def _get_permit_row(permit):
         name,
         customer.national_id_number,
         vehicle.registration_number,
+        getattr(permit, "active_temporary_vehicle_registration_number", None) or "-",
         str(permit.full_address)
         if permit.address and permit.address == customer.primary_address
         else "-",
@@ -127,6 +128,7 @@ PERMIT_HEADERS = [
     _("Name"),
     _("National identification number"),
     _("Registration number"),
+    _("Temporary registration number"),
     _("Primary address"),
     _("Other address"),
     _("Area"),
