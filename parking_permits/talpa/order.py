@@ -287,6 +287,7 @@ class TalpaOrderManager:
                 "loggedInCheckoutUrl"
             )
             order.talpa_receipt_url = response_data.get("receiptUrl")
+            order.talpa_update_card_url = response_data.get("updateCardUrl", "")
             order.save()
             talpa_order_item_id_mapping = {
                 item["meta"][0]["value"]: item["orderItemId"]

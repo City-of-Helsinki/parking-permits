@@ -335,6 +335,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return None
 
     @property
+    def update_card_url(self):
+        if self.latest_order and self.latest_order.talpa_update_card_url:
+            return self.latest_order.talpa_update_card_url
+        return None
+
+    @property
     def checkout_url(self):
         if self.latest_order and self.latest_order.talpa_checkout_url:
             return self.latest_order.talpa_checkout_url

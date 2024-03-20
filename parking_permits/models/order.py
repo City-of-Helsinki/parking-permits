@@ -412,9 +412,13 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         _("Talpa logged in checkout url"), blank=True
     )
     talpa_receipt_url = models.URLField(_("Talpa receipt_url"), blank=True)
+
+    talpa_update_card_url = models.URLField(_("Talpa update card url"), blank=True)
+
     talpa_last_valid_purchase_time = models.DateTimeField(
         _("Talpa last valid purchase time"), blank=True, null=True
     )
+
     payment_type = models.CharField(
         _("Payment type"),
         max_length=50,
