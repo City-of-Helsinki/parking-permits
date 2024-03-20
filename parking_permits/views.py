@@ -628,6 +628,7 @@ class OrderView(APIView):
                     "loggedInCheckoutUrl"
                 ),
                 talpa_receipt_url=validated_order_data.get("receiptUrl"),
+                talpa_update_card_url=validated_order_data.get("updateCardUrl", ""),
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 customer=permit.customer,
                 status=OrderStatus.DRAFT,
