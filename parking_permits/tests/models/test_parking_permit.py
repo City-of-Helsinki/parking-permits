@@ -10,7 +10,6 @@ from django.utils.translation import gettext_lazy as _
 from freezegun import freeze_time
 
 from parking_permits.exceptions import (
-    ParkkihubiPermitError,
     PermitCanNotBeEnded,
     ProductCatalogError,
     TemporaryVehicleValidationError,
@@ -846,24 +845,6 @@ class ParkingPermitTestCase(TestCase):
 
         self.assertTrue(permit.can_be_refunded)
 
-    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.post", return_value=MockResponse(201))
-    def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(
-        self, mock_post
-    ):
-        self.permit.create_parkkihubi_permit()
-        mock_post.assert_called_once()
-        self.assertEqual(mock_post.return_value.status_code, 201)
-
-    @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.post", return_value=MockResponse(400))
-    def test_should_raise_error_when_creating_talpa_product_failed(self, mock_post):
-        self.permit.vehicle.registration_number = ""
-        with self.assertRaises(ParkkihubiPermitError):
-            self.permit.create_parkkihubi_permit()
-            mock_post.assert_called_once()
-            self.assertEqual(mock_post.return_value.status_code, 400)
-
     @freeze_time("2024-02-05")
     def test_get_price_list_for_extended_permit(self):
         now = timezone.now()
@@ -1114,10 +1095,8 @@ class ParkingPermitTestCase(TestCase):
         )
 
     @freeze_time("2024-3-4")
-    @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.patch", return_value=MockResponse(200))
-    @patch("requests.post", return_value=MockResponse(201))
-    def test_extend_permit(self, mock_post, mock_patch):
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_extend_permit(self):
         now = timezone.now()
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
@@ -1128,33 +1107,6 @@ class ParkingPermitTestCase(TestCase):
         )
 
         permit.extend_permit(3)
-
-        mock_patch.assert_called_once()
-        mock_post.assert_not_called()
-
-        permit.refresh_from_db()
-
-        self.assertEqual(permit.month_count, 4)
-        self.assertEqual(permit.end_time.date(), date(2024, 7, 3))
-
-    @freeze_time("2024-3-4")
-    @override_settings(PERMIT_EXTENSIONS_ENABLED=True, DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.patch", return_value=MockResponse(404))
-    @patch("requests.post", return_value=MockResponse(201))
-    def test_extend_permit_create_new_parkkihubi_permit(self, mock_post, mock_patch):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.FIXED_PERIOD,
-            start_time=now,
-            end_time=now + timedelta(days=30),
-            month_count=1,
-        )
-
-        permit.extend_permit(3)
-
-        mock_patch.assert_called_once()
-        mock_post.assert_called_once()
 
         permit.refresh_from_db()
 
@@ -1359,8 +1311,7 @@ class ParkingPermitTestCase(TestCase):
 
     @freeze_time("2024-3-15 9:00+02:00")
     @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.patch", return_value=MockResponse(200))
-    def test_add_temporary_vehicle(self, mock_patch):
+    def test_add_temporary_vehicle(self):
         start_time = now = timezone.now()
 
         end_time = now + timedelta(days=3)
@@ -1388,8 +1339,6 @@ class ParkingPermitTestCase(TestCase):
         )
 
         self.assertTrue(ParkingPermitEvent.objects.filter(created_by=user).exists())
-
-        mock_patch.assert_called_once()
 
     @freeze_time("2024-3-15 9:00+02:00")
     @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
@@ -1432,8 +1381,7 @@ class ParkingPermitTestCase(TestCase):
 
     @freeze_time("2024-3-15 9:00+02:00")
     @override_settings(TIME_ZONE="Europe/Helsinki", DEBUG_SKIP_PARKKIHUBI_SYNC=False)
-    @patch("requests.patch", return_value=MockResponse(200))
-    def test_add_temporary_vehicle_limit_exceeded_no_check(self, mock_patch):
+    def test_add_temporary_vehicle_limit_exceeded_no_check(self):
         start_time = now = timezone.now()
         end_time = start_time + timedelta(days=3)
 
@@ -1466,272 +1414,3 @@ class ParkingPermitTestCase(TestCase):
         )
 
         self.assertTrue(ParkingPermitEvent.objects.filter(created_by=user).exists())
-
-        mock_patch.assert_called_once()
-
-    @freeze_time("2024-3-15")
-    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
-    def test_get_parkkihubi_data(self):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=now - timedelta(days=365),
-            end_time=now + timedelta(days=30),
-            month_count=1,
-            vehicle__registration_number="KEO-432",
-            parking_zone__name="Zone A",
-        )
-
-        data = permit._get_parkkihubi_data()
-        self.assertEqual(
-            data,
-            {
-                "series": "991",
-                "domain": "HKI_TEST",
-                "external_id": str(permit.pk),
-                "properties": {"permit_type": "RESIDENT"},
-                "subjects": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    }
-                ],
-                "areas": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "area": "Zone A",
-                    }
-                ],
-            },
-        )
-
-    @freeze_time("2024-3-15")
-    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
-    def test_get_parkkihubi_data_with_temp_vehicle(self):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=now - timedelta(days=365),
-            end_time=now + timedelta(days=30),
-            month_count=1,
-            vehicle__registration_number="KEO-432",
-            parking_zone__name="Zone A",
-        )
-        temp_vehicle = TemporaryVehicleFactory(
-            vehicle__registration_number="IOL-897",
-            start_time=now - timedelta(days=3),
-            end_time=now + timedelta(days=6),
-            is_active=True,
-        )
-        permit.temp_vehicles.add(temp_vehicle)
-
-        data = permit._get_parkkihubi_data()
-        self.assertEqual(
-            data,
-            {
-                "series": "991",
-                "domain": "HKI_TEST",
-                "external_id": str(permit.pk),
-                "properties": {"permit_type": "RESIDENT"},
-                "subjects": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-03-12T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                    {
-                        "start_time": "2024-03-12T00:00:00+00:00",
-                        "end_time": "2024-03-21T00:00:00+00:00",
-                        "registration_number": "IOL-897",
-                    },
-                    {
-                        "start_time": "2024-03-21T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                ],
-                "areas": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "area": "Zone A",
-                    }
-                ],
-            },
-        )
-
-    @freeze_time("2024-3-15")
-    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
-    def test_get_parkkihubi_data_with_inactive_temp_vehicle(self):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=now - timedelta(days=365),
-            end_time=now + timedelta(days=30),
-            month_count=1,
-            vehicle__registration_number="KEO-432",
-            parking_zone__name="Zone A",
-        )
-        temp_vehicle = TemporaryVehicleFactory(
-            vehicle__registration_number="IOL-897",
-            start_time=now - timedelta(days=3),
-            end_time=now + timedelta(days=6),
-            is_active=False,
-        )
-        permit.temp_vehicles.add(temp_vehicle)
-
-        data = permit._get_parkkihubi_data()
-        self.assertEqual(
-            data,
-            {
-                "series": "991",
-                "domain": "HKI_TEST",
-                "external_id": str(permit.pk),
-                "properties": {"permit_type": "RESIDENT"},
-                "subjects": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                ],
-                "areas": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "area": "Zone A",
-                    }
-                ],
-            },
-        )
-
-    @freeze_time("2024-3-15")
-    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
-    def test_get_parkkihubi_data_with_multiple_temp_vehicles(self):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=now - timedelta(days=365),
-            end_time=now + timedelta(days=30),
-            month_count=1,
-            vehicle__registration_number="KEO-432",
-            parking_zone__name="Zone A",
-        )
-        temp_vehicles = [
-            TemporaryVehicleFactory(
-                vehicle__registration_number="IOL-897",
-                start_time=now - timedelta(days=3),
-                end_time=now + timedelta(days=6),
-                is_active=True,
-            ),
-            TemporaryVehicleFactory(
-                vehicle__registration_number="KYZ-555",
-                start_time=now + timedelta(days=10),
-                end_time=now + timedelta(days=12),
-                is_active=True,
-            ),
-        ]
-        permit.temp_vehicles.set(temp_vehicles)
-
-        data = permit._get_parkkihubi_data()
-        self.assertEqual(
-            data,
-            {
-                "series": "991",
-                "domain": "HKI_TEST",
-                "external_id": str(permit.pk),
-                "properties": {"permit_type": "RESIDENT"},
-                "subjects": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-03-12T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                    {
-                        "start_time": "2024-03-12T00:00:00+00:00",
-                        "end_time": "2024-03-21T00:00:00+00:00",
-                        "registration_number": "IOL-897",
-                    },
-                    {
-                        "start_time": "2024-03-21T00:00:00+00:00",
-                        "end_time": "2024-03-25T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                    {
-                        "start_time": "2024-03-25T00:00:00+00:00",
-                        "end_time": "2024-03-27T00:00:00+00:00",
-                        "registration_number": "KYZ-555",
-                    },
-                    {
-                        "start_time": "2024-03-27T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                ],
-                "areas": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "area": "Zone A",
-                    }
-                ],
-            },
-        )
-
-    @freeze_time("2024-3-15")
-    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
-    def test_get_parkkihubi_data_with_temp_vehicle_past_permit_date(self):
-        now = timezone.now()
-        permit = ParkingPermitFactory(
-            status=ParkingPermitStatus.VALID,
-            contract_type=ContractType.OPEN_ENDED,
-            start_time=now - timedelta(days=365),
-            end_time=now + timedelta(days=30),
-            month_count=1,
-            vehicle__registration_number="KEO-432",
-            parking_zone__name="Zone A",
-        )
-        temp_vehicle = TemporaryVehicleFactory(
-            vehicle__registration_number="IOL-897",
-            start_time=now - timedelta(days=25),
-            end_time=now + timedelta(days=32),
-            is_active=True,
-        )
-        permit.temp_vehicles.add(temp_vehicle)
-
-        data = permit._get_parkkihubi_data()
-
-        self.assertEqual(
-            data,
-            {
-                "series": "991",
-                "domain": "HKI_TEST",
-                "external_id": str(permit.pk),
-                "properties": {"permit_type": "RESIDENT"},
-                "subjects": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-02-19T00:00:00+00:00",
-                        "registration_number": "KEO-432",
-                    },
-                    {
-                        "start_time": "2024-02-19T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "registration_number": "IOL-897",
-                    },
-                ],
-                "areas": [
-                    {
-                        "start_time": "2023-03-16T00:00:00+00:00",
-                        "end_time": "2024-04-14T00:00:00+00:00",
-                        "area": "Zone A",
-                    }
-                ],
-            },
-        )

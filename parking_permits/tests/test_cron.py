@@ -10,6 +10,7 @@ from parking_permits.cron import (
     automatic_expiration_of_permits,
     automatic_expiration_remind_notification_of_permits,
     automatic_remove_obsolete_customer_data,
+    automatic_syncing_of_permits_to_parkkihubi,
 )
 from parking_permits.models import Customer
 from parking_permits.models.parking_permit import (
@@ -24,6 +25,46 @@ from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 class CronTestCase(TestCase):
     def setUp(self):
         self.customer = CustomerFactory(first_name="Stephen", last_name="Strange")
+
+    @patch("parking_permits.cron.sync_with_parkkihubi")
+    def test_automatic_syncing_of_permits_to_parkkihubi_valid_not_synced(
+        self, mock_sync
+    ):
+        ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID, synced_with_parkkihubi=False
+        )
+        automatic_syncing_of_permits_to_parkkihubi()
+        mock_sync.assert_called()
+
+    @patch("parking_permits.cron.sync_with_parkkihubi")
+    def test_automatic_syncing_of_permits_to_parkkihubi_valid_is_synced(
+        self, mock_sync
+    ):
+        ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID, synced_with_parkkihubi=True
+        )
+        automatic_syncing_of_permits_to_parkkihubi()
+        mock_sync.assert_not_called()
+
+    @patch("parking_permits.cron.sync_with_parkkihubi")
+    def test_automatic_syncing_of_permits_to_parkkihubi_draft_not_synced(
+        self, mock_sync
+    ):
+        ParkingPermitFactory(
+            status=ParkingPermitStatus.DRAFT, synced_with_parkkihubi=False
+        )
+        automatic_syncing_of_permits_to_parkkihubi()
+        mock_sync.assert_not_called()
+
+    @patch("parking_permits.cron.sync_with_parkkihubi")
+    def test_automatic_syncing_of_permits_to_parkkihubi_closed_not_synced(
+        self, mock_sync
+    ):
+        ParkingPermitFactory(
+            status=ParkingPermitStatus.CLOSED, synced_with_parkkihubi=False
+        )
+        automatic_syncing_of_permits_to_parkkihubi()
+        mock_sync.assert_called()
 
     @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits(self):

@@ -49,6 +49,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
+from .services.parkkihubi import sync_with_parkkihubi
 from .utils import ModelDiffer, diff_months_floor, get_end_time
 
 logger = logging.getLogger("db")
@@ -133,6 +134,8 @@ class CustomerPermit:
             check_limit=True,
         )
 
+        sync_with_parkkihubi(permit)
+
         send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
         return True
 
@@ -146,7 +149,7 @@ class CustomerPermit:
             ParkingPermitEventFactory.make_add_temporary_vehicle_event(
                 permit, temp_vehicle, created_by=self.customer.user
             )
-        permit.update_parkkihubi_permit()
+        sync_with_parkkihubi(permit)
         send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
         return True
 
@@ -470,7 +473,7 @@ class CustomerPermit:
                 )
 
             permit.end_permit(end_type, force_end=force_end)
-            permit.update_parkkihubi_permit()
+            sync_with_parkkihubi(permit)
             send_permit_email(
                 PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
             )
