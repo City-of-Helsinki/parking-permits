@@ -1,10 +1,12 @@
+import collections
+import dataclasses
 import itertools
 import json
 import logging
 import operator
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Tuple
+from typing import Dict, Tuple
 
 import requests
 from dateutil.parser import isoparse
@@ -36,6 +38,7 @@ from ..utils import (
     get_end_time,
     get_permit_prices,
     increment_end_time,
+    pairwise,
     round_up,
 )
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
@@ -44,6 +47,48 @@ from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
 logger = logging.getLogger("db")
+
+
+class ParkkihubiSubject:
+    def __init__(
+        self,
+        *,
+        start_time: datetime,
+        end_time: datetime,
+        registration_number: str,
+    ):
+        self.start_time = start_time
+        self.end_time = end_time
+        self.registration_number = registration_number
+
+    def __str__(self):
+        return f"{self.start_time}-{self.end_time}: {self.registration_number}"
+
+    def __repr__(self):
+        return f"<{self}>"
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __eq__(self, other) -> bool:
+        return (
+            other.start_time == self.start_time
+            and other.end_time == self.end_time
+            and other.registration_number == self.registration_number
+        )
+
+    def __gt__(self, other) -> bool:
+        return self.start_time > other.start_time
+
+    def __lt__(self, other) -> bool:
+        return self.start_time < other.start_time
+
+    def to_json(self) -> Dict[str, str]:
+        return {
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat(),
+            "registration_number": self.registration_number,
+        }
 
 
 class ParkingPermitType(models.TextChoices):
@@ -1062,66 +1107,88 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         }
 
     def _get_parkkihubi_data(self):
-        subjects = []
+        # Create list of subjects:
+        # Each subject should consist of start+end time and registration numbers
+        # Once we have list of subjects, ensure that there are no overlapping subjects.
 
-        permit_start_time = self.start_time
-        permit_end_time = self.end_time or get_end_time(self.start_time, 1)
+        # Default permit
+        end_time = self.end_time or get_end_time(self.start_time, 1)
 
-        # should maybe be permit_start_time.isoformat() ?
-
-        permit_start_time_str = str(permit_start_time)
-        permit_end_time_str = str(permit_end_time)
-
-        registration_number = self.vehicle.registration_number
-        temp_vehicle = self.active_temporary_vehicle
-
-        if temp_vehicle:
-            temp_vehicle_start_time = temp_vehicle.start_time
-            temp_vehicle_end_time = min(temp_vehicle.end_time, permit_end_time)
-
-            temp_vehicle_start_time_str = str(temp_vehicle_start_time)
-            temp_vehicle_end_time_str = str(temp_vehicle_end_time)
-
-            subjects.append(
-                {
-                    "start_time": permit_start_time_str,
-                    "end_time": temp_vehicle_start_time_str,
-                    "registration_number": registration_number,
-                }
+        subjects = [
+            ParkkihubiSubject(
+                start_time=self.start_time,
+                end_time=end_time,
+                registration_number=self.vehicle.registration_number,
             )
-            subjects.append(
-                {
-                    "start_time": temp_vehicle_start_time_str,
-                    "end_time": temp_vehicle_end_time_str,
-                    "registration_number": temp_vehicle.vehicle.registration_number,
-                }
+        ]
+
+        temp_vehicles = (
+            self.temp_vehicles.filter(
+                is_active=True,
+                start_time__lte=end_time,
             )
-            if permit_end_time > temp_vehicle_end_time:
-                subjects.append(
-                    {
-                        "start_time": temp_vehicle_end_time_str,
-                        "end_time": permit_end_time_str,
-                        "registration_number": registration_number,
-                    }
+            .order_by("start_time")
+            .select_related("vehicle")
+        )
+
+        subjects += [
+            ParkkihubiSubject(
+                start_time=max(self.start_time, temp_vehicle.start_time),
+                end_time=min(temp_vehicle.end_time, end_time),
+                registration_number=temp_vehicle.vehicle.registration_number,
+            )
+            for temp_vehicle in temp_vehicles
+        ]
+
+        # adjust subjects to ensure none overlapping
+        # example: permit starts 1st March and ends 31st March.
+        # temp vehicle starts 15th March and ends 20th March.
+        # = 3 subjects: default permit 1st-15th;  temp vehicle 15th-20th; default 20th > 31st.
+
+        extra_subjects = []
+
+        for subject_a, subject_b in pairwise(subjects):
+            # ensure we don't have overlapping times
+
+            if subject_a.end_time > subject_b.start_time:
+                subject_a.end_time = subject_b.start_time
+
+            # if gap between subjects, insert default permit vehicle between them
+            if subject_b.start_time > subject_a.end_time:
+                extra_subjects.append(
+                    ParkkihubiSubject(
+                        start_time=subject_a.end_time,
+                        end_time=subject_b.start_time,
+                        registration_number=self.vehicle.registration_number,
+                    )
                 )
-        else:
-            subjects.append(
-                {
-                    "start_time": permit_start_time_str,
-                    "end_time": permit_end_time_str,
-                    "registration_number": registration_number,
-                }
+
+        # add another subject for default permit if the end time of the last subject is less
+        # than end of this permit
+        last_end_time = max([subject.end_time for subject in subjects])
+
+        if end_time > last_end_time:
+            extra_subjects.append(
+                ParkkihubiSubject(
+                    start_time=last_end_time,
+                    end_time=end_time,
+                    registration_number=self.vehicle.registration_number,
+                )
             )
+
+        # dedupe and sort
+        subjects = sorted([*collections.Counter(subjects + extra_subjects)])
+
         return {
             "series": settings.PARKKIHUBI_PERMIT_SERIES,
             "domain": settings.PARKKIHUBI_DOMAIN,
             "external_id": str(self.id),
             "properties": {"permit_type": str(self.type)},
-            "subjects": subjects,
+            "subjects": [subject.to_json() for subject in subjects],
             "areas": [
                 {
-                    "start_time": permit_start_time_str,
-                    "end_time": permit_end_time_str,
+                    "start_time": subjects[0].start_time.isoformat(),
+                    "end_time": subjects[-1].end_time.isoformat(),
                     "area": self.parking_zone.name,
                 }
             ],
