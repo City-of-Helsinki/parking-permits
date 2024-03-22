@@ -1493,15 +1493,15 @@ class ParkingPermitTestCase(TestCase):
                 "properties": {"permit_type": "RESIDENT"},
                 "subjects": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "registration_number": "KEO-432",
                     }
                 ],
                 "areas": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "area": "Zone A",
                     }
                 ],
@@ -1539,25 +1539,145 @@ class ParkingPermitTestCase(TestCase):
                 "properties": {"permit_type": "RESIDENT"},
                 "subjects": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-03-12 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-03-12T00:00:00+00:00",
                         "registration_number": "KEO-432",
                     },
                     {
-                        "start_time": "2024-03-12 00:00:00+00:00",
-                        "end_time": "2024-03-21 00:00:00+00:00",
+                        "start_time": "2024-03-12T00:00:00+00:00",
+                        "end_time": "2024-03-21T00:00:00+00:00",
                         "registration_number": "IOL-897",
                     },
                     {
-                        "start_time": "2024-03-21 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2024-03-21T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "registration_number": "KEO-432",
                     },
                 ],
                 "areas": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
+                        "area": "Zone A",
+                    }
+                ],
+            },
+        )
+
+    @freeze_time("2024-3-15")
+    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
+    def test_get_parkkihubi_data_with_inactive_temp_vehicle(self):
+        now = timezone.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+            vehicle__registration_number="KEO-432",
+            parking_zone__name="Zone A",
+        )
+        temp_vehicle = TemporaryVehicleFactory(
+            vehicle__registration_number="IOL-897",
+            start_time=now - timedelta(days=3),
+            end_time=now + timedelta(days=6),
+            is_active=False,
+        )
+        permit.temp_vehicles.add(temp_vehicle)
+
+        data = permit._get_parkkihubi_data()
+        self.assertEqual(
+            data,
+            {
+                "series": "991",
+                "domain": "HKI_TEST",
+                "external_id": str(permit.pk),
+                "properties": {"permit_type": "RESIDENT"},
+                "subjects": [
+                    {
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
+                        "registration_number": "KEO-432",
+                    },
+                ],
+                "areas": [
+                    {
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
+                        "area": "Zone A",
+                    }
+                ],
+            },
+        )
+
+    @freeze_time("2024-3-15")
+    @override_settings(PARKKIHUBI_PERMIT_SERIES="991", PARKKIHUBI_DOMAIN="HKI_TEST")
+    def test_get_parkkihubi_data_with_multiple_temp_vehicles(self):
+        now = timezone.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=now - timedelta(days=365),
+            end_time=now + timedelta(days=30),
+            month_count=1,
+            vehicle__registration_number="KEO-432",
+            parking_zone__name="Zone A",
+        )
+        temp_vehicles = [
+            TemporaryVehicleFactory(
+                vehicle__registration_number="IOL-897",
+                start_time=now - timedelta(days=3),
+                end_time=now + timedelta(days=6),
+                is_active=True,
+            ),
+            TemporaryVehicleFactory(
+                vehicle__registration_number="KYZ-555",
+                start_time=now + timedelta(days=10),
+                end_time=now + timedelta(days=12),
+                is_active=True,
+            ),
+        ]
+        permit.temp_vehicles.set(temp_vehicles)
+
+        data = permit._get_parkkihubi_data()
+        self.assertEqual(
+            data,
+            {
+                "series": "991",
+                "domain": "HKI_TEST",
+                "external_id": str(permit.pk),
+                "properties": {"permit_type": "RESIDENT"},
+                "subjects": [
+                    {
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-03-12T00:00:00+00:00",
+                        "registration_number": "KEO-432",
+                    },
+                    {
+                        "start_time": "2024-03-12T00:00:00+00:00",
+                        "end_time": "2024-03-21T00:00:00+00:00",
+                        "registration_number": "IOL-897",
+                    },
+                    {
+                        "start_time": "2024-03-21T00:00:00+00:00",
+                        "end_time": "2024-03-25T00:00:00+00:00",
+                        "registration_number": "KEO-432",
+                    },
+                    {
+                        "start_time": "2024-03-25T00:00:00+00:00",
+                        "end_time": "2024-03-27T00:00:00+00:00",
+                        "registration_number": "KYZ-555",
+                    },
+                    {
+                        "start_time": "2024-03-27T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
+                        "registration_number": "KEO-432",
+                    },
+                ],
+                "areas": [
+                    {
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "area": "Zone A",
                     }
                 ],
@@ -1596,20 +1716,20 @@ class ParkingPermitTestCase(TestCase):
                 "properties": {"permit_type": "RESIDENT"},
                 "subjects": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-02-19 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-02-19T00:00:00+00:00",
                         "registration_number": "KEO-432",
                     },
                     {
-                        "start_time": "2024-02-19 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2024-02-19T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "registration_number": "IOL-897",
                     },
                 ],
                 "areas": [
                     {
-                        "start_time": "2023-03-16 00:00:00+00:00",
-                        "end_time": "2024-04-14 00:00:00+00:00",
+                        "start_time": "2023-03-16T00:00:00+00:00",
+                        "end_time": "2024-04-14T00:00:00+00:00",
                         "area": "Zone A",
                     }
                 ],
