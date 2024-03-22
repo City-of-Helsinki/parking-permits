@@ -5,7 +5,6 @@ from django.db.models import Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
-from parking_permits.exceptions import ParkkihubiPermitError
 from parking_permits.models import Customer, ParkingPermit
 from parking_permits.models.order import SubscriptionCancelReason
 from parking_permits.models.parking_permit import (
@@ -14,6 +13,7 @@ from parking_permits.models.parking_permit import (
     ParkingPermitStatus,
 )
 from parking_permits.services.mail import PermitEmailType, send_permit_email
+from parking_permits.services.parkkihubi import sync_with_parkkihubi
 
 logger = logging.getLogger("django")
 db_logger = logging.getLogger("db")
@@ -90,7 +90,4 @@ def automatic_syncing_of_permits_to_parkkihubi():
         synced_with_parkkihubi=False, status__in=statuses_to_sync
     )
     for permit in permits:
-        try:
-            permit.update_parkkihubi_permit()
-        except ParkkihubiPermitError:
-            permit.create_parkkihubi_permit()
+        sync_with_parkkihubi(permit)

@@ -1,13 +1,10 @@
-import collections
 import itertools
-import json
 import logging
 import operator
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, Tuple
+from typing import Tuple
 
-import requests
 from dateutil.parser import isoparse
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -22,11 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import (
-    ParkkihubiPermitError,
-    PermitCanNotBeEnded,
-    TemporaryVehicleValidationError,
-)
+from ..exceptions import PermitCanNotBeEnded, TemporaryVehicleValidationError
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -37,7 +30,6 @@ from ..utils import (
     get_end_time,
     get_permit_prices,
     increment_end_time,
-    pairwise,
     round_up,
 )
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
@@ -46,48 +38,6 @@ from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
 logger = logging.getLogger("db")
-
-
-class ParkkihubiSubject:
-    def __init__(
-        self,
-        *,
-        start_time: datetime,
-        end_time: datetime,
-        registration_number: str,
-    ):
-        self.start_time = start_time
-        self.end_time = end_time
-        self.registration_number = registration_number
-
-    def __str__(self):
-        return f"{self.start_time}-{self.end_time}: {self.registration_number}"
-
-    def __repr__(self):
-        return f"<{self}>"
-
-    def __hash__(self):
-        return hash(str(self))
-
-    def __eq__(self, other) -> bool:
-        return (
-            other.start_time == self.start_time
-            and other.end_time == self.end_time
-            and other.registration_number == self.registration_number
-        )
-
-    def __gt__(self, other) -> bool:
-        return self.start_time > other.start_time
-
-    def __lt__(self, other) -> bool:
-        return self.start_time < other.start_time
-
-    def to_json(self) -> Dict[str, str]:
-        return {
-            "start_time": self.start_time.isoformat(),
-            "end_time": self.end_time.isoformat(),
-            "registration_number": self.registration_number,
-        }
 
 
 class ParkingPermitType(models.TextChoices):
@@ -860,8 +810,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self.end_time = get_end_time(self.start_time, self.month_count)
         self.save()
 
-        self.update_or_create_parkkihubi_permit()
-
     def cancel_extension_requests(self):
         self.permit_extension_requests.cancel_pending()
 
@@ -942,7 +890,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         ParkingPermitEventFactory.make_add_temporary_vehicle_event(
             self, temp_vehicle, user
         )
-        self.update_parkkihubi_permit()
 
         return temp_vehicle
 
@@ -1030,169 +977,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             permit_start_date = timezone.localdate(self.start_time)
             permit_end_date = timezone.localdate(self.end_time)
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
-
-    def update_or_create_parkkihubi_permit(self):
-        """Attempts to update Parkkihubi with permit details, if
-        not found should create a new permit there."""
-        try:
-            self.update_parkkihubi_permit()
-        except ParkkihubiPermitError:
-            self.create_parkkihubi_permit()
-
-    def update_parkkihubi_permit(self):
-        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
-            logger.debug("Skipped Parkkihubi sync in permit update.")
-            return
-
-        payload = json.dumps(self._get_parkkihubi_data(), default=str)
-
-        response = requests.patch(
-            f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
-            data=payload,
-            headers=self._get_parkkihubi_headers(),
-        )
-
-        logger.info(f"Update parkkihubi permit, request payload: {payload}")
-
-        self.synced_with_parkkihubi = response.status_code == 200
-        self.save()
-
-        if response.status_code == 200:
-            logger.info("Parkkihubi update permit successful")
-        else:
-            logger.error(
-                "Failed to update permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}. "
-                f"Detail: {response.text}"
-            )
-            raise ParkkihubiPermitError(
-                "Cannot update permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}."
-            )
-
-    def create_parkkihubi_permit(self):
-        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
-            logger.debug("Skipped Parkkihubi sync in permit creation.")
-            return
-
-        payload = json.dumps(self._get_parkkihubi_data(), default=str)
-        response = requests.post(
-            settings.PARKKIHUBI_OPERATOR_ENDPOINT,
-            data=payload,
-            headers=self._get_parkkihubi_headers(),
-        )
-
-        logger.info(f"Create parkkihubi permit, request payload: {payload}")
-
-        self.synced_with_parkkihubi = response.status_code == 201
-        self.save()
-
-        if response.status_code == 201:
-            logger.info("Parkkihubi permit created")
-        else:
-            logger.error(
-                "Failed to create permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}. "
-                f"Detail: {response.text}"
-            )
-            raise ParkkihubiPermitError(
-                "Cannot create permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}."
-            )
-
-    def _get_parkkihubi_headers(self):
-        return {
-            "Authorization": f"ApiKey {settings.PARKKIHUBI_TOKEN}",
-            "Content-Type": "application/json",
-        }
-
-    def _get_parkkihubi_data(self):
-        # Create list of subjects:
-        # Each subject should consist of start+end time and registration numbers
-        # Once we have list of subjects, ensure that there are no overlapping subjects.
-
-        # Default permit
-        end_time = self.end_time or get_end_time(self.start_time, 1)
-
-        subjects = [
-            ParkkihubiSubject(
-                start_time=self.start_time,
-                end_time=end_time,
-                registration_number=self.vehicle.registration_number,
-            )
-        ]
-
-        temp_vehicles = (
-            self.temp_vehicles.filter(
-                is_active=True,
-                start_time__lte=end_time,
-            )
-            .order_by("start_time")
-            .select_related("vehicle")
-        )
-
-        subjects += [
-            ParkkihubiSubject(
-                start_time=max(self.start_time, temp_vehicle.start_time),
-                end_time=min(temp_vehicle.end_time, end_time),
-                registration_number=temp_vehicle.vehicle.registration_number,
-            )
-            for temp_vehicle in temp_vehicles
-        ]
-
-        # adjust subjects to ensure none overlapping
-        # example: permit starts 1st March and ends 31st March.
-        # temp vehicle starts 15th March and ends 20th March.
-        # = 3 subjects: default permit 1st-15th;  temp vehicle 15th-20th; default 20th > 31st.
-
-        extra_subjects = []
-
-        for subject_a, subject_b in pairwise(subjects):
-            # ensure we don't have overlapping times
-
-            if subject_a.end_time > subject_b.start_time:
-                subject_a.end_time = subject_b.start_time
-
-            # if gap between subjects, insert default permit vehicle between them
-            if subject_b.start_time > subject_a.end_time:
-                extra_subjects.append(
-                    ParkkihubiSubject(
-                        start_time=subject_a.end_time,
-                        end_time=subject_b.start_time,
-                        registration_number=self.vehicle.registration_number,
-                    )
-                )
-
-        # add another subject for default permit if the end time of the last subject is less
-        # than end of this permit
-        last_end_time = max([subject.end_time for subject in subjects])
-
-        if end_time > last_end_time:
-            extra_subjects.append(
-                ParkkihubiSubject(
-                    start_time=last_end_time,
-                    end_time=end_time,
-                    registration_number=self.vehicle.registration_number,
-                )
-            )
-
-        # dedupe and sort
-        subjects = sorted([*collections.Counter(subjects + extra_subjects)])
-
-        return {
-            "series": settings.PARKKIHUBI_PERMIT_SERIES,
-            "domain": settings.PARKKIHUBI_DOMAIN,
-            "external_id": str(self.id),
-            "properties": {"permit_type": str(self.type)},
-            "subjects": [subject.to_json() for subject in subjects],
-            "areas": [
-                {
-                    "start_time": subjects[0].start_time.isoformat(),
-                    "end_time": subjects[-1].end_time.isoformat(),
-                    "area": self.parking_zone.name,
-                }
-            ],
-        }
 
 
 class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):

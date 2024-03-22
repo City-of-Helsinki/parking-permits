@@ -2,15 +2,35 @@ import collections
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Literal
 
 import requests
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 
 from parking_permits.exceptions import ParkkihubiPermitError
+from parking_permits.models.parking_permit import ParkingPermit
 from parking_permits.utils import get_end_time, pairwise
 
 logger = logging.getLogger("db")
+
+
+def sync_with_parkkihubi(permit: ParkingPermit) -> None:
+    """Update or instance on Parkkihubi for this permit.
+
+    If DEBUG_SKIP_PARKKIHUBI_SYNC is True, will skip API call entirely.
+    """
+
+    if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:
+        logger.debug("Skipped Parkkihubi sync for permit.")
+        return
+
+    service = Parkkihubi(permit)
+
+    try:
+        service.update()
+    except ParkkihubiPermitError:
+        service.create()
 
 
 class Subject:
@@ -30,9 +50,6 @@ class Subject:
     def __str__(self):
         return f"{self.start_time}-{self.end_time}: {self.registration_number}"
 
-    def __repr__(self):
-        return f"<{self}>"
-
     def __hash__(self):
         return hash(str(self))
 
@@ -49,18 +66,10 @@ class Subject:
     def __lt__(self, other) -> bool:
         return self.start_time < other.start_time
 
-    @property
-    def start_time_formatted(self) -> str:
-        return self.start_time.isoformat()
-
-    @property
-    def end_time_formatted(self) -> str:
-        return self.end_time.isoformat()
-
-    def to_json(self) -> Dict[str, str]:
+    def to_json(self) -> Dict:
         return {
-            "start_time": self.start_time_formatted,
-            "end_time": self.end_time_formatted,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
             "registration_number": self.registration_number,
         }
 
@@ -71,30 +80,8 @@ class Parkkihubi:
     def __init__(self, permit):
         self.permit = permit
 
-    @classmethod
-    def create(cls, permit) -> None:
-        """Create a new instance on Parkkihubi for this permit."""
-        cls(permit).create_permit()
-
-    @classmethod
-    def update(cls, permit) -> None:
-        """Update existing Parkkihubi instance."""
-        cls(permit).update_permit()
-
-    @classmethod
-    def update_or_create(cls, permit) -> None:
-        """Update or instance on Parkkihubi for this permit."""
-        try:
-            cls(permit).update_permit()
-        except ParkkihubiPermitError:
-            cls(permit).create_permit()
-
-    def create_permit(self):
-        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
-            logger.debug("Skipped Parkkihubi sync in permit creation.")
-            return
-
-        payload = json.dumps(self.get_payload(), default=str)
+    def create(self):
+        payload = self.get_payload_data()
 
         response = requests.post(
             settings.PARKKIHUBI_OPERATOR_ENDPOINT,
@@ -104,28 +91,10 @@ class Parkkihubi:
 
         logger.info(f"Create parkkihubi permit, request payload: {payload}")
 
-        self.permit.synced_with_parkkihubi = response.status_code == 201
-        self.permit.save()
+        self.handle_response(response, 201, "create")
 
-        if response.status_code == 201:
-            logger.info("Parkkihubi permit created")
-        else:
-            logger.error(
-                "Failed to create permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}. "
-                f"Detail: {response.text}"
-            )
-            raise ParkkihubiPermitError(
-                "Cannot create permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}."
-            )
-
-    def update_permit(self) -> None:
-        if settings.DEBUG_SKIP_PARKKIHUBI_SYNC:  # pragma: no cover
-            logger.debug("Skipped Parkkihubi sync in permit update.")
-            return
-
-        payload = json.dumps(self.get_payload(), default=str)
+    def update(self) -> None:
+        payload = self.get_payload_data()
 
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.permit.pk)}/",
@@ -133,23 +102,9 @@ class Parkkihubi:
             headers=self.get_headers(),
         )
 
-        self.permit.synced_with_parkkihubi = response.status_code == 200
-        self.permit.save()
-
         logger.info(f"Update parkkihubi permit, request payload: {payload}")
 
-        if response.status_code == 200:
-            logger.info("Parkkihubi update permit successful")
-        else:
-            logger.error(
-                "Failed to update permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}. "
-                f"Detail: {response.text}"
-            )
-            raise ParkkihubiPermitError(
-                "Cannot update permit to Parkkihubi."
-                f"Error: {response.status_code} {response.reason}."
-            )
+        self.handle_response(response, 200, "update")
 
     def get_headers(self) -> Dict[str, str]:
         return {
@@ -158,10 +113,6 @@ class Parkkihubi:
         }
 
     def get_payload(self) -> Dict:
-        # Create list of subjects:
-        # Each subject should consist of start+end time and registration numbers
-        # Once we have list of subjects, ensure that there are no overlapping subjects.
-
         subjects = self.get_subjects()
 
         return {
@@ -172,12 +123,15 @@ class Parkkihubi:
             "subjects": [subject.to_json() for subject in subjects],
             "areas": [
                 {
-                    "start_time": subjects[0].start_time_formatted,
-                    "end_time": subjects[-1].end_time_formatted,
+                    "start_time": subjects[0].start_time,
+                    "end_time": subjects[-1].end_time,
                     "area": self.permit.parking_zone.name,
                 }
             ],
         }
+
+    def get_payload_data(self) -> str:
+        return json.dumps(self.get_payload(), cls=DjangoJSONEncoder)
 
     def get_subjects(self) -> List[Subject]:
         start_time = self.permit.start_time
@@ -248,3 +202,25 @@ class Parkkihubi:
 
         # dedupe and sort
         return sorted([*collections.Counter(subjects + extra_subjects)])
+
+    def handle_response(
+        self,
+        response: requests.Response,
+        target_status_code: int,
+        action: Literal["create", "update"],
+    ) -> None:
+        if response.status_code == target_status_code:
+            self.permit.synced_with_parkkihubi = True
+            self.permit.save()
+            logger.info(f"Parkkihubi sync permit successful: {self.permit.pk}")
+            return
+
+        error_description = (
+            "Failed to sync permit with Parkkihubi."
+            f"Action: {action}"
+            f"Permit: {self.permit.pk}\n"
+            f"Status: {response.status_code} {response.reason}.\n"
+            f"Detail: {response.text}\n"
+        )
+
+        raise ParkkihubiPermitError(error_description)
