@@ -1,10 +1,9 @@
 import collections
-import dataclasses
 import itertools
 import json
 import logging
 import operator
-from datetime import datetime, timedelta
+from datetime import datetime
 from decimal import Decimal
 from typing import Dict, Tuple
 
@@ -1046,6 +1045,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             return
 
         payload = json.dumps(self._get_parkkihubi_data(), default=str)
+
         response = requests.patch(
             f"{settings.PARKKIHUBI_OPERATOR_ENDPOINT}{str(self.id)}/",
             data=payload,
