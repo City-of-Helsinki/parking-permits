@@ -81,6 +81,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
+from .resolver_utils import end_permits
 from .services import kami
 from .services.dvv import get_person_info
 from .services.mail import (
@@ -999,48 +1000,13 @@ def resolve_end_permit(
             _("Primary permit cannot be ended if customer has two permits")
         )
 
-    if permit.can_be_refunded:
-        total_sum = permit.total_refund_amount
-        refund = Refund.objects.filter(order=permit.latest_order)
-        if refund.exists():
-            order = Order.objects.create_renewal_order(
-                permit.customer,
-                status=OrderStatus.CONFIRMED,
-                order_type=OrderType.CREATED,
-                payment_type=OrderPaymentType.CASHIER_PAYMENT,
-                user=request.user,
-            )
-            total_sum = order.total_price
-            order.order_items.all().delete()
-        else:
-            order = permit.latest_order
-        if total_sum > 0:
-            description = f"Refund for ending permit #{permit.id}"
-            refund = Refund.objects.create(
-                name=permit.customer.full_name,
-                order=order,
-                amount=total_sum,
-                iban=iban,
-                description=description,
-            )
-            refund.permits.add(permit)
-            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=request.user
-            )
-
-    permit.end_permit(end_type)
-
-    ParkingPermitEventFactory.make_end_permit_event(permit, created_by=request.user)
-
-    # get updated permit info
-    permit = ParkingPermit.objects.get(id=permit_id)
-    sync_with_parkkihubi(permit)
-    send_permit_email(PermitEmailType.ENDED, permit)
-    if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
-        send_vehicle_low_emission_discount_email(
-            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED, permit
-        )
+    end_permits(
+        request.user,
+        permit,
+        end_type=end_type,
+        payment_type=OrderPaymentType.CASHIER_PAYMENT,
+        iban=iban,
+    )
     return {"success": True}
 
 
