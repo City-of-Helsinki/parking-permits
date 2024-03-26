@@ -20,16 +20,7 @@ from .exceptions import (
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
 )
-from .models import (
-    Address,
-    Customer,
-    Order,
-    OrderItem,
-    ParkingPermit,
-    Refund,
-    Subscription,
-    Vehicle,
-)
+from .models import Address, Customer, Order, OrderItem, ParkingPermit, Vehicle
 from .models.order import (
     OrderPaymentType,
     OrderStatus,
@@ -42,13 +33,8 @@ from .models.parking_permit import (
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
-from .services.mail import (
-    PermitEmailType,
-    RefundEmailType,
-    send_permit_email,
-    send_refund_email,
-    send_vehicle_low_emission_discount_email,
-)
+from .resolver_utils import end_permits
+from .services.mail import PermitEmailType, send_permit_email
 from .services.parkkihubi import sync_with_parkkihubi
 from .utils import ModelDiffer, diff_months_floor, get_end_time
 
@@ -399,87 +385,17 @@ class CustomerPermit:
         permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
             "primary_vehicle"
         )
-        if all(permit.can_be_refunded for permit in permits):
-            total_sum = sum(
-                [permit.get_refund_amount_for_unused_items() for permit in permits]
-            )
-            first_permit = permits.first()
-            refund = Refund.objects.filter(order=first_permit.latest_order)
-            if refund.exists():
-                order = Order.objects.create_renewal_order(
-                    first_permit.customer,
-                    status=OrderStatus.CONFIRMED,
-                    order_type=OrderType.CREATED,
-                    payment_type=OrderPaymentType.ONLINE_PAYMENT,
-                    user=user,
-                    create_renew_order_event=False,
-                )
-                total_sum = order.total_price
-                order.order_items.all().delete()
-            else:
-                order = first_permit.latest_order
-            if (
-                total_sum > 0
-                and first_permit.contract_type == ContractType.FIXED_PERIOD
-            ):
-                refund = Refund.objects.create(
-                    name=self.customer.full_name,
-                    order=order,
-                    amount=total_sum,
-                    iban=iban,
-                    description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
-                )
-                refund.permits.set(permits)
-                send_refund_email(RefundEmailType.CREATED, self.customer, refund)
 
-                for permit in permits:
-                    ParkingPermitEventFactory.make_create_refund_event(
-                        permit, refund, created_by=self.customer.user
-                    )
-
-        for permit in permits:
-            if permit.contract_type == ContractType.OPEN_ENDED:
-                subscription = (
-                    Subscription.objects.filter(order_items__permit__pk=permit.pk)
-                    .distinct()
-                    .first()
-                )
-                if subscription:
-                    subscription.cancel(
-                        cancel_reason=subscription_cancel_reason,
-                        cancel_from_talpa=cancel_from_talpa,
-                        iban=iban,
-                    )
-            else:
-                # Cancel fixed period permit order when this is the last valid permit in that order
-                latest_order = permit.latest_order
-                if (
-                    latest_order
-                    and not latest_order.order_permits.filter(status=[VALID])
-                    .exclude(pk=permit.pk)
-                    .exists()
-                ):
-                    latest_order.cancel(cancel_from_talpa=cancel_from_talpa)
-
-            active_temporary_vehicle = permit.active_temporary_vehicle
-            if active_temporary_vehicle:
-                active_temporary_vehicle.is_active = False
-                active_temporary_vehicle.save()
-
-            if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
-                send_vehicle_low_emission_discount_email(
-                    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
-                    permit,
-                )
-
-            permit.end_permit(end_type, force_end=force_end)
-            sync_with_parkkihubi(permit)
-            send_permit_email(
-                PermitEmailType.ENDED, ParkingPermit.objects.get(id=permit.id)
-            )
-            ParkingPermitEventFactory.make_end_permit_event(
-                permit, created_by=self.customer.user
-            )
+        end_permits(
+            user,
+            *permits,
+            end_type=end_type,
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            iban=iban,
+            subscription_cancel_reason=subscription_cancel_reason,
+            cancel_from_talpa=cancel_from_talpa,
+            force_end=force_end,
+        )
 
         # Delete all the draft permit while ending the customer valid permits
         draft_permits = self.customer_permit_query.filter(status=DRAFT)
