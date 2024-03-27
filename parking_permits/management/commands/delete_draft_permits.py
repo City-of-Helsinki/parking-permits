@@ -21,7 +21,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         minutes = options["minutes"] + (60 * options["hours"])
-        time_limit = timezone.localtime() - timedelta(minutes=minutes)
+        now = timezone.localtime()
+        time_limit = now - timedelta(minutes=minutes)
 
         # Delete draft permits
         # NOTE: there should not be draft permits with orders, but exclude
@@ -49,7 +50,10 @@ class Command(BaseCommand):
         )
 
         if num_ext_requests := ext_requests.count():
-            ext_requests.update(status=ParkingPermitExtensionRequest.Status.CANCELLED)
+            ext_requests.update(
+                status=ParkingPermitExtensionRequest.Status.CANCELLED,
+                status_changed_at=now,
+            )
             self.stdout.write(
                 f"{num_ext_requests} pending permit extension request(s) cancelled"
             )

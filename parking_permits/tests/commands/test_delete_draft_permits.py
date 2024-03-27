@@ -23,6 +23,7 @@ def test_approved_ext_requests_not_cancelled():
     call_command("delete_draft_permits")
     ext_request.refresh_from_db()
     assert ext_request.is_approved()
+    assert not ext_request.status_changed_at
 
 
 @pytest.mark.django_db()
@@ -36,6 +37,7 @@ def test_recent_pending_ext_requests_not_cancelled():
     call_command("delete_draft_permits")
     ext_request.refresh_from_db()
     assert ext_request.is_pending()
+    assert not ext_request.status_changed_at
 
 
 @pytest.mark.django_db()
@@ -49,6 +51,7 @@ def test_pending_ext_requests_cancelled():
     call_command("delete_draft_permits")
     ext_request.refresh_from_db()
     assert ext_request.is_cancelled()
+    assert ext_request.status_changed_at
 
 
 @pytest.mark.django_db()
