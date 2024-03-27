@@ -41,6 +41,7 @@ from .services.mail import (
     send_permit_email,
     send_refund_email,
 )
+from .services.parkkihubi import sync_with_parkkihubi
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
 from .utils import ModelDiffer, get_user_from_resolver_args, is_valid_city
@@ -506,7 +507,7 @@ def resolve_update_permit_vehicle(
     )
 
     if permit.contract_type == ContractType.OPEN_ENDED or not talpa_order_created:
-        permit.update_parkkihubi_permit()
+        sync_with_parkkihubi(permit)
         send_permit_email(PermitEmailType.UPDATED, permit)
 
     return {"checkout_url": checkout_url}
@@ -727,7 +728,7 @@ def resolve_change_address(
             # Refresh the updated fixed-period permits and send email and update parkkihubi
             fixed_period_permits = permits.fixed_period().all()
             for permit in fixed_period_permits:
-                permit.update_parkkihubi_permit()
+                sync_with_parkkihubi(permit)
                 send_permit_email(PermitEmailType.UPDATED, permit)
 
     # For open ended permits, it's enough to update the permit zone
@@ -748,7 +749,7 @@ def resolve_change_address(
             changes=permit_diff,
         )
 
-        permit.update_parkkihubi_permit()
+        sync_with_parkkihubi(permit)
         send_permit_email(PermitEmailType.UPDATED, permit)
 
     return response

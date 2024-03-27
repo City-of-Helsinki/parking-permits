@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from decimal import ROUND_UP, Decimal
 from itertools import chain
-from typing import Optional, Union
+from typing import Any, Iterable, Iterator, Optional, Union
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -19,6 +19,17 @@ from pytz import utc
 HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
 
 Currency = Optional[Union[str, float, Decimal]]
+
+
+# forward-compatible implementation of itertools.pairwise() from py3.10
+# https://docs.python.org/3/library/itertools.html#itertools.pairwise
+def pairwise(iterable: Iterable) -> Iterator[tuple[Any, Any]]:
+    # pairwise('ABCDEFG') → AB BC CD DE EF FG
+    iterator = iter(iterable)
+    a = next(iterator, None)
+    for b in iterator:
+        yield a, b
+        a = b
 
 
 class DefaultOrderedDict(OrderedDict):

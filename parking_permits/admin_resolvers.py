@@ -37,6 +37,7 @@ from parking_permits.models import (
 )
 from parking_permits.models.customer import generate_ssn
 from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
+from parking_permits.services.parkkihubi import sync_with_parkkihubi
 from users.models import ParkingPermitGroups
 
 from .constants import EventFields, Origin
@@ -54,7 +55,6 @@ from .exceptions import (
     EndPermitError,
     ObjectNotFound,
     ParkingZoneError,
-    ParkkihubiPermitError,
     PermitCanNotBeExtended,
     PermitLimitExceeded,
     SearchError,
@@ -597,10 +597,8 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     Order.objects.create_for_permits(
         [parking_permit], status=OrderStatus.CONFIRMED, user=request.user
     )
-    try:
-        parking_permit.update_parkkihubi_permit()
-    except ParkkihubiPermitError:
-        parking_permit.create_parkkihubi_permit()
+    sync_with_parkkihubi(parking_permit)
+
     send_permit_email(PermitEmailType.CREATED, parking_permit)
     if (
         parking_permit.consent_low_emission_accepted
@@ -865,7 +863,8 @@ def resolve_update_resident_permit(
     )
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    permit.update_parkkihubi_permit()
+
+    sync_with_parkkihubi(permit)
 
     if address_changed:
         for active_permit in active_permits.all():
@@ -967,6 +966,8 @@ def resolve_extend_parking_permit(
     # approve and extend permit immediately
     ext_request.approve()
 
+    sync_with_parkkihubi(permit)
+
     ParkingPermitEventFactory.make_admin_create_ext_request_event(
         ext_request,
         created_by=info.context["request"].user,
@@ -1034,7 +1035,7 @@ def resolve_end_permit(
 
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
-    permit.update_parkkihubi_permit()
+    sync_with_parkkihubi(permit)
     send_permit_email(PermitEmailType.ENDED, permit)
     if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
         send_vehicle_low_emission_discount_email(
@@ -1482,6 +1483,8 @@ def add_temporary_vehicle(
         check_limit=False,
     )
 
+    sync_with_parkkihubi(permit)
+
     send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
     return {"success": True}
 
@@ -1497,7 +1500,7 @@ def remove_temporary_vehicle(obj, info, permit_id):
     prev_active_temp_vehicles = list(active_temp_vehicles)
 
     active_temp_vehicles.update(is_active=False)
-    permit.update_parkkihubi_permit()
+    sync_with_parkkihubi(permit)
 
     for temp_vehicle in prev_active_temp_vehicles:
         ParkingPermitEventFactory.make_remove_temporary_vehicle_event(

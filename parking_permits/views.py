@@ -31,11 +31,7 @@ from audit_logger import AuditMsg
 from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import (
-    OrderValidationError,
-    ParkkihubiPermitError,
-    SubscriptionValidationError,
-)
+from .exceptions import OrderValidationError, SubscriptionValidationError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -81,6 +77,7 @@ from .services.mail import (
     send_permit_email,
     send_vehicle_low_emission_discount_email,
 )
+from .services.parkkihubi import sync_with_parkkihubi
 from .talpa.order import TalpaOrderManager
 from .utils import (
     get_end_time,
@@ -463,6 +460,7 @@ class PaymentView(APIView):
             ) in order.get_pending_permit_extension_requests().select_related("permit"):
                 ext_request.approve()
                 ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
+                sync_with_parkkihubi(ext_request.permit)
                 send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
 
             for permit in order.permits.all():
@@ -515,11 +513,8 @@ class PaymentView(APIView):
                     send_vehicle_low_emission_discount_email(
                         PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
                     )
-                try:
-                    permit.update_parkkihubi_permit()
-                except ParkkihubiPermitError:
-                    permit.create_parkkihubi_permit()
 
+                sync_with_parkkihubi(permit)
             logger.info(f"{order} is confirmed and order permits are set to VALID ")
             return Response({"message": "Payment received"}, status=200)
         else:
@@ -628,6 +623,7 @@ class OrderView(APIView):
                     "loggedInCheckoutUrl"
                 ),
                 talpa_receipt_url=validated_order_data.get("receiptUrl"),
+                talpa_update_card_url=validated_order_data.get("updateCardUrl", ""),
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 customer=permit.customer,
                 status=OrderStatus.DRAFT,
