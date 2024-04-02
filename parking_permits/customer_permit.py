@@ -255,7 +255,7 @@ class CustomerPermit:
                 contract_type=contract_type,
                 start_time=start_time,
                 end_time=end_time,
-                vehicle=Vehicle.objects.get(registration_number=registration),
+                vehicle=vehicle,
             )
 
             ParkingPermitEventFactory.make_create_permit_event(

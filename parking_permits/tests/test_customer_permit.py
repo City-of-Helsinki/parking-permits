@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 from datetime import timezone as dt_tz
+from unittest.mock import MagicMock
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
@@ -350,6 +351,21 @@ class CreateCustomerPermitTestCase(TestCase):
         permit = CustomerPermit(self.customer_b.id).create(
             self.customer_b.primary_address.id,
             self.vehicle_a.registration_number,
+        )
+
+        self.assertTrue(permit.primary_vehicle)
+        self.assertEqual(permit.customer, self.customer_b)
+        self.assertEqual(permit.vehicle, self.vehicle_a)
+        self.assertEqual(permit.end_time.date(), date(2022, 2, 6))
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=False)
+    def test_primary_permit_registration_number_without_dashes(self):
+        service = CustomerPermit(self.customer_b.id)
+        service.customer.fetch_vehicle_detail = MagicMock(return_value=self.vehicle_a)
+
+        permit = service.create(
+            self.customer_b.primary_address.id,
+            self.vehicle_a.registration_number.replace("-", ""),
         )
 
         self.assertTrue(permit.primary_vehicle)

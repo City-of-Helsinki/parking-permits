@@ -55,6 +55,10 @@ def zone():
 
 
 class TestEndPermits:
+    @pytest.fixture()
+    def current_datetime(self):
+        return timezone.make_aware(datetime(2024, 3, 26, 0, 0))
+
     @pytest.mark.django_db()
     @patch(MOCK_SYNC_WITH_PARKKIHUBI)
     @patch(MOCK_VALIDATE_ORDER)
@@ -68,25 +72,27 @@ class TestEndPermits:
         mock_send_permit_email,
         mock_validate_order,
         mock_sync_with_parkkihubi,
+        current_datetime,
     ):
-        subscription = SubscriptionFactory()
+        with freeze_time(current_datetime):
+            subscription = SubscriptionFactory()
 
-        permit = ParkingPermitFactory(
-            contract_type=ContractType.OPEN_ENDED,
-            status=ParkingPermitStatus.VALID,
-            month_count=1,
-        )
+            permit = ParkingPermitFactory(
+                contract_type=ContractType.OPEN_ENDED,
+                status=ParkingPermitStatus.VALID,
+                month_count=1,
+            )
 
-        OrderItemFactory(permit=permit, subscription=subscription)
+            OrderItemFactory(permit=permit, subscription=subscription)
 
-        end_permits(
-            permit.customer.user,
-            permit,
-            end_type=ParkingPermitEndType.IMMEDIATELY,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            iban=IBAN,
-            cancel_from_talpa=False,
-        )
+            end_permits(
+                permit.customer.user,
+                permit,
+                end_type=ParkingPermitEndType.IMMEDIATELY,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                iban=IBAN,
+                cancel_from_talpa=False,
+            )
 
         subscription.refresh_from_db()
 
@@ -113,9 +119,10 @@ class TestEndPermits:
         mock_send_vehicle_discount_email,
         mock_send_permit_email,
         mock_sync_with_parkkihubi,
+        current_datetime,
         zone,
     ):
-        with freeze_time("2024-3-26"):
+        with freeze_time(current_datetime):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
 
@@ -142,13 +149,13 @@ class TestEndPermits:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-        end_permits(
-            permit.customer.user,
-            permit,
-            end_type=ParkingPermitEndType.IMMEDIATELY,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            iban=IBAN,
-        )
+            end_permits(
+                permit.customer.user,
+                permit,
+                end_type=ParkingPermitEndType.IMMEDIATELY,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                iban=IBAN,
+            )
 
         permit.refresh_from_db()
 
@@ -175,9 +182,10 @@ class TestEndPermits:
         mock_send_vehicle_discount_email,
         mock_send_permit_email,
         mock_sync_with_parkkihubi,
+        current_datetime,
         zone,
     ):
-        with freeze_time("2024-3-26"):
+        with freeze_time(current_datetime):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
 
@@ -215,14 +223,14 @@ class TestEndPermits:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-        end_permits(
-            permit_a.customer.user,
-            *[permit_a, permit_b],
-            force_end=True,
-            end_type=ParkingPermitEndType.IMMEDIATELY,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            iban=IBAN,
-        )
+            end_permits(
+                permit_a.customer.user,
+                *[permit_a, permit_b],
+                force_end=True,
+                end_type=ParkingPermitEndType.IMMEDIATELY,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                iban=IBAN,
+            )
 
         permit_a.refresh_from_db()
         assert permit_a.status == ParkingPermitStatus.CLOSED
