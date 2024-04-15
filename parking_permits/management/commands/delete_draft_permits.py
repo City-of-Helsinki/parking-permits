@@ -39,6 +39,8 @@ class Command(BaseCommand):
         if num_permits := permits.count():
             permits.delete()
             self.stdout.write(f"{num_permits} draft permit(s) deleted")
+        else:
+            self.stdout.write("No draft permits deleted")
 
         # Delete permit extension requests
         # These will all have FK to Order, so we don't want to delete them completely,
@@ -57,3 +59,5 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"{num_ext_requests} pending permit extension request(s) cancelled"
             )
+        else:
+            self.stdout.write("No pending permit extension requests canceled")
