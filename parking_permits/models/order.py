@@ -227,8 +227,10 @@ class OrderManager(SerializableMixin.SerializableManager):
             paid_time=paid_time,
             address_text=str(permit.full_address),
             parking_zone_name=permit.parking_zone.name,
+            vehicles=[permit.vehicle.registration_number],
             **kwargs,
         )
+        order.permits.add(permit)
 
         order_items = [
             OrderItem(
