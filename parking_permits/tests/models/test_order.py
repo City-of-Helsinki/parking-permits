@@ -98,6 +98,33 @@ class TestOrderManager(TestCase):
             date(self.current_year, 9, 12),
         )
 
+    def test_add_vehicle_and_permit_for_order_in_extended_permit(self):
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
+
+        with freeze_time(date(self.current_year, 3, 5)):
+            now = timezone.now()
+
+            permit = ParkingPermitFactory(
+                status=ParkingPermitStatus.VALID,
+                contract_type=ContractType.FIXED_PERIOD,
+                start_time=now - timedelta(days=23),
+                end_time=now + timedelta(days=7),
+                month_count=1,
+                parking_zone=self.zone,
+                customer=self.customer,
+                vehicle=high_emission_vehicle,
+            )
+
+            order = Order.objects.create_for_extended_permit(permit, month_count=6)
+
+        self.assertEqual(order.vehicles[0], high_emission_vehicle.registration_number)
+        self.assertEqual(order.permits.first(), permit)
+
     def test_create_for_customer_should_create_order_with_items(self):
         start_time = timezone.make_aware(datetime(self.current_year, 3, 15))
         end_time = get_end_time(start_time, 6)  # end at self.current_year-09-14 23:59
