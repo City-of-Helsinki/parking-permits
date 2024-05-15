@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi/>
+        <sekvenssinumero/>
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="2">
+                    <rekisteritunnus>OB-120</rekisteritunnus>
+                    <valmistenumero>ZDCJF07A0YF011074</valmistenumero>
+                    <jarjestelmatunnus>0000464963</jarjestelmatunnus>
+                </tunnus>
+                <ajoneuvonTiedot>
+                    <ajoneuvoluokka>L3</ajoneuvoluokka>
+                    <merkki>908</merkki>
+                    <merkkiSelvakielinen>Honda</merkkiSelvakielinen>
+                    <mallimerkinta>NES125-JF07A/125</mallimerkinta>
+                    <tila>3</tila>
+                    <ajoneuvoryhmat>
+                        <ajoneuvoryhma>108</ajoneuvoryhma>
+                    </ajoneuvoryhmat>
+                    <ajoneuvonKaytto>01</ajoneuvonKaytto>
+                    <rekisterointitod1Osa>
+                        <jarjestysnumero>8</jarjestysnumero>
+                        <tulostuspaiva>2018-05-16</tulostuspaiva>
+                    </rekisterointitod1Osa>
+                    <rekisterointitod2Osa>
+                        <jarjestysnumero>8</jarjestysnumero>
+                        <tulostuspaiva>2018-05-16</tulostuspaiva>
+                    </rekisterointitod2Osa>
+                </ajoneuvonTiedot>
+                <ajoneuvonPerustiedot>
+                    <versio>9908121801</versio>
+                    <kaupallinenNimi>NES125-JF07A/125</kaupallinenNimi>
+                    <tyyppikoodi>9908121801</tyyppikoodi>
+                    <kayttoonottopvm>20010426</kayttoonottopvm>
+                    <valmistenumeronSijainti>Z</valmistenumeronSijainti>
+                    <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
+                    <valmistenumeronSijaintiMuu>KILVESSÄ ASTINLAUDAN ALLA VASEMMALLA JA MEISTETTYNÄ ASTIN-</valmistenumeronSijaintiMuu>
+                    <ensirekisterointipvm>2001-04-26</ensirekisterointipvm>
+                </ajoneuvonPerustiedot>
+                <erikoisehdot>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
+                        <teksti>e4*92/61*0082*01 VARIANTTI: 1 VERSIO: 1 e4*92/61*0082*00 VARIANTTI: 1 VERSIO: 1</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VANTEET: MT2.75, MT3.50</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VETOJÄRJESTELMÄ: 2X1</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VALMISTUSMAA: IT</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
+                        <teksti>9908121801</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
+                        <teksti>NES125-JF07A/125</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0008/2003</kooditettuHuomautus>
+                        <teksti>110/90-13 M/C 56, 130/70-13 M/C 57</teksti>
+                    </erikoisehto>
+                </erikoisehdot>
+                <omistajatHaltijat>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>250579-229X</omistajanTunnus>
+                        <sukunimiPaayksikko>Metso</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Rafael</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>01</omistajuustyyppi>
+                        <suhteenAlkupvm>2018-04-30</suhteenAlkupvm>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Brännskogsvägen 5</lahiosoite>
+                        <postinumero>66270</postinumero>
+                        <postitoimipaikka>PÖRTOM</postitoimipaikka>
+                        <asiointikieli>sv</asiointikieli>
+                    </omistajaHaltija>
+                </omistajatHaltijat>
+                <vakuutustiedot luovutusrajoitus="0">
+                    <vakuutusyhtiokoodi>44</vakuutusyhtiokoodi>
+                    <vakuutustyyppi>01</vakuutustyyppi>
+                    <vakuutusyhtionNimi>LähiTapiola</vakuutusyhtionNimi>
+                    <vakuutuksenottajanTunnus>250579-229X</vakuutuksenottajanTunnus>
+                    <vakuutuksenottajanNimi>Metso, Rafael</vakuutuksenottajanNimi>
+                    <vakuutuksenAlkupvm>2019-02-20</vakuutuksenAlkupvm>
+                </vakuutustiedot>
+                <rakenne>
+                    <kilvenMalli>01</kilvenMalli>
+                    <akselienLkm>2</akselienLkm>
+                    <tehostettuOhjaus>false</tehostettuOhjaus>
+                    <akselitiedot>
+                        <akseli>
+                            <sijainti>1</sijainti>
+                            <ohjaava>true</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>false</vetava>
+                            <tieliikSuurSallMassa>96</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>96</teknSuurSallMassa>
+                        </akseli>
+                        <akseli>
+                            <sijainti>2</sijainti>
+                            <ohjaava>false</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>true</vetava>
+                            <tieliikSuurSallMassa>215</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>215</teknSuurSallMassa>
+                        </akseli>
+                    </akselitiedot>
+                </rakenne>
+                <moottori>
+                    <kayttovoima>01</kayttovoima>
+                    <iskutilavuus>125</iskutilavuus>
+                    <suurinNettoteho>10.0</suurinNettoteho>
+                    <sylintereidenLkm>1</sylintereidenLkm>
+                    <polttoainesailio>
+                        <tilavuus>9.0</tilavuus>
+                    </polttoainesailio>
+                    <kayttovoimat>
+                        <kayttovoima>
+                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                        </kayttovoima>
+                    </kayttovoimat>
+                </moottori>
+                <massa>
+                    <omamassa>131</omamassa>
+                    <teknSuurSallKokmassa>311</teknSuurSallKokmassa>
+                    <tieliikSuurSallKokmassa>311</tieliikSuurSallKokmassa>
+                </massa>
+                <mitat>
+                    <ajonKokPituus>1940</ajonKokPituus>
+                    <ajonLeveys>700</ajonLeveys>
+                    <akselivalit>
+                        <akselivali>
+                            <sijainti>1</sijainti>
+                            <pituus>1330</pituus>
+                        </akselivali>
+                    </akselivalit>
+                </mitat>
+                <kori>
+                    <ohjaamotyyppi>4</ohjaamotyyppi>
+                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
+                </kori>
+                <jarrut>
+                    <voimanvalJaTehostamistapa>04</voimanvalJaTehostamistapa>
+                </jarrut>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>

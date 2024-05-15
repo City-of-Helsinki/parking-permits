@@ -1,8 +1,9 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <kehys>
     <yleinen>
         <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
-        <erakoodi />
-        <sekvenssinumero />
+        <erakoodi/>
+        <sekvenssinumero/>
         <sovellus>TPSUO</sovellus>
         <ymparisto>LONTOO,LONTOO</ymparisto>
     </yleinen>
@@ -10,98 +11,86 @@
         <ajoneuvontiedot>
             <laaja hetu="true">
                 <tunnus laji="2">
-                    <rekisteritunnus>BCI-707</rekisteritunnus>
-                    <valmistenumero>LE500A-027778</valmistenumero>
-                    <jarjestelmatunnus>0024134114</jarjestelmatunnus>
+                    <rekisteritunnus>IT-236</rekisteritunnus>
+                    <valmistenumero>9G30577J0</valmistenumero>
+                    <jarjestelmatunnus>0056595462</jarjestelmatunnus>
+                    <edellinenRekisteritunnus>VA-743</edellinenRekisteritunnus>
                 </tunnus>
                 <ajoneuvonTiedot>
-                    <ajoneuvoluokka>L8</ajoneuvoluokka>
-                    <merkki>906</merkki>
-                    <merkkiSelvakielinen>Kawasaki</merkkiSelvakielinen>
-                    <mallimerkinta>KLE 500</mallimerkinta>
+                    <ajoneuvoluokka>L3</ajoneuvoluokka>
+                    <merkki>931</merkki>
+                    <merkkiSelvakielinen>Harley-Davidson</merkkiSelvakielinen>
+                    <mallimerkinta>FXWG WIDE GLIDE/1340</mallimerkinta>
                     <tila>3</tila>
                     <ajoneuvoryhmat>
                         <ajoneuvoryhma>109</ajoneuvoryhma>
                     </ajoneuvoryhmat>
                     <ajoneuvonKaytto>01</ajoneuvonKaytto>
                     <rekisterointitod1Osa>
-                        <jarjestysnumero>9</jarjestysnumero>
-                        <tulostuspaiva>2024-01-16</tulostuspaiva>
+                        <jarjestysnumero>7</jarjestysnumero>
+                        <tulostuspaiva>2014-06-03</tulostuspaiva>
                     </rekisterointitod1Osa>
                     <rekisterointitod2Osa>
-                        <jarjestysnumero>9</jarjestysnumero>
-                        <tulostuspaiva>2024-01-16</tulostuspaiva>
+                        <jarjestysnumero>7</jarjestysnumero>
+                        <tulostuspaiva>2014-06-03</tulostuspaiva>
                     </rekisterointitod2Osa>
                 </ajoneuvonTiedot>
                 <ajoneuvonPerustiedot>
-                    <tyyppikoodi>9906251</tyyppikoodi>
-                    <kayttoonottopvm>19930402</kayttoonottopvm>
+                    <tyyppikoodi>99312</tyyppikoodi>
+                    <kayttoonottopvm>19800701</kayttoonottopvm>
+                    <vaihdOsienKokonaispros>13.0</vaihdOsienKokonaispros>
                     <yksittainMaahantuotu>1</yksittainMaahantuotu>
-                    <tuontimaa>276</tuontimaa>
-                    <ulkomainenRekisteritunnus>K-WQ1</ulkomainenRekisteritunnus>
+                    <tuontimaa>902</tuontimaa>
+                    <ulkomainenRekisteritunnus>GL-DD4</ulkomainenRekisteritunnus>
                     <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
-                    <ensirekisterointipvm>2003-06-25</ensirekisterointipvm>
+                    <ensirekisterointipvm>2001-04-25</ensirekisterointipvm>
                 </ajoneuvonPerustiedot>
                 <erikoisehdot>
                     <erikoisehto>
                         <erikoisehdOsaalue>2003</erikoisehdOsaalue>
                         <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
-                        <teksti>9906251</teksti>
+                        <teksti>99312</teksti>
                         <tulostettava>true</tulostettava>
                     </erikoisehto>
                     <erikoisehto>
                         <erikoisehdOsaalue>2003</erikoisehdOsaalue>
                         <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
-                        <teksti>KLE 500</teksti>
+                        <teksti>FXWG WIDE GLIDE/1340</teksti>
+                        <tulostettava>true</tulostettava>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>3001</erikoisehdOsaalue>
+                        <teksti>Renkaat: MH90-21 MT90-16</teksti>
                         <tulostettava>true</tulostettava>
                     </erikoisehto>
                     <erikoisehto>
                         <erikoisehdOsaalue>3002</erikoisehdOsaalue>
-                        <teksti>RENKAAT: 90/90-21, 130/80-17.</teksti>
+                        <teksti>Vetoj�rjestelm�: 2X1</teksti>
                         <tulostettava>true</tulostettava>
                     </erikoisehto>
                     <erikoisehto>
-                        <erikoisehdOsaalue>3002</erikoisehdOsaalue>
-                        <teksti>Vetojärjestelmä: 2X1</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3006</erikoisehdOsaalue>
-                        <teksti>Kaasuttimen merkki/malli: KEIHIN CVK34</teksti>
+                        <erikoisehdOsaalue>3008</erikoisehdOsaalue>
+                        <teksti>AJONEUVOON VAIHDETTU: TAKAROISKESUOJA, ISTUIN, OHJAUSTANKO JA PAKOPUTKISTO.</teksti>
                         <tulostettava>true</tulostettava>
                     </erikoisehto>
                     <erikoisehto>
                         <erikoisehdOsaalue>3009</erikoisehdOsaalue>
-                        <teksti>Valmistusmaa: JAPANI</teksti>
+                        <teksti>Valmistusmaa: USA</teksti>
                         <tulostettava>true</tulostettava>
                     </erikoisehto>
                 </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
-                        <omistajanTunnus>290200A905H</omistajanTunnus>
-                        <sukunimiPaayksikko>Hesalainen</sukunimiPaayksikko>
-                        <etunimiAlayksikko>Hessu</etunimiAlayksikko>
-                        <asiakaslaji>0</asiakaslaji>
-                        <omistajuustyyppi>03</omistajuustyyppi>
-                        <suhteenAlkupvm>2024-01-16</suhteenAlkupvm>
-                        <hallintasuhde>02</hallintasuhde>
-                        <markkinointikielto>false</markkinointikielto>
-                        <lahiosoite>Tarkk'ampujankatu 80 A 3a</lahiosoite>
-                        <postinumero>00130</postinumero>
-                        <postitoimipaikka>HELSINKI</postitoimipaikka>
-                        <asiointikieli>fi</asiointikieli>
-                    </omistajaHaltija>
-                    <omistajaHaltija luovutusrajoitus="0">
-                        <omistajanTunnus>290574-329E</omistajanTunnus>
-                        <sukunimiPaayksikko>Sandvik</sukunimiPaayksikko>
-                        <etunimiAlayksikko>Kalervo Lauri</etunimiAlayksikko>
+                        <omistajanTunnus>070975-223A</omistajanTunnus>
+                        <sukunimiPaayksikko>Kallioinen</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Aulis</etunimiAlayksikko>
                         <asiakaslaji>0</asiakaslaji>
                         <omistajuustyyppi>01</omistajuustyyppi>
-                        <suhteenAlkupvm>2022-06-29</suhteenAlkupvm>
+                        <suhteenAlkupvm>2001-04-25</suhteenAlkupvm>
                         <markkinointikielto>false</markkinointikielto>
-                        <lahiosoite>Välskärintie 9 as 9</lahiosoite>
-                        <postinumero>90630</postinumero>
-                        <postitoimipaikka>OULU</postitoimipaikka>
+                        <lahiosoite>Kuusitie 13 A 31</lahiosoite>
+                        <postinumero>00270</postinumero>
+                        <postitoimipaikka>HELSINKI</postitoimipaikka>
                         <asiointikieli>fi</asiointikieli>
                     </omistajaHaltija>
                 </omistajatHaltijat>
@@ -109,9 +98,9 @@
                     <vakuutusyhtiokoodi>36</vakuutusyhtiokoodi>
                     <vakuutustyyppi>01</vakuutustyyppi>
                     <vakuutusyhtionNimi>Pohjola</vakuutusyhtionNimi>
-                    <vakuutuksenottajanTunnus>290574-329E</vakuutuksenottajanTunnus>
-                    <vakuutuksenottajanNimi>Sandvik, Kalervo Lauri</vakuutuksenottajanNimi>
-                    <vakuutuksenAlkupvm>2022-06-29</vakuutuksenAlkupvm>
+                    <vakuutuksenottajanTunnus>070975-223A</vakuutuksenottajanTunnus>
+                    <vakuutuksenottajanNimi>Kallioinen, Aulis</vakuutuksenottajanNimi>
+                    <vakuutuksenAlkupvm>2013-11-29</vakuutuksenAlkupvm>
                 </vakuutustiedot>
                 <rakenne>
                     <kilvenMalli>01</kilvenMalli>
@@ -121,41 +110,36 @@
                             <sijainti>1</sijainti>
                             <ohjaava>true</ohjaava>
                             <vetava>false</vetava>
-                            <omaMassaKevYlh>95</omaMassaKevYlh>
-                            <tieliikSuurSallMassa>140</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>140</teknSuurSallMassa>
+                            <omaMassaKevYlh>120</omaMassaKevYlh>
                         </akseli>
                         <akseli>
                             <sijainti>2</sijainti>
                             <ohjaava>false</ohjaava>
                             <vetava>true</vetava>
-                            <omaMassaKevYlh>105</omaMassaKevYlh>
-                            <tieliikSuurSallMassa>265</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>265</teknSuurSallMassa>
+                            <omaMassaKevYlh>160</omaMassaKevYlh>
                         </akseli>
                     </akselitiedot>
                 </rakenne>
                 <moottori>
                     <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>499</iskutilavuus>
-                    <suurinNettoteho>37.0</suurinNettoteho>
+                    <iskutilavuus>1340</iskutilavuus>
+                    <suurinNettoteho>46.0</suurinNettoteho>
                     <kayttovoimat>
                         <kayttovoima>
                             <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                            <voimakkuusMeluOhiajossa>86.0</voimakkuusMeluOhiajossa>
                         </kayttovoima>
                     </kayttovoimat>
                 </moottori>
                 <massa>
-                    <omamassa>200</omamassa>
-                    <teknSuurSallKokmassa>380</teknSuurSallKokmassa>
-                    <tieliikSuurSallKokmassa>380</tieliikSuurSallKokmassa>
+                    <omamassa>275</omamassa>
                 </massa>
                 <mitat>
-                    <ajonLeveys>880</ajonLeveys>
+                    <ajonLeveys>860</ajonLeveys>
                     <akselivalit>
                         <akselivali>
                             <sijainti>1</sijainti>
-                            <pituus>1510</pituus>
+                            <pituus>1650</pituus>
                         </akselivali>
                     </akselivalit>
                 </mitat>
@@ -165,6 +149,12 @@
                 <jarrut>
                     <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
                 </jarrut>
+                <vaihdetutOsat>
+                    <vaihdettuOsa>
+                        <nimi>-</nimi>
+                        <todettuProsentti>13.0</todettuProsentti>
+                    </vaihdettuOsa>
+                </vaihdetutOsat>
             </laaja>
         </ajoneuvontiedot>
     </sanoma>

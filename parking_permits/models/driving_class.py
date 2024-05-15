@@ -6,13 +6,9 @@ from .vehicle import VehicleClass
 
 ALLOWED_VEHICLE_CLASSES = {
     "AM/121": (VehicleClass.L6eB,),
-    "A1": (VehicleClass.L3e, VehicleClass.L3eA1),
-    "A2": (
-        VehicleClass.L3e,
-        VehicleClass.L3eA2,
-    ),
+    "A1": (VehicleClass.L3eA1),
+    "A2": (VehicleClass.L3eA2,),
     "A": (
-        VehicleClass.L3e,
         VehicleClass.L3eA1,
         VehicleClass.L3eA2,
         VehicleClass.L3eA3,
