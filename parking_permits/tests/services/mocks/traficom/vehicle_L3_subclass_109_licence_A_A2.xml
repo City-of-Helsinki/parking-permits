@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi/>
+        <sekvenssinumero/>
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="2">
+                    <rekisteritunnus>84-VHJ</rekisteritunnus>
+                    <valmistenumero>ZAPM3120000004252</valmistenumero>
+                    <jarjestelmatunnus>0062078407</jarjestelmatunnus>
+                </tunnus>
+                <ajoneuvonTiedot>
+                    <ajoneuvoluokka>L3</ajoneuvoluokka>
+                    <merkki>587</merkki>
+                    <merkkiSelvakielinen>Piaggio</merkkiSelvakielinen>
+                    <mallimerkinta>VESPA GRANTURISMO 200L-M31200/198</mallimerkinta>
+                    <tila>3</tila>
+                    <ajoneuvoryhmat>
+                        <ajoneuvoryhma>109</ajoneuvoryhma>
+                    </ajoneuvoryhmat>
+                    <ajoneuvonKaytto>01</ajoneuvonKaytto>
+                    <rekisterointitod1Osa>
+                        <jarjestysnumero>9</jarjestysnumero>
+                        <tulostuspaiva>2020-05-31</tulostuspaiva>
+                    </rekisterointitod1Osa>
+                    <rekisterointitod2Osa>
+                        <jarjestysnumero>9</jarjestysnumero>
+                        <tulostuspaiva>2020-05-31</tulostuspaiva>
+                    </rekisterointitod2Osa>
+                </ajoneuvonTiedot>
+                <ajoneuvonPerustiedot>
+                    <tyyppihyvaksyntanro>e3*92/61*0169*00</tyyppihyvaksyntanro>
+                    <variantti>2</variantti>
+                    <versio>00</versio>
+                    <kaupallinenNimi>VESPA GRANTURISMO 200L-M3</kaupallinenNimi>
+                    <tyyppikoodi>9587230501</tyyppikoodi>
+                    <kayttoonottopvm>20030605</kayttoonottopvm>
+                    <valmistenumeronSijainti>Z</valmistenumeronSijainti>
+                    <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
+                    <valmistenumeronSijaintiMuu>KILVESSÄ ISTUIMEN ALLA SEKÄ MEISTETTYNÄ TAKANA SÄILYTYSTILAN</valmistenumeronSijaintiMuu>
+                    <tekninen-tieto>
+                        <vari>6</vari>
+                    </tekninen-tieto>
+                    <tyyppinimi>M31</tyyppinimi>
+                    <ensirekisterointipvm>2003-06-05</ensirekisterointipvm>
+                </ajoneuvonPerustiedot>
+                <erikoisehdot>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0004/1007</kooditettuHuomautus>
+                        <teksti>JARRUT/020704</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
+                        <teksti>e3*92/61*0169*00 VARIANTTI: 2 VERSIO: 00</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VANTEET: 3.00</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VETOJÄRJESTELMÄ: 2X1</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VALMISTUSMAA: IT</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
+                        <teksti>9587230501</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
+                        <teksti>VESPA GRANTURISMO 200L-M31200/198</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0008/2003</kooditettuHuomautus>
+                        <teksti>120/70-12 51P, 130/70-12 62P</teksti>
+                    </erikoisehto>
+                </erikoisehdot>
+                <omistajatHaltijat>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>311287-300T</omistajanTunnus>
+                        <sukunimiPaayksikko>Takkunen</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Jenni</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>01</omistajuustyyppi>
+                        <suhteenAlkupvm>2011-04-26</suhteenAlkupvm>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Passintie 2</lahiosoite>
+                        <postinumero>25360</postinumero>
+                        <postitoimipaikka>PERTTELI</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>311287-300T</omistajanTunnus>
+                        <sukunimiPaayksikko>Takkunen</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Jenni</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>03</omistajuustyyppi>
+                        <suhteenAlkupvm>2011-04-26</suhteenAlkupvm>
+                        <hallintasuhde>04</hallintasuhde>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Passintie 2</lahiosoite>
+                        <postinumero>25360</postinumero>
+                        <postitoimipaikka>PERTTELI</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>041187-3794</omistajanTunnus>
+                        <sukunimiPaayksikko>Kärkkäinen</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Aulis</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>04</omistajuustyyppi>
+                        <suhteenAlkupvm>2011-04-26</suhteenAlkupvm>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Päiviönkatu 36 as 13</lahiosoite>
+                        <postinumero>74100</postinumero>
+                        <postitoimipaikka>IISALMI</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                </omistajatHaltijat>
+                <vakuutustiedot luovutusrajoitus="0">
+                    <vakuutusyhtiokoodi>41</vakuutusyhtiokoodi>
+                    <vakuutustyyppi>01</vakuutustyyppi>
+                    <vakuutusyhtionNimi>IF</vakuutusyhtionNimi>
+                    <vakuutuksenottajanTunnus>311287-300T</vakuutuksenottajanTunnus>
+                    <vakuutuksenottajanNimi>Takkunen, Jenni</vakuutuksenottajanNimi>
+                    <vakuutuksenAlkupvm>2011-04-27</vakuutuksenAlkupvm>
+                </vakuutustiedot>
+                <rakenne>
+                    <kilvenMalli>01</kilvenMalli>
+                    <akselienLkm>2</akselienLkm>
+                    <tehostettuOhjaus>false</tehostettuOhjaus>
+                    <akselitiedot>
+                        <akseli>
+                            <sijainti>1</sijainti>
+                            <ohjaava>true</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>false</vetava>
+                            <tieliikSuurSallMassa>110</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>110</teknSuurSallMassa>
+                        </akseli>
+                        <akseli>
+                            <sijainti>2</sijainti>
+                            <ohjaava>false</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>true</vetava>
+                            <tieliikSuurSallMassa>250</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>250</teknSuurSallMassa>
+                        </akseli>
+                    </akselitiedot>
+                </rakenne>
+                <moottori>
+                    <kayttovoima>01</kayttovoima>
+                    <iskutilavuus>198</iskutilavuus>
+                    <suurinNettoteho>15.0</suurinNettoteho>
+                    <sylintereidenLkm>1</sylintereidenLkm>
+                    <polttoainesailio>
+                        <tilavuus>10.0</tilavuus>
+                    </polttoainesailio>
+                    <kayttovoimat>
+                        <kayttovoima>
+                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                        </kayttovoima>
+                    </kayttovoimat>
+                </moottori>
+                <massa>
+                    <omamassa>146</omamassa>
+                    <teknSuurSallKokmassa>340</teknSuurSallKokmassa>
+                    <tieliikSuurSallKokmassa>340</tieliikSuurSallKokmassa>
+                </massa>
+                <mitat>
+                    <ajonKokPituus>1940</ajonKokPituus>
+                    <ajonLeveys>760</ajonLeveys>
+                    <akselivalit>
+                        <akselivali>
+                            <sijainti>1</sijainti>
+                            <pituus>1400</pituus>
+                        </akselivali>
+                    </akselivalit>
+                </mitat>
+                <kori>
+                    <ohjaamotyyppi>4</ohjaamotyyppi>
+                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
+                </kori>
+                <jarrut>
+                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
+                </jarrut>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>
