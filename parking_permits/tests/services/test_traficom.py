@@ -101,20 +101,6 @@ class TestTraficom(TestCase):
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155
 
-    # TODO: Replace this with more specific L3eA1, L3eA2, L3eA3 tests
-    #  (and remove light_weight_vehicle.xml)
-    @override_settings(TRAFICOM_MOCK=False)
-    def test_fetch_light_weight_vehicle(self):
-        with mock.patch(
-            "requests.post",
-            return_value=MockResponse(get_mock_xml("light_weight_vehicle.xml")),
-        ):
-            registration_number = "NV-298"
-            vehicle = self.traficom.fetch_vehicle_details(registration_number)
-
-            self.assertEqual(vehicle.registration_number, registration_number)
-            self.assertEqual(vehicle.weight, 244)
-
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_L3_subclass_108_licence_A_A1_A2(self):
         with mock.patch(
@@ -594,19 +580,6 @@ class TestTraficom(TestCase):
 
             self.assertEqual(vehicle.registration_number, registration_number)
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
-
-    # TODO: Replace this test case with more specific L3eA1, L3eA2, L3eA3 tests
-    #  (and remove light_weight_vehicle_L3e.xml)
-    @override_settings(TRAFICOM_MOCK=False)
-    def test_fetch_light_weight_vehicle_L3e(self):
-        with mock.patch(
-            "requests.post",
-            return_value=MockResponse(get_mock_xml("light_weight_vehicle_L3e.xml")),
-        ):
-            registration_number = "GN-347"
-            vehicle = self.traficom.fetch_vehicle_details(registration_number)
-            self.assertEqual(vehicle.registration_number, registration_number)
-            self.assertEqual(vehicle.weight, 220)
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
