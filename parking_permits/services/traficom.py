@@ -81,9 +81,16 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def _resolve_vehicle_class(self, vehicle_class, vehicle_sub_class, power):
-        # TODO: Here resolve the vehicle class based on the vehicle class, sub class and power
-        return vehicle_class
+    def _resolve_vehicle_class(self, vehicle_class, power):
+        if not vehicle_class.startswith("L3"):
+            # Not L3-classed motorcycle
+            return vehicle_class
+
+        if float(power) <= 11:
+            return VehicleClass.L3eA1
+        if float(power) <= 35:
+            return VehicleClass.L3eA2
+        return VehicleClass.L3eA3
 
     def fetch_vehicle_details(self, registration_number, permit=None):
         if self._bypass_traficom(permit):
@@ -117,6 +124,10 @@ class Traficom:
             is not None
         ):
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
+
+        motor = et.find(".//moottori")
+        power = motor.find(".//suurinNettoteho").text
+        vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
 
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
@@ -152,12 +163,6 @@ class Traficom:
         registration_number_et = et.find(".//rekisteritunnus")
         if registration_number_et is not None and registration_number_et.text:
             registration_number = registration_number_et.text
-        motor = et.find(".//moottori")
-
-        power = motor.find(".//suurinNettoteho")
-        vehicle_class = self._resolve_vehicle_class(
-            vehicle_class, vehicle_sub_class, power
-        )
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
