@@ -24,7 +24,7 @@ class MockResponse:
 def get_mock_xml(filename):
     return (
         (pathlib.Path(__file__).parent / "mocks" / "traficom" / filename)
-        .open("r")
+        .open("r", encoding="latin-1")
         .read()
     )
 
