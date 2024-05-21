@@ -23,11 +23,52 @@ ALLOWED_VEHICLE_CLASSES = {
         VehicleClass.N1G,
         VehicleClass.L6eB,
     ),
+    "BE": (
+        VehicleClass.M1,
+        VehicleClass.M1G,
+        VehicleClass.N1,
+        VehicleClass.N1G,
+        VehicleClass.L6eB,
+    ),
+    "B/96": (
+        VehicleClass.M1,
+        VehicleClass.M1G,
+        VehicleClass.N1,
+        VehicleClass.N1G,
+        VehicleClass.L6eB,
+    ),
     "C": (
         VehicleClass.N2,
         VehicleClass.N2G,
     ),
-    "D": (VehicleClass.M2,),
+    "C1": (
+        VehicleClass.N2,
+        VehicleClass.N2G,
+    ),
+    "C1E": (
+        VehicleClass.N2,
+        VehicleClass.N2G,
+    ),
+    "CE": (
+        VehicleClass.N2,
+        VehicleClass.N2G,
+    ),
+    "D": (
+        VehicleClass.M2,
+        VehicleClass.M2G,
+    ),
+    "D1": (
+        VehicleClass.M2,
+        VehicleClass.M2G,
+    ),
+    "DE": (
+        VehicleClass.M2,
+        VehicleClass.M2G,
+    ),
+    "D1E": (
+        VehicleClass.M2,
+        VehicleClass.M2G,
+    ),
 }
 
 
