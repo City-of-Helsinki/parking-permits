@@ -10,6 +10,7 @@ class VehicleClass(models.TextChoices):
     M1 = "M1", _("M1")
     M1G = "M1G", _("M1G")
     M2 = "M2", _("M2")
+    M2G = "M2G", _("M2G")
     N1 = "N1", _("N1")
     N1G = "N1G", _("N1G")
     N2 = "N2", _("N2")
