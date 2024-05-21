@@ -1,0 +1,46 @@
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTKORTTIHAKUOUT</sanomatyyppi>
+        <erakoodi />
+        <sekvenssinumero />
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ktp>
+            <ajokorttiluokanTiedot>
+                <ajokorttiluokkatieto>
+                    <hetu>290200A905H</hetu>
+                    <sukunimi>Kiviniemi</sukunimi>
+                    <etunimet>Helge Abel</etunimet>
+                    <ajokorttiluokka>A B</ajokorttiluokka>
+                    <ajokortinMyontamisPvm>2023-09-01</ajokortinMyontamisPvm>
+                    <ajooikeusluokat>
+                        <ajooikeusluokka>
+                            <ajooikeusluokka>C</ajooikeusluokka>
+                            <alkamispvm>2023-09-01</alkamispvm>
+                        </ajooikeusluokka>
+                    </ajooikeusluokat>
+                    <viimeisinajooikeus>
+                        <ajooikeusluokka>
+                            <ajooikeusluokka>C</ajooikeusluokka>
+                            <alkamispvm>2023-09-01</alkamispvm>
+                        </ajooikeusluokka>
+                        <ajooikeusluokka>
+                            <ajooikeusluokka>C1</ajooikeusluokka>
+                            <alkamispvm>2023-09-01</alkamispvm>
+                        </ajooikeusluokka>
+                        <ajooikeusluokka>
+                            <ajooikeusluokka>C1E</ajooikeusluokka>
+                            <alkamispvm>2023-09-01</alkamispvm>
+                        </ajooikeusluokka>
+                        <ajooikeusluokka>
+                            <ajooikeusluokka>CE</ajooikeusluokka>
+                            <alkamispvm>2023-09-01</alkamispvm>
+                        </ajooikeusluokka>
+                    </viimeisinajooikeus>
+                </ajokorttiluokkatieto>
+            </ajokorttiluokanTiedot>
+        </ktp>
+    </sanoma>
+</kehys>
