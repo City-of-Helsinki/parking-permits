@@ -312,7 +312,7 @@ class OrderSearchForm(SearchFormBase):
 
         if q:
             if q.isdigit():
-                query = Q(id=int(q))
+                query = Q(id=int(q)) | Q(permits=int(q))
             else:
                 query = functools.reduce(
                     operator.and_,

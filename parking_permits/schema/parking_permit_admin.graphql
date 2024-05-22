@@ -175,6 +175,7 @@ type OrderNode {
   vehicles: [String]
   orderPermits: [PermitNode]
   orderItemsContent: [OrderItemNode]
+  talpaOrderId: String
 }
 
 type PageInfo {
