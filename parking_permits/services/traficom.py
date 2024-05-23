@@ -81,11 +81,7 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def _resolve_vehicle_class(self, vehicle_class, power):
-        if not vehicle_class.startswith("L3"):
-            # Not L3-classed motorcycle
-            return vehicle_class
-
+    def _resolve_vehicle_class(self, power):
         if float(power) <= 11:
             return VehicleClass.L3eA1
         if float(power) <= 35:
@@ -126,8 +122,15 @@ class Traficom:
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
         motor = et.find(".//moottori")
-        power = motor.find(".//suurinNettoteho").text
-        vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
+        power = motor.find(".//suurinNettoteho")
+
+        if vehicle_class.startswith("L3") and vehicle_class not in VehicleClass:
+            # More spesific classification for L3 -motorcycles
+            if power is not None and power.text is not None:
+                vehicle_class = self._resolve_vehicle_class(power.text)
+            elif not vehicle_sub_class:
+                # Fallback to L3eA1 in case traficom doesn't return anything useful
+                vehicle_class = VehicleClass.L3eA1
 
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
