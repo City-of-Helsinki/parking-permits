@@ -581,6 +581,66 @@ class TestTraficom(TestCase):
             self.assertEqual(vehicle.registration_number, registration_number)
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_L3e_subclass_909_licence_A_without_power(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml("vehicle_L3e_subclass_909_licence_A_without_power.xml")
+            ),
+        ):
+            registration_number = "62-LHJ"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertFalse(
+                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertFalse(
+                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertTrue(
+                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+            self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_L3e_subclass_909_licence_A_missing_field(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml("vehicle_L3e_subclass_909_licence_A_missing_field.xml")
+            ),
+        ):
+            registration_number = "62-LHJ"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertFalse(
+                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertFalse(
+                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertTrue(
+                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+            self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
+
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(
