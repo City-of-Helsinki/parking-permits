@@ -126,8 +126,10 @@ class Traficom:
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
         motor = et.find(".//moottori")
-        power = motor.find(".//suurinNettoteho").text
-        vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
+        power = motor.find(".//suurinNettoteho")
+
+        if power is not None and power.text is not None:
+            vehicle_class = self._resolve_vehicle_class(vehicle_class, power.text)
 
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
