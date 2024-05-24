@@ -1,3 +1,4 @@
+import datetime
 import functools
 import operator
 
@@ -328,17 +329,15 @@ class OrderSearchForm(SearchFormBase):
             has_filters = True
 
         if start_date:
-            # Find all orders with permits that are or will be valid after the given start date.
-            qs = qs.filter(
-                Q(permits__start_time__gte=start_date)
-                | Q(permits__end_time__isnull=True)
-                | Q(permits__end_time__gte=start_date)
-            )
+            qs = qs.filter(Q(created_at__gte=start_date))
             has_filters = True
 
         if end_date:
-            # Find all orders with permits that are or have been valid before the given end date.
-            qs = qs.filter(permits__start_time__lte=end_date)
+            # Make sure full end_date -day is included in the search
+            next_midnight = datetime.datetime(
+                end_date.year, end_date.month, end_date.day + 1
+            )
+            qs = qs.filter(Q(created_at__lte=next_midnight))
             has_filters = True
 
         if parking_zone:
