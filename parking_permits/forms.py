@@ -335,8 +335,9 @@ class OrderSearchForm(SearchFormBase):
         if end_date:
             # Make sure full end_date -day is included in the search
             next_midnight = datetime.datetime(
-                end_date.year, end_date.month, end_date.day + 1
-            )
+                end_date.year, end_date.month, end_date.day
+            ) + datetime.timedelta(days=1)
+
             qs = qs.filter(Q(created_at__lte=next_midnight))
             has_filters = True
 
