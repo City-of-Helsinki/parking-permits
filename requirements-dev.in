@@ -1,2 +1,2 @@
-pip-tools==6.13.0                             # package management tool
-pre-commit==3.3.2                             # pre-commit hooks package manager
+pip-tools==7.4.1                             # package management tool
+pre-commit==3.7.1                             # pre-commit hooks package manager
