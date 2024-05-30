@@ -139,9 +139,11 @@ class TalpaOrderManager:
             item["meta"].append(
                 {
                     "key": "endDate",
-                    "label": _("Parking permit expiration date")
-                    if permit.is_fixed_period
-                    else _("Parking permit period expiration date"),
+                    "label": (
+                        _("Parking permit expiration date")
+                        if permit.is_fixed_period
+                        else _("Parking permit period expiration date")
+                    ),
                     "value": end_time,
                     "visibleInCheckout": True,
                     "ordinal": 3,

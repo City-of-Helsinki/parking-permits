@@ -206,9 +206,11 @@ class Traficom:
         vehicle_model = vehicle_detail.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
         user_ssns = [
-            owner_et.find("omistajanTunnus").text
-            if owner_et.find("omistajanTunnus") is not None
-            else ""
+            (
+                owner_et.find("omistajanTunnus").text
+                if owner_et.find("omistajanTunnus") is not None
+                else ""
+            )
             for owner_et in owners_et
         ]
         power_type = VehiclePowerType.objects.get_or_create(
@@ -228,9 +230,9 @@ class Traficom:
             "emission": float(co2emission) if co2emission else 0,
             "emission_type": emission_type,
             "serial_number": vehicle_serial_number.text,
-            "last_inspection_date": last_inspection_date.text
-            if last_inspection_date is not None
-            else None,
+            "last_inspection_date": (
+                last_inspection_date.text if last_inspection_date is not None else None
+            ),
             "restrictions": restrictions or [],
         }
         vehicle_users = []
