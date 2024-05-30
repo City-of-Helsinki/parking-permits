@@ -2,6 +2,7 @@
 
 This file is copied from: https://github.com/City-of-Helsinki/helsinki-profile-gdpr-api/blob/main/tests/keys.py
 """
+
 from jose import jwk
 from jose.constants import ALGORITHMS
 
