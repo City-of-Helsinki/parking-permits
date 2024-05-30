@@ -463,7 +463,9 @@ class PaymentView(APIView):
                 sync_with_parkkihubi(ext_request.permit)
                 send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
 
+            contract_type = ""
             for permit in order.permits.all():
+                contract_type = permit.contract_type
                 permit.status = ParkingPermitStatus.VALID
 
                 # Subscription renewed type order has always only one permit
@@ -515,7 +517,10 @@ class PaymentView(APIView):
                     )
 
                 sync_with_parkkihubi(permit)
-            logger.info(f"{order} is confirmed and order permits are set to VALID ")
+            logger.info(
+                f"{order} with talpa_order_id: {talpa_order_id} is confirmed \
+                        and order permits are set to VALID. Permit contract type is {contract_type}"
+            )
             return Response({"message": "Payment received"}, status=200)
         else:
             order.permit_extension_requests.cancel_pending()
