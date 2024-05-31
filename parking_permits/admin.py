@@ -26,7 +26,7 @@ from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 
 @admin.register(Address)
-class AddressAdmin(admin.OSMGeoAdmin):
+class AddressAdmin(admin.GISModelAdmin):
     search_fields = ("street_name", "street_name_sv", "city", "city_sv")
     list_display = (
         "id",
@@ -176,7 +176,7 @@ class ParkingPermitEventAdmin(admin.ModelAdmin):
 
 
 @admin.register(ParkingZone)
-class ParkingZoneAdmin(admin.OSMGeoAdmin):
+class ParkingZoneAdmin(admin.GISModelAdmin):
     list_display = ("id", "name", "description", "description_sv")
     ordering = ("name",)
 

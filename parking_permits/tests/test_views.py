@@ -486,7 +486,7 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertNotEquals(response.data.get("errorMessage"), "")
+        self.assertNotEqual(response.data.get("errorMessage"), "")
 
 
 class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
@@ -719,7 +719,7 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
             response.data.get("subscriptionId"), self.talpa_subscription_id
         )
         self.assertEqual(response.data.get("userId"), self.user_id)
-        self.assertNotEquals(response.data.get("errorMessage"), "")
+        self.assertNotEqual(response.data.get("errorMessage"), "")
 
 
 class ResolveRightOfPurchaseViewTestCase(APITestCase):

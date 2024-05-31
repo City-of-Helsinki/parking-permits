@@ -13,6 +13,7 @@ class ParkingPermitFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = ParkingPermit
+        skip_postgeneration_save = True
 
     @factory.post_generation
     def orders(self, create, extracted, **kwargs):
