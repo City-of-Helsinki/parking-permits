@@ -2,7 +2,7 @@ ariadne-django==0.3.0                         # schema-first graphql server impl
 dj-database-url==2.2.0                        # to be able to parse DATABASE_URL
 django-environ==0.11.2                        # Read .env file
 django-extensions==3.2.3                      # useful django extensions
-django==4.2.13                                # web framework itself
+django==5.0.6                                 # web framework itself
 djangorestframework==3.15.1                   # creating rest APIs
 gunicorn==22.0.0                              # application server
 psycopg2-binary==2.9.9                        # postgres database adapter

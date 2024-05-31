@@ -5,13 +5,13 @@ WORKDIR /app
 RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update && \
     apt-get install -y software-properties-common && \
     add-apt-repository -y ppa:deadsnakes/ppa && \
-    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive apt-get install -y nano python3.9 python3.9-distutils python3.9-venv apt-transport-https gdal-bin uwsgi uwsgi-plugin-python3 libgdal26 git-core postgresql-client netcat gettext libpq-dev unzip && \
-    ln -s /usr/bin/pip3.9 /usr/local/bin/pip && \
-    ln -s /usr/bin/pip3.9 /usr/local/bin/pip3 && \
-    ln -s /usr/bin/python3.9 /usr/local/bin/python && \
-    ln -s /usr/bin/python3.9 /usr/local/bin/python3
+    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive apt-get install -y nano python3.11 python3.11-distutils python3.11-venv apt-transport-https gdal-bin uwsgi uwsgi-plugin-python3 libgdal26 git-core postgresql-client netcat gettext libpq-dev unzip && \
+    ln -s /usr/bin/pip3.11 /usr/local/bin/pip && \
+    ln -s /usr/bin/pip3.11 /usr/local/bin/pip3 && \
+    ln -s /usr/bin/python3.11 /usr/local/bin/python && \
+    ln -s /usr/bin/python3.11 /usr/local/bin/python3
 
-RUN python3.9 -m ensurepip
+RUN python3.11 -m ensurepip
 
 FROM base
 
