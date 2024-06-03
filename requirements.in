@@ -19,3 +19,4 @@ fpdf==1.7.2                                   # pdf generation
 django-searchable-encrypted-fields==0.2.1     # encrypted fields
 sentry-sdk==2.3.1                             # error logging
 numpy==1.24.4                                 # scientific computing
+python-dateutil==2.9.0                        # date utilities
