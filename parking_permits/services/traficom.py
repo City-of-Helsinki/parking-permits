@@ -169,7 +169,9 @@ class Traficom:
         vehicle_identity = et.find(".//tunnus")
         registration_number_et = et.find(".//rekisteritunnus")
         if registration_number_et is not None and registration_number_et.text:
-            registration_number = registration_number_et.text
+            registration_number = registration_number_et.text.encode("latin-1").decode(
+                "utf-8"
+            )
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
@@ -213,6 +215,12 @@ class Traficom:
             )
             for owner_et in owners_et
         ]
+
+        if not any(user_ssns):
+            raise TraficomFetchVehicleError(
+                _("This person has a non-disclosure statement")
+            )
+
         power_type = VehiclePowerType.objects.get_or_create(
             identifier=vehicle_power_type.text,
             defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
