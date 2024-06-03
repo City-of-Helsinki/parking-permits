@@ -1165,3 +1165,6 @@ msgid ""
 msgstr ""
 "En förmån för fordonsparkering med låga utsläpp har tagits bort från "
 "fordonet."
+
+msgid "This person has a non-disclosure statement"
+msgstr "Denna person har ett sekretessavtal"
