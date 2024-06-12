@@ -49,12 +49,16 @@ def _get_permit_row(permit):
         customer.national_id_number,
         vehicle.registration_number,
         getattr(permit, "active_temporary_vehicle_registration_number", None) or "-",
-        str(permit.full_address)
-        if permit.address and permit.address == customer.primary_address
-        else "-",
-        str(permit.full_address)
-        if permit.address and permit.address == customer.other_address
-        else "-",
+        (
+            str(permit.full_address)
+            if permit.address and permit.address == customer.primary_address
+            else "-"
+        ),
+        (
+            str(permit.full_address)
+            if permit.address and permit.address == customer.other_address
+            else "-"
+        ),
         permit.parking_zone.name,
         _format_datetime(permit.start_time, "-"),
         _format_datetime(end_time, "-"),
@@ -83,9 +87,11 @@ def _get_order_row(order):
         order.address_text or "-",
         permit_type,
         order.id,
-        _("Online payment")
-        if order.payment_type == OrderPaymentType.ONLINE_PAYMENT
-        else _("Cashier payment"),
+        (
+            _("Online payment")
+            if order.payment_type == OrderPaymentType.ONLINE_PAYMENT
+            else _("Cashier payment")
+        ),
         _format_datetime(order.paid_time, "-"),
         _format_price(order.total_payment_price),
     ]

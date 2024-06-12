@@ -671,6 +671,69 @@ class TestTraficom(TestCase):
             self.assertEqual(vehicle.registration_number, registration_number)
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_aoa_2(self):
+        # Special chars in registration number
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("special_cases/AOA-2.xml")),
+        ):
+            registration_number = "ÄÖÅ-2"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_aoa_3(self):
+        # Special chars in registration number
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("special_cases/AOA-3.xml")),
+        ):
+            registration_number = "ÄÖÅ-3"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_abc_12(self):
+        # No valid registration
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("special_cases/ABC-12.xml")),
+        ):
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_vehicle_details,
+                "ABC-12",
+            )
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_lai_1(self):
+        # Regular valid test
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("special_cases/LAI-1.xml")),
+        ):
+            registration_number = "LAI-1"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_moi_10(self):
+        # Person has a non-disclosure statement
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("special_cases/MOI-10.xml")),
+        ):
+
+            self.assertRaises(
+                TraficomFetchVehicleError,
+                self.traficom.fetch_vehicle_details,
+                "MOI-10",
+            )
+
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(

@@ -98,6 +98,7 @@
                 </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="1">
+                        <omistajanTunnus>290200A905H</omistajanTunnus>
                         <asiakaslaji>0</asiakaslaji>
                         <omistajuustyyppi>01</omistajuustyyppi>
                         <suhteenAlkupvm>2018-05-09</suhteenAlkupvm>

@@ -199,9 +199,11 @@ class OrderManager(SerializableMixin.SerializableManager):
                         payment_unit_price=unit_price,
                         vat=product.vat,
                         quantity=quantity,
-                        start_time=permit.start_time
-                        if first_order_item
-                        else start_date_to_datetime(start_date),
+                        start_time=(
+                            permit.start_time
+                            if first_order_item
+                            else start_date_to_datetime(start_date)
+                        ),
                         end_time=end_date_to_datetime(end_date),
                     )
                     first_order_item = False

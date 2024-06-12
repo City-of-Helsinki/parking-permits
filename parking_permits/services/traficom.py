@@ -81,12 +81,22 @@ class Traficom:
     url = settings.TRAFICOM_ENDPOINT
     headers = {"Content-type": "application/xml"}
 
-    def _resolve_vehicle_class(self, power):
-        if float(power) <= 11:
-            return VehicleClass.L3eA1
-        if float(power) <= 35:
-            return VehicleClass.L3eA2
-        return VehicleClass.L3eA3
+    def _resolve_vehicle_class(self, vehicle_class, power):
+        if not vehicle_class.startswith("L3") or vehicle_class in VehicleClass:
+            # Not L3 -classed motorcycle or already has accurate classification
+            return vehicle_class
+
+        if power is not None and power.text is not None:
+            # Classify using power
+            power = power.text
+            if float(power) <= 11:
+                return VehicleClass.L3eA1
+            if float(power) <= 35:
+                return VehicleClass.L3eA2
+            return VehicleClass.L3eA3
+
+        # Fallback to L3eA1 in case traficom doesn't return anything useful
+        return VehicleClass.L3eA1
 
     def fetch_vehicle_details(self, registration_number, permit=None):
         if self._bypass_traficom(permit):
@@ -124,13 +134,7 @@ class Traficom:
         motor = et.find(".//moottori")
         power = motor.find(".//suurinNettoteho")
 
-        if vehicle_class.startswith("L3") and vehicle_class not in VehicleClass:
-            # More spesific classification for L3 -motorcycles
-            if power is not None and power.text is not None:
-                vehicle_class = self._resolve_vehicle_class(power.text)
-            elif not vehicle_sub_class:
-                # Fallback to L3eA1 in case traficom doesn't return anything useful
-                vehicle_class = VehicleClass.L3eA1
+        vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
 
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
@@ -165,7 +169,9 @@ class Traficom:
         vehicle_identity = et.find(".//tunnus")
         registration_number_et = et.find(".//rekisteritunnus")
         if registration_number_et is not None and registration_number_et.text:
-            registration_number = registration_number_et.text
+            registration_number = registration_number_et.text.encode("latin-1").decode(
+                "utf-8"
+            )
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
@@ -202,11 +208,19 @@ class Traficom:
         vehicle_model = vehicle_detail.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
         user_ssns = [
-            owner_et.find("omistajanTunnus").text
-            if owner_et.find("omistajanTunnus") is not None
-            else ""
+            (
+                owner_et.find("omistajanTunnus").text
+                if owner_et.find("omistajanTunnus") is not None
+                else ""
+            )
             for owner_et in owners_et
         ]
+
+        if not any(user_ssns):
+            raise TraficomFetchVehicleError(
+                _("This person has a non-disclosure statement")
+            )
+
         power_type = VehiclePowerType.objects.get_or_create(
             identifier=vehicle_power_type.text,
             defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
@@ -224,9 +238,9 @@ class Traficom:
             "emission": float(co2emission) if co2emission else 0,
             "emission_type": emission_type,
             "serial_number": vehicle_serial_number.text,
-            "last_inspection_date": last_inspection_date.text
-            if last_inspection_date is not None
-            else None,
+            "last_inspection_date": (
+                last_inspection_date.text if last_inspection_date is not None else None
+            ),
             "restrictions": restrictions or [],
         }
         vehicle_users = []
