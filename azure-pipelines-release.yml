@@ -1,15 +1,17 @@
-# File: parking-permits/azure-pipelines-release.yml
-
+#
+# Release pipeline. Run build and deploy for Platta staging and production environments.
+#
 # Continuous integration (CI) triggers cause a pipeline to run whenever you push
 # an update to the specified branches or you push specified tags.
 trigger:
   batch: true
-  branches:
+  tags:
     include:
-    - main
+    - release-*
   paths:
     exclude:
     - README.md
+    - CHANGELOG.md
 
 # By default, use self-hosted agents
 pool: Default
