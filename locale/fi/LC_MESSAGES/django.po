@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-23 11:17+0200\n"
+"POT-Creation-Date: 2024-06-19 11:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -168,22 +168,11 @@ msgid "There's already a valid permit for a given vehicle."
 msgstr ""
 "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
-msgid "Start time cannot be in the past"
-msgstr "Aloitusaika ei voi olla menneisyydessä"
-
-msgid "Temporary vehicle start time has to be after permit start time"
-msgstr ""
-"Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
-
 msgid "Month count exceeds maximum"
 msgstr "Kuukausimäärä ylittää sallitun määrän"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
-
-msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
-msgstr ""
-"Tilapäisten ajoneuvojen lukumäärä on rajoitettu kahteen 365 päivän aikana."
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
@@ -249,6 +238,9 @@ msgstr "Henkilötunnus"
 
 msgid "Registration number"
 msgstr "Rekisteritunnus"
+
+msgid "Temporary registration number"
+msgstr "Väliaikainen rekisteritunnus"
 
 msgid "Primary address"
 msgstr "Vakituinen osoite"
@@ -541,6 +533,9 @@ msgstr "Talpan sisäänkirjautuneen checkoutin url"
 msgid "Talpa receipt_url"
 msgstr "Talpan kuitin url"
 
+msgid "Talpa update card url"
+msgstr "Talpan kortin päivityksen url"
+
 msgid "Talpa last valid purchase time"
 msgstr "Talpan viimeisin voimassa oleva ostoaika"
 
@@ -689,6 +684,14 @@ msgstr ""
 "Ensisijaista ajoneuvoa sisältävää tunnusta ei voida sulkea, koska "
 "toissijainen ajoneuvo löytyy"
 
+msgid "Temporary vehicle start time has to be after permit start time"
+msgstr ""
+"Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
+
+msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
+msgstr ""
+"Tilapäisten ajoneuvojen lukumäärä on rajoitettu kahteen 365 päivän aikana."
+
 msgid "Updated"
 msgstr "Päivitetty"
 
@@ -816,6 +819,9 @@ msgstr "M1G"
 msgid "M2"
 msgstr "M2"
 
+msgid "M2G"
+msgstr "M2G"
+
 msgid "N1"
 msgstr "N1"
 
@@ -836,24 +842,6 @@ msgstr "L3e-A2"
 
 msgid "L3e-A3"
 msgstr "L3e-A3"
-
-msgid "L3e-A1E"
-msgstr "L3e-A1E"
-
-msgid "L3e-A2E"
-msgstr "L3e-A2E"
-
-msgid "L3e-A3E"
-msgstr "L3e-A3E"
-
-msgid "L3e-A1T"
-msgstr "L3e-A1T"
-
-msgid "L3e-A2T"
-msgstr "L3e-A2T"
-
-msgid "L3e-A3T"
-msgstr "L3e-A3T"
 
 msgid "L4e"
 msgstr "L4e"
@@ -969,8 +957,8 @@ msgstr "Sinulle on luotu pysäköintitunnus"
 msgid "Your parking permit information has been updated"
 msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
-msgid "Your order will end"
-msgstr "Tilauksesi päättyy"
+msgid "Your order has ended"
+msgstr "Tilauksesi päättyi"
 
 msgid "Your parking permit has been extended"
 msgstr "Pysäköintitunnuksesi voimassaoloaikaa on pidennetty"
@@ -1013,6 +1001,9 @@ msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
 #, python-format
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
 msgstr "Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan"
+
+msgid "This person has a non-disclosure statement"
+msgstr "Tällä henkilöllä on tietojenluovutuskielto"
 
 msgid "The person has no driving licence"
 msgstr "Henkilölle ei löydy ajokorttia"
@@ -1098,8 +1089,8 @@ msgstr ""
 "Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
 "olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
 
-msgid "Your parking permit validity period will end at"
-msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy"
+msgid "Your parking permit validity period has ended at"
+msgstr "Pysäköintitunnuksesi voimassaoloaika päättyi"
 
 msgid ""
 "If you want to continue permit usage, you will need to make a new order."
@@ -1161,6 +1152,3 @@ msgid ""
 "A low-emission vehicle parking benefit has been removed from the vehicle."
 msgstr ""
 "Ohessa ajoneuvo, jolta on poistettu vähäpäästöisen auton pysäköintietuus."
-
-msgid "This person has a non-disclosure statement"
-msgstr "Tällä henkilöllä on tietojenluovutuskielto"

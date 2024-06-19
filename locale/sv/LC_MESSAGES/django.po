@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-02-23 11:23+0200\n"
+"POT-Creation-Date: 2024-06-19 11:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -165,21 +165,11 @@ msgstr "Meddelandet hittades inte"
 msgid "There's already a valid permit for a given vehicle."
 msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
 
-msgid "Start time cannot be in the past"
-msgstr "Starttiden kan inte ligga i det förflutna"
-
-msgid "Temporary vehicle start time has to be after permit start time"
-msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
-
 msgid "Month count exceeds maximum"
 msgstr "Antalet månader överstiger gränsen"
 
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
-
-msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
-msgstr ""
-"Kan inte ha mer än 2 tillfälliga fordon under 365 dagar från det första."
 
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
@@ -244,6 +234,9 @@ msgstr "Personnummer"
 
 msgid "Registration number"
 msgstr "Registreringsnummer"
+
+msgid "Temporary registration number"
+msgstr "Tillfällig registreringsnummer"
 
 msgid "Primary address"
 msgstr "Permanent adress"
@@ -536,6 +529,9 @@ msgstr "Talpa inloggad checkout url"
 msgid "Talpa receipt_url"
 msgstr "Talpa kvitto url"
 
+msgid "Talpa update card url"
+msgstr "Talpa uppdatera kort-url"
+
 msgid "Talpa last valid purchase time"
 msgstr "Talpa senaste giltiga köptid"
 
@@ -684,6 +680,13 @@ msgstr ""
 "Ett ID som innehåller ett primärt fordon kan inte stängas eftersom ett "
 "sekundärt fordon hittas."
 
+msgid "Temporary vehicle start time has to be after permit start time"
+msgstr "Tillfällig starttid för fordon måste vara efter tillståndets starttid"
+
+msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
+msgstr ""
+"Kan inte ha mer än 2 tillfälliga fordon under 365 dagar från det första."
+
 msgid "Updated"
 msgstr "Uppdaterad"
 
@@ -698,7 +701,8 @@ msgstr "Event typ"
 
 #, python-format
 msgid "Permit extension #%(ext_request_id)s created by admin"
-msgstr "Begäran om förlängning av tillstånd #%(ext_request_id)s skapad av admin"
+msgstr ""
+"Begäran om förlängning av tillstånd #%(ext_request_id)s skapad av admin"
 
 #, python-format
 msgid "Permit extension #%(ext_request_id)s created by customer"
@@ -813,6 +817,9 @@ msgstr "M1G"
 msgid "M2"
 msgstr "M2"
 
+msgid "M2G"
+msgstr "M2G"
+
 msgid "N1"
 msgstr "N1"
 
@@ -833,24 +840,6 @@ msgstr "L3e-A2"
 
 msgid "L3e-A3"
 msgstr "L3e-A3"
-
-msgid "L3e-A1E"
-msgstr "L3e-A1E"
-
-msgid "L3e-A2E"
-msgstr "L3e-A2E"
-
-msgid "L3e-A3E"
-msgstr "L3e-A3E"
-
-msgid "L3e-A1T"
-msgstr "L3e-A1T"
-
-msgid "L3e-A2T"
-msgstr "L3e-A2T"
-
-msgid "L3e-A3T"
-msgstr "L3e-A3T"
 
 msgid "L4e"
 msgstr "L4e"
@@ -966,8 +955,8 @@ msgstr "Nytt parkeringstillstånd har skapats åt dig"
 msgid "Your parking permit information has been updated"
 msgstr "Parkeringtillståndet informationen har uppdaterats"
 
-msgid "Your order will end"
-msgstr "Ditt parkeringstillstånd kommer att avslutas"
+msgid "Your order has ended"
+msgstr "Din beställning har avslutats"
 
 msgid "Your parking permit has been extended"
 msgstr "Ditt parkeringstillstånd har förlängts"
@@ -1012,6 +1001,9 @@ msgstr "Fordonet %(registration_number)s är avställd"
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
 msgstr ""
 "Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
+
+msgid "This person has a non-disclosure statement"
+msgstr "Denna person har ett sekretessavtal"
 
 msgid "The person has no driving licence"
 msgstr "Personen har inget körkort"
@@ -1098,8 +1090,8 @@ msgstr ""
 "identifiera tillståndets giltighet baserat på ditt fordons "
 "registreringsnummer."
 
-msgid "Your parking permit validity period will end at"
-msgstr "Ditt parkeringstillstånds giltighetstid slutar "
+msgid "Your parking permit validity period has ended at"
+msgstr "Din parkeringstillstånds giltighetsperiod har slutat vid"
 
 msgid ""
 "If you want to continue permit usage, you will need to make a new order."
@@ -1165,6 +1157,3 @@ msgid ""
 msgstr ""
 "En förmån för fordonsparkering med låga utsläpp har tagits bort från "
 "fordonet."
-
-msgid "This person has a non-disclosure statement"
-msgstr "Denna person har ett sekretessavtal"
