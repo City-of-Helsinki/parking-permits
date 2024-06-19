@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2024-06-19
+
+### Added
+
+- Add changelog to project
+
+### Changed
+
+- Update Python version to 3.11 from CI
+- Update application packages
+- Update fi/sv/en translations
+- Update Azure CI-settings
+
+### Removed
+
+- Remove obsolete Docker Compose version
+
 ## [1.0.0] - 2024-06-12
 
 * PV-76 Initializing a barebone django project by @sam-hosseini in https://github.com/City-of-Helsinki/parking-permits/pull/1
