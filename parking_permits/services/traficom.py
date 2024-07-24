@@ -12,6 +12,7 @@ from parking_permits.models.driving_class import DrivingClass
 from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.vehicle import (
     EmissionType,
+    LowEmissionCriteria,
     Vehicle,
     VehicleClass,
     VehiclePowerType,
@@ -175,14 +176,40 @@ class Traficom:
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
         inspection_detail = et.find(".//ajoneuvonPerustiedot")
         last_inspection_date = inspection_detail.find("mkAjanLoppupvm")
+
+        try:
+            now = tz.now()
+            le_criteria = LowEmissionCriteria.objects.get(
+                start_date__lte=now,
+                end_date__gte=now,
+            )
+        except LowEmissionCriteria.DoesNotExist:
+            le_criteria = None
+            logger.warning(
+                "Low emission criteria not found. Please update LowEmissionCriteria to contain active criteria"
+            )
+
         emission_type = EmissionType.NEDC
         co2emission = None
         for e in emissions:
             kulutuslaji = e.find("kulutuslaji").text
             if kulutuslaji in CONSUMPTION_TYPE_NEDC + CONSUMPTION_TYPE_WLTP:
                 co2emission = e.find("maara").text
+                # if emission are under or equal of the max value of one of the consumption
+                # types (WLTP|NEDC) the emission type and value that makes the vehicle eligible
+                # for low emissions pricing should be saved to db.
                 if kulutuslaji in CONSUMPTION_TYPE_WLTP:
                     emission_type = EmissionType.WLTP
+                    if le_criteria:
+                        if float(co2emission) <= le_criteria.wltp_max_emission_limit:
+                            break
+
+                elif kulutuslaji in CONSUMPTION_TYPE_NEDC:
+                    emission_type = EmissionType.NEDC
+                    if le_criteria:
+                        if float(co2emission) <= le_criteria.nedc_max_emission_limit:
+                            break
+
         euro_class = EURO_CLASS
         if not co2emission:
             euro_class = EURO_CLASS_WITHOUT_EMISSIONS
