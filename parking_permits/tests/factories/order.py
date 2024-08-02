@@ -36,7 +36,7 @@ class OrderItemFactory(factory.django.DjangoModelFactory):
     subscription = factory.SubFactory(SubscriptionFactory)
     unit_price = Decimal(30)
     payment_unit_price = Decimal(30)
-    vat = Decimal(0.24)
+    vat = Decimal(0.255)
     quantity = 6
 
     class Meta:

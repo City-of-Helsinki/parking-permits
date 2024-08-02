@@ -600,7 +600,7 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[0]["price_change"], Decimal("-10.00")
                 )
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-1.9355")
+                    price_change_list[0]["price_change_vat"], Decimal("-2.0319")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 0)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
@@ -641,7 +641,7 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[0]["price_change"], Decimal("-10.00")
                 )
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-1.9355")
+                    price_change_list[0]["price_change_vat"], Decimal("-2.0319")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 1)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
@@ -683,7 +683,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("15"))
                 self.assertEqual(price_change_list[0]["price_change"], Decimal("-5"))
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("-0.9677")
+                    price_change_list[0]["price_change_vat"], Decimal("-1.0159")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 2)
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
@@ -695,7 +695,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("20"))
                 self.assertEqual(price_change_list[1]["price_change"], Decimal("-10"))
                 self.assertEqual(
-                    price_change_list[1]["price_change_vat"], Decimal("-1.9355")
+                    price_change_list[1]["price_change_vat"], Decimal("-2.0319")
                 )
                 self.assertEqual(price_change_list[1]["month_count"], 6)
                 self.assertEqual(price_change_list[1]["start_date"], date(2021, 7, 1))
@@ -751,7 +751,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("30"))
                 self.assertEqual(price_change_list[0]["price_change"], Decimal("20"))
                 self.assertEqual(
-                    price_change_list[0]["price_change_vat"], Decimal("3.8710")
+                    price_change_list[0]["price_change_vat"], Decimal("4.0637")
                 )
                 self.assertEqual(price_change_list[0]["month_count"], 2)
                 self.assertEqual(
@@ -767,7 +767,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("40"))
                 self.assertEqual(price_change_list[1]["price_change"], Decimal("25"))
                 self.assertEqual(
-                    price_change_list[1]["price_change_vat"], Decimal("4.8387")
+                    price_change_list[1]["price_change_vat"], Decimal("5.0797")
                 )
                 self.assertEqual(price_change_list[1]["month_count"], 6)
                 self.assertEqual(
@@ -883,8 +883,8 @@ class ParkingPermitTestCase(TestCase):
         self.assertEqual(price_list[0]["month_count"], 2)
         self.assertEqual(price_list[0]["price"], Decimal("60.00"))
         self.assertEqual(price_list[0]["unit_price"], Decimal("30.00"))
-        self.assertEqual(price_list[0]["net_price"], "48.39")
-        self.assertEqual(price_list[0]["vat_price"], "11.61")
+        self.assertEqual(price_list[0]["net_price"], "47.81")
+        self.assertEqual(price_list[0]["vat_price"], "12.19")
 
         # 1x second product
         self.assertEqual(price_list[1]["start_date"], date(2024, 4, 13))
@@ -892,8 +892,8 @@ class ParkingPermitTestCase(TestCase):
         self.assertEqual(price_list[1]["month_count"], 1)
         self.assertEqual(price_list[1]["price"], Decimal("40.00"))
         self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
-        self.assertEqual(price_list[1]["net_price"], "32.26")
-        self.assertEqual(price_list[1]["vat_price"], "7.74")
+        self.assertEqual(price_list[1]["net_price"], "31.87")
+        self.assertEqual(price_list[1]["vat_price"], "8.13")
 
     def test_max_extension_month_count_for_primary_vehicle(self):
         permit = ParkingPermitFactory(

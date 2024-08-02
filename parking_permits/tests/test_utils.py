@@ -23,9 +23,10 @@ from parking_permits.utils import (
 @pytest.mark.parametrize(
     "gross_price,vat,net_price,vat_price",
     [
-        pytest.param(100, 0.24, 80.65, 19.36, id="default"),
+        pytest.param(100, 0.255, 79.68, 20.32, id="VAT 25.5%"),
+        pytest.param(100, 0.24, 80.65, 19.36, id="VAT 24%"),
         pytest.param(100, None, 0, 0, id="VAT none"),
-        pytest.param(None, 0.24, 0, 0, id="gross none"),
+        pytest.param(None, 0.255, 0, 0, id="gross none"),
     ],
 )
 def test_calc_prices(gross_price, vat, net_price, vat_price):

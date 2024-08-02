@@ -51,7 +51,7 @@ class TalpaOrderManager:
             "unit": _("pcm"),
             "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
-            "vatPercentage": cls.round_int(float(order_item.vat_percentage)),
+            "vatPercentage": cls.round_up(float(order_item.vat_percentage)),
             "priceNet": unit_pricing.format_net(),
             "priceVat": unit_pricing.format_vat(),
             "priceGross": unit_pricing.format_gross(),
