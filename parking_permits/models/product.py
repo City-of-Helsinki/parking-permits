@@ -184,6 +184,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "price_gross": "20.00",
             "price_net": "16.13",
             "price_vat": "3.87",
+            "vat_percentage": "25.50",
         }
         """
         price_gross = self.get_modified_unit_price(is_low_emission, is_secondary)
@@ -193,6 +194,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "price_gross": pricing.format_gross(),
             "price_net": pricing.format_net(),
             "price_vat": pricing.format_vat(),
+            "vat_percentage": "%.2f" % self.vat_percentage,
         }
 
     def get_merchant_id(self):

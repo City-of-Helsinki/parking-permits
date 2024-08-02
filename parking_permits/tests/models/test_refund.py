@@ -12,5 +12,4 @@ class TestRefund(TestCase):
 
     def test_vat(self):
         refund = RefundFactory(amount=100)
-
-        self.assertAlmostEqual(refund.vat, Decimal(19.35), delta=Decimal("0.01"))
+        self.assertAlmostEqual(refund.vat, Decimal(20.32), delta=Decimal("0.01"))

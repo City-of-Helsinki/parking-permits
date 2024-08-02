@@ -376,15 +376,15 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
 
 
 def calc_net_price(gross_price: Currency, vat: Currency) -> Decimal:
-    """Returns the net price based on the gross and VAT e.g. 0.24
+    """Returns the net price based on the gross and VAT e.g. 0.255
 
     Net price is calculated thus:
 
         gross / (1 + vat)
 
-    For example, gross 100 EUR, VAT 24% would be:
+    For example, gross 100 EUR, VAT 25.5% would be:
 
-        100 / 1.24 = ~80.64
+        100 / 1.255 = ~79.68
 
     If gross or vat is zero or None, returns zero.
     """
@@ -396,13 +396,13 @@ def calc_net_price(gross_price: Currency, vat: Currency) -> Decimal:
 
 
 def calc_vat_price(gross_price: Currency, vat: Currency) -> Decimal:
-    """Returns the VAT price based on the gross and VAT e.g. 0.24
+    """Returns the VAT price based on the gross and VAT e.g. 0.255
 
     VAT price is equal to the gross minus the net.
 
-    For example, gross 100 EUR, VAT 24% would be net price of ~80.64.
+    For example, gross 100 EUR, VAT 25.5% would be net price of ~79.68.
 
-    VAT price would therefore be 100-80.64 = 19.36.
+    VAT price would therefore be 100-79.68 = ~20.32
     """
     return (
         Decimal(gross_price) - calc_net_price(gross_price, vat)

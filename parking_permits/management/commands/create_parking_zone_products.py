@@ -71,7 +71,7 @@ class Command(BaseCommand):
                     "type": ProductType.RESIDENT,
                     "unit_price": zone_price
                     * Decimal(options["price_increment_factor_old_zone"]),
-                    "vat": Decimal(0.24),
+                    "vat": Decimal(0.255),
                     "low_emission_discount": Decimal(
                         options["low_emission_discount_old_zone"]
                     ),
@@ -90,7 +90,7 @@ class Command(BaseCommand):
                     "type": ProductType.RESIDENT,
                     "unit_price": zone_price
                     * Decimal(options["price_increment_factor_new_zone"]),
-                    "vat": Decimal(0.24),
+                    "vat": Decimal(0.255),
                     "low_emission_discount": Decimal(
                         options["low_emission_discount_new_zone"]
                     ),

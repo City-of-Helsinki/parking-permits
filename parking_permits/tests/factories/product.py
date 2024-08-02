@@ -13,7 +13,7 @@ class ProductFactory(factory.django.DjangoModelFactory):
     start_date = date(2021, 1, 1)
     end_date = date(2021, 12, 31)
     unit_price = Decimal(30)
-    vat = Decimal(0.24)
+    vat = Decimal(0.255)
     low_emission_discount = Decimal(0.5)
 
     class Meta:
