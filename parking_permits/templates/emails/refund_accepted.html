@@ -9,6 +9,6 @@
     </p>
     <p>
         {% translate "Total refundable amount" %}
-        {{ refund.amount }}€ ({% translate "incl. VAT" %} 24%, {{ refund.vat|floatformat:2 }} €)
+        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} {{ refund.vat_percent|floatformat:"2u" }}%, {{ refund.vat|floatformat:"2u" }}€)
     </p>
 {% endblock %}
