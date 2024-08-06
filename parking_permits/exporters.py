@@ -313,7 +313,9 @@ class RefundPDF(ParkingPermitPDF):
             _("Customer")
             + ": "
             + f"{refund.order.customer.first_name} {refund.order.customer.last_name}",
-            _("Amount") + ": " + f"{refund.amount} e (" + _("incl. VAT") + " 24%)",
+            _("Amount")
+            + ": "
+            + f"{refund.amount} e ({_('incl. VAT')} {_format_percentage(refund.vat_percent)} %)",
             _("IBAN") + ": " + f"{refund.iban}",
             _("Status") + ": " + f"{refund.get_status_display()}",
             _("Extra info") + ": " + f"{refund.description}",
