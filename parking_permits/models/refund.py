@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils.translation import gettext_lazy as _
@@ -7,8 +5,6 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.utils import calc_vat_price
 
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
-
-VAT_PERCENT = Decimal(0.255)
 
 
 class RefundStatus(models.TextChoices):
@@ -51,6 +47,7 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
         null=True,
         blank=True,
     )
+    vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4, default=0.24)
 
     class Meta:
         verbose_name = _("Refund")
@@ -61,16 +58,9 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def vat_percent(self):
-        """Calculate the VAT percent.
-        Get the VAT percent from the first order item in the attached order, if it exists.
-        Fall back to the default VAT percent.
-        """
-        vat_percent = VAT_PERCENT
-        if self.order and self.order.order_items.exists():
-            vat_percent = self.order.order_items.first().vat
-        return vat_percent * 100
+        return self.vat * 100
 
     @property
-    def vat(self):
+    def vat_amount(self):
         """Calculate the VAT amount."""
-        return calc_vat_price(self.amount, self.vat_percent / 100)
+        return calc_vat_price(self.amount, self.vat)
