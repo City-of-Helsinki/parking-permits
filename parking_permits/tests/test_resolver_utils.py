@@ -569,6 +569,10 @@ class TestCreateRefund:
 
             # based on total order amount i.e. 30 EUR
             assert refund.amount == 30
+            delta = Decimal(0.01)
+            assert refund.vat == pytest.approx(Decimal(0.255), delta)
+            assert refund.vat_percent == pytest.approx(Decimal(25.5), delta)
+            assert refund.vat_amount == pytest.approx(Decimal(6.09), delta)
 
             # created with renewal order
             assert refund.order != order

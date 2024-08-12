@@ -112,6 +112,7 @@ type PermitPriceChangeItem {
   newPrice: Float!
   priceChange: Float!
   priceChangeVat: Float!
+  priceChangeVatPercent: Float!
   startDate: String!
   endDate: String!
   monthCount: Int!

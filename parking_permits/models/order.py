@@ -9,6 +9,7 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
+from ..constants import DEFAULT_VAT
 from ..exceptions import (
     OrderCancelError,
     OrderCreationFailed,
@@ -664,10 +665,15 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 order=order,
                 amount=permit.total_refund_amount,
                 iban=iban,
+                vat=(
+                    order.order_items.first().vat
+                    if order.order_items.exists()
+                    else DEFAULT_VAT
+                ),
                 description=f"Refund for ending permit {str(permit.id)}",
             )
             refund.permits.add(permit)
-            send_refund_email(RefundEmailType.CREATED, permit.customer, refund)
+            send_refund_email(RefundEmailType.CREATED, permit.customer, [refund])
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=permit.customer.user
             )

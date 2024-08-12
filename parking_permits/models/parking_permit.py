@@ -677,6 +677,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                     "previous_price": previous_price,
                     "new_price": new_price,
                     "price_change_vat": price_change_vat,
+                    "price_change_vat_percent": new_product.vat_percentage,
                     "price_change": diff_price,
                     "start_date": start_date,
                     "end_date": end_date,
@@ -720,11 +721,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                     # quantity by 1
                     price_change_list[-1]["month_count"] += 1
                 else:
+                    # if the price is decreased, get VAT from the previous permit order
+                    vat = (
+                        self.latest_order.vat
+                        if diff_price < 0 and self.latest_order
+                        else new_product.vat
+                    )
                     # if the product is different or diff price is different,
                     # create a new price change item
-                    price_change_vat = calc_vat_price(
-                        diff_price, new_product.vat
-                    ).quantize(Decimal("0.0001"))
+                    price_change_vat = calc_vat_price(diff_price, vat).quantize(
+                        Decimal("0.0001")
+                    )
 
                     price_change_list.append(
                         {
@@ -732,6 +739,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                             "previous_price": previous_price,
                             "new_price": new_price,
                             "price_change_vat": price_change_vat,
+                            "price_change_vat_percent": vat * 100,
                             "price_change": diff_price,
                             "start_date": month_start_date,
                             "month_count": 1,
