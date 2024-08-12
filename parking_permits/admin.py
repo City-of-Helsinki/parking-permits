@@ -210,6 +210,7 @@ class RefundAdmin(admin.ModelAdmin):
         "status",
         "created_at",
         "accepted_at",
+        "vat",
     )
     list_select_related = ("order",)
     ordering = ("-created_at",)
