@@ -1566,7 +1566,7 @@ class SubscriptionViewTestCase(APITestCase):
         )
         order.permits.add(permit)
         order.save()
-        unit_price = Decimal(30)
+        unit_price = Decimal(60)
         product = ProductFactory(unit_price=unit_price)
         subscription = SubscriptionFactory(
             talpa_subscription_id=talpa_subscription_id,
@@ -1605,17 +1605,17 @@ class SubscriptionViewTestCase(APITestCase):
 
     @override_settings(DEBUG=True)
     @patch.object(OrderValidator, "validate_order")
-    @freeze_time("2023-05-30")
+    @freeze_time("2024-05-30")
     def test_subscription_cancellation_with_refund(self, mock_validate_order):
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
         )
         permit_end_time = datetime.datetime(
-            2023, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
+            2024, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
         )
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
@@ -1630,7 +1630,7 @@ class SubscriptionViewTestCase(APITestCase):
         )
         order.permits.add(permit)
         order.save()
-        unit_price = Decimal(30)
+        unit_price = Decimal(60)
         product = ProductFactory(unit_price=unit_price)
         subscription = SubscriptionFactory(
             talpa_subscription_id=talpa_subscription_id,
@@ -1642,7 +1642,7 @@ class SubscriptionViewTestCase(APITestCase):
             permit=permit,
             subscription=subscription,
             quantity=1,
-            unit_price=60.00,
+            unit_price=unit_price,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -1671,6 +1671,82 @@ class SubscriptionViewTestCase(APITestCase):
         refund = Refund.objects.get(order=order)
         self.assertEqual(refund.order, order)
         self.assertEqual(refund.amount, Decimal("60.00"))
+        self.assertEqual(refund.vat_percent, Decimal("25.5"))
+        self.assertAlmostEqual(refund.vat_amount, Decimal(12.19), delta=Decimal("0.01"))
+        self.assertEqual(refund.name, permit.customer.full_name)
+        self.assertEqual(refund.status, RefundStatus.OPEN)
+
+    @override_settings(DEBUG=True)
+    @patch.object(OrderValidator, "validate_order")
+    @freeze_time("2023-05-30")
+    def test_subscription_cancellation_with_refund_prev_vat(self, mock_validate_order):
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        customer = CustomerFactory()
+        permit_start_time = datetime.datetime(
+            2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+        )
+        permit_end_time = datetime.datetime(
+            2023, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            customer=customer,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        order.permits.add(permit)
+        order.save()
+        unit_price = Decimal(60)
+        product = ProductFactory(unit_price=unit_price)
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=SubscriptionStatus.CONFIRMED,
+        )
+        OrderItemFactory(
+            order=order,
+            product=product,
+            permit=permit,
+            subscription=subscription,
+            quantity=1,
+            unit_price=unit_price,
+            vat=Decimal(0.24),
+        )
+
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CANCELLED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+            "orderItemId": talpa_order_item_id,
+        }
+
+        mock_validate_order.return_value = get_validated_order_data(
+            talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        subscription.refresh_from_db()
+        subscription_order = subscription.order_items.first().order
+        self.assertEqual(str(subscription.talpa_subscription_id), talpa_subscription_id)
+        self.assertEqual(str(subscription_order.talpa_order_id), talpa_order_id)
+        self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
+        order.refresh_from_db()
+        self.assertEqual(subscription_order, order)
+        self.assertEqual(subscription_order.status, OrderStatus.CANCELLED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        refund = Refund.objects.get(order=order)
+        self.assertEqual(refund.order, order)
+        self.assertEqual(refund.amount, Decimal("60.00"))
+        self.assertEqual(refund.vat_percent, Decimal("24.0"))
+        self.assertAlmostEqual(refund.vat_amount, Decimal(11.61), delta=Decimal("0.01"))
         self.assertEqual(refund.name, permit.customer.full_name)
         self.assertEqual(refund.status, RefundStatus.OPEN)
 
@@ -1701,7 +1777,7 @@ class SubscriptionViewTestCase(APITestCase):
         )
         order.permits.add(permit)
         order.save()
-        unit_price = Decimal(30)
+        unit_price = Decimal(60)
         product = ProductFactory(unit_price=unit_price)
         subscription = SubscriptionFactory(
             talpa_subscription_id=talpa_subscription_id,

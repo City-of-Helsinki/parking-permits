@@ -1,5 +1,6 @@
 from typing import Optional, Tuple
 
+from parking_permits.constants import DEFAULT_VAT
 from parking_permits.models import Order, ParkingPermit, Refund, Subscription
 from parking_permits.models.order import (
     OrderPaymentType,
@@ -118,10 +119,15 @@ def create_fixed_period_refund(
             order=order,
             amount=total_sum,
             iban=iban,
+            vat=(
+                order.order_items.first().vat
+                if order.order_items.exists()
+                else DEFAULT_VAT
+            ),
             description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
         )
         refund.permits.set(permits)
-        send_refund_email(RefundEmailType.CREATED, customer, refund)
+        send_refund_email(RefundEmailType.CREATED, customer, [refund])
 
         for permit in permits:
             ParkingPermitEventFactory.make_create_refund_event(
