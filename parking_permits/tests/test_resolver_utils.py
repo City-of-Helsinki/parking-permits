@@ -7,19 +7,15 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from parking_permits.models import Order, Refund
-from parking_permits.models.order import (
-    OrderPaymentType,
-    OrderStatus,
-    SubscriptionStatus,
-)
+from parking_permits.models.order import OrderStatus, OrderType, SubscriptionStatus
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermitEndType,
     ParkingPermitStatus,
 )
-from parking_permits.models.product import ProductType
+from parking_permits.models.product import Product, ProductType
 from parking_permits.resolver_utils import (
-    create_fixed_period_refund,
+    create_fixed_period_refunds,
     end_permit,
     end_permits,
 )
@@ -27,7 +23,6 @@ from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.order import OrderItemFactory, SubscriptionFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
-from parking_permits.tests.factories.refund import RefundFactory
 from parking_permits.tests.factories.vehicle import (
     TemporaryVehicleFactory,
     VehicleFactory,
@@ -89,7 +84,6 @@ class TestEndPermits:
                 permit.customer.user,
                 permit,
                 end_type=ParkingPermitEndType.IMMEDIATELY,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 iban=IBAN,
                 cancel_from_talpa=False,
             )
@@ -153,7 +147,6 @@ class TestEndPermits:
                 permit.customer.user,
                 permit,
                 end_type=ParkingPermitEndType.IMMEDIATELY,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 iban=IBAN,
             )
 
@@ -228,7 +221,6 @@ class TestEndPermits:
                 *[permit_a, permit_b],
                 force_end=True,
                 end_type=ParkingPermitEndType.IMMEDIATELY,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 iban=IBAN,
             )
 
@@ -396,7 +388,7 @@ class TestCreateRefund:
                 [
                     [
                         (start_time.date(), end_time.date()),
-                        Decimal("30"),
+                        Decimal("60"),
                     ],
                 ],
             )
@@ -406,7 +398,7 @@ class TestCreateRefund:
                 status=ParkingPermitStatus.VALID,
                 start_time=start_time,
                 end_time=end_time,
-                month_count=12,
+                month_count=6,
                 parking_zone=zone,
             )
 
@@ -414,18 +406,16 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
 
-        assert refund is not None
-        assert created is True
+        assert refunds != []
 
-        # 3 months unused at 30 EUR/month
-        assert refund.amount == 90
+        # 3 months unused at 60 EUR/month
+        assert refunds[0].amount == 180
 
         mock_send_refund_email.assert_called()
 
@@ -441,7 +431,7 @@ class TestCreateRefund:
                 [
                     [
                         (start_time.date(), end_time.date()),
-                        Decimal("30"),
+                        Decimal("60"),
                     ],
                 ],
             )
@@ -459,15 +449,13 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
 
-        assert refund is None
-        assert created is False
+        assert refunds == []
 
         mock_send_refund_email.assert_not_called()
 
@@ -483,7 +471,7 @@ class TestCreateRefund:
                 [
                     [
                         (start_time.date(), end_time.date()),
-                        Decimal("30"),
+                        Decimal("60"),
                     ],
                 ],
             )
@@ -493,7 +481,7 @@ class TestCreateRefund:
                 status=ParkingPermitStatus.VALID,
                 start_time=start_time,
                 end_time=timezone.make_aware(datetime(2024, 4, 30)),
-                month_count=12,
+                month_count=4,
                 parking_zone=zone,
             )
             permit_b = ParkingPermitFactory(
@@ -501,7 +489,7 @@ class TestCreateRefund:
                 status=ParkingPermitStatus.VALID,
                 start_time=timezone.make_aware(datetime(2024, 5, 1)),
                 end_time=end_time,
-                month_count=12,
+                month_count=2,
                 parking_zone=zone,
                 customer=permit_a.customer,
             )
@@ -512,34 +500,34 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit_a.customer.user,
                 *permits,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
 
-        assert refund is not None
-        assert created is True
+        assert refunds != []
 
-        # 3 months unused at 30 EUR/month
-        assert refund.amount == 90
+        # 3 months unused at 60 EUR/month
+        assert refunds[0].amount == 180
 
         mock_send_refund_email.assert_called()
 
     @pytest.mark.django_db()
     @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_existing_refund(self, mock_send_refund_email, zone):
+    def test_new_refund_with_permit_extension_request(
+        self, mock_send_refund_email, zone
+    ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
-            end_time = timezone.make_aware(datetime(2024, 6, 30))
+            end_time = timezone.make_aware(datetime(2024, 12, 31))
 
             _create_zone_products(
                 zone,
                 [
                     [
                         (start_time.date(), end_time.date()),
-                        Decimal("30"),
+                        Decimal("60"),
                     ],
                 ],
             )
@@ -549,33 +537,116 @@ class TestCreateRefund:
                 status=ParkingPermitStatus.VALID,
                 start_time=start_time,
                 end_time=timezone.make_aware(datetime(2024, 4, 30)),
-                month_count=12,
+                month_count=4,
                 parking_zone=zone,
             )
             order = Order.objects.create_for_permits([permit])
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            RefundFactory(order=order)
+            ext_request_order = Order.objects.create_for_extended_permit(
+                permit,
+                2,
+                status=OrderStatus.CONFIRMED,
+                type=OrderType.CREATED,
+            )
+            ext_request = permit.permit_extension_requests.create(
+                order=ext_request_order,
+                month_count=2,
+            )
+            # approve and extend permit immediately
+            ext_request.approve()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
-            assert refund is not None
-            assert created is True
+            assert refunds != []
 
-            # based on total order amount i.e. 30 EUR
-            assert refund.amount == 30
+            refund = refunds[0]
+            #  1. order: 1 month unused at 60 EUR/month
+            #  2. extension request order: 2 months unused at 60 EUR/month
+            #  total: 180 EUR
+            assert refund.amount == 180
             delta = Decimal(0.01)
-            assert refund.vat == pytest.approx(Decimal(0.255), delta)
-            assert refund.vat_percent == pytest.approx(Decimal(25.5), delta)
-            assert refund.vat_amount == pytest.approx(Decimal(6.09), delta)
+            assert refund.vat == pytest.approx(Decimal(0.24), delta)
+            assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
+            assert refund.vat_amount == pytest.approx(Decimal(34.84), delta)
 
-            # created with renewal order
-            assert refund.order != order
+            mock_send_refund_email.assert_called
+
+    @pytest.mark.django_db()
+    @patch(MOCK_SEND_REFUND_EMAIL)
+    def test_new_multiple_vat_refunds_with_permit_extension_request(
+        self, mock_send_refund_email, zone
+    ):
+        with freeze_time("2024-3-26"):
+            start_time = timezone.make_aware(datetime(2024, 1, 1))
+            end_time = timezone.make_aware(datetime(2024, 12, 31))
+
+            _create_zone_products(
+                zone,
+                [
+                    [
+                        (start_time.date(), end_time.date()),
+                        Decimal("60"),
+                    ],
+                ],
+            )
+
+            permit = ParkingPermitFactory(
+                contract_type=ContractType.FIXED_PERIOD,
+                status=ParkingPermitStatus.VALID,
+                start_time=start_time,
+                end_time=timezone.make_aware(datetime(2024, 4, 30)),
+                month_count=4,
+                parking_zone=zone,
+            )
+            order = Order.objects.create_for_permits([permit])
+            order.status = OrderStatus.CONFIRMED
+            order.save()
+
+            for product in Product.objects.all():
+                product.vat = Decimal("0.255")
+                product.save()
+
+            ext_request_order = Order.objects.create_for_extended_permit(
+                permit,
+                2,
+                status=OrderStatus.CONFIRMED,
+                type=OrderType.CREATED,
+            )
+
+            ext_request = permit.permit_extension_requests.create(
+                order=ext_request_order,
+                month_count=2,
+            )
+            # approve and extend permit immediately
+            ext_request.approve()
+
+            refunds = create_fixed_period_refunds(
+                permit.customer.user,
+                permit,
+                iban=IBAN,
+            )
+            assert refunds != []
+
+            # 2 refunds with different vat
+            assert len(refunds) == 2
+            #  1. order: 1 month unused at 60 EUR/month = 60 EUR, VAT 24%
+            refund = refunds[0]
+            assert refund.amount == 60
+            delta = Decimal(0.01)
+            assert refund.vat == pytest.approx(Decimal(0.24), delta)
+            assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
+            assert refund.vat_amount == pytest.approx(Decimal(11.61), delta)
+            #  2. extension request order: 2 months unused at 60 EUR/month = 120 EUR, VAT 25.5%
+            second_refund = refunds[1]
+            assert second_refund.amount == 120
+            assert second_refund.vat == pytest.approx(Decimal(0.255), delta)
+            assert second_refund.vat_percent == pytest.approx(Decimal(25.5), delta)
+            assert second_refund.vat_amount == pytest.approx(Decimal(24.38), delta)
 
             mock_send_refund_email.assert_called
 
@@ -591,7 +662,7 @@ class TestCreateRefund:
                 [
                     [
                         (start_time.date(), end_time.date()),
-                        Decimal("30"),
+                        Decimal("60"),
                     ],
                 ],
             )
@@ -609,15 +680,13 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
 
-        assert refund is None
-        assert created is False
+        assert refunds == []
 
         mock_send_refund_email.assert_not_called()
 
@@ -651,15 +720,13 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refund, created = create_fixed_period_refund(
+            refunds = create_fixed_period_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
             )
 
-        assert refund is None
-        assert created is False
+        assert refunds == []
 
         mock_send_refund_email.assert_not_called()
 
@@ -674,6 +741,7 @@ def _create_zone_products(zone, product_detail_list):
             start_date=start_date,
             end_date=end_date,
             unit_price=unit_price,
+            vat=Decimal("0.24"),
         )
         products.append(product)
     return products

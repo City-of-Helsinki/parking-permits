@@ -352,7 +352,7 @@ class ParkingZoneTestCase(TestCase):
         permit.save()
 
         with freeze_time(datetime(2021, 4, 15)):
-            refund_amount = permit.get_refund_amount_for_unused_items()
+            refund_amount = permit.get_total_refund_amount_for_unused_items()
             self.assertEqual(refund_amount, Decimal("220"))
 
     def test_get_products_with_quantities_should_return_a_single_product_for_open_ended(

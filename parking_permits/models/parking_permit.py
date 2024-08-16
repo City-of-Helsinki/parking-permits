@@ -459,7 +459,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_refund_amount(self):
-        return self.get_refund_amount_for_unused_items()
+        return self.get_total_refund_amount_for_unused_items()
 
     @property
     def zone_changed(self):
@@ -821,7 +821,22 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def cancel_extension_requests(self):
         self.permit_extension_requests.cancel_pending()
 
-    def get_refund_amount_for_unused_items(self):
+    def get_vat_based_refund_amounts_for_unused_items(self):
+        totals_per_vat = {}
+        if not self.can_be_refunded:
+            return totals_per_vat
+
+        unused_order_items = self.get_unused_order_items_for_all_orders()
+
+        for order_item, quantity, date_range in unused_order_items:
+            vat = order_item.vat
+            if vat not in totals_per_vat:
+                totals_per_vat[vat] = {"total": Decimal(0), "order": None}
+            totals_per_vat[vat]["total"] += order_item.unit_price * quantity
+            totals_per_vat[vat]["order"] = order_item.order
+        return totals_per_vat
+
+    def get_total_refund_amount_for_unused_items(self):
         total = Decimal(0)
         if not self.can_be_refunded:
             return total
@@ -831,6 +846,19 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         for order_item, quantity, date_range in unused_order_items:
             total += order_item.unit_price * quantity
         return total
+
+    def can_create_single_refund(self):
+        if not self.can_be_refunded:
+            return False
+
+        unused_order_items = self.get_unused_order_items()
+        if not unused_order_items:
+            return False
+        first_order_item, _, _ = unused_order_items[0]
+        first_vat = first_order_item.vat
+        return all(
+            order_item.vat == first_vat for order_item, _, _ in unused_order_items
+        )
 
     def parse_temporary_vehicle_times(
         self,
@@ -916,22 +944,61 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         )
 
     def get_unused_order_items(self):
-        unused_start_date = timezone.localdate(self.next_period_start_time)
-        if not self.is_fixed_period:
-            order_items = self.latest_order_items
-            return [
-                [
-                    item,
-                    item.quantity,
-                    (
-                        timezone.localtime(item.start_time).date(),
-                        timezone.localtime(item.end_time).date(),
-                    ),
-                ]
-                for item in order_items
-            ]
+        if self.is_open_ended:
+            return self.get_unused_order_items_for_open_ended_permit()
+        return self.get_unused_order_items_for_order(self.latest_order)
 
-        order_items = self.latest_order_items.filter(
+    def get_unused_order_items_for_open_ended_permit(self):
+        order_items = self.latest_order_items
+        return [
+            [
+                item,
+                item.quantity,
+                (
+                    timezone.localtime(item.start_time).date(),
+                    timezone.localtime(item.end_time).date(),
+                ),
+            ]
+            for item in order_items
+        ]
+
+    def get_unused_order_items_for_all_orders(self):
+        if self.is_open_ended:
+            return self.get_unused_order_items_for_open_ended_permit()
+        unused_order_items = []
+        for order in self.orders.all().order_by("created_at"):
+            unused_order_items.extend(self.get_unused_order_items_for_order(order))
+        # sort by order item start time
+        unused_order_items.sort(key=lambda x: x[0].start_time)
+
+        # loop over unused order items, compare dates and remove overlapping month quantities from next order items
+        prev_order_item_end_date = None
+        for unused_order_item in unused_order_items:
+            _, quantity, date_range = unused_order_item
+            start_date, end_date = date_range
+            if not prev_order_item_end_date and end_date:
+                prev_order_item_end_date = end_date
+                continue
+            if (
+                quantity == 0
+                or not start_date
+                or start_date >= prev_order_item_end_date
+            ):
+                continue
+            if start_date < prev_order_item_end_date:
+                # reduce quantity by overlapping months
+                overlapping_months = diff_months_ceil(
+                    start_date, prev_order_item_end_date
+                )
+                unused_order_item[1] -= overlapping_months
+                prev_order_item_end_date = end_date
+
+        return unused_order_items
+
+    def get_unused_order_items_for_order(self, order):
+        unused_start_date = timezone.localdate(self.next_period_start_time)
+
+        order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date
         ).order_by("start_time")
 
