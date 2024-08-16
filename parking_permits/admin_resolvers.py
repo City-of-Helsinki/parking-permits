@@ -1009,7 +1009,6 @@ def resolve_end_permit(
         request.user,
         permit,
         end_type=end_type,
-        payment_type=OrderPaymentType.CASHIER_PAYMENT,
         iban=iban,
     )
     return {"success": True}

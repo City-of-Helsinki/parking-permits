@@ -1,13 +1,8 @@
-from typing import Optional, Tuple
+from decimal import Decimal
+from typing import Optional
 
-from parking_permits.constants import DEFAULT_VAT
-from parking_permits.models import Order, ParkingPermit, Refund, Subscription
-from parking_permits.models.order import (
-    OrderPaymentType,
-    OrderStatus,
-    OrderType,
-    SubscriptionCancelReason,
-)
+from parking_permits.models import ParkingPermit, Refund, Subscription
+from parking_permits.models.order import SubscriptionCancelReason
 from users.models import User
 
 from .models.parking_permit import (
@@ -30,7 +25,6 @@ def end_permits(
     *permits: ParkingPermit,
     iban: Optional[str] = None,
     end_type: ParkingPermitEndType,
-    payment_type: OrderPaymentType,
     **kwargs,
 ) -> None:
     """
@@ -44,11 +38,10 @@ def end_permits(
     create relevant events.
     """
 
-    create_fixed_period_refund(
+    create_fixed_period_refunds(
         user,
         *permits,
         iban=iban,
-        payment_type=payment_type,
     )
 
     for permit in permits:
@@ -61,21 +54,20 @@ def end_permits(
         )
 
 
-def create_fixed_period_refund(
+def create_fixed_period_refunds(
     user: Optional[User],
     *permits: ParkingPermit,
     iban: Optional[str],
-    payment_type: OrderPaymentType,
-) -> Tuple[Optional[Refund], bool]:
-    """Creates a refund model from the permits provided.
+) -> list[Refund]:
+    """Creates VAT-based summary refunds from the permits provided.
 
-    If refund is created, then will send refund receipt email to customer
-    and create the relevant event.
+    If refunds are created, then will send refund receipt email to customer
+    and create the relevant events.
 
     If OPEN ENDED permits, the Refund will always be None: refunds are issued for open-ended
     permits when cancelling the subscription (see `end_permit()`).
 
-    Returns the Refund instance, or None if not available, and True or False if refund is created.
+    Returns the created refund instances, or empty list if not available.
     """
     refundable_permits = [
         permit
@@ -83,59 +75,54 @@ def create_fixed_period_refund(
         if permit.can_be_refunded and permit.is_fixed_period
     ]
     if not refundable_permits:
-        return None, False
+        return []
 
-    first_permit = refundable_permits[0]
-    latest_order = first_permit.latest_order
-    customer = first_permit.customer
+    customer = refundable_permits[0].customer
 
-    created = False
+    refunds = []
 
-    if refund := Refund.objects.filter(order=latest_order).first():
-        order = Order.objects.create_renewal_order(
-            first_permit.customer,
-            status=OrderStatus.CONFIRMED,
-            order_type=OrderType.CREATED,
-            payment_type=payment_type,
-            iban=iban,
-            user=user,
-            create_renew_order_event=False,
-        )
-        total_sum = order.total_price
-        order.order_items.all().delete()
+    total_sums_per_vat = {}
 
-    else:
-        total_sum = sum(
-            [
-                permit.get_refund_amount_for_unused_items()
-                for permit in refundable_permits
-            ]
-        )
-        order = latest_order
+    handled_orders = set()
+
+    for permit in refundable_permits:
+        data_per_vat = permit.get_vat_based_refund_amounts_for_unused_items()
+        for vat, vat_data in data_per_vat.items():
+            order = vat_data.get("order")
+            if order in handled_orders:
+                continue
+            if vat not in total_sums_per_vat:
+                total_sums_per_vat[vat] = {}
+                total_sums_per_vat[vat]["total"] = Decimal(0)
+            total_sums_per_vat[vat]["total"] += vat_data.get("total") or Decimal(0)
+            total_sums_per_vat[vat]["order"] = vat_data.get("order")
+            handled_orders.add(order)
+
+    total_sum = sum([vat["total"] for vat in total_sums_per_vat.values()])
 
     if total_sum > 0:
-        refund = Refund.objects.create(
-            name=customer.full_name,
-            order=order,
-            amount=total_sum,
-            iban=iban,
-            vat=(
-                order.order_items.first().vat
-                if order.order_items.exists()
-                else DEFAULT_VAT
-            ),
-            description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
-        )
-        refund.permits.set(permits)
-        send_refund_email(RefundEmailType.CREATED, customer, [refund])
-
-        for permit in permits:
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=user
+        refunds = []
+        for vat, data in total_sums_per_vat.items():
+            refund = Refund.objects.create(
+                name=customer.full_name,
+                order=data["order"],
+                amount=data["total"],
+                iban=iban,
+                vat=vat,
+                description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
             )
+            refund.permits.set(permits)
+            refunds.append(refund)
 
-        created = True
-    return refund, created
+            for permit in permits:
+                ParkingPermitEventFactory.make_create_refund_event(
+                    permit, refund, created_by=user
+                )
+
+        if refunds:
+            send_refund_email(RefundEmailType.CREATED, customer, refunds)
+
+    return refunds
 
 
 def end_permit(
