@@ -161,6 +161,9 @@ def find_next_date(dt, day):
     If the day number of given date matches the day, the original
     date will be returned.
 
+    If the next date would be in the following month, last day
+    of current month is returned.
+
     Args:
         dt (datetime.date): the starting date to search for
         day (int): the day number of found date
@@ -174,7 +177,8 @@ def find_next_date(dt, day):
         _, month_end = calendar.monthrange(dt.year, dt.month)
         found = dt.replace(day=month_end)
     if found < dt:
-        found += relativedelta(months=1)
+        _, month_end = calendar.monthrange(dt.year, dt.month)
+        found = found.replace(day=month_end)
     return found
 
 
