@@ -68,10 +68,12 @@ class DiffMonthsCeilTestCase(TestCase):
 
 class FindNextDateTestCase(TestCase):
     def test_find_next_date(self):
-        self.assertEqual(find_next_date(date(2021, 1, 10), 5), date(2021, 2, 5))
+        self.assertEqual(find_next_date(date(2021, 1, 10), 5), date(2021, 1, 31))
         self.assertEqual(find_next_date(date(2021, 1, 10), 10), date(2021, 1, 10))
         self.assertEqual(find_next_date(date(2021, 1, 10), 20), date(2021, 1, 20))
         self.assertEqual(find_next_date(date(2021, 2, 10), 31), date(2021, 2, 28))
+        self.assertEqual(find_next_date(date(2024, 9, 1), 28), date(2024, 9, 28))
+        self.assertEqual(find_next_date(date(2024, 11, 27), 31), date(2024, 11, 30))
 
 
 @pytest.mark.django_db
