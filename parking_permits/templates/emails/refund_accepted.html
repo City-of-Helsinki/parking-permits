@@ -10,7 +10,7 @@
 {% for refund in refunds %}
     <p>
         {% translate "Total refundable amount" %}
-        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} {{ refund.vat_percent|floatformat:"2u" }}%, {{ refund.vat|floatformat:"2u" }}€)
+        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} {{ refund.vat_percent|floatformat:"2u" }}%, {{ refund.vat_amount|floatformat:"2u" }}€)
     </p>
 {% endfor %}
 {% endblock %}
