@@ -232,7 +232,9 @@ def get_permit_prices(
         start_date = max(product.start_date, permit_start_date)
         end_date = min(product.end_date, permit_end_date)
         quantity = diff_months_ceil(start_date, end_date)
-        if index == product_count:
+        #  remove one month from the last product if there are multiple products
+        #  and the start date is not first day of the month
+        if index == product_count and permit_start_date.day != 1:
             quantity -= 1
         permit_prices.append(
             {
