@@ -7,22 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2024-08-30
+
+### Added
+
+- Add VAT and VAT-amount to Refund-model ([d4e72f8](https://github.com/City-of-Helsinki/parking-permits/commit/d4e72f80d6ac20fc85b69c47e843d55f8bbbb31b))
+- Add VAT to Refund in Django Admin ([273018b](https://github.com/City-of-Helsinki/parking-permits/commit/273018bd9c34c5456b1d52c0fd83ce91e9fbd1ed))
+
+### Changed
+
+- Update low-emission criteria evaluation rules ([08aeef5](https://github.com/City-of-Helsinki/parking-permits/commit/08aeef571eab6228830ced83c9c4d2028023b5d9))
+- Explicitly use Ubuntu 20.04 base image with GitHub Actions ([8c29d7a](https://github.com/City-of-Helsinki/parking-permits/commit/8c29d7a3aa4038350bec140d4f6baa83d9f506e3))
+- Update VAT-percentages from Talpa-endpoints ([f79f9dd](https://github.com/City-of-Helsinki/parking-permits/commit/f79f9dda6b258823ec689da2ac8a48b533a87766))
+- Update VAT-percentages for Refund ([4afdb80](https://github.com/City-of-Helsinki/parking-permits/commit/4afdb80edf6f1f1fc339a24fa39f43c3fc43a4c2))
+- Use AWS ECR Docker image repository ([c7ef79d](https://github.com/City-of-Helsinki/parking-permits/commit/c7ef79d7dd9ca830297a7fd0da2ff301b576db79))
+- Change Refund VAT to be dynamic ([8e7ca2f](https://github.com/City-of-Helsinki/parking-permits/commit/8e7ca2fa716569815813bcb31b5e951aa1672f48))
+- Change Refund creation to be VAT-based ([1ce4469](https://github.com/City-of-Helsinki/parking-permits/commit/1ce44694eff95ff4a42c3d8012d1242da30c067c))
+
+### Fixed
+
+- Fix price calculation for first days of the month ([f96ebd6](https://github.com/City-of-Helsinki/parking-permits/commit/f96ebd69a737acad40e52df9332d4c257b38f2b0))
+- Fix find_next_date-utility function ([326da62](https://github.com/City-of-Helsinki/parking-permits/commit/326da625d2fb8d46ebb1cc918854b35af24d890e))
+
 ## [1.1.0] - 2024-06-19
 
 ### Added
 
-- Add changelog to project
+- Add changelog to project ([2d4300a](https://github.com/City-of-Helsinki/parking-permits/commit/2d4300a6bc329533474e33b861d2e73cc887460c))
 
 ### Changed
 
-- Update Python version to 3.11 from CI
-- Update application packages
-- Update fi/sv/en translations
-- Update Azure CI-settings
+- Update Python version to 3.11 from CI ([dd07848](https://github.com/City-of-Helsinki/parking-permits/commit/dd0784825344cdf09081b6a7dad937241e1c65d5))
+- Update application packages ([f0e2e5c](https://github.com/City-of-Helsinki/parking-permits/commit/f0e2e5c3dd72cfc8102d2e888651b5e60b3d6019))
+- Update fi/sv/en translations ([f60e86d](https://github.com/City-of-Helsinki/parking-permits/commit/f60e86d659daf8bf342e294c6c53ddd41becfee5))
+- Update Azure CI-settings ([456ddf4](https://github.com/City-of-Helsinki/parking-permits/commit/456ddf40b77952101877d9b7375c596fae4c447d))
 
 ### Removed
 
-- Remove obsolete Docker Compose version
+- Remove obsolete Docker Compose version ([8e3b8ab](https://github.com/City-of-Helsinki/parking-permits/commit/8e3b8ab3d8173b575dc8d55313469b438238cbb0))
 
 ## [1.0.0] - 2024-06-12
 
