@@ -210,7 +210,7 @@ class RefundAdmin(admin.ModelAdmin):
         "status",
         "created_at",
         "accepted_at",
-        "vat",
+        "get_vat_percent",
     )
     list_select_related = ("order",)
     ordering = ("-created_at",)
@@ -221,6 +221,10 @@ class RefundAdmin(admin.ModelAdmin):
         "order",
         "permits",
     )
+
+    @admin.display(description="VAT percent")
+    def get_vat_percent(self, obj):
+        return format(obj.vat_percent, ".2f")
 
 
 @admin.register(Product)
@@ -253,11 +257,13 @@ class OrderAdmin(admin.ModelAdmin):
         "address_text",
         "parking_zone_name",
         "vehicles",
+        "get_vat_percent",
     )
     list_select_related = ("customer",)
     readonly_fields = (
         "talpa_order_id",
         "total_payment_price",
+        "get_vat_percent",
     )
     search_fields = (
         "customer__last_name",
@@ -273,6 +279,11 @@ class OrderAdmin(admin.ModelAdmin):
     )
     ordering = ("-created_at",)
 
+    @admin.display(description="Vat percent")
+    def get_vat_percent(self, obj):
+        if obj.order_items.exists():
+            return format(obj.order_items.first().vat_percentage, ".2f")
+
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
@@ -284,10 +295,15 @@ class OrderItemAdmin(admin.ModelAdmin):
         "unit_price",
         "payment_unit_price",
         "quantity",
+        "get_vat_percent",
     )
     list_select_related = ("order", "subscription", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
     ordering = ("-pk",)
+
+    @admin.display(description="Vat percent")
+    def get_vat_percent(self, obj):
+        return format(obj.vat_percentage, ".2f")
 
 
 @admin.register(ParkingPermitExtensionRequest)
