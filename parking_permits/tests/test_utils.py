@@ -23,9 +23,10 @@ from parking_permits.utils import (
 @pytest.mark.parametrize(
     "gross_price,vat,net_price,vat_price",
     [
-        pytest.param(100, 0.24, 80.65, 19.36, id="default"),
+        pytest.param(100, 0.255, 79.68, 20.32, id="VAT 25.5%"),
+        pytest.param(100, 0.24, 80.65, 19.36, id="VAT 24%"),
         pytest.param(100, None, 0, 0, id="VAT none"),
-        pytest.param(None, 0.24, 0, 0, id="gross none"),
+        pytest.param(None, 0.255, 0, 0, id="gross none"),
     ],
 )
 def test_calc_prices(gross_price, vat, net_price, vat_price):
@@ -67,10 +68,12 @@ class DiffMonthsCeilTestCase(TestCase):
 
 class FindNextDateTestCase(TestCase):
     def test_find_next_date(self):
-        self.assertEqual(find_next_date(date(2021, 1, 10), 5), date(2021, 2, 5))
+        self.assertEqual(find_next_date(date(2021, 1, 10), 5), date(2021, 1, 31))
         self.assertEqual(find_next_date(date(2021, 1, 10), 10), date(2021, 1, 10))
         self.assertEqual(find_next_date(date(2021, 1, 10), 20), date(2021, 1, 20))
         self.assertEqual(find_next_date(date(2021, 2, 10), 31), date(2021, 2, 28))
+        self.assertEqual(find_next_date(date(2024, 9, 1), 28), date(2024, 9, 28))
+        self.assertEqual(find_next_date(date(2024, 11, 27), 31), date(2024, 11, 30))
 
 
 @pytest.mark.django_db

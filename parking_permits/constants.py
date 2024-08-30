@@ -1,5 +1,7 @@
+from decimal import Decimal
+
+DEFAULT_VAT = Decimal(0.255)
 SECONDARY_VEHICLE_PRICE_INCREASE = 50
-VAT_PERCENTAGE = 24
 
 
 class Origin:

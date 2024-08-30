@@ -16,7 +16,7 @@ import audit_logger as audit
 from audit_logger import AuditMsg
 from project.settings import BASE_DIR
 
-from .constants import EventFields, Origin
+from .constants import DEFAULT_VAT, EventFields, Origin
 from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
@@ -486,19 +486,23 @@ def resolve_update_permit_vehicle(
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
             talpa_order_created = True
-
         else:
-            """New price is lower: generate a refund"""
-            refund = Refund.objects.create(
-                name=customer.full_name,
-                order=new_order,
-                amount=abs(permit_total_price_change),
-                iban=iban if iban else "",
-                description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
-            )
-            refund.permits.add(permit)
-            logger.info(f"Refund for updating permits created: {refund}")
-            send_refund_email(RefundEmailType.CREATED, customer, refund)
+            refunds = []
+            """New price is lower: generate refunds"""
+            for item in price_change_list:
+                amount = item["price_change"] * item["month_count"]
+                refund = Refund.objects.create(
+                    name=customer.full_name,
+                    order=new_order,
+                    amount=abs(amount),
+                    iban=iban if iban else "",
+                    description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
+                )
+                refund.permits.add(permit)
+                refunds.append(refund)
+                logger.info(f"Refund for updating permits created: {refund}")
+
+            send_refund_email(RefundEmailType.CREATED, customer, refunds)
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
             )
@@ -716,12 +720,17 @@ def resolve_change_address(
                     name=customer.full_name,
                     order=order,
                     amount=-order_total_price_change,
+                    vat=(
+                        order.order_items.first().vat
+                        if order.order_items.exists()
+                        else DEFAULT_VAT
+                    ),
                     iban=iban if iban else "",
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
                 refund.permits.set(order.permits.all())
                 logger.info(f"Refund for updating permits zone created: {refund}")
-                send_refund_email(RefundEmailType.CREATED, customer, refund)
+                send_refund_email(RefundEmailType.CREATED, customer, [refund])
                 for permit in order.permits.all():
                     ParkingPermitEventFactory.make_create_refund_event(
                         permit, refund, created_by=request.user

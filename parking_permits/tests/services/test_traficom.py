@@ -792,6 +792,38 @@ class TestTraficom(TestCase):
             assert vehicle.emission == 13
 
     @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_with_nedc_and_wltp(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_nedc_and_wltp.xml")),
+        ):
+            LowEmissionCriteriaFactory(
+                nedc_max_emission_limit=37,
+                wltp_max_emission_limit=50,
+                start_date=datetime.datetime(2024, 1, 1),
+                end_date=datetime.datetime(2024, 12, 31),
+                euro_min_class_limit=6,
+            )
+            vehicle = self.traficom.fetch_vehicle_details("111-500")
+            self.assertEqual(vehicle.registration_number, "111-500")
+
+            assert vehicle.emission_type == EmissionType.WLTP
+            assert vehicle.emission == 50
+            assert vehicle._is_low_emission
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_with_nedc_and_wltp_no_criteria(self):
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_nedc_and_wltp.xml")),
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("111-500")
+            self.assertEqual(vehicle.registration_number, "111-500")
+
+            assert vehicle.emission_type == EmissionType.NEDC
+            assert vehicle.emission == 53
+
+    @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):
         vehicle = VehicleFactory(registration_number="BCI-707")
 

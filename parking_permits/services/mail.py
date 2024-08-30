@@ -125,12 +125,13 @@ refund_email_templates = {
 }
 
 
-def send_refund_email(action, customer, refund):
+def send_refund_email(action, customer, refunds):
     with translation.override(customer.language):
-        logger.info(f"Sending refund {refund.pk} {action} email")
+        refund_ids = ", ".join([str(refund.pk) for refund in refunds])
+        logger.info(f"Sending refund {refund_ids} {action} email")
         subject = refund_email_subjects[action]
         template = refund_email_templates[action]
-        html_message = render_to_string(template, context={"refund": refund})
+        html_message = render_to_string(template, context={"refunds": refunds})
         plain_message = strip_tags(html_message)
         recipient_list = [customer.email]
         try:

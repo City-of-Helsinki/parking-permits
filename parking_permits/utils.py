@@ -161,6 +161,9 @@ def find_next_date(dt, day):
     If the day number of given date matches the day, the original
     date will be returned.
 
+    If the next date would be in the following month, last day
+    of current month is returned.
+
     Args:
         dt (datetime.date): the starting date to search for
         day (int): the day number of found date
@@ -174,7 +177,8 @@ def find_next_date(dt, day):
         _, month_end = calendar.monthrange(dt.year, dt.month)
         found = dt.replace(day=month_end)
     if found < dt:
-        found += relativedelta(months=1)
+        _, month_end = calendar.monthrange(dt.year, dt.month)
+        found = found.replace(day=month_end)
     return found
 
 
@@ -232,7 +236,9 @@ def get_permit_prices(
         start_date = max(product.start_date, permit_start_date)
         end_date = min(product.end_date, permit_end_date)
         quantity = diff_months_ceil(start_date, end_date)
-        if index == product_count:
+        #  remove one month from the last product if there are multiple products
+        #  and the start date is not first day of the month
+        if index == product_count and permit_start_date.day != 1:
             quantity -= 1
         permit_prices.append(
             {
@@ -376,15 +382,15 @@ def flatten_dict(d, separator="__", prefix="", _output_ref=None) -> dict:
 
 
 def calc_net_price(gross_price: Currency, vat: Currency) -> Decimal:
-    """Returns the net price based on the gross and VAT e.g. 0.24
+    """Returns the net price based on the gross and VAT e.g. 0.255
 
     Net price is calculated thus:
 
         gross / (1 + vat)
 
-    For example, gross 100 EUR, VAT 24% would be:
+    For example, gross 100 EUR, VAT 25.5% would be:
 
-        100 / 1.24 = ~80.64
+        100 / 1.255 = ~79.68
 
     If gross or vat is zero or None, returns zero.
     """
@@ -396,13 +402,13 @@ def calc_net_price(gross_price: Currency, vat: Currency) -> Decimal:
 
 
 def calc_vat_price(gross_price: Currency, vat: Currency) -> Decimal:
-    """Returns the VAT price based on the gross and VAT e.g. 0.24
+    """Returns the VAT price based on the gross and VAT e.g. 0.255
 
     VAT price is equal to the gross minus the net.
 
-    For example, gross 100 EUR, VAT 24% would be net price of ~80.64.
+    For example, gross 100 EUR, VAT 25.5% would be net price of ~79.68.
 
-    VAT price would therefore be 100-80.64 = 19.36.
+    VAT price would therefore be 100-79.68 = ~20.32
     """
     return (
         Decimal(gross_price) - calc_net_price(gross_price, vat)

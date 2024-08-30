@@ -7,8 +7,10 @@
     <p>
         {% translate "You are entitled to a refund and it has been registered. You will receive a separate notification when the return has been approved." %}
     </p>
+{% for refund in refunds %}
     <p>
         {% translate "Total refundable amount" %}
-        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} 24%, {{ refund.vat|floatformat:"2u" }} €)
+        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} {{ refund.vat_percent|floatformat:"2u" }}%, {{ refund.vat_amount|floatformat:"2u" }}€)
     </p>
+{% endfor %}
 {% endblock %}

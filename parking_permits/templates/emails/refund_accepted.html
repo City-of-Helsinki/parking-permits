@@ -7,8 +7,10 @@
     <p>
         {% translate "Your refund has been accepted and will appear on the account you reported within about a week" %}
     </p>
+{% for refund in refunds %}
     <p>
         {% translate "Total refundable amount" %}
-        {{ refund.amount }}€ ({% translate "incl. VAT" %} 24%, {{ refund.vat|floatformat:2 }} €)
+        {{ refund.amount|floatformat:"2u" }}€ ({% translate "incl. VAT" %} {{ refund.vat_percent|floatformat:"2u" }}%, {{ refund.vat_amount|floatformat:"2u" }}€)
     </p>
+{% endfor %}
 {% endblock %}

@@ -40,7 +40,7 @@ from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
 from parking_permits.services.parkkihubi import sync_with_parkkihubi
 from users.models import ParkingPermitGroups
 
-from .constants import EventFields, Origin
+from .constants import DEFAULT_VAT, EventFields, Origin
 from .decorators import (
     is_customer_service,
     is_inspectors,
@@ -817,6 +817,11 @@ def resolve_update_resident_permit(
                 order=order,
                 amount=-customer_total_price_change,
                 iban=iban,
+                vat=(
+                    order.order_items.first().vat
+                    if order.order_items.exists()
+                    else DEFAULT_VAT
+                ),
                 description=f"Refund for updating permit: {permit.id}",
             )
             refund.permits.add(permit)
@@ -824,7 +829,7 @@ def resolve_update_resident_permit(
             ParkingPermitEventFactory.make_create_refund_event(
                 permit, refund, created_by=request.user
             )
-            send_refund_email(RefundEmailType.CREATED, customer, refund)
+            send_refund_email(RefundEmailType.CREATED, customer, [refund])
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
 
@@ -1004,7 +1009,6 @@ def resolve_end_permit(
         request.user,
         permit,
         end_type=end_type,
-        payment_type=OrderPaymentType.CASHIER_PAYMENT,
         iban=iban,
     )
     return {"success": True}

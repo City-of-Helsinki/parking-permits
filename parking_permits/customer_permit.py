@@ -390,7 +390,6 @@ class CustomerPermit:
             user,
             *permits,
             end_type=end_type,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
             iban=iban,
             subscription_cancel_reason=subscription_cancel_reason,
             cancel_from_talpa=cancel_from_talpa,

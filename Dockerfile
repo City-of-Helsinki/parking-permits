@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 as base
+FROM public.ecr.aws/ubuntu/ubuntu:20.04 as base
 
 WORKDIR /app
 
