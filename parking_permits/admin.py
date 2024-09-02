@@ -281,8 +281,7 @@ class OrderAdmin(admin.ModelAdmin):
 
     @admin.display(description="Vat percent")
     def get_vat_percent(self, obj):
-        if obj.order_items.exists():
-            return format(obj.order_items.first().vat_percentage, ".2f")
+        return format(obj.vat_percent, ".2f") if obj.vat_percent else None
 
 
 @admin.register(OrderItem)

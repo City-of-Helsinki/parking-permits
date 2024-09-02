@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 from urllib.parse import urljoin
 
 import requests
@@ -509,6 +510,14 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     @property
     def total_payment_price_vat(self):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
+
+    @property
+    def vat(self):
+        return self.order_items.first().vat if self.order_items.exists() else Decimal(0)
+
+    @property
+    def vat_percent(self):
+        return self.vat * 100
 
     def _cancel_talpa_order(self):
         headers = {
