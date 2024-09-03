@@ -376,8 +376,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                     payment_unit_price=payment_unit_price,
                     vat=product.vat,
                     quantity=period_quantity,
-                    start_time=start_date_to_datetime(start_date),
-                    end_time=end_date_to_datetime(end_date),
+                    start_time=start_date_to_datetime(period_start_date),
+                    end_time=end_date_to_datetime(period_end_date),
                 )
 
                 if product_end_date < order_item_end_date:
