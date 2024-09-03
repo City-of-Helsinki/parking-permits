@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2024-09-03
+
+### Added
+
+- Add VAT-percents to Django Admin ([305c396](https://github.com/City-of-Helsinki/parking-permits/commit/305c396091d68e49657f1299210e233678edf96b))
+- Add vat and vat_percent properties to Order ([0e6612d](https://github.com/City-of-Helsinki/parking-permits/commit/0e6612d6031d9d7ade6a7422b1e6b3ecd2a9a513))
+
+### Fixed
+
+- Wrap accepted refund to list in email sending ([eeebdbc](https://github.com/City-of-Helsinki/parking-permits/commit/eeebdbc4355066ca15eaaaf591861eba1e2f1c02))
+
 ## [1.2.0] - 2024-08-30
 
 ### Added
