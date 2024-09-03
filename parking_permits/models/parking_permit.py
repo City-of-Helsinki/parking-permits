@@ -832,7 +832,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             vat = order_item.vat
             if vat not in totals_per_vat:
                 totals_per_vat[vat] = {"total": Decimal(0), "order": None}
-            totals_per_vat[vat]["total"] += order_item.unit_price * quantity
+            totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
             totals_per_vat[vat]["order"] = order_item.order
         return totals_per_vat
 
@@ -970,29 +970,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             unused_order_items.extend(self.get_unused_order_items_for_order(order))
         # sort by order item start time
         unused_order_items.sort(key=lambda x: x[0].start_time)
-
-        # loop over unused order items, compare dates and remove overlapping month quantities from next order items
-        prev_order_item_end_date = None
-        for unused_order_item in unused_order_items:
-            _, quantity, date_range = unused_order_item
-            start_date, end_date = date_range
-            if not prev_order_item_end_date and end_date:
-                prev_order_item_end_date = end_date
-                continue
-            if (
-                quantity == 0
-                or not start_date
-                or start_date >= prev_order_item_end_date
-            ):
-                continue
-            if start_date < prev_order_item_end_date:
-                # reduce quantity by overlapping months
-                overlapping_months = diff_months_ceil(
-                    start_date, prev_order_item_end_date
-                )
-                unused_order_item[1] -= overlapping_months
-                prev_order_item_end_date = end_date
-
         return unused_order_items
 
     def get_unused_order_items_for_order(self, order):
@@ -1010,7 +987,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # unused_start_date
         first_item = order_items[0]
         first_item_unused_quantity = diff_months_ceil(
-            unused_start_date, timezone.localtime(first_item.end_time).date()
+            max(unused_start_date, timezone.localtime(first_item.start_time).date()),
+            timezone.localtime(first_item.end_time).date(),
         )
         first_item_with_quantity = [
             first_item,
