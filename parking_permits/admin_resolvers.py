@@ -1141,7 +1141,7 @@ def resolve_accept_refunds(obj, info, ids):
         id__in=ids, status=RefundStatus.ACCEPTED
     ).select_related("order__customer")
     for refund in accepted_refunds:
-        send_refund_email(RefundEmailType.ACCEPTED, refund.order.customer, refund)
+        send_refund_email(RefundEmailType.ACCEPTED, refund.order.customer, [refund])
     return qs.count()
 
 
