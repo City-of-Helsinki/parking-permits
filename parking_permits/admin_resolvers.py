@@ -2,6 +2,7 @@ import logging
 import re
 from collections import Counter
 from copy import deepcopy
+from decimal import Decimal
 
 from ariadne import (
     MutationType,
@@ -81,7 +82,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .resolver_utils import end_permits
+from .resolver_utils import create_refund, end_permits
 from .services import kami
 from .services.dvv import get_person_info
 from .services.mail import (
@@ -812,23 +813,16 @@ def resolve_update_resident_permit(
     for order, order_total_price_change in total_price_change_by_order.items():
         if customer_total_price_change < 0:
             logger.info("Creating refund for current order")
-            refund = Refund.objects.create(
-                name=customer.full_name,
+            refund = create_refund(
+                user=request.user,
+                permits=[permit],
                 order=order,
-                amount=-customer_total_price_change,
+                amount=Decimal(abs(customer_total_price_change)),
                 iban=iban,
-                vat=(
-                    order.order_items.first().vat
-                    if order.order_items.exists()
-                    else DEFAULT_VAT
-                ),
+                vat=(order.vat if order.vat else DEFAULT_VAT),
                 description=f"Refund for updating permit: {permit.id}",
             )
-            refund.permits.add(permit)
             logger.info(f"Refund for lowered permit price created: {refund}")
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=request.user
-            )
             send_refund_email(RefundEmailType.CREATED, customer, [refund])
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)

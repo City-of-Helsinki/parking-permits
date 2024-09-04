@@ -2,9 +2,10 @@ from decimal import Decimal
 from typing import Optional
 
 from parking_permits.models import ParkingPermit, Refund, Subscription
-from parking_permits.models.order import SubscriptionCancelReason
+from parking_permits.models.order import Order, SubscriptionCancelReason
 from users.models import User
 
+from .constants import DEFAULT_VAT
 from .models.parking_permit import (
     ParkingPermitEndType,
     ParkingPermitEventFactory,
@@ -58,6 +59,7 @@ def create_fixed_period_refunds(
     user: Optional[User],
     *permits: ParkingPermit,
     iban: Optional[str],
+    description: Optional[str] = "",
 ) -> list[Refund]:
     """Creates VAT-based summary refunds from the permits provided.
 
@@ -103,26 +105,57 @@ def create_fixed_period_refunds(
     if total_sum > 0:
         refunds = []
         for vat, data in total_sums_per_vat.items():
-            refund = Refund.objects.create(
-                name=customer.full_name,
-                order=data["order"],
-                amount=data["total"],
-                iban=iban,
-                vat=vat,
-                description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
-            )
-            refund.permits.set(permits)
-            refunds.append(refund)
-
-            for permit in permits:
-                ParkingPermitEventFactory.make_create_refund_event(
-                    permit, refund, created_by=user
+            refunds.append(
+                create_refund(
+                    user=user,
+                    permits=refundable_permits,
+                    order=data["order"],
+                    amount=data["total"],
+                    iban=iban,
+                    vat=vat,
                 )
+            )
 
         if refunds:
             send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     return refunds
+
+
+def create_refund(
+    user: Optional[User],
+    permits: list[ParkingPermit],
+    order: Order,
+    amount: Decimal,
+    iban: Optional[str],
+    vat: Decimal = DEFAULT_VAT,
+    description: Optional[str] = "",
+) -> Refund:
+    """
+    Creates refund for permits and create relevant events.
+
+    Returns the created refund instance.
+    """
+    refund = Refund.objects.create(
+        name=permits[0].customer.full_name,
+        order=order,
+        amount=abs(amount),
+        iban=iban,
+        vat=vat,
+        description=(
+            description
+            if description
+            else f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}"
+        ),
+    )
+    refund.permits.add(*permits)
+
+    for permit in permits:
+        ParkingPermitEventFactory.make_create_refund_event(
+            permit, refund, created_by=user
+        )
+
+    return refund
 
 
 def end_permit(

@@ -1611,6 +1611,19 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        LowEmissionCriteriaFactory(
+            start_date=datetime.datetime(2024, 1, 1),
+            end_date=datetime.datetime(2024, 12, 31),
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=80,
+            euro_min_class_limit=6,
+        )
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
         permit_start_time = datetime.datetime(
             2024, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
         )
@@ -1622,6 +1635,7 @@ class SubscriptionViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            vehicle=high_emission_vehicle,
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -1643,6 +1657,7 @@ class SubscriptionViewTestCase(APITestCase):
             subscription=subscription,
             quantity=1,
             unit_price=unit_price,
+            payment_unit_price=unit_price,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -1684,6 +1699,19 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        LowEmissionCriteriaFactory(
+            start_date=datetime.datetime(2024, 1, 1),
+            end_date=datetime.datetime(2024, 12, 31),
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=80,
+            euro_min_class_limit=6,
+        )
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
         permit_start_time = datetime.datetime(
             2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
         )
@@ -1695,6 +1723,7 @@ class SubscriptionViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            vehicle=high_emission_vehicle,
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -1716,6 +1745,7 @@ class SubscriptionViewTestCase(APITestCase):
             subscription=subscription,
             quantity=1,
             unit_price=unit_price,
+            payment_unit_price=unit_price,
             vat=Decimal(0.24),
         )
 
