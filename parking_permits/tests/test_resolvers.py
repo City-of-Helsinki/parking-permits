@@ -1,7 +1,7 @@
 import dataclasses
-import decimal
-import unittest
 from datetime import timedelta
+from decimal import Decimal
+from unittest import mock
 
 import pytest
 from django.test import override_settings
@@ -38,21 +38,21 @@ class Auth:
 
 
 def _mock_talpa():
-    return unittest.mock.patch(
+    return mock.patch(
         "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
         return_value="https://talpa.fi",
     )
 
 
 def _mock_jwt(user):
-    return unittest.mock.patch(
+    return mock.patch(
         "helusers.oidc.RequestJWTAuthentication.authenticate",
         return_value=Auth(user=user),
     )
 
 
 def _mock_price_change_list(price_change_list):
-    return unittest.mock.patch(
+    return mock.patch(
         "parking_permits.models.ParkingPermit.get_price_change_list",
         return_value=price_change_list,
     )
@@ -99,8 +99,10 @@ def test_update_permit_vehicle_high_to_low_emission(rf):
     assert Order.objects.count() == 1
     assert Refund.objects.count() == 1
 
-    # 3 months * -50
-    assert Refund.objects.first().amount == 150.00
+    #  3 months * 50 € = 150 €
+    assert Refund.objects.first().amount == pytest.approx(
+        Decimal(150.00), Decimal(0.01)
+    )
 
     permit.refresh_from_db()
     assert permit.vehicle == new_vehicle
@@ -344,9 +346,9 @@ def test_resolve_change_address_change_to_parking_zone_with_refund(rf):
     info = Info(context={"request": request})
     price_change_list = [
         {
-            "new_price": decimal.Decimal("100.00"),
-            "price_change_vat": decimal.Decimal("10.00"),
-            "price_change": decimal.Decimal("-50.00"),
+            "new_price": Decimal("100.00"),
+            "price_change_vat": Decimal("10.00"),
+            "price_change": Decimal("-50.00"),
             "month_count": 3,
         },
     ]

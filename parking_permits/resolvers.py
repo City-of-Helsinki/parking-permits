@@ -1,5 +1,6 @@
 import logging
 from collections import Counter
+from decimal import Decimal
 
 from ariadne import (
     MutationType,
@@ -25,7 +26,7 @@ from .exceptions import (
     ParkingZoneError,
     TraficomFetchVehicleError,
 )
-from .models import Address, Customer, Refund, Vehicle
+from .models import Address, Customer, Vehicle
 from .models.order import Order, OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import (
     ContractType,
@@ -33,6 +34,7 @@ from .models.parking_permit import (
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
+from .resolver_utils import create_refund
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
 from .services.mail import (
@@ -487,25 +489,23 @@ def resolve_update_permit_vehicle(
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
             talpa_order_created = True
         else:
-            refunds = []
             """New price is lower: generate refunds"""
+            refunds = []
             for item in price_change_list:
                 amount = item["price_change"] * item["month_count"]
-                refund = Refund.objects.create(
-                    name=customer.full_name,
+                refund = create_refund(
+                    user=request.user,
+                    permits=[permit],
                     order=new_order,
-                    amount=abs(amount),
+                    amount=Decimal(abs(amount)),
                     iban=iban if iban else "",
+                    vat=(new_order.vat if new_order.vat else DEFAULT_VAT),
                     description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
                 )
-                refund.permits.add(permit)
                 refunds.append(refund)
                 logger.info(f"Refund for updating permits created: {refund}")
 
             send_refund_email(RefundEmailType.CREATED, customer, refunds)
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=request.user
-            )
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
@@ -716,25 +716,18 @@ def resolve_change_address(
         for order, order_total_price_change in total_price_change_by_order.items():
             # create refund for each order
             if order_total_price_change < 0:
-                refund = Refund.objects.create(
-                    name=customer.full_name,
-                    order=order,
-                    amount=-order_total_price_change,
-                    vat=(
-                        order.order_items.first().vat
-                        if order.order_items.exists()
-                        else DEFAULT_VAT
-                    ),
+                permits = order.permits.all()
+                refund = create_refund(
+                    user=request.user,
+                    permits=permits,
+                    order=new_order,
+                    amount=Decimal(abs(order_total_price_change)),
                     iban=iban if iban else "",
+                    vat=(order.vat if order.vat else DEFAULT_VAT),
                     description=f"Refund for updating permits zone (customer switch address to: {address})",
                 )
-                refund.permits.set(order.permits.all())
                 logger.info(f"Refund for updating permits zone created: {refund}")
                 send_refund_email(RefundEmailType.CREATED, customer, [refund])
-                for permit in order.permits.all():
-                    ParkingPermitEventFactory.make_create_refund_event(
-                        permit, refund, created_by=request.user
-                    )
 
         if customer_total_price_change > 0:
             # go through talpa checkout process if the price of

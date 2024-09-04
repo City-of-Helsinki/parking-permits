@@ -844,21 +844,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         unused_order_items = self.get_unused_order_items()
 
         for order_item, quantity, date_range in unused_order_items:
-            total += order_item.unit_price * quantity
+            total += order_item.payment_unit_price * quantity
         return total
-
-    def can_create_single_refund(self):
-        if not self.can_be_refunded:
-            return False
-
-        unused_order_items = self.get_unused_order_items()
-        if not unused_order_items:
-            return False
-        first_order_item, _, _ = unused_order_items[0]
-        first_vat = first_order_item.vat
-        return all(
-            order_item.vat == first_vat for order_item, _, _ in unused_order_items
-        )
 
     def parse_temporary_vehicle_times(
         self,
