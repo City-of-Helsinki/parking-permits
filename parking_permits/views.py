@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import uuid
+from decimal import Decimal
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -656,6 +657,12 @@ class OrderView(APIView):
             )
             end_time = get_end_time(start_time, 1)
 
+            vat_percentage = (
+                Decimal(0)
+                if not validated_order_item_data.get("vatPercentage")
+                else Decimal(validated_order_item_data.get("vatPercentage"))
+            )
+
             OrderItem.objects.create(
                 talpa_order_item_id=validated_order_item_data.get("orderItemId"),
                 order=order,
@@ -664,7 +671,7 @@ class OrderView(APIView):
                 permit=permit,
                 unit_price=validated_order_item_data.get("priceGross"),
                 payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
-                vat=validated_order_item_data.get("vatPercentage"),
+                vat=vat_percentage / 100,
                 quantity=validated_order_item_data.get("quantity"),
                 start_time=start_time,
                 end_time=end_time,
