@@ -1339,6 +1339,9 @@ class OrderViewTestCase(APITestCase):
             permit.end_time,
             datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
         )
+        order_item = order.order_items.first()
+        self.assertAlmostEqual(order_item.vat, Decimal(0.255), delta=Decimal("0.01"))
+        self.assertEqual(order_item.vat_percentage, 25.5)
 
     @override_settings(DEBUG=True)
     def test_subscription_renewal_already_renewed(self):
