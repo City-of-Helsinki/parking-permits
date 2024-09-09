@@ -810,20 +810,24 @@ def resolve_update_resident_permit(
 
     customer = update_or_create_customer(customer_info)
 
-    for order, order_total_price_change in total_price_change_by_order.items():
-        if customer_total_price_change < 0:
+    if customer_total_price_change < 0:
+        refunds = []
+        for order, order_total_price_change in total_price_change_by_order.items():
             logger.info("Creating refund for current order")
+            permits = order.permits.all()
             refund = create_refund(
                 user=request.user,
-                permits=[permit],
+                permits=permits,
                 order=order,
-                amount=Decimal(abs(customer_total_price_change)),
+                amount=Decimal(abs(order_total_price_change)),
                 iban=iban,
                 vat=(order.vat if order.vat else DEFAULT_VAT),
-                description=f"Refund for updating permit: {permit.id}",
+                description=f"Refund for updating permits: {','.join([str(permit.id) for permit in permits])}",
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
-            send_refund_email(RefundEmailType.CREATED, customer, [refund])
+            refunds.append(refund)
+        if refunds:
+            send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
 
@@ -882,7 +886,7 @@ def resolve_update_resident_permit(
             send_vehicle_low_emission_discount_email(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
             )
-    if permit.is_fixed_period:
+    if permit.is_fixed_period and customer_total_price_change > 0:
         logger.info(f"Creating renewal order for permit: {permit.id}")
         new_order = Order.objects.create_renewal_order(
             customer,
