@@ -115,7 +115,6 @@ def create_fixed_period_refunds(
                     vat=vat,
                 )
             )
-
         if refunds:
             send_refund_email(RefundEmailType.CREATED, customer, refunds)
 

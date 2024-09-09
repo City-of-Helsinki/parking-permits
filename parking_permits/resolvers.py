@@ -474,17 +474,17 @@ def resolve_update_permit_vehicle(
         permit.save()
 
     if permit_total_price_change:
-        new_order = Order.objects.create_renewal_order(
-            customer,
-            status=OrderStatus.CONFIRMED,
-            order_type=OrderType.VEHICLE_CHANGED,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            user=request.user,
-            create_renew_order_event=is_higher_price,
-        )
-
+        latest_order = permit.latest_order
         if is_higher_price:
             """New price is higher: generate a checkout request"""
+            new_order = Order.objects.create_renewal_order(
+                customer,
+                status=OrderStatus.CONFIRMED,
+                order_type=OrderType.VEHICLE_CHANGED,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                user=request.user,
+                create_renew_order_event=True,
+            )
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
             talpa_order_created = True
@@ -496,16 +496,20 @@ def resolve_update_permit_vehicle(
                 refund = create_refund(
                     user=request.user,
                     permits=[permit],
-                    order=new_order,
+                    order=latest_order,
                     amount=Decimal(abs(amount)),
                     iban=iban if iban else "",
-                    vat=(new_order.vat if new_order.vat else DEFAULT_VAT),
+                    vat=(
+                        item["price_change_vat_percent"] / 100
+                        if item["price_change_vat_percent"]
+                        else DEFAULT_VAT
+                    ),
                     description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
                 )
                 refunds.append(refund)
                 logger.info(f"Refund for updating permits created: {refund}")
-
-            send_refund_email(RefundEmailType.CREATED, customer, refunds)
+            if refunds:
+                send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
@@ -678,19 +682,7 @@ def resolve_change_address(
 
         # total price changes for customer's all valid permits
         customer_total_price_change = sum(total_price_change_by_order.values())
-        if customer_total_price_change > 0:
-            # if price of the permits goes higher, the customer needs to make
-            # extra payments through Talpa before the orders can be set to confirmed
-            new_order_status = OrderStatus.DRAFT
-            # update permit new zone to next parking zone and use that in price calculation
-            fixed_period_permits.update(
-                next_parking_zone=new_zone,
-                next_address=address,
-                next_address_apartment=address_apartment,
-                next_address_apartment_sv=address_apartment_sv,
-            )
-        else:
-            new_order_status = OrderStatus.CONFIRMED
+        if customer_total_price_change <= 0:
             old_zone_name = fixed_period_permits[0].parking_zone.name
             fixed_period_permits.update(
                 parking_zone=new_zone,
@@ -705,33 +697,40 @@ def resolve_change_address(
                     changes={"parking_zone": [old_zone_name, new_zone.name]},
                 )
 
-        new_order = Order.objects.create_renewal_order(
-            customer,
-            status=new_order_status,
-            order_type=OrderType.ADDRESS_CHANGED,
-            payment_type=OrderPaymentType.ONLINE_PAYMENT,
-            user=request.user,
-            create_renew_order_event=customer_total_price_change > 0,
-        )
-        for order, order_total_price_change in total_price_change_by_order.items():
-            # create refund for each order
-            if order_total_price_change < 0:
-                permits = order.permits.all()
-                refund = create_refund(
-                    user=request.user,
-                    permits=permits,
-                    order=new_order,
-                    amount=Decimal(abs(order_total_price_change)),
-                    iban=iban if iban else "",
-                    vat=(order.vat if order.vat else DEFAULT_VAT),
-                    description=f"Refund for updating permits zone (customer switch address to: {address})",
-                )
-                logger.info(f"Refund for updating permits zone created: {refund}")
-                send_refund_email(RefundEmailType.CREATED, customer, [refund])
-
-        if customer_total_price_change > 0:
-            # go through talpa checkout process if the price of
-            # the permits goes up
+        if customer_total_price_change < 0:
+            for order, order_total_price_change in total_price_change_by_order.items():
+                # create refund for each order
+                if order_total_price_change < 0:
+                    permits = order.permits.all()
+                    refund = create_refund(
+                        user=request.user,
+                        permits=permits,
+                        order=order,
+                        amount=Decimal(abs(order_total_price_change)),
+                        iban=iban if iban else "",
+                        vat=(order.vat if order.vat else DEFAULT_VAT),
+                        description=f"Refund for updating permits zone (customer switch address to: {address})",
+                    )
+                    logger.info(f"Refund for updating permits zone created: {refund}")
+                    send_refund_email(RefundEmailType.CREATED, customer, [refund])
+        elif customer_total_price_change > 0:
+            # update permit new zone to next parking zone and use that in price calculation
+            fixed_period_permits.update(
+                next_parking_zone=new_zone,
+                next_address=address,
+                next_address_apartment=address_apartment,
+                next_address_apartment_sv=address_apartment_sv,
+            )
+            # if price of the permits goes higher, the customer needs to make
+            # extra payments through Talpa before the orders can be set to confirmed
+            new_order = Order.objects.create_renewal_order(
+                customer,
+                status=OrderStatus.DRAFT,
+                order_type=OrderType.ADDRESS_CHANGED,
+                payment_type=OrderPaymentType.ONLINE_PAYMENT,
+                user=request.user,
+                create_renew_order_event=True,
+            )
             response["checkout_url"] = TalpaOrderManager.send_to_talpa(new_order)
             fixed_period_permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         else:
@@ -742,7 +741,7 @@ def resolve_change_address(
                 send_permit_email(PermitEmailType.UPDATED, permit)
 
     # For open ended permits, it's enough to update the permit zone
-    # as talpa will get the updated price based on new zone when
+    # as Talpa will get the updated price based on new zone when
     # asking permit price for next month
     open_ended_permits = permits.open_ended().all()
     for permit in open_ended_permits:
