@@ -28,12 +28,11 @@ from rest_framework.views import APIView
 
 import audit_logger as audit
 from audit_logger import AuditMsg
-from parking_permits.services.dvv import get_addresses, is_same_address
 
 from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import AddressError, OrderValidationError, SubscriptionValidationError
+from .exceptions import OrderValidationError, SubscriptionValidationError
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -377,7 +376,7 @@ class TalpaResolveRightOfPurchase(APIView):
             return bad_request_response("User id is missing from request data")
 
         try:
-            # Temporarily disabled traficom checks
+            # Temporarily disable Traficom checks
             permit = ParkingPermit.objects.get(pk=permit_id)  # noqa: F841
             # customer = permit.customer
             # if settings.TRAFICOM_CHECK:
@@ -393,34 +392,36 @@ class TalpaResolveRightOfPurchase(APIView):
             #     vehicle
             # )
 
-            # DVV checks
-            customer = permit.customer
-            address = permit.address
-            primary_address, other_address = get_addresses(customer.national_id_number)
-            if not primary_address and not other_address:
-                raise AddressError("No address found for customer")
-            if not address:
-                raise AddressError("No address found for permit")
+            # Temporarily disable DVV checks
+            # customer = permit.customer
+            # address = permit.address
+            # primary_address, other_address = get_addresses(customer.national_id_number)
+            # if not primary_address and not other_address:
+            #     raise AddressError("No address found for customer")
+            # if not address:
+            #     raise AddressError("No address found for permit")
+
             # normalize permit address
-            permit_address = {
-                "street_name": address.street_name,
-                "street_number": address.street_number,
-                "apartment": permit.address_apartment,
-                "city": address.city,
-                "postal_code": address.postal_code,
-            }
+            # permit_address = {
+            #     "street_name": address.street_name,
+            #     "street_number": address.street_number,
+            #     "apartment": permit.address_apartment,
+            #     "city": address.city,
+            #     "postal_code": address.postal_code,
+            # }
+
             # compare DVV addresses against permit address
-            has_valid_address = is_same_address(
-                primary_address, permit_address
-            ) or is_same_address(other_address, permit_address)
-            if has_valid_address:
-                logger.info(
-                    f"Customer address matches with permit address for permit: {permit_id}"
-                )
-            else:
-                logger.warning(
-                    f"Customer address does not match with permit address, permit: {permit_id} will not be renewed"
-                )
+            # has_valid_address = is_same_address(
+            #     primary_address, permit_address
+            # ) or is_same_address(other_address, permit_address)
+            # if has_valid_address:
+            #     logger.info(
+            #         f"Customer address matches with permit address for permit: {permit_id}"
+            #     )
+            # else:
+            #     logger.warning(
+            #         f"Customer address does not match with permit address, permit: {permit_id} will not be renewed"
+            #     )
 
             order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
             is_valid_subscription = (
@@ -428,7 +429,7 @@ class TalpaResolveRightOfPurchase(APIView):
             )
             right_of_purchase = (
                 is_valid_subscription
-                and has_valid_address
+                # and has_valid_address
                 # and is_user_of_vehicle
                 # and is_driving_licence_active
                 # and has_valid_driving_licence
