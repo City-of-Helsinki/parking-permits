@@ -647,6 +647,12 @@ def resolve_change_address(
 
     response = {"success": True}
 
+    # clear previous permit address changed statuses
+    for permit in permits:
+        permit.address_changed = False
+        permit.address_changed_date = None
+        permit.save()
+
     fixed_period_permits = permits.fixed_period()
     if len(fixed_period_permits) > 0:
         # There can be two cases regarding customer's active permits:

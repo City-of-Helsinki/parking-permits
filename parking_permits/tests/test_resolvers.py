@@ -446,6 +446,8 @@ def test_resolve_extend_parking_permit_ok(rf):
         start_time=now,
         end_time=now + timedelta(days=10),
     )
+    permit.address = permit.customer.primary_address
+    permit.save()
 
     ProductFactory(
         zone=permit.parking_zone,

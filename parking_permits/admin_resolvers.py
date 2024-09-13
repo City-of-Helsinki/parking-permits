@@ -793,6 +793,17 @@ def resolve_update_resident_permit(
                 )
             )
 
+    # clear vehicle_changed and address_changed flags
+    if vehicle_changed:
+        permit.vehicle_changed = False
+        permit.vehicle_changed_date = None
+        permit.save()
+
+    if address_changed:
+        permit.address_changed = False
+        permit.address_changed_date = None
+        permit.save()
+
     total_price_change_by_order = Counter()
     fixed_period_permits = active_permits.fixed_period()
     if address_changed and fixed_period_permits.count() > 0:

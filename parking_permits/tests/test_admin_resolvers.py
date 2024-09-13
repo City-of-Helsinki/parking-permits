@@ -224,6 +224,8 @@ def test_resolve_extend_parking_permit_ok(info, mock_jwt):
         end_time=now + relativedelta(months=1, days=-1),
         month_count=1,
     )
+    permit.address = permit.customer.primary_address
+    permit.save()
 
     ProductFactory(
         zone=permit.parking_zone,

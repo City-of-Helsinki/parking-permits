@@ -145,14 +145,18 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     start_time = models.DateTimeField(_("Start time"), default=timezone.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
     primary_vehicle = models.BooleanField(default=True)
-    vehicle_changed = models.BooleanField(default=False)
     synced_with_parkkihubi = models.BooleanField(default=False)
     bypass_traficom_validation = models.BooleanField(
         verbose_name=_("Bypass Traficom validation"),
         default=False,
     )
+    vehicle_changed = models.BooleanField(default=False)
     vehicle_changed_date = models.DateField(
         _("Vehicle changed date"), null=True, blank=True
+    )
+    address_changed = models.BooleanField(default=False)
+    address_changed_date = models.DateField(
+        _("Address changed date"), null=True, blank=True
     )
     contract_type = models.CharField(
         _("Contract type"),
@@ -396,6 +400,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.end_time is None:
             return False
 
+        if self.has_address_changed:
+            return False
+
         return timezone.localdate(self.current_period_end_time) <= timezone.localdate(
             self.end_time
         )
@@ -462,11 +469,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.get_total_refund_amount_for_unused_items()
 
     @property
-    def zone_changed(self):
-        addresses = [self.customer.primary_address, self.customer.other_address]
-        return not any(
-            address and address.zone == self.parking_zone for address in addresses
-        )
+    def has_address_changed(self):
+        customer_addresses = [
+            self.customer.primary_address,
+            self.customer.other_address,
+        ]
+        if not self.address and not customer_addresses:
+            return False
+        # check if the permit address still belongs to the customer
+        return self.address not in customer_addresses
 
     @property
     def max_extension_month_count(self):
@@ -528,6 +539,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 self.end_time is not None,
             )
         ):
+            return False
+
+        if self.has_address_changed:
             return False
 
         if is_date_restriction and timezone.localdate(
