@@ -101,7 +101,7 @@ type PermitNode {
   hasPendingExtensionRequest: Boolean
   hasRefund: Boolean
   vehicleChanged: Boolean
-  zoneChanged: Boolean
+  addressChanged: Boolean
   isOrderConfirmed: Boolean
   totalRefundAmount: Float
 }

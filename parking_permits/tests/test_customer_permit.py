@@ -665,6 +665,8 @@ class ExtendCustomerPermitTestCase(TestCase):
             start_time=now,
             end_time=now + timedelta(days=10),
         )
+        permit.address = permit.customer.primary_address
+        permit.save()
         ProductFactory(
             zone=permit.parking_zone,
             type=ProductType.RESIDENT,
