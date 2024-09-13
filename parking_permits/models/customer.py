@@ -38,8 +38,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         blank=True,
         on_delete=models.SET_NULL,
     )
-    first_name = models.CharField(_("First name"), max_length=32, blank=True)
-    last_name = models.CharField(_("Last name"), max_length=32, blank=True)
+    first_name = models.CharField(_("First name"), max_length=64, blank=True)
+    last_name = models.CharField(_("Last name"), max_length=64, blank=True)
     national_id_number = models.CharField(
         _("National identification number"),
         max_length=50,
