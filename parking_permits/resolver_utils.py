@@ -189,14 +189,14 @@ def end_permit(
             )
     else:
         # Cancel fixed period permit order when this is the last valid permit in that order
-        latest_order = permit.latest_order
-        if (
-            latest_order
-            and not latest_order.order_permits.filter(status=ParkingPermitStatus.VALID)
-            .exclude(pk=permit.pk)
-            .exists()
-        ):
-            latest_order.cancel(cancel_from_talpa=cancel_from_talpa)
+        for order in permit.orders.all():
+            if (
+                order
+                and not order.order_permits.filter(status=ParkingPermitStatus.VALID)
+                .exclude(pk=permit.pk)
+                .exists()
+            ):
+                order.cancel(cancel_from_talpa=cancel_from_talpa)
 
     permit.temp_vehicles.update(is_active=False)
 
