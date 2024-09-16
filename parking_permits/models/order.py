@@ -511,6 +511,11 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
 
     @property
+    def vat_values(self):
+        # gather distinct vat values from all order items
+        return set([item.vat for item in self.order_items.all()])
+
+    @property
     def vat(self):
         return self.order_items.first().vat if self.order_items.exists() else Decimal(0)
 
