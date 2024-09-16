@@ -257,13 +257,13 @@ class OrderAdmin(admin.ModelAdmin):
         "address_text",
         "parking_zone_name",
         "vehicles",
-        "get_vat_percent",
+        "get_vat_percents",
     )
     list_select_related = ("customer",)
     readonly_fields = (
         "talpa_order_id",
         "total_payment_price",
-        "get_vat_percent",
+        "get_vat_percents",
     )
     search_fields = (
         "customer__last_name",
@@ -279,9 +279,13 @@ class OrderAdmin(admin.ModelAdmin):
     )
     ordering = ("-created_at",)
 
-    @admin.display(description="Vat percent")
-    def get_vat_percent(self, obj):
-        return format(obj.vat_percent, ".2f") if obj.vat_percent else None
+    @admin.display(description="Vat percents")
+    def get_vat_percents(self, obj):
+        return (
+            ", ".join([format(vat * 100, ".2f") for vat in obj.vat_values])
+            if obj.vat_values
+            else None
+        )
 
 
 @admin.register(OrderItem)
