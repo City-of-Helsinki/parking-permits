@@ -466,7 +466,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_refund_amount(self):
-        return self.get_total_refund_amount_for_unused_items()
+        data_per_vat = self.get_vat_based_refund_amounts_for_unused_items()
+        return sum(vat_data["total"] for vat_data in data_per_vat.values())
 
     @property
     def has_address_changed(self):
@@ -847,7 +848,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             if vat not in totals_per_vat:
                 totals_per_vat[vat] = {"total": Decimal(0), "order": None}
             totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
-            totals_per_vat[vat]["order"] = order_item.order
+            # use the order of the first unused item
+            if not totals_per_vat[vat]["order"]:
+                totals_per_vat[vat]["order"] = order_item.order
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
