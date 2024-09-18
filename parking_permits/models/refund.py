@@ -16,10 +16,9 @@ class RefundStatus(models.TextChoices):
 
 class Refund(TimestampedModelMixin, UserStampedModelMixin):
     name = models.CharField(_("Name"), max_length=200, blank=True)
-    order = models.ForeignKey(
+    orders = models.ManyToManyField(
         "Order",
-        verbose_name=_("Order"),
-        on_delete=models.PROTECT,
+        verbose_name=_("Orders"),
         related_name="refunds",
     )
     permits = models.ManyToManyField(
@@ -64,3 +63,11 @@ class Refund(TimestampedModelMixin, UserStampedModelMixin):
     def vat_amount(self):
         """Calculate the VAT amount."""
         return calc_vat_price(self.amount, self.vat)
+
+    @property
+    def refund_orders(self):
+        return self.orders.all().order_by("created_at")
+
+    @property
+    def refund_permits(self):
+        return self.permits.all().order_by("-primary_vehicle")

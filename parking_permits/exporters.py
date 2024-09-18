@@ -308,11 +308,10 @@ class RefundPDF(ParkingPermitPDF):
 
     @staticmethod
     def get_refund_content(refund):
+        customer = refund.orders.first().customer
         return [
             _("Refund ID") + ": " + f"{refund.id}",
-            _("Customer")
-            + ": "
-            + f"{refund.order.customer.first_name} {refund.order.customer.last_name}",
+            _("Customer") + ": " + f"{customer.first_name} {customer.last_name}",
             _("Amount")
             + ": "
             + f"{refund.amount} e ({_('incl. VAT')} {_format_percentage(refund.vat_percent)} %)",
@@ -346,11 +345,14 @@ class RefundPDF(ParkingPermitPDF):
         self.set_font("Arial", "B", 12)
         self.cell(0, 7, _("Order info"), 0, 1)
         self.set_font("Arial", "", 12)
-        order_content = self.get_order_content(obj.order)
+        order_content = []
+        orders = obj.refund_orders
+        for order in orders:
+            order_content.extend(self.get_order_content(order))
         for line in order_content:
             self.cell(0, 7, line, 0, 1)
 
-        permits = obj.order.permits.order_by("-primary_vehicle")
+        permits = obj.refund_permits
         for permit in permits:
             self.ln(5)
             self.set_font("Arial", "B", 12)
