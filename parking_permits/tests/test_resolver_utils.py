@@ -163,7 +163,7 @@ class TestEndPermits:
 
         assert permit.status == ParkingPermitStatus.CLOSED
 
-        refund = Refund.objects.get(order=order)
+        refund = Refund.objects.filter(orders=order).first()
 
         # 3 months unused at 30 EUR/month
         assert refund.amount == 90
@@ -239,7 +239,7 @@ class TestEndPermits:
         permit_b.refresh_from_db()
         assert permit_b.status == ParkingPermitStatus.CLOSED
 
-        refund = Refund.objects.get(order=order)
+        refund = Refund.objects.filter(orders=order).first()
 
         # 3 months unused at 30 EUR/month
         assert refund.amount == 90

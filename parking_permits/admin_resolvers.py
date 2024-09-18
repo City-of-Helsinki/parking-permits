@@ -829,7 +829,7 @@ def resolve_update_resident_permit(
             refund = create_refund(
                 user=request.user,
                 permits=permits,
-                order=order,
+                orders=[order],
                 amount=Decimal(abs(order_total_price_change)),
                 iban=iban,
                 vat=(order.vat if order.vat else DEFAULT_VAT),
@@ -1150,7 +1150,9 @@ def resolve_accept_refunds(obj, info, ids):
         id__in=ids, status=RefundStatus.ACCEPTED
     ).select_related("order__customer")
     for refund in accepted_refunds:
-        send_refund_email(RefundEmailType.ACCEPTED, refund.order.customer, [refund])
+        send_refund_email(
+            RefundEmailType.ACCEPTED, refund.orders.first().customer, [refund]
+        )
     return qs.count()
 
 

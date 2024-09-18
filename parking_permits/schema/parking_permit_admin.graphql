@@ -155,7 +155,8 @@ type RefundNode {
   modifiedBy: String
   acceptedAt: String
   acceptedBy: String
-  order: OrderNode
+  refundPermits: [PermitNode]
+  refundOrders: [OrderNode]
 }
 
 type OrderItemNode {

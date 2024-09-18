@@ -59,7 +59,6 @@ def create_fixed_period_refunds(
     user: Optional[User],
     *permits: ParkingPermit,
     iban: Optional[str],
-    description: Optional[str] = "",
 ) -> list[Refund]:
     """Creates VAT-based summary refunds from the permits provided.
 
@@ -85,20 +84,16 @@ def create_fixed_period_refunds(
 
     total_sums_per_vat = {}
 
-    handled_orders = set()
-
     for permit in refundable_permits:
         data_per_vat = permit.get_vat_based_refund_amounts_for_unused_items()
         for vat, vat_data in data_per_vat.items():
-            order = vat_data.get("order")
-            if order in handled_orders:
-                continue
             if vat not in total_sums_per_vat:
-                total_sums_per_vat[vat] = {}
-                total_sums_per_vat[vat]["total"] = Decimal(0)
+                total_sums_per_vat[vat] = {
+                    "total": Decimal(0),
+                    "orders": set(),
+                }
             total_sums_per_vat[vat]["total"] += vat_data.get("total") or Decimal(0)
-            total_sums_per_vat[vat]["order"] = vat_data.get("order")
-            handled_orders.add(order)
+            total_sums_per_vat[vat]["orders"].update(vat_data.get("orders"))
 
     total_sum = sum([vat["total"] for vat in total_sums_per_vat.values()])
 
@@ -109,7 +104,7 @@ def create_fixed_period_refunds(
                 create_refund(
                     user=user,
                     permits=refundable_permits,
-                    order=data["order"],
+                    orders=list(data["orders"]),
                     amount=data["total"],
                     iban=iban,
                     vat=vat,
@@ -124,7 +119,7 @@ def create_fixed_period_refunds(
 def create_refund(
     user: Optional[User],
     permits: list[ParkingPermit],
-    order: Order,
+    orders: list[Order],
     amount: Decimal,
     iban: Optional[str],
     vat: Decimal = DEFAULT_VAT,
@@ -137,7 +132,6 @@ def create_refund(
     """
     refund = Refund.objects.create(
         name=permits[0].customer.full_name,
-        order=order,
         amount=abs(amount),
         iban=iban,
         vat=vat,
@@ -148,6 +142,7 @@ def create_refund(
         ),
     )
     refund.permits.add(*permits)
+    refund.orders.add(*orders)
 
     for permit in permits:
         ParkingPermitEventFactory.make_create_refund_event(

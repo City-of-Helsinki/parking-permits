@@ -678,7 +678,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             refund = create_refund(
                 user=permit.customer.user,
                 permits=[permit],
-                order=order,
+                orders=[order],
                 amount=permit.total_refund_amount,
                 iban=iban,
                 vat=(order.vat if order.vat else DEFAULT_VAT),

@@ -496,7 +496,7 @@ def resolve_update_permit_vehicle(
                 refund = create_refund(
                     user=request.user,
                     permits=[permit],
-                    order=latest_order,
+                    orders=[latest_order],
                     amount=Decimal(abs(amount)),
                     iban=iban if iban else "",
                     vat=(
@@ -711,7 +711,7 @@ def resolve_change_address(
                     refund = create_refund(
                         user=request.user,
                         permits=permits,
-                        order=order,
+                        orders=[order],
                         amount=Decimal(abs(order_total_price_change)),
                         iban=iban if iban else "",
                         vat=(order.vat if order.vat else DEFAULT_VAT),

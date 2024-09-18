@@ -205,22 +205,25 @@ class RefundAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "iban",
-        "order",
+        "get_orders",
         "amount",
         "status",
         "created_at",
         "accepted_at",
         "get_vat_percent",
     )
-    list_select_related = ("order",)
     ordering = ("-created_at",)
     raw_id_fields = (
         "accepted_by",
         "created_by",
         "modified_by",
-        "order",
+        "orders",
         "permits",
     )
+
+    @admin.display(description="Orders")
+    def get_orders(self, obj):
+        return ", ".join([str(order.id) for order in obj.orders.all()])
 
     @admin.display(description="VAT percent")
     def get_vat_percent(self, obj):
