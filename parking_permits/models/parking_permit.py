@@ -846,11 +846,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         for order_item, quantity, date_range in unused_order_items:
             vat = order_item.vat
             if vat not in totals_per_vat:
-                totals_per_vat[vat] = {"total": Decimal(0), "order": None}
+                totals_per_vat[vat] = {
+                    "total": Decimal(0),
+                    "orders": set(),
+                }
             totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
-            # use the order of the first unused item
-            if not totals_per_vat[vat]["order"]:
-                totals_per_vat[vat]["order"] = order_item.order
+            totals_per_vat[vat]["orders"].add(order_item.order)
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
@@ -980,38 +981,36 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         unused_start_date = timezone.localdate(self.next_period_start_time)
 
         order_items = order.order_items.filter(
-            end_time__date__gte=unused_start_date
+            end_time__date__gte=unused_start_date,
+            permit=self,
         ).order_by("start_time")
 
         if len(order_items) == 0:
             return []
 
-        # first order item is partially used, so should calculate
+        # order items may be partially used, so should calculate
         # the remaining quantity and date range starting from
         # unused_start_date
-        first_item = order_items[0]
-        first_item_unused_quantity = diff_months_ceil(
-            max(unused_start_date, timezone.localtime(first_item.start_time).date()),
-            timezone.localtime(first_item.end_time).date(),
-        )
-        first_item_with_quantity = [
-            first_item,
-            first_item_unused_quantity,
-            (unused_start_date, timezone.localtime(first_item.end_time).date()),
-        ]
-
         return [
-            first_item_with_quantity,
             *[
                 [
                     item,
-                    item.quantity,
+                    diff_months_ceil(
+                        max(
+                            unused_start_date,
+                            timezone.localtime(item.start_time).date(),
+                        ),
+                        timezone.localtime(item.end_time).date(),
+                    ),
                     (
-                        timezone.localtime(item.start_time).date(),
+                        max(
+                            unused_start_date,
+                            timezone.localtime(item.start_time).date(),
+                        ),
                         timezone.localtime(item.end_time).date(),
                     ),
                 ]
-                for item in order_items[1:]
+                for item in order_items
             ],
         ]
 
