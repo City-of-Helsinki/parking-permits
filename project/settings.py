@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     "drf_yasg",
     "django_crontab",
     "encrypted_fields",
+    "mailer",
 ]
 
 MIDDLEWARE = [
@@ -304,6 +305,7 @@ EMAIL_PORT = env.int("EMAIL_PORT")
 EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 THIRD_PARTY_PARKING_PROVIDER_EMAILS = env("THIRD_PARTY_PARKING_PROVIDER_EMAILS")
+EMAIL_BACKEND = "mailer.backend.DbBackend"
 
 sentry_sdk.init(
     dsn=env.str("SENTRY_DSN"),
