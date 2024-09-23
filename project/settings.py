@@ -70,6 +70,8 @@ env = environ.Env(
     EMAIL_TIMEOUT=(int, 15),
     DEFAULT_FROM_EMAIL=(str, "Pysäköintitunnukset <noreply_pysakointitunnus@hel.fi>"),
     THIRD_PARTY_PARKING_PROVIDER_EMAILS=(list, []),
+    MAILER_USE_FILE_LOCK=(bool, True),
+    MAILER_LOCK_PATH=(str, "/tmp"),
     FIELD_ENCRYPTION_KEYS=(str, ""),
     SENTRY_DSN=(str, ""),
     SENTRY_ENVIRONMENT=(str, ""),
@@ -306,6 +308,8 @@ EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT")
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 THIRD_PARTY_PARKING_PROVIDER_EMAILS = env("THIRD_PARTY_PARKING_PROVIDER_EMAILS")
 EMAIL_BACKEND = "mailer.backend.DbBackend"
+MAILER_USE_FILE_LOCK = env("MAILER_USE_FILE_LOCK")
+MAILER_LOCK_PATH = env("MAILER_LOCK_PATH")
 
 sentry_sdk.init(
     dsn=env.str("SENTRY_DSN"),
