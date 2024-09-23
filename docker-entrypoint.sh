@@ -28,6 +28,10 @@ if [[ "$UPDATE_TRANSLATIONS" = "True" ]]; then
     python /app/manage.py compilemessages -l fi
 fi
 
+if [[ "$SEND_MAIL" = "True" && "$DEBUG" = "False" ]]; then
+    python /app/manage.py runmailer_pg &
+fi
+
 if [[ "$DEV_SERVER" = "True" ]]; then
     python /app/manage.py runserver 0.0.0.0:8888
 else
