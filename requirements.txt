@@ -61,7 +61,7 @@ django-environ==0.11.2
     # via -r requirements.in
 django-extensions==3.2.3
     # via -r requirements.in
-django-helusers==0.12.0
+django-helusers==0.13.0
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
