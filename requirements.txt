@@ -81,8 +81,6 @@ drf-yasg==1.21.7
     # via -r requirements.in
 ecdsa==0.19.0
     # via python-jose
-exceptiongroup==1.2.2
-    # via anyio
 fpdf==1.7.2
     # via -r requirements.in
 graphql-core==3.2.3
@@ -148,9 +146,7 @@ starlette==0.37.2
     # via ariadne
 typing-extensions==4.12.2
     # via
-    #   anyio
     #   ariadne
-    #   asgiref
     #   dj-database-url
 uritemplate==4.1.1
     # via drf-yasg

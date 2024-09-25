@@ -22,6 +22,7 @@ from parking_permits.models import (
     Vehicle,
 )
 from parking_permits.models.parking_permit import ParkingPermitEvent
+from parking_permits.models.product import Accounting
 from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 
@@ -230,6 +231,23 @@ class RefundAdmin(admin.ModelAdmin):
         return format(obj.vat_percent, ".2f")
 
 
+@admin.register(Accounting)
+class AccountingAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "active_from",
+        "company_code",
+        "vat_code",
+        "internal_order",
+        "profit_center",
+        "balance_profit_center",
+        "project",
+        "operation_area",
+        "main_ledger_account",
+    )
+    ordering = ("-created_at",)
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
@@ -240,6 +258,8 @@ class ProductAdmin(admin.ModelAdmin):
         "unit_price",
         "low_emission_discount_percentage",
         "talpa_product_id",
+        "accounting",
+        "next_accounting",
     )
     list_select_related = ("zone",)
     readonly_fields = ("talpa_product_id",)

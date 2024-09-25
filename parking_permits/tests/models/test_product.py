@@ -9,6 +9,7 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import CreateTalpaProductError
 from parking_permits.models import Product
+from parking_permits.models.product import Accounting
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.zone import ParkingZoneFactory
 
@@ -79,7 +80,6 @@ class TestProduct(TestCase):
         with self.assertRaises(CreateTalpaProductError):
             self.product.create_talpa_product()
             mock_post.assert_called_once()
-            self.assertIsNotNone(self.product.talpa_product_id)
 
     def test_get_modified_unit_price_return_modified_price(self):
         product = ProductFactory(
@@ -149,3 +149,56 @@ class TestProduct(TestCase):
             "price_vat": "1.94",
             "vat_percentage": "24.00",
         }
+
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_create_talpa_accounting(self, mock_post):
+        self.product.talpa_product_id = uuid.uuid4()
+        self.product.save()
+        self.product.create_talpa_accounting()
+        mock_post.assert_called_once()
+        self.assertIsNotNone(self.product.accounting)
+
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_create_talpa_accounting_without_product_id(self, mock_post):
+        self.product.create_talpa_accounting()
+        mock_post.assert_not_called()
+        self.assertIsNone(self.product.accounting)
+
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_update_talpa_accounting(self, mock_post):
+        self.product.talpa_product_id = uuid.uuid4()
+        company_code = "123"
+        self.product.accounting = Accounting.objects.create(company_code=company_code)
+        self.product.save()
+        self.product.update_talpa_accounting()
+        mock_post.assert_called_once()
+        self.assertIsNotNone(self.product.accounting)
+        self.assertEqual(self.product.accounting.company_code, company_code)
+
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_update_talpa_accounting_without_product_id(self, mock_post):
+        company_code = "123"
+        self.product.accounting = Accounting.objects.create(company_code=company_code)
+        self.product.save()
+        self.product.update_talpa_accounting()
+        mock_post.assert_not_called()
+
+    @patch("requests.post", return_value=MockResponse(401))
+    def test_should_raise_error_when_creating_talpa_accounting_failed(self, mock_post):
+        with self.assertRaises(CreateTalpaProductError):
+            self.product.talpa_product_id = uuid.uuid4()
+            self.product.save()
+            self.product.create_talpa_accounting()
+            mock_post.assert_called_once()
