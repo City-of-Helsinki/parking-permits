@@ -3,7 +3,7 @@ import copy
 import zoneinfo
 from collections import OrderedDict
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import ROUND_UP, Decimal
 from itertools import chain
 from typing import Any, Iterable, Iterator, Optional, Union
@@ -129,15 +129,30 @@ def get_end_time(start_time, diff_months):
     return normalize_end_time(end_time)
 
 
-def increment_end_time(end_time, months=1):
+def get_last_day_of_month(date: datetime):
+    next_month = date.replace(day=28) + timedelta(days=4)
+    return (next_month - timedelta(days=next_month.day)).day
+
+
+def increment_end_time(start_time, end_time, months=1):
     """Increment the end time based on the current value (rather than start time).
+    start_time is used to calculate the original end day, which is used when setting
+    permit end_time's day after the month has been incremented.
 
     Example: 1st Jan 23:59 -> 1st Feb 23:59.
     Should account for DST changes.
     """
+    original_end_day = (start_time.date() + relativedelta(days=30)).day
 
     end_time = end_time.astimezone(tz.get_default_timezone())
+
     end_time += relativedelta(months=months)
+    try:
+        # try to set end day to be same as originally
+        end_time = end_time.replace(day=original_end_day)
+    except ValueError:
+        # end day not in month -> set to last day of the month
+        end_time = end_time.replace(day=get_last_day_of_month(end_time))
     return normalize_end_time(end_time)
 
 

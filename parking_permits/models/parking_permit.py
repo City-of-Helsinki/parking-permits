@@ -807,7 +807,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.contract_type != ContractType.OPEN_ENDED:
             raise ValueError("This permit is not open-ended so cannot be renewed")
         self.end_time = increment_end_time(
-            self.end_time or self.current_period_end_time(), months=1
+            self.start_time, self.end_time or self.current_period_end_time(), months=1
         )
         self.save()
 
