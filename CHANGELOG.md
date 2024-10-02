@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2024-10-02
+
+### Changed
+- Increase customer name fields max length ([f00d4a1](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/f00d4a1c301fe1bfe349a172ede3d7f0af36a1df))
+- Switch email backend to django-mailer ([b6d916d](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/b6d916d1392ca01fe2bbe3bb34cbd9090744d4c4))
+- Add missing django-mailer settings ([e1c0bb4](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/e1c0bb44e5214e100dc66b03c5a662882483c69f))
+- Add command for sending mail ([9affed7](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/9affed75aa19733882d5a2bd82cf91b32d5b9d86))
+
+### Fixed
+
+- Use period start and end times in renewal orders ([88a271f](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/88a271fa4fb5713fa3b4e4793a316db751a83bbe))
+- Fix open ended permit end time calculation ([5dbd481](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/5dbd481f1509d69ee34c5e98d36ac3da2e3ff2c0))
+
 ## [1.2.1] - 2024-09-03
 
 ### Added
