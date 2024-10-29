@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.3] - 2024-10-29
+
+### Added
+
+- Add email max batch and throttle setup ([33ee6f3](https://github.com/City-of-Helsinki/parking-permits/commit/33ee6f365ad116a44fe560285f848538c54a1939))
+
 ## [1.2.2] - 2024-10-02
 
 ### Changed
