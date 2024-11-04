@@ -286,6 +286,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
+    raw_id_fields = ("permit", "order", "product", "subscription")
     list_display = (
         "order",
         "subscription",
