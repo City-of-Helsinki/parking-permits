@@ -16,8 +16,323 @@ from parking_permits.utils import (
     diff_months_floor,
     find_next_date,
     flatten_dict,
+    get_last_day_of_month,
     get_model_diff,
+    increment_end_time,
 )
+
+
+def test_increment_end_time_during_month():
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            5,
+            16,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2023,
+            6,
+            15,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2023, 7, 15, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            12,
+            21,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            1,
+            20,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024, 2, 20, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            6,
+            11,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2023,
+            6,
+            10,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2023, 7, 10, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_dec_to_march():
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            1,
+            31,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2023,
+            2,
+            28,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2023, 3, 30, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_jan_to_feb():
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            1,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2023,
+            1,
+            31,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2023, 2, 28, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+    # leap year
+    assert increment_end_time(
+        start_time=datetime(
+            2024,
+            1,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            1,
+            31,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024, 2, 29, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_july_to_aug():
+    assert increment_end_time(
+        start_time=datetime(
+            2024,
+            7,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            7,
+            31,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024, 8, 31, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_may_to_june():
+    assert increment_end_time(
+        start_time=datetime(
+            2024,
+            5,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            5,
+            31,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024, 6, 30, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_jan_to_march():
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            1,
+            30,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2023,
+            2,
+            28,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2023, 3, 29, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_june_to_july():
+    assert increment_end_time(
+        start_time=datetime(
+            2024,
+            6,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            6,
+            30,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024, 7, 31, 23, 59, 59, 999999, tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki")
+    )
+
+
+def test_increment_end_time_april_to_nov():
+    assert increment_end_time(
+        start_time=datetime(
+            2023,
+            4,
+            1,
+            12,
+            00,
+            00,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+        end_time=datetime(
+            2024,
+            10,
+            31,
+            23,
+            59,
+            59,
+            999999,
+            tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+        ),
+    ) == datetime(
+        2024,
+        11,
+        30,
+        23,
+        59,
+        59,
+        999999,
+        tzinfo=zoneinfo.ZoneInfo(key="Europe/Helsinki"),
+    )
+
+
+def test_get_last_day_of_month():
+    assert get_last_day_of_month(datetime(2024, 1, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2023, 2, 2, 12, 12, 00)) == 28
+    assert get_last_day_of_month(datetime(2024, 3, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2024, 4, 2, 12, 12, 00)) == 30
+    assert get_last_day_of_month(datetime(2024, 5, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2024, 6, 2, 12, 12, 00)) == 30
+    assert get_last_day_of_month(datetime(2024, 7, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2024, 8, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2024, 9, 2, 12, 12, 00)) == 30
+    assert get_last_day_of_month(datetime(2024, 10, 2, 12, 12, 00)) == 31
+    assert get_last_day_of_month(datetime(2024, 11, 2, 12, 12, 00)) == 30
+    assert get_last_day_of_month(datetime(2024, 12, 2, 12, 12, 00)) == 31
+
+    # leap year
+    assert get_last_day_of_month(datetime(2024, 2, 2, 12, 12, 00)) == 29
+
+    for i in range(1, 31):
+        assert get_last_day_of_month(datetime(2024, 5, i, 12, 12, 00)) == 31
+
+    for i in range(1, 30):
+        assert get_last_day_of_month(datetime(2024, 4, i, 12, 12, 00)) == 30
+
+    for i in range(1, 28):
+        assert get_last_day_of_month(datetime(2023, 2, i, 12, 12, 00)) == 28
 
 
 @pytest.mark.parametrize(
