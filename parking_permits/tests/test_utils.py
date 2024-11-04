@@ -16,30 +16,8 @@ from parking_permits.utils import (
     diff_months_floor,
     find_next_date,
     flatten_dict,
-    get_last_day_of_month,
     get_model_diff,
 )
-
-
-def test_get_last_day_of_month():
-    assert get_last_day_of_month(datetime(2024, 1, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2023, 2, 2, 12, 12, 00)) == 28
-    assert get_last_day_of_month(datetime(2024, 3, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2024, 4, 2, 12, 12, 00)) == 30
-    assert get_last_day_of_month(datetime(2024, 5, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2024, 6, 2, 12, 12, 00)) == 30
-    assert get_last_day_of_month(datetime(2024, 7, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2024, 8, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2024, 9, 2, 12, 12, 00)) == 30
-    assert get_last_day_of_month(datetime(2024, 10, 2, 12, 12, 00)) == 31
-    assert get_last_day_of_month(datetime(2024, 11, 2, 12, 12, 00)) == 30
-    assert get_last_day_of_month(datetime(2024, 12, 2, 12, 12, 00)) == 31
-
-    # leap year
-    assert get_last_day_of_month(datetime(2024, 2, 2, 12, 12, 00)) == 29
-
-    for i in range(1, 31):
-        assert get_last_day_of_month(datetime(2024, 5, i, 12, 12, 00)) == 31
 
 
 @pytest.mark.parametrize(
