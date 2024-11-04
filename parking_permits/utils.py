@@ -3,7 +3,7 @@ import copy
 import zoneinfo
 from collections import OrderedDict
 from collections.abc import Callable
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import ROUND_UP, Decimal
 from itertools import chain
 from typing import Any, Iterable, Iterator, Optional, Union
@@ -129,15 +129,36 @@ def get_end_time(start_time, diff_months):
     return normalize_end_time(end_time)
 
 
-def increment_end_time(end_time, months=1):
-    """Increment the end time based on the current value (rather than start time).
+def get_last_day_of_month(date: datetime):
+    next_month = date.replace(day=28) + timedelta(days=4)
+    return (next_month - timedelta(days=next_month.day)).day
 
-    Example: 1st Jan 23:59 -> 1st Feb 23:59.
-    Should account for DST changes.
+
+def increment_end_time(start_time, end_time, months=1):
     """
+    The logic for this function is as follows:
+    - If start_time is 1st of the month, always set end_time to next month's last day.
+    - If end_time is 28th or later, increment end_time by a month - 1 day.
+    - If end_time is 28th or later AND start_time is in February, set end_time start_time - 1 day.
+    - If end_time is end_time is between 1-27, increment end_time by a month.
+    """
+    existing_end_time = end_time
+    next_end_time = existing_end_time + relativedelta(months=1)
+
+    end_day = next_end_time.day
+    if existing_end_time.month == 2 and existing_end_time.day > 27:
+        end_day = get_last_day_of_month(next_end_time)
+        if next_end_time.day >= 28 and start_time.day > 1:
+            end_day = start_time.day - 1
+    if next_end_time.month == 2 and existing_end_time.day > 27:
+        end_day = get_last_day_of_month(next_end_time)
+    if existing_end_time.month in [4, 6, 9, 11] and existing_end_time.day == 30:
+        end_day = 31
 
     end_time = end_time.astimezone(tz.get_default_timezone())
     end_time += relativedelta(months=months)
+
+    end_time = end_time.replace(day=end_day)
     return normalize_end_time(end_time)
 
 
