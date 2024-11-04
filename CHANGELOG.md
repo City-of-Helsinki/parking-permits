@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.4] - 2024-11-04
+
+### Added
+
+- Add apt-get update to CI workflow ([5be5e73](https://github.com/City-of-Helsinki/parking-permits/commit/5be5e73c1caa1d92273006098d01009ab240935b))
+
+### Changed
+
+- Revert "Fix open ended permit end time calculation" ([56b293f](https://github.com/City-of-Helsinki/parking-permits/commit/56b293ffc931b04054c1635a895249529e2eedc8))
+- Use raw id fields in OrderItemAdmin ([5581984](https://github.com/City-of-Helsinki/parking-permits/commit/5581984b22cf5984d55479978e6fe7b7556e924d))
+
 ## [1.2.3] - 2024-10-29
 
 ### Added
@@ -16,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.2] - 2024-10-02
 
 ### Changed
+
 - Increase customer name fields max length ([f00d4a1](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/f00d4a1c301fe1bfe349a172ede3d7f0af36a1df))
 - Switch email backend to django-mailer ([b6d916d](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/b6d916d1392ca01fe2bbe3bb34cbd9090744d4c4))
 - Add missing django-mailer settings ([e1c0bb4](https://github.com/City-of-Helsinki/parking-permits/pull/544/commits/e1c0bb44e5214e100dc66b03c5a662882483c69f))
