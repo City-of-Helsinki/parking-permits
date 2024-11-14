@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2024-11-14
+
+### Added
+
+- Accounting support for products ([7801d6d](https://github.com/City-of-Helsinki/parking-permits/commit/7801d6dad2a539b766b98b4e18855137308eb3b8))
+- Update OrderAdmin to display all distinct VATs ([eafcc58](https://github.com/City-of-Helsinki/parking-permits/commit/eafcc588f764ef4356accb9d4a56a17792e6cdd6))
+- Add DVV-checks for Talpa rights of purchase (disabled for now) ([11a1f74](https://github.com/City-of-Helsinki/parking-permits/commit/11a1f74c49dd09907f68e72a3d8600a25ed4ec2a))
+
+### Changed
+
+- Refactor Refund creation to own utility ([0c2d613](https://github.com/City-of-Helsinki/parking-permits/commit/0c2d61311f307ccce34eab8138a375c2dc9b8fe1))
+- Calculate vehicle change refunds as VAT-based ([4c221c7](https://github.com/City-of-Helsinki/parking-permits/commit/4c221c77e42239b128325c00732f4a5064f801c9))
+- Update refund order linking and vats ([8d0275f](https://github.com/City-of-Helsinki/parking-permits/commit/8d0275fb3ef1fdd62ecb7d4686d3e24b6653ee9e))
+- Update address change functionality ([776f0cc](https://github.com/City-of-Helsinki/parking-permits/commit/776f0ccfe5242e31557cc108d4ec71f13c41de07))
+- Update VAT-based refund calculation ([2c90a05](https://github.com/City-of-Helsinki/parking-permits/commit/2c90a05d4127f25354c14e63c211861cc21422d6))
+- Update refund to support multiple orders ([d33af03](https://github.com/City-of-Helsinki/parking-permits/commit/d33af03538d1cd78a070e8d987e1e0ea3482f26f))
+- Update unused items calculation ([be7e7c2](https://github.com/City-of-Helsinki/parking-permits/commit/be7e7c2582ea3708e47a788b0e69c80e4e700c63))
+
+### Fixed
+
+- Fix end times for open ended permits ([5dc3423](https://github.com/City-of-Helsinki/parking-permits/commit/5dc34237dd6fe228598ae0d11345d7170878d2d6))
+- Fix Talpa order renewal vat format ([947b243](https://github.com/City-of-Helsinki/parking-permits/commit/947b2434885d7dc74c7276efa0c18718100f65c6))
+
+
 ## [1.2.4] - 2024-11-04
 
 ### Added

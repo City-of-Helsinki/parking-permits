@@ -3,7 +3,7 @@ from unittest.mock import patch
 import factory
 from django.test import TestCase
 
-from parking_permits.services.dvv import get_addresses, get_person_info
+from parking_permits.services.dvv import get_addresses, get_person_info, is_same_address
 from parking_permits.tests.factories.customer import AddressFactory, CustomerFactory
 from parking_permits.tests.factories.zone import generate_multi_polygon
 from parking_permits.utils import to_dict
@@ -137,7 +137,7 @@ class DvvServiceTestCase(TestCase):
             primary_address=self.primary_address,
             other_address=self.other_address,
         )
-        mock_method.return_value = self.get_customer_mapping(customer)
+        mock_method.return_value = self.get_customer_info(customer)
         primary_address, other_address = get_addresses(customer.national_id_number)
         mock_method.assert_called_once()
         self.assertEqual(
@@ -167,7 +167,7 @@ class DvvServiceTestCase(TestCase):
             primary_address=self.primary_address,
             other_address=None,
         )
-        mock_method.return_value = self.get_customer_mapping(customer)
+        mock_method.return_value = self.get_customer_info(customer)
         primary_address, other_address = get_addresses(customer.national_id_number)
         mock_method.assert_called_once()
         self.assertEqual(
@@ -188,7 +188,7 @@ class DvvServiceTestCase(TestCase):
             primary_address=None,
             other_address=self.other_address,
         )
-        mock_method.return_value = self.get_customer_mapping(customer)
+        mock_method.return_value = self.get_customer_info(customer)
         primary_address, other_address = get_addresses(customer.national_id_number)
         mock_method.assert_called_once()
         self.assertEqual(primary_address, None)
@@ -209,14 +209,116 @@ class DvvServiceTestCase(TestCase):
             primary_address=None,
             other_address=None,
         )
-        mock_method.return_value = self.get_customer_mapping(customer)
+        mock_method.return_value = self.get_customer_info(customer)
         primary_address, other_address = get_addresses(customer.national_id_number)
         mock_method.assert_called_once()
         self.assertEqual(primary_address, None)
         self.assertEqual(other_address, None)
 
+    def test_is_same_address(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        self.assertTrue(is_same_address(address, other_address))
+
+    def test_is_same_address_different_city(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Turku",
+            "postal_code": "20100",
+        }
+        self.assertFalse(is_same_address(address, other_address))
+
+    def test_is_same_address_different_street_name(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Mannerheimintie",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        self.assertFalse(is_same_address(address, other_address))
+
+    def test_is_same_address_different_street_number(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Kaivokatu",
+            "street_number": "6",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        self.assertFalse(is_same_address(address, other_address))
+
+    def test_is_same_address_different_postal_code(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "20100",
+        }
+        self.assertFalse(is_same_address(address, other_address))
+
+    def test_is_same_address_different_apartment(self):
+        address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A8",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        other_address = {
+            "street_name": "Kaivokatu",
+            "street_number": "4",
+            "apartment": "A7",
+            "city": "Helsinki",
+            "postal_code": "00100",
+        }
+        self.assertFalse(is_same_address(address, other_address))
+
     @staticmethod
-    def get_customer_mapping(customer):
+    def get_customer_info(customer):
         return {
             "national_id_number": customer.national_id_number,
             "first_name": customer.first_name,

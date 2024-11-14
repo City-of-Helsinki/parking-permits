@@ -145,14 +145,18 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     start_time = models.DateTimeField(_("Start time"), default=timezone.now)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
     primary_vehicle = models.BooleanField(default=True)
-    vehicle_changed = models.BooleanField(default=False)
     synced_with_parkkihubi = models.BooleanField(default=False)
     bypass_traficom_validation = models.BooleanField(
         verbose_name=_("Bypass Traficom validation"),
         default=False,
     )
+    vehicle_changed = models.BooleanField(default=False)
     vehicle_changed_date = models.DateField(
         _("Vehicle changed date"), null=True, blank=True
+    )
+    address_changed = models.BooleanField(default=False)
+    address_changed_date = models.DateField(
+        _("Address changed date"), null=True, blank=True
     )
     contract_type = models.CharField(
         _("Contract type"),
@@ -396,6 +400,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.end_time is None:
             return False
 
+        if self.has_address_changed:
+            return False
+
         return timezone.localdate(self.current_period_end_time) <= timezone.localdate(
             self.end_time
         )
@@ -459,14 +466,19 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_refund_amount(self):
-        return self.get_total_refund_amount_for_unused_items()
+        data_per_vat = self.get_vat_based_refund_amounts_for_unused_items()
+        return sum(vat_data["total"] for vat_data in data_per_vat.values())
 
     @property
-    def zone_changed(self):
-        addresses = [self.customer.primary_address, self.customer.other_address]
-        return not any(
-            address and address.zone == self.parking_zone for address in addresses
-        )
+    def has_address_changed(self):
+        customer_addresses = [
+            self.customer.primary_address,
+            self.customer.other_address,
+        ]
+        if not self.address and not customer_addresses:
+            return False
+        # check if the permit address still belongs to the customer
+        return self.address not in customer_addresses
 
     @property
     def max_extension_month_count(self):
@@ -528,6 +540,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 self.end_time is not None,
             )
         ):
+            return False
+
+        if self.has_address_changed:
             return False
 
         if is_date_restriction and timezone.localdate(
@@ -807,7 +822,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.contract_type != ContractType.OPEN_ENDED:
             raise ValueError("This permit is not open-ended so cannot be renewed")
         self.end_time = increment_end_time(
-            self.end_time or self.current_period_end_time(), months=1
+            self.start_time, self.end_time or self.current_period_end_time(), months=1
         )
         self.save()
 
@@ -831,9 +846,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         for order_item, quantity, date_range in unused_order_items:
             vat = order_item.vat
             if vat not in totals_per_vat:
-                totals_per_vat[vat] = {"total": Decimal(0), "order": None}
-            totals_per_vat[vat]["total"] += order_item.unit_price * quantity
-            totals_per_vat[vat]["order"] = order_item.order
+                totals_per_vat[vat] = {
+                    "total": Decimal(0),
+                    "orders": set(),
+                }
+            totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
+            totals_per_vat[vat]["orders"].add(order_item.order)
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
@@ -844,21 +862,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         unused_order_items = self.get_unused_order_items()
 
         for order_item, quantity, date_range in unused_order_items:
-            total += order_item.unit_price * quantity
+            total += order_item.payment_unit_price * quantity
         return total
-
-    def can_create_single_refund(self):
-        if not self.can_be_refunded:
-            return False
-
-        unused_order_items = self.get_unused_order_items()
-        if not unused_order_items:
-            return False
-        first_order_item, _, _ = unused_order_items[0]
-        first_vat = first_order_item.vat
-        return all(
-            order_item.vat == first_vat for order_item, _, _ in unused_order_items
-        )
 
     def parse_temporary_vehicle_times(
         self,
@@ -970,66 +975,42 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             unused_order_items.extend(self.get_unused_order_items_for_order(order))
         # sort by order item start time
         unused_order_items.sort(key=lambda x: x[0].start_time)
-
-        # loop over unused order items, compare dates and remove overlapping month quantities from next order items
-        prev_order_item_end_date = None
-        for unused_order_item in unused_order_items:
-            _, quantity, date_range = unused_order_item
-            start_date, end_date = date_range
-            if not prev_order_item_end_date and end_date:
-                prev_order_item_end_date = end_date
-                continue
-            if (
-                quantity == 0
-                or not start_date
-                or start_date >= prev_order_item_end_date
-            ):
-                continue
-            if start_date < prev_order_item_end_date:
-                # reduce quantity by overlapping months
-                overlapping_months = diff_months_ceil(
-                    start_date, prev_order_item_end_date
-                )
-                unused_order_item[1] -= overlapping_months
-                prev_order_item_end_date = end_date
-
         return unused_order_items
 
     def get_unused_order_items_for_order(self, order):
         unused_start_date = timezone.localdate(self.next_period_start_time)
 
         order_items = order.order_items.filter(
-            end_time__date__gte=unused_start_date
+            end_time__date__gte=unused_start_date,
+            permit=self,
         ).order_by("start_time")
 
         if len(order_items) == 0:
             return []
 
-        # first order item is partially used, so should calculate
+        # order items may be partially used, so should calculate
         # the remaining quantity and date range starting from
         # unused_start_date
-        first_item = order_items[0]
-        first_item_unused_quantity = diff_months_ceil(
-            unused_start_date, timezone.localtime(first_item.end_time).date()
-        )
-        first_item_with_quantity = [
-            first_item,
-            first_item_unused_quantity,
-            (unused_start_date, timezone.localtime(first_item.end_time).date()),
-        ]
-
         return [
-            first_item_with_quantity,
             *[
                 [
                     item,
-                    item.quantity,
+                    diff_months_ceil(
+                        max(
+                            unused_start_date,
+                            timezone.localtime(item.start_time).date(),
+                        ),
+                        timezone.localtime(item.end_time).date(),
+                    ),
                     (
-                        timezone.localtime(item.start_time).date(),
+                        max(
+                            unused_start_date,
+                            timezone.localtime(item.start_time).date(),
+                        ),
                         timezone.localtime(item.end_time).date(),
                     ),
                 ]
-                for item in order_items[1:]
+                for item in order_items
             ],
         ]
 

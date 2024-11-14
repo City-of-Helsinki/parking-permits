@@ -71,6 +71,17 @@ def get_addresses(national_id_number):
     return primary_address, other_address
 
 
+def is_same_address(address, other_address):
+    if not address and not other_address:
+        return True
+    if not address or not other_address:
+        return False
+    return all(
+        address[key] == other_address[key]
+        for key in ["street_name", "street_number", "apartment", "city", "postal_code"]
+    )
+
+
 def _extract_address_data(address) -> Optional[DvvAddressInfo]:
     return (
         {

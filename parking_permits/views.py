@@ -4,6 +4,7 @@ import json
 import logging
 import time
 import uuid
+from decimal import Decimal
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -375,7 +376,7 @@ class TalpaResolveRightOfPurchase(APIView):
             return bad_request_response("User id is missing from request data")
 
         try:
-            # Temporarily disabled traficom checks
+            # Temporarily disable Traficom checks
             permit = ParkingPermit.objects.get(pk=permit_id)  # noqa: F841
             # customer = permit.customer
             # if settings.TRAFICOM_CHECK:
@@ -390,12 +391,45 @@ class TalpaResolveRightOfPurchase(APIView):
             # has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
             #     vehicle
             # )
+
+            # Temporarily disable DVV checks
+            # customer = permit.customer
+            # address = permit.address
+            # primary_address, other_address = get_addresses(customer.national_id_number)
+            # if not primary_address and not other_address:
+            #     raise AddressError("No address found for customer")
+            # if not address:
+            #     raise AddressError("No address found for permit")
+
+            # normalize permit address
+            # permit_address = {
+            #     "street_name": address.street_name,
+            #     "street_number": address.street_number,
+            #     "apartment": permit.address_apartment,
+            #     "city": address.city,
+            #     "postal_code": address.postal_code,
+            # }
+
+            # compare DVV addresses against permit address
+            # has_valid_address = is_same_address(
+            #     primary_address, permit_address
+            # ) or is_same_address(other_address, permit_address)
+            # if has_valid_address:
+            #     logger.info(
+            #         f"Customer address matches with permit address for permit: {permit_id}"
+            #     )
+            # else:
+            #     logger.warning(
+            #         f"Customer address does not match with permit address, permit: {permit_id} will not be renewed"
+            #     )
+
             order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
             is_valid_subscription = (
                 order_item.subscription.status == SubscriptionStatus.CONFIRMED
             )
             right_of_purchase = (
                 is_valid_subscription
+                # and has_valid_address
                 # and is_user_of_vehicle
                 # and is_driving_licence_active
                 # and has_valid_driving_licence
@@ -656,6 +690,12 @@ class OrderView(APIView):
             )
             end_time = get_end_time(start_time, 1)
 
+            vat_percentage = (
+                Decimal(0)
+                if not validated_order_item_data.get("vatPercentage")
+                else Decimal(validated_order_item_data.get("vatPercentage"))
+            )
+
             OrderItem.objects.create(
                 talpa_order_item_id=validated_order_item_data.get("orderItemId"),
                 order=order,
@@ -664,7 +704,7 @@ class OrderView(APIView):
                 permit=permit,
                 unit_price=validated_order_item_data.get("priceGross"),
                 payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
-                vat=validated_order_item_data.get("vatPercentage"),
+                vat=vat_percentage / 100,
                 quantity=validated_order_item_data.get("quantity"),
                 start_time=start_time,
                 end_time=end_time,

@@ -54,11 +54,12 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
-from parking_permits.utils import get_meta_item, get_meta_value
+from parking_permits.utils import get_meta_item, get_meta_value, to_dict
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
 from ..models.common import SourceSystem
+from .factories.address import AddressFactory
 from .keys import rsa_key
 
 HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
@@ -199,7 +200,7 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(
             permit.end_time,
             datetime.datetime(
-                2023, 11, 12, 21, 59, 59, 999999, tzinfo=datetime.timezone.utc
+                2023, 11, 11, 21, 59, 59, 999999, tzinfo=datetime.timezone.utc
             ),
         )
 
@@ -855,20 +856,67 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
             vehicle_error_msg,
         )
 
+    def get_person_info(self, customer):
+        primary_address_data = to_dict(customer.primary_address)
+        if primary_address_data:
+            primary_address_data.update(
+                {
+                    "apartment": customer.primary_address_apartment,
+                    "apartment_sv": customer.primary_address_apartment_sv,
+                }
+            )
+        other_address_data = to_dict(customer.other_address)
+        if other_address_data:
+            other_address_data.update(
+                {
+                    "apartment": customer.other_address_apartment,
+                    "apartment_sv": customer.other_address_apartment_sv,
+                }
+            )
+        return {
+            "national_id_number": customer.national_id_number,
+            "first_name": customer.first_name,
+            "last_name": customer.last_name,
+            "primary_address": primary_address_data,
+            "other_address": other_address_data,
+            "phone_number": "",
+            "email": "",
+            "address_security_ban": False,
+            "driver_license_checked": False,
+        }
+
     @override_settings(
         DEBUG=True,
         TRAFICOM_CHECK=False,
     )
+    @patch("parking_permits.services.dvv.get_person_info")
     @patch.object(Customer, "fetch_vehicle_detail")
     @patch.object(Customer, "fetch_driving_licence_detail")
     def test_right_of_purchase_view_is_valid(
-        self, mock_fetch_driving_licence_detail, mock_fetch_vehicle_detail
+        self,
+        mock_fetch_driving_licence_detail,
+        mock_fetch_vehicle_detail,
+        mock_get_person_info,
     ):
         talpa_order_id = "d4745a07-de99-33f8-94d6-64595f7a8bc6"
         talpa_order_item_id = "2f20c06d-2a9a-4a60-be4b-504d8a2f8c02"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        address = AddressFactory(
+            street_name="Mannerheimintie",
+            street_number="2",
+            street_name_sv="Mannerheimvägen",
+            city="HELSINKI",
+            city_sv="HELSINGFORS",
+            postal_code="00100",
+        )
         user = UserFactory(uuid="a571a903-b0d2-4b36-80ff-348173e6d085")
-        customer = CustomerFactory(user=user)
+        customer = CustomerFactory(
+            user=user,
+            primary_address=address,
+            primary_address_apartment="A 1 D6",
+            other_address=None,
+        )
+        mock_get_person_info.return_value = self.get_person_info(customer)
         permit_start_time = datetime.datetime(
             2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
         )
@@ -881,6 +929,8 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            address=address,
+            address_apartment="A 1 D6",
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -1339,6 +1389,9 @@ class OrderViewTestCase(APITestCase):
             permit.end_time,
             datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
         )
+        order_item = order.order_items.first()
+        self.assertAlmostEqual(order_item.vat, Decimal(0.255), delta=Decimal("0.01"))
+        self.assertEqual(order_item.vat_percentage, 25.5)
 
     @override_settings(DEBUG=True)
     def test_subscription_renewal_already_renewed(self):
@@ -1611,6 +1664,19 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        LowEmissionCriteriaFactory(
+            start_date=datetime.datetime(2024, 1, 1),
+            end_date=datetime.datetime(2024, 12, 31),
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=80,
+            euro_min_class_limit=6,
+        )
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
         permit_start_time = datetime.datetime(
             2024, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
         )
@@ -1622,6 +1688,7 @@ class SubscriptionViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            vehicle=high_emission_vehicle,
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -1643,6 +1710,7 @@ class SubscriptionViewTestCase(APITestCase):
             subscription=subscription,
             quantity=1,
             unit_price=unit_price,
+            payment_unit_price=unit_price,
         )
 
         url = reverse("parking_permits:subscription-notify")
@@ -1668,8 +1736,8 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(subscription_order, order)
         self.assertEqual(subscription_order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
-        refund = Refund.objects.get(order=order)
-        self.assertEqual(refund.order, order)
+        refund = Refund.objects.filter(orders=order).first()
+        self.assertEqual(refund.orders.first(), order)
         self.assertEqual(refund.amount, Decimal("60.00"))
         self.assertEqual(refund.vat_percent, Decimal("25.5"))
         self.assertAlmostEqual(refund.vat_amount, Decimal(12.19), delta=Decimal("0.01"))
@@ -1684,6 +1752,19 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
+        LowEmissionCriteriaFactory(
+            start_date=datetime.datetime(2024, 1, 1),
+            end_date=datetime.datetime(2024, 12, 31),
+            nedc_max_emission_limit=None,
+            wltp_max_emission_limit=80,
+            euro_min_class_limit=6,
+        )
+        high_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
+            emission=100,
+            euro_class=6,
+            emission_type=EmissionType.WLTP,
+        )
         permit_start_time = datetime.datetime(
             2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
         )
@@ -1695,6 +1776,7 @@ class SubscriptionViewTestCase(APITestCase):
             customer=customer,
             start_time=permit_start_time,
             end_time=permit_end_time,
+            vehicle=high_emission_vehicle,
         )
         order = OrderFactory(
             talpa_order_id=talpa_order_id,
@@ -1716,6 +1798,7 @@ class SubscriptionViewTestCase(APITestCase):
             subscription=subscription,
             quantity=1,
             unit_price=unit_price,
+            payment_unit_price=unit_price,
             vat=Decimal(0.24),
         )
 
@@ -1742,8 +1825,8 @@ class SubscriptionViewTestCase(APITestCase):
         self.assertEqual(subscription_order, order)
         self.assertEqual(subscription_order.status, OrderStatus.CANCELLED)
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
-        refund = Refund.objects.get(order=order)
-        self.assertEqual(refund.order, order)
+        refund = Refund.objects.filter(orders=order).first()
+        self.assertEqual(refund.orders.first(), order)
         self.assertEqual(refund.amount, Decimal("60.00"))
         self.assertEqual(refund.vat_percent, Decimal("24.0"))
         self.assertAlmostEqual(refund.vat_amount, Decimal(11.61), delta=Decimal("0.01"))

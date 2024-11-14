@@ -2,9 +2,10 @@ from decimal import Decimal
 from typing import Optional
 
 from parking_permits.models import ParkingPermit, Refund, Subscription
-from parking_permits.models.order import SubscriptionCancelReason
+from parking_permits.models.order import Order, SubscriptionCancelReason
 from users.models import User
 
+from .constants import DEFAULT_VAT
 from .models.parking_permit import (
     ParkingPermitEndType,
     ParkingPermitEventFactory,
@@ -83,46 +84,72 @@ def create_fixed_period_refunds(
 
     total_sums_per_vat = {}
 
-    handled_orders = set()
-
     for permit in refundable_permits:
         data_per_vat = permit.get_vat_based_refund_amounts_for_unused_items()
         for vat, vat_data in data_per_vat.items():
-            order = vat_data.get("order")
-            if order in handled_orders:
-                continue
             if vat not in total_sums_per_vat:
-                total_sums_per_vat[vat] = {}
-                total_sums_per_vat[vat]["total"] = Decimal(0)
+                total_sums_per_vat[vat] = {
+                    "total": Decimal(0),
+                    "orders": set(),
+                }
             total_sums_per_vat[vat]["total"] += vat_data.get("total") or Decimal(0)
-            total_sums_per_vat[vat]["order"] = vat_data.get("order")
-            handled_orders.add(order)
+            total_sums_per_vat[vat]["orders"].update(vat_data.get("orders"))
 
     total_sum = sum([vat["total"] for vat in total_sums_per_vat.values()])
 
     if total_sum > 0:
         refunds = []
         for vat, data in total_sums_per_vat.items():
-            refund = Refund.objects.create(
-                name=customer.full_name,
-                order=data["order"],
-                amount=data["total"],
-                iban=iban,
-                vat=vat,
-                description=f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}",
-            )
-            refund.permits.set(permits)
-            refunds.append(refund)
-
-            for permit in permits:
-                ParkingPermitEventFactory.make_create_refund_event(
-                    permit, refund, created_by=user
+            refunds.append(
+                create_refund(
+                    user=user,
+                    permits=refundable_permits,
+                    orders=list(data["orders"]),
+                    amount=data["total"],
+                    iban=iban,
+                    vat=vat,
                 )
-
+            )
         if refunds:
             send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     return refunds
+
+
+def create_refund(
+    user: Optional[User],
+    permits: list[ParkingPermit],
+    orders: list[Order],
+    amount: Decimal,
+    iban: Optional[str],
+    vat: Decimal = DEFAULT_VAT,
+    description: Optional[str] = "",
+) -> Refund:
+    """
+    Creates refund for permits and create relevant events.
+
+    Returns the created refund instance.
+    """
+    refund = Refund.objects.create(
+        name=permits[0].customer.full_name,
+        amount=abs(amount),
+        iban=iban,
+        vat=vat,
+        description=(
+            description
+            if description
+            else f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}"
+        ),
+    )
+    refund.permits.add(*permits)
+    refund.orders.add(*orders)
+
+    for permit in permits:
+        ParkingPermitEventFactory.make_create_refund_event(
+            permit, refund, created_by=user
+        )
+
+    return refund
 
 
 def end_permit(
@@ -157,14 +184,14 @@ def end_permit(
             )
     else:
         # Cancel fixed period permit order when this is the last valid permit in that order
-        latest_order = permit.latest_order
-        if (
-            latest_order
-            and not latest_order.order_permits.filter(status=ParkingPermitStatus.VALID)
-            .exclude(pk=permit.pk)
-            .exists()
-        ):
-            latest_order.cancel(cancel_from_talpa=cancel_from_talpa)
+        for order in permit.orders.all():
+            if (
+                order
+                and not order.order_permits.filter(status=ParkingPermitStatus.VALID)
+                .exclude(pk=permit.pk)
+                .exists()
+            ):
+                order.cancel(cancel_from_talpa=cancel_from_talpa)
 
     permit.temp_vehicles.update(is_active=False)
 

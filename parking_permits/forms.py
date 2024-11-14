@@ -202,8 +202,8 @@ class RefundSearchForm(SearchFormBase):
         return {
             "id": ["id"],
             "name": ["name"],
-            "orderId": ["order_id"],
-            "registrationNumber": ["order__permits__vehicle__registration_number"],
+            "orderId": ["orders__id"],
+            "registrationNumber": ["permits__vehicle__registration_number"],
             "accountNumber": ["iban"],
             "createdAt": ["created_at"],
             "acceptedAt": ["accepted_at"],
@@ -222,8 +222,9 @@ class RefundSearchForm(SearchFormBase):
         if q:
             text_filters = (
                 Q(name__icontains=q)
-                | Q(order__permits__vehicle__registration_number__icontains=q)
+                | Q(permits__vehicle__registration_number__icontains=q)
                 | Q(iban__icontains=q)
+                | Q(orders__id__icontains=q)
             )
             qs = qs.filter(text_filters)
             has_filters = True
@@ -237,7 +238,7 @@ class RefundSearchForm(SearchFormBase):
             qs = qs.filter(status=status)
             has_filters = True
         if payment_types:
-            qs = qs.filter(order__payment_type__in=payment_types)
+            qs = qs.filter(orders__payment_type__in=payment_types)
             has_filters = True
 
         return qs if has_filters else self.get_empty_queryset()

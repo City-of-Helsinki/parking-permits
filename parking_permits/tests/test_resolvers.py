@@ -1,7 +1,7 @@
 import dataclasses
-import decimal
-import unittest
 from datetime import timedelta
+from decimal import Decimal
+from unittest import mock
 
 import pytest
 from django.test import override_settings
@@ -38,26 +38,27 @@ class Auth:
 
 
 def _mock_talpa():
-    return unittest.mock.patch(
+    return mock.patch(
         "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
         return_value="https://talpa.fi",
     )
 
 
 def _mock_jwt(user):
-    return unittest.mock.patch(
+    return mock.patch(
         "helusers.oidc.RequestJWTAuthentication.authenticate",
         return_value=Auth(user=user),
     )
 
 
 def _mock_price_change_list(price_change_list):
-    return unittest.mock.patch(
+    return mock.patch(
         "parking_permits.models.ParkingPermit.get_price_change_list",
         return_value=price_change_list,
     )
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_update_permit_vehicle_high_to_low_emission(rf):
     """Should create a refund."""
@@ -76,11 +77,20 @@ def test_update_permit_vehicle_high_to_low_emission(rf):
         vehicle=old_vehicle,
     )
 
+    order = OrderFactory(
+        talpa_order_id="d4745a07-de99-33f8-94d6-64595f7a8bc6",
+        customer=customer,
+        status=OrderStatus.CONFIRMED,
+    )
+    order.permits.add(permit)
+    order.save()
+
     price_change_list = [
         {
             "new_price": 50.00,
             "price_change_vat": 10.00,
             "price_change": -50.00,
+            "price_change_vat_percent": 25.50,
             "month_count": 3,
         },
     ]
@@ -99,14 +109,17 @@ def test_update_permit_vehicle_high_to_low_emission(rf):
     assert Order.objects.count() == 1
     assert Refund.objects.count() == 1
 
-    # 3 months * -50
-    assert Refund.objects.first().amount == 150.00
+    #  3 months * 50 € = 150 €
+    assert Refund.objects.first().amount == pytest.approx(
+        Decimal(150.00), Decimal(0.01)
+    )
 
     permit.refresh_from_db()
     assert permit.vehicle == new_vehicle
     assert permit.next_vehicle is None
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_update_permit_vehicle_low_to_high_emission(rf):
     """Should create an order."""
@@ -153,6 +166,7 @@ def test_update_permit_vehicle_low_to_high_emission(rf):
     assert permit.next_vehicle == new_vehicle
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_update_open_ended_permit_vehicle_high_to_low_emission(rf):
     """Should not create a refund"""
@@ -199,6 +213,7 @@ def test_update_open_ended_permit_vehicle_high_to_low_emission(rf):
     assert permit.next_vehicle is None
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_update_permit_vehicle_high_to_high_emission(rf):
     """Should create no orders or refunds."""
@@ -245,6 +260,7 @@ def test_update_permit_vehicle_high_to_high_emission(rf):
     assert permit.next_vehicle is None
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_change_address_change_to_parking_zone_with_higher_price(rf):
     request = rf.post("/")
@@ -287,6 +303,7 @@ def test_resolve_change_address_change_to_parking_zone_with_higher_price(rf):
     assert new_order.status == OrderStatus.DRAFT
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_change_address_change_to_parking_zone_same_price(rf):
     request = rf.post("/")
@@ -316,12 +333,11 @@ def test_resolve_change_address_change_to_parking_zone_same_price(rf):
         response = resolve_change_address(None, info, str(address.pk))
 
     assert response["success"]
-    assert Order.objects.count() == 2
-
-    new_order = Order.objects.exclude(pk=order.pk).first()
-    assert new_order.status == OrderStatus.CONFIRMED
+    assert Order.objects.count() == 1
+    assert Refund.objects.count() == 0
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_change_address_change_to_parking_zone_with_refund(rf):
     request = rf.post("/")
@@ -344,9 +360,9 @@ def test_resolve_change_address_change_to_parking_zone_with_refund(rf):
     info = Info(context={"request": request})
     price_change_list = [
         {
-            "new_price": decimal.Decimal("100.00"),
-            "price_change_vat": decimal.Decimal("10.00"),
-            "price_change": decimal.Decimal("-50.00"),
+            "new_price": Decimal("100.00"),
+            "price_change_vat": Decimal("25.50"),
+            "price_change": Decimal("-50.00"),
             "month_count": 3,
         },
     ]
@@ -359,12 +375,11 @@ def test_resolve_change_address_change_to_parking_zone_with_refund(rf):
         response = resolve_change_address(None, info, str(address.pk))
 
     assert response["success"]
-    assert Order.objects.count() == 2
-
-    new_order = Order.objects.exclude(pk=order.pk).first()
-    assert new_order.status == OrderStatus.CONFIRMED
+    assert Order.objects.count() == 1
+    assert Refund.objects.count() == 1
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_change_address_no_change_to_parking_zone(rf):
     request = rf.post("/")
@@ -386,6 +401,7 @@ def test_resolve_change_address_no_change_to_parking_zone(rf):
     assert Order.objects.count() == 0
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_get_extended_permit_price_list(rf):
     request = rf.post("/")
@@ -417,7 +433,7 @@ def test_resolve_get_extended_permit_price_list(rf):
 
 
 @pytest.mark.django_db()
-@override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True, PERMIT_EXTENSIONS_ENABLED=True)
 def test_resolve_extend_parking_permit_ok(rf):
     request = rf.post("/")
     customer = CustomerFactory()
@@ -430,6 +446,8 @@ def test_resolve_extend_parking_permit_ok(rf):
         start_time=now,
         end_time=now + timedelta(days=10),
     )
+    permit.address = permit.customer.primary_address
+    permit.save()
 
     ProductFactory(
         zone=permit.parking_zone,
@@ -456,6 +474,7 @@ def test_resolve_extend_parking_permit_ok(rf):
     assert ext_request.permit == permit
 
 
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_resolve_extend_parking_permit_invalid(rf):
     request = rf.post("/")

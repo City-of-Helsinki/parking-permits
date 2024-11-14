@@ -24,7 +24,8 @@ def automatic_expiration_of_permits():
     now = tz.localtime(tz.now())
     ending_permits = ParkingPermit.objects.filter(
         Q(end_time__lt=now)
-        | Q(vehicle_changed=True, vehicle_changed_date__lt=now.date()),
+        | Q(vehicle_changed=True, vehicle_changed_date__lt=now.date())
+        | Q(address_changed=True, address_changed_date__lt=now.date()),
         status=ParkingPermitStatus.VALID,
     )
     for permit in ending_permits:

@@ -35,7 +35,6 @@ from .parking_permit import (
     ParkingPermitStatus,
 )
 from .product import Product
-from .refund import Refund
 
 logger = logging.getLogger("db")
 
@@ -512,6 +511,11 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         return sum([item.total_payment_price_vat for item in self.order_items.all()])
 
     @property
+    def vat_values(self):
+        # gather distinct vat values from all order items
+        return set([item.vat for item in self.order_items.all()])
+
+    @property
     def vat(self):
         return self.order_items.first().vat if self.order_items.exists() else Decimal(0)
 
@@ -669,23 +673,18 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
 
         if permit.can_be_refunded:
             logger.info(f"Creating Refund for permit {str(permit.id)}")
-            refund = Refund.objects.create(
-                name=permit.customer.full_name,
-                order=order,
+            from ..resolver_utils import create_refund
+
+            refund = create_refund(
+                user=permit.customer.user,
+                permits=[permit],
+                orders=[order],
                 amount=permit.total_refund_amount,
                 iban=iban,
-                vat=(
-                    order.order_items.first().vat
-                    if order.order_items.exists()
-                    else DEFAULT_VAT
-                ),
+                vat=(order.vat if order.vat else DEFAULT_VAT),
                 description=f"Refund for ending permit {str(permit.id)}",
             )
-            refund.permits.add(permit)
             send_refund_email(RefundEmailType.CREATED, permit.customer, [refund])
-            ParkingPermitEventFactory.make_create_refund_event(
-                permit, refund, created_by=permit.customer.user
-            )
             logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
         # Try to cancel subscription from Talpa as well

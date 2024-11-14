@@ -12,7 +12,7 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.exceptions import CreateTalpaProductError, ProductCatalogError
 from parking_permits.talpa.pricing import Pricing
 
-from ..utils import diff_months_ceil, find_next_date
+from ..utils import diff_months_ceil, find_next_date, format_local_time
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
@@ -30,6 +30,37 @@ class ProductType(models.TextChoices):
 class Unit(models.TextChoices):
     MONTHLY = "MONTHLY", _("Monthly")
     PIECES = "PIECES", _("Pieces")
+
+
+class Accounting(TimestampedModelMixin, UserStampedModelMixin):
+    active_from = models.DateTimeField(_("Active from"), null=True, blank=True)
+    company_code = models.CharField(
+        _("Company code"), max_length=64, null=True, blank=True
+    )
+    vat_code = models.CharField(_("VAT code"), max_length=64, null=True, blank=True)
+    internal_order = models.CharField(
+        _("Internal order"), max_length=64, null=True, blank=True
+    )
+    profit_center = models.CharField(
+        _("Profit center"), max_length=64, null=True, blank=True
+    )
+    balance_profit_center = models.CharField(
+        _("Balance profit center"), max_length=64, null=True, blank=True
+    )
+    project = models.CharField(_("Project"), max_length=64, null=True, blank=True)
+    operation_area = models.CharField(
+        _("Operation area"), max_length=64, null=True, blank=True
+    )
+    main_ledger_account = models.CharField(
+        _("Main ledger account"), max_length=64, null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Accounting")
+        verbose_name_plural = _("Accountings")
+
+    def __str__(self):
+        return f"{self.pk} ({self.company_code} - {self.main_ledger_account} - {self.vat_code})"
 
 
 class ProductQuerySet(models.QuerySet):
@@ -131,6 +162,23 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     low_emission_discount = models.DecimalField(
         _("Low emission discount"), max_digits=12, decimal_places=10
     )
+    accounting = models.ForeignKey(
+        Accounting,
+        verbose_name=_("Accounting"),
+        related_name="products",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+    next_accounting = models.ForeignKey(
+        Accounting,
+        verbose_name=_("Next accounting"),
+        related_name="next_products",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
+
     objects = ProductQuerySet.as_manager()
 
     class Meta:
@@ -259,5 +307,129 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             )
             raise CreateTalpaProductError(
                 "Cannot create Talpa Product. "
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    def create_talpa_accounting(self):
+        if not self.talpa_product_id:
+            logger.error("Talpa product does not exist")
+            return
+
+        self.accounting = Accounting.objects.create(
+            company_code=settings.TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE,
+            vat_code=settings.TALPA_DEFAULT_ACCOUNTING_VAT_CODE,
+            internal_order=settings.TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER,
+            profit_center=settings.TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER,
+            balance_profit_center=settings.TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER,
+            project=settings.TALPA_DEFAULT_ACCOUNTING_PROJECT,
+            operation_area=settings.TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA,
+            main_ledger_account=settings.TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT,
+        )
+        self.save()
+
+        data = {
+            "vatCode": self.accounting.vat_code,
+            "internalOrder": self.accounting.internal_order,
+            "profitCenter": self.accounting.profit_center,
+            "balanceProfitCenter": self.accounting.balance_profit_center,
+            "project": self.accounting.project,
+            "operationArea": self.accounting.operation_area,
+            "companyCode": self.accounting.company_code,
+            "mainLedgerAccount": self.accounting.main_ledger_account,
+        }
+
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            urljoin(
+                settings.TALPA_PRODUCT_EXPERIENCE_API,
+                f"{self.talpa_product_id}/accounting/",
+            ),
+            data=json.dumps(data, default=str),
+            headers=headers,
+        )
+        if response.status_code == 201:
+            logger.info(f"Talpa product {self.talpa_product_id} accounting created")
+        else:
+            logger.error(
+                f"Failed to create Talpa product {self.talpa_product_id} accounting. "
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise CreateTalpaProductError(
+                f"Cannot create Talpa product {self.talpa_product_id} accounting. "
+                f"Error: {response.status_code} {response.reason}."
+            )
+
+    def update_talpa_accounting(self):
+        if not self.talpa_product_id:
+            logger.error("Talpa product does not exist")
+            return
+
+        accounting = self.accounting
+        if not accounting:
+            logger.error("Product accounting is missing")
+            return
+
+        data = {
+            "vatCode": accounting.vat_code,
+            "internalOrder": accounting.internal_order,
+            "profitCenter": accounting.profit_center,
+            "balanceProfitCenter": accounting.balance_profit_center,
+            "project": accounting.project,
+            "operationArea": accounting.operation_area,
+            "companyCode": accounting.company_code,
+            "mainLedgerAccount": accounting.main_ledger_account,
+        }
+
+        next_accounting = self.next_accounting
+        if next_accounting:
+            active_from = (
+                format_local_time(next_accounting.active_from)
+                if next_accounting.active_from
+                else ""
+            )
+            data.update(
+                {
+                    "nextEntity": {
+                        "companyCode": next_accounting.company_code,
+                        "mainLedgerAccount": next_accounting.main_ledger_account,
+                        "vatCode": next_accounting.vat_code,
+                        "internalOrder": next_accounting.internal_order,
+                        "profitCenter": next_accounting.profit_center,
+                        "balanceProfitCenter": next_accounting.balance_profit_center,
+                        "project": next_accounting.project,
+                        "operationArea": next_accounting.operation_area,
+                    },
+                    "activeFrom": active_from,
+                }
+            )
+
+        headers = {
+            "api-key": settings.TALPA_API_KEY,
+            "namespace": settings.NAMESPACE,
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            urljoin(
+                settings.TALPA_PRODUCT_EXPERIENCE_API,
+                f"{self.talpa_product_id}/accounting/",
+            ),
+            data=json.dumps(data, default=str),
+            headers=headers,
+        )
+        if response.status_code == 201:
+            logger.info(f"Talpa product {self.talpa_product_id} accounting updated")
+        else:
+            logger.error(
+                f"Failed to update Talpa product {self.talpa_product_id} accounting. "
+                f"Error: {response.status_code} {response.reason}. "
+                f"Detail: {response.text}"
+            )
+            raise CreateTalpaProductError(
+                f"Cannot update Talpa product {self.talpa_product_id} accounting. "
                 f"Error: {response.status_code} {response.reason}."
             )

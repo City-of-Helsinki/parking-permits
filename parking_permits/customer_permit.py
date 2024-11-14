@@ -177,6 +177,16 @@ class CustomerPermit:
                     products.append(product)
             permit.products = products
 
+            if permit.has_address_changed:
+                logger.info(
+                    f"Permit {permit.pk} address {permit.address} does not match "
+                    f"with customer's primary or other address. "
+                    f"Marking permit to end at the end of the day."
+                )
+                permit.address_changed = True
+                permit.address_changed_date = tz.localdate()
+                permit.save()
+
             # automatically cancel permit and it's latest order if payment is not completed in configured time
             # (default 15 minutes)
             payment_wait_time_buffer = (
@@ -189,7 +199,7 @@ class CustomerPermit:
                     permit.latest_order.talpa_last_valid_purchase_time
                     + tz.timedelta(minutes=payment_wait_time_buffer)
                 )
-                < tz.localtime(tz.now())
+                < tz.localtime()
             ):
                 permit.status = CANCELLED
                 latest_order = permit.latest_order
@@ -489,7 +499,7 @@ class CustomerPermit:
         primary = self.customer.primary_address
         other = self.customer.other_address
 
-        # Check if zone belongs to either of the user address zone
+        # Check if the address is primary or other address of the user
         if primary and primary.id == address_id:
             return True
         if other and other.id == address_id:
