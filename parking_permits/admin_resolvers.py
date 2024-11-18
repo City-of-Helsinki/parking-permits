@@ -983,6 +983,8 @@ def resolve_extend_parking_permit(
 
     sync_with_parkkihubi(permit)
 
+    send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+
     ParkingPermitEventFactory.make_admin_create_ext_request_event(
         ext_request,
         created_by=info.context["request"].user,
