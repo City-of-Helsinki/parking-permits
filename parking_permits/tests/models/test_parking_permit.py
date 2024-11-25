@@ -1119,6 +1119,28 @@ class ParkingPermitTestCase(TestCase):
         self.assertEqual(permit.month_count, 4)
         self.assertEqual(permit.end_time.date(), date(2024, 7, 3))
 
+    @freeze_time("2024-11-25")
+    def test_active_permit_statuses(self):
+        now = timezone.now()
+        customer = CustomerFactory()
+        permit = ParkingPermitFactory(
+            customer=customer,
+            status=ParkingPermitStatus.DRAFT,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=30),
+            month_count=1,
+        )
+        self.assertEqual(customer.active_permits.count(), 0)
+
+        permit.status = ParkingPermitStatus.PRELIMINARY
+        permit.save()
+        self.assertEqual(customer.active_permits.count(), 0)
+
+        permit.status = ParkingPermitStatus.VALID
+        permit.save()
+        self.assertEqual(customer.active_permits.count(), 1)
+
     @freeze_time("2024-1-28")
     def test_renew_parking_permit(self):
         permit = ParkingPermitFactory(
