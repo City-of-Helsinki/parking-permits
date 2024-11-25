@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-19 11:02+0300\n"
+"POT-Creation-Date: 2024-11-22 08:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -337,9 +337,6 @@ msgstr "Återbetalning"
 msgid "Refund ID"
 msgstr "Återbetalning ID"
 
-msgid "incl. VAT"
-msgstr "inkl. MOMS"
-
 msgid "Extra info"
 msgstr "Ytterligare uppgifter"
 
@@ -622,6 +619,9 @@ msgstr "Efter nuvarande period"
 msgid "Previous day end"
 msgstr "Föregående dags slut"
 
+msgid "Preliminary"
+msgstr "Preliminär"
+
 msgid "Payment in progress"
 msgstr "Betalning pågår"
 
@@ -642,6 +642,9 @@ msgstr "Bypass Traficom-validering"
 
 msgid "Vehicle changed date"
 msgstr "Fordonet ändringdatum"
+
+msgid "Address changed date"
+msgstr "Adress ändringdatum"
 
 msgid "Contract type"
 msgstr "Kontraktstyp"
@@ -721,8 +724,16 @@ msgid "Permit #%(permit_id)s created"
 msgstr "Tillstånd #%(permit_id)s skapat"
 
 #, python-format
+msgid "Permit #%(permit_id)s draft created"
+msgstr "Tillstånd #%(permit_id)s utkast skapat"
+
+#, python-format
+msgid "Permit #%(permit_id)s draft updated"
+msgstr "Tillstånd #%(permit_id)s utkast uppdaterat"
+
+#, python-format
 msgid "Permit #%(permit_id)s updated"
-msgstr "Tillstånd #%(permit_id)s har uppdaterats"
+msgstr "Tillstånd #%(permit_id)s uppdaterat"
 
 #, python-format
 msgid "Permit #%(permit_id)s ended"
@@ -749,7 +760,7 @@ msgid "Area (2D)"
 msgstr "Zone (2D)"
 
 msgid "Parking zones"
-msgstr "Parkeringzon"
+msgstr "Parkering zoner"
 
 msgid "Pending"
 msgstr "Öppen"
@@ -766,6 +777,39 @@ msgstr "Månatlig"
 msgid "Pieces"
 msgstr "St"
 
+msgid "Active from"
+msgstr "Aktiv från"
+
+msgid "Company code"
+msgstr "Företagskod"
+
+msgid "VAT code"
+msgstr "MOMS-kod"
+
+msgid "Internal order"
+msgstr "Intern beställning"
+
+msgid "Profit center"
+msgstr "Profit center"
+
+msgid "Balance profit center"
+msgstr "Balans profit center"
+
+msgid "Project"
+msgstr "Projekt"
+
+msgid "Operation area"
+msgstr "Operation area"
+
+msgid "Main ledger account"
+msgstr "Huvudbokskonto"
+
+msgid "Accounting"
+msgstr "Redovisning"
+
+msgid "Accountings"
+msgstr "Redovisningar"
+
 msgid "Product catalog error, please report to admin"
 msgstr "Fel i produktinformation. Rapportera till underhåll tack."
 
@@ -777,6 +821,9 @@ msgstr "zon"
 
 msgid "Unit"
 msgstr "Enhet"
+
+msgid "Next accounting"
+msgstr "Nästa redovisning"
 
 msgid "Products"
 msgstr "Produkter"
@@ -1116,6 +1163,9 @@ msgstr ""
 
 msgid "Total refundable amount"
 msgstr "Totalt återbetalningsbart belopp"
+
+msgid "incl. VAT"
+msgstr "inkl. MOMS"
 
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "
