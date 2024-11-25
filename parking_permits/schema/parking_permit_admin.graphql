@@ -99,6 +99,7 @@ type AnnouncementNode {
 
 enum ParkingPermitStatus {
   DRAFT
+  PRELIMINARY
   PAYMENT_IN_PROGRESS
   VALID
   CANCELLED
@@ -512,6 +513,7 @@ input VehicleInput {
 }
 
 input ResidentPermitInput {
+  id: ID
   contractType: String
   customer: CustomerInput!
   vehicle: VehicleInput
