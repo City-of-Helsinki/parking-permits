@@ -570,45 +570,72 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
                 % {"parking_zone": active_parking_zone.name}
             )
 
+    permit_status = permit.get("status")
+    if permit_status not in [
+        ParkingPermitStatus.DRAFT,
+        ParkingPermitStatus.PRELIMINARY,
+        ParkingPermitStatus.VALID,
+    ]:
+        permit_status = ParkingPermitStatus.VALID
+
     primary_vehicle = active_permits_count == 0
-    parking_permit = ParkingPermit.objects.create(
-        contract_type=ContractType.FIXED_PERIOD,
-        customer=customer,
-        vehicle=vehicle,
-        parking_zone=parking_zone,
-        status=permit.get("status"),
-        start_time=start_time,
-        month_count=month_count,
-        end_time=end_time,
-        description=permit.get("description"),
-        address=permit_address if not security_ban else None,
-        address_apartment=permit.get("address_apartment"),
-        address_apartment_sv=permit.get("address_apartment"),
-        primary_vehicle=primary_vehicle,
-        bypass_traficom_validation=permit.get("bypass_traficom_validation", False),
+    # only create a new permit when it doesn't exist
+    parking_permit, permit_created = ParkingPermit.objects.update_or_create(
+        pk=permit.get("id"),
+        defaults={
+            "contract_type": ContractType.FIXED_PERIOD,
+            "customer": customer,
+            "vehicle": vehicle,
+            "parking_zone": parking_zone,
+            "status": permit_status,
+            "start_time": start_time,
+            "month_count": month_count,
+            "end_time": end_time,
+            "description": permit.get("description"),
+            "address": permit_address if not security_ban else None,
+            "address_apartment": permit.get("address_apartment"),
+            "address_apartment_sv": permit.get("address_apartment"),
+            "primary_vehicle": primary_vehicle,
+            "bypass_traficom_validation": permit.get(
+                "bypass_traficom_validation", False
+            ),
+        },
     )
 
     audit_msg.target = parking_permit
     request = info.context["request"]
-    ParkingPermitEventFactory.make_create_permit_event(
-        parking_permit, created_by=request.user
-    )
-
-    # when creating from Admin UI, it's considered the payment is completed
-    # and the order status should be confirmed
-    Order.objects.create_for_permits(
-        [parking_permit], status=OrderStatus.CONFIRMED, user=request.user
-    )
-    sync_with_parkkihubi(parking_permit)
-
-    send_permit_email(PermitEmailType.CREATED, parking_permit)
     if (
-        parking_permit.consent_low_emission_accepted
-        and parking_permit.vehicle.is_low_emission
+        permit_status == ParkingPermitStatus.DRAFT
+        or permit_status == ParkingPermitStatus.PRELIMINARY
     ):
-        send_vehicle_low_emission_discount_email(
-            PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, parking_permit
+        if permit_created:
+            ParkingPermitEventFactory.make_create_draft_permit_event(
+                parking_permit, created_by=request.user
+            )
+        else:
+            ParkingPermitEventFactory.make_update_draft_permit_event(
+                parking_permit, created_by=request.user
+            )
+
+    # when creating from Admin UI and permit status is valid, it's considered the payment is completed
+    # and the order status should be confirmed
+    if permit_status == ParkingPermitStatus.VALID:
+        ParkingPermitEventFactory.make_create_permit_event(
+            parking_permit, created_by=request.user
         )
+        Order.objects.create_for_permits(
+            [parking_permit], status=OrderStatus.CONFIRMED, user=request.user
+        )
+        sync_with_parkkihubi(parking_permit)
+        send_permit_email(PermitEmailType.CREATED, parking_permit)
+        if (
+            parking_permit.consent_low_emission_accepted
+            and parking_permit.vehicle.is_low_emission
+        ):
+            send_vehicle_low_emission_discount_email(
+                PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, parking_permit
+            )
+
     return {"success": True, "permit": parking_permit}
 
 
@@ -982,6 +1009,8 @@ def resolve_extend_parking_permit(
     ext_request.approve()
 
     sync_with_parkkihubi(permit)
+
+    send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
 
     ParkingPermitEventFactory.make_admin_create_ext_request_event(
         ext_request,

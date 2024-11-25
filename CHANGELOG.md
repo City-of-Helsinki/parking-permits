@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2024-11-25
+
+### Added
+
+- Allow draft permit creation in admin resolvers ([be80a24](https://github.com/City-of-Helsinki/parking-permits/commit/be80a2403783b471658240323aa15756f75f758f))
+
+### Changed
+
+- Keycloak backend integration ([d8ed26d](https://github.com/City-of-Helsinki/parking-permits/commit/d8ed26d01e5fe0d403270226e87be59d96e2b60b))
+- Enable helusers migration ([8e3bc92](https://github.com/City-of-Helsinki/parking-permits/commit/8e3bc92cf2089f0c5b0fcf8f1fff6f2db38abb70))
+
+### Fixed
+
+- Update helsinki profile to use POST requests ([0b10293](https://github.com/City-of-Helsinki/parking-permits/commit/0b10293f3239f255f2beaa256eeab950f0801dac))
+- Send email to customer when extension is created ([24b6adf](https://github.com/City-of-Helsinki/parking-permits/commit/24b6adfe03a9e4f7518f9f3e5ed4b1b013c6b098))
+
 ## [1.3.0] - 2024-11-14
 
 ### Added

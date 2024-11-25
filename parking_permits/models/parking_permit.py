@@ -63,6 +63,7 @@ class ParkingPermitEndType(models.TextChoices):
 
 class ParkingPermitStatus(models.TextChoices):
     DRAFT = "DRAFT", _("Draft")
+    PRELIMINARY = "PRELIMINARY", _("Preliminary")
     PAYMENT_IN_PROGRESS = "PAYMENT_IN_PROGRESS", _("Payment in progress")
     VALID = "VALID", _("Valid")
     CANCELLED = "CANCELLED", _("Cancelled")
@@ -1044,6 +1045,8 @@ class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
 
     class EventKey(models.TextChoices):
         CREATE_PERMIT = "create_permit"
+        CREATE_DRAFT_PERMIT = "create_draft_permit"
+        UPDATE_DRAFT_PERMIT = "update_draft_permit"
         UPDATE_PERMIT = "update_permit"
         END_PERMIT = "end_permit"
 
@@ -1153,6 +1156,28 @@ class ParkingPermitEventFactory:
             type=ParkingPermitEvent.EventType.CREATED,
             created_by=created_by,
             key=ParkingPermitEvent.EventKey.CREATE_PERMIT,
+        )
+
+    @staticmethod
+    def make_create_draft_permit_event(permit: ParkingPermit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s draft created"),
+            context={"permit_id": permit.id},
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.CREATE_DRAFT_PERMIT,
+        )
+
+    @staticmethod
+    def make_update_draft_permit_event(permit: ParkingPermit, created_by=None):
+        return ParkingPermitEvent.objects.create(
+            parking_permit=permit,
+            message=gettext_noop("Permit #%(permit_id)s draft updated"),
+            context={"permit_id": permit.id},
+            type=ParkingPermitEvent.EventType.CREATED,
+            created_by=created_by,
+            key=ParkingPermitEvent.EventKey.UPDATE_DRAFT_PERMIT,
         )
 
     @staticmethod

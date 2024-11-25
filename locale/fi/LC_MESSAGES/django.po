@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-19 11:02+0300\n"
+"POT-Creation-Date: 2024-11-22 08:50+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -92,7 +92,7 @@ msgstr ""
 "voimassa oleva jatkuvaveloitteinen tunnus"
 
 msgid "Vehicle registration number is mandatory for the permit"
-msgstr "Ajoneuvon rekisterinumero on pakollinen tietd"
+msgstr "Ajoneuvon rekisterinumero on pakollinen tieto"
 
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
@@ -340,9 +340,6 @@ msgstr "Palautukset"
 
 msgid "Refund ID"
 msgstr "Palautusnumero"
-
-msgid "incl. VAT"
-msgstr "sis. ALV"
 
 msgid "Extra info"
 msgstr "Lisätiedot"
@@ -626,6 +623,9 @@ msgstr "Nykyisen jakson jälkeen"
 msgid "Previous day end"
 msgstr "Edellisen päivän loppu"
 
+msgid "Preliminary"
+msgstr "Alustava"
+
 msgid "Payment in progress"
 msgstr "Maksussa"
 
@@ -645,7 +645,10 @@ msgid "Bypass Traficom validation"
 msgstr "Ohita Traficom-tarkistus"
 
 msgid "Vehicle changed date"
-msgstr "Ajoneuvon tietojen muuttamispäivä"
+msgstr "Ajoneuvon tietojen muutospäivä"
+
+msgid "Address changed date"
+msgstr "Osoitteen vaihdon muutospäivä"
 
 msgid "Contract type"
 msgstr "Sopimustyyppi"
@@ -725,6 +728,14 @@ msgid "Permit #%(permit_id)s created"
 msgstr "Tunnus #%(permit_id)s luotu"
 
 #, python-format
+msgid "Permit #%(permit_id)s draft created"
+msgstr "Tunnuksen #%(permit_id)s luonnos luotu"
+
+#, python-format
+msgid "Permit #%(permit_id)s draft updated"
+msgstr "Tunnuksen #%(permit_id)s luonnos päivitetty"
+
+#, python-format
 msgid "Permit #%(permit_id)s updated"
 msgstr "Tunnus #%(permit_id)s päivitetty"
 
@@ -768,6 +779,39 @@ msgstr "Kuukausittainen"
 msgid "Pieces"
 msgstr "Osat"
 
+msgid "Active from"
+msgstr "Voimassa alkaen"
+
+msgid "Company code"
+msgstr "Yrityskoodi"
+
+msgid "VAT code"
+msgstr "ALV-koodi"
+
+msgid "Internal order"
+msgstr "Sisäinen tilaus"
+
+msgid "Profit center"
+msgstr "Kustannuspaikka"
+
+msgid "Balance profit center"
+msgstr "Tulosyksikkö"
+
+msgid "Project"
+msgstr "Projekti"
+
+msgid "Operation area"
+msgstr "Toiminta-alue"
+
+msgid "Main ledger account"
+msgstr "Pääkirjan tili"
+
+msgid "Accounting"
+msgstr "Kirjanpito"
+
+msgid "Accountings"
+msgstr "Kirjanpidot"
+
 msgid "Product catalog error, please report to admin"
 msgstr "Tuotetietojen virhe, raportoi ylläpitäjälle"
 
@@ -779,6 +823,9 @@ msgstr "alue"
 
 msgid "Unit"
 msgstr "Yksikkö"
+
+msgid "Next accounting"
+msgstr "Seuraava kirjanpito"
 
 msgid "Products"
 msgstr "Tuotteet"
@@ -1112,6 +1159,9 @@ msgstr ""
 
 msgid "Total refundable amount"
 msgstr "Palautettava summa yhteensä"
+
+msgid "incl. VAT"
+msgstr "sis. ALV"
 
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "
