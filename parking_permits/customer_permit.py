@@ -43,6 +43,7 @@ logger = logging.getLogger("db")
 IMMEDIATELY = ParkingPermitStartType.IMMEDIATELY
 OPEN_ENDED = ContractType.OPEN_ENDED
 DRAFT = ParkingPermitStatus.DRAFT
+PRELIMINARY = ParkingPermitStatus.PRELIMINARY
 VALID = ParkingPermitStatus.VALID
 PAYMENT_IN_PROGRESS = ParkingPermitStatus.PAYMENT_IN_PROGRESS
 CANCELLED = ParkingPermitStatus.CANCELLED
@@ -65,7 +66,8 @@ class CustomerPermit:
     def __init__(self, customer_id):
         self.customer = Customer.objects.get(id=customer_id)
         self.customer_permit_query = ParkingPermit.objects.filter(
-            customer=self.customer, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
+            customer=self.customer,
+            status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT, PRELIMINARY],
         )
 
     def create_permit_extension_request(
@@ -276,7 +278,7 @@ class CustomerPermit:
 
     def delete(self, permit_id):
         permit = ParkingPermit.objects.get(customer=self.customer, id=permit_id)
-        if permit.status != DRAFT:
+        if permit.status not in [DRAFT, PRELIMINARY]:
             raise PermitCanNotBeDeleted(_("Non draft permit can not be deleted"))
         OrderItem.objects.filter(permit=permit).delete()
         permit.delete()
@@ -332,7 +334,7 @@ class CustomerPermit:
 
             # Second permit can not be open ended if primary permit valid or processing and is fixed period
             if (
-                primary.status != DRAFT
+                primary.status not in [DRAFT, PRELIMINARY]
                 and primary.contract_type == FIXED_PERIOD
                 and contract_type != FIXED_PERIOD
             ):
@@ -344,7 +346,7 @@ class CustomerPermit:
             if permit_id:
                 permit, is_primary = self._get_permit(permit_id)
 
-                if permit.status != DRAFT:
+                if permit.status not in [DRAFT, PRELIMINARY]:
                     raise NonDraftPermitUpdateError(
                         _("This is not a draft permit and can not be edited")
                     )
@@ -424,7 +426,9 @@ class CustomerPermit:
             return customer.other_address_apartment, customer.other_address_apartment_sv
 
     def _update_fields_to_all_draft(self, data):
-        permits = self.customer_permit_query.filter(status=DRAFT).all()
+        permits = self.customer_permit_query.filter(
+            status__in=[DRAFT, PRELIMINARY]
+        ).all()
         return [self._update_permit(permit, data) for permit in permits]
 
     def _update_permit(self, permit: ParkingPermit, data: dict):
