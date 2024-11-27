@@ -543,7 +543,8 @@ def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     request = info.context["request"]
     customer = request.user.customer
     permits = ParkingPermit.objects.filter(
-        customer=customer, status=ParkingPermitStatus.DRAFT
+        customer=customer,
+        status__in=[ParkingPermitStatus.DRAFT, ParkingPermitStatus.PRELIMINARY],
     )
     order = Order.objects.create_for_permits(permits, user=request.user)
     permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
