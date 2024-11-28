@@ -144,6 +144,8 @@ class TestOrderManager(TestCase):
         self.assertEqual(order_items[0].quantity, 4)
         self.assertEqual(order_items[1].unit_price, Decimal(50))
         self.assertEqual(order_items[1].quantity, 2)
+        total_quantity = order_items[0].quantity + order_items[1].quantity
+        self.assertEqual(total_quantity, 6)
 
     def test_create_for_permits_should_create_order_items_with_start_end_date_for_open_ended_permits(
         self,
