@@ -3,6 +3,7 @@ import logging
 
 import numpy as np
 import requests
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as tz
@@ -33,7 +34,7 @@ class TalpaOrderManager:
     }
 
     @classmethod
-    def create_item_data(cls, order, order_item):
+    def create_item_data(cls, order, order_item, previous_end_time=False):
         unit_pricing = Pricing.calculate(
             order_item.payment_unit_price,
             order_item.vat,
@@ -44,10 +45,17 @@ class TalpaOrderManager:
             order_item.vat,
         )
 
+        timeframe = order_item.timeframe
+        # Send fake start time in metadata to make sure there is no gaps in days visible to customer
+        # This happens only if there is multiple products within the time range for the permit
+        if previous_end_time:
+            new_start_time = previous_end_time + relativedelta(days=1)
+            timeframe = order_item.adjusted_timeframe(new_start_time)
+
         item = {
             "productId": str(order_item.product.talpa_product_id),
             "productName": order_item.product.name,
-            "productDescription": order_item.timeframe,
+            "productDescription": timeframe,
             "unit": _("pcm"),
             "startDate": date_time_to_helsinki(order_item.permit.start_time),
             "quantity": order_item.quantity,
@@ -178,9 +186,13 @@ class TalpaOrderManager:
             key=lambda p: p.is_secondary_vehicle,
         ):
             order_items_of_single_permit = []
+            previous_end_time = False
             for index, order_item in enumerate(order_items_by_permit[permit]):
                 if order_item.quantity:
-                    item, pricing = cls.create_item_data(order, order_item)
+                    item, pricing = cls.create_item_data(
+                        order, order_item, previous_end_time
+                    )
+                    previous_end_time = order_item.end_time
                     if index == 0:
                         item.update(
                             {

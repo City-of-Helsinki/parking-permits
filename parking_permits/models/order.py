@@ -811,3 +811,13 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
             end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
             return f"{start_time} - {end_time}"
         return ""
+
+    def adjusted_timeframe(self, start_time):
+        """
+        Custom timeframe used to make sure subsequent order items don't have gaps in days
+        """
+        if start_time and self.end_time:
+            start_time = tz.localtime(start_time).strftime(DATE_FORMAT)
+            end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
+            return f"{start_time} - {end_time}"
+        return ""
