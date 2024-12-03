@@ -3,6 +3,7 @@ from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.core import mail
 from django.test import TestCase
 from django.utils import timezone as tz
 from freezegun import freeze_time
@@ -12,6 +13,7 @@ from parking_permits.cron import (
     automatic_expiration_remind_notification_of_permits,
     automatic_remove_obsolete_customer_data,
     automatic_syncing_of_permits_to_parkkihubi,
+    handle_announcement_emails,
 )
 from parking_permits.models import Customer, Refund
 from parking_permits.models.order import OrderStatus
@@ -21,6 +23,8 @@ from parking_permits.models.parking_permit import (
     ParkingPermitEndType,
     ParkingPermitStatus,
 )
+from parking_permits.tests.factories import ParkingZoneFactory
+from parking_permits.tests.factories.announcement import AnnouncementFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
@@ -368,3 +372,78 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
         self.assertEqual(valid_permits.count(), 5)
         expiring_permits = automatic_expiration_remind_notification_of_permits()
         self.assertEqual(expiring_permits.count(), 2)
+
+
+class AnnouncementEmailHandlingTestCase(TestCase):
+    def setUp(self):
+        self.zone_a = ParkingZoneFactory(name="A")
+        self.zone_b = ParkingZoneFactory(name="B")
+        self.zone_c = ParkingZoneFactory(name="C")
+        self.announcement = AnnouncementFactory(subject_en="Test announcement")
+        self.customer_1 = CustomerFactory(zone=self.zone_a, email="test@mail.com")
+        self.customer_2 = CustomerFactory(zone=self.zone_b, email="test2@mail.com")
+        self.customer_3 = CustomerFactory(zone=self.zone_c, email="test3@mail.com")
+
+        self.customer_1_permit_1 = ParkingPermitFactory(
+            customer=self.customer_1,
+            parking_zone=self.zone_a,
+            status=ParkingPermitStatus.VALID,
+        )
+        self.customer_1_permit_2 = ParkingPermitFactory(
+            customer=self.customer_1,
+            parking_zone=self.zone_a,
+            status=ParkingPermitStatus.DRAFT,
+        )
+        self.customer_1_permit_3 = ParkingPermitFactory(
+            customer=self.customer_1,
+            parking_zone=self.zone_c,
+            status=ParkingPermitStatus.CANCELLED,
+        )
+
+        self.customer_2_permit_1 = ParkingPermitFactory(
+            customer=self.customer_2,
+            parking_zone=self.zone_b,
+            status=ParkingPermitStatus.DRAFT,
+        )
+        self.customer_2_permit_2 = ParkingPermitFactory(
+            customer=self.customer_2,
+            parking_zone=self.zone_b,
+            status=ParkingPermitStatus.VALID,
+        )
+
+        self.customer_3_permit_1 = ParkingPermitFactory(
+            customer=self.customer_3,
+            parking_zone=self.zone_c,
+            status=ParkingPermitStatus.DRAFT,
+        )
+
+    def test_handle_announcement_emails(self):
+        self.announcement._parking_zones.set([self.zone_a])
+        self.assertEqual(self.announcement.emails_handled, False)
+        handle_announcement_emails()
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue("Test announcement" in mail.outbox[0].subject)
+        self.announcement.refresh_from_db()
+        self.assertEqual(self.announcement.emails_handled, True)
+
+    def test_multizone_announcement(self):
+        self.announcement._parking_zones.set([self.zone_a, self.zone_b])
+        handle_announcement_emails()
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertTrue("Test announcement" in mail.outbox[0].subject)
+        self.announcement.refresh_from_db()
+        self.assertEqual(self.announcement.emails_handled, True)
+
+    def test_valid_permits_only(self):
+        self.announcement._parking_zones.set([self.zone_a, self.zone_b, self.zone_c])
+        handle_announcement_emails()
+        self.assertEqual(len(mail.outbox), 2)
+        self.announcement.refresh_from_db()
+        self.assertEqual(self.announcement.emails_handled, True)
+
+    def test_no_valid_permits(self):
+        self.announcement._parking_zones.set([self.zone_c])
+        handle_announcement_emails()
+        self.assertEqual(len(mail.outbox), 0)
+        self.announcement.refresh_from_db()
+        self.assertEqual(self.announcement.emails_handled, True)

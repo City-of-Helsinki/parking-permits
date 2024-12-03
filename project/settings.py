@@ -13,6 +13,7 @@ GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
 
 env = environ.Env(
     DEBUG=(bool, False),
+    DEBUG_MAILPIT=(bool, False),
     DJANGO_SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
@@ -311,6 +312,7 @@ CRONJOBS = [
         "0 8 * * 1",
         "parking_permits.cron.automatic_expiration_remind_notification_of_permits",
     ),
+    ("*/15 * * * *", "parking_permits.cron.handle_announcement_emails"),
 ]
 
 # GDPR API
@@ -355,4 +357,8 @@ sentry_sdk.init(
 DEBUG_SKIP_PARKKIHUBI_SYNC = env("DEBUG_SKIP_PARKKIHUBI_SYNC")
 
 if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    DEBUG_MAILPIT = env("DEBUG_MAILPIT")
+    if DEBUG_MAILPIT:
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    else:
+        EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

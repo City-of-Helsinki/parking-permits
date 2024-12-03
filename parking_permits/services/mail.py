@@ -146,7 +146,7 @@ def send_refund_email(action, customer, refunds):
             logger.error("Could not send refund email", exc_info=e)
 
 
-def send_announcement_email(customers, announcement):
+def send_announcement_emails(customers, announcement):
     subject = f"{announcement.subject_fi} | {announcement.subject_sv} | {announcement.subject_en}"
     template = "emails/announcement.html"
 
