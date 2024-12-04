@@ -1,6 +1,8 @@
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.gis import admin
 from django.urls import reverse
 from django.utils.html import format_html
+from django_db_logger.models import StatusLog
 
 from parking_permits.models import (
     Address,
@@ -391,3 +393,20 @@ class VehicleUserAdmin(admin.ModelAdmin):
     @admin.display(description="Vehicles")
     def get_vehicles(self, obj):
         return [vehicle.registration_number for vehicle in obj.vehicles.all()]
+
+
+# Importing the default StatusLogAdmin will automatically register the StatusLog model
+from django_db_logger.admin import StatusLogAdmin  # noqa: F401, E402
+
+# Unregister the StatusLog model from the admin site registry
+try:
+    admin.site.unregister(StatusLog)
+except NotRegistered:
+    pass
+
+
+# Create application specific StatusLogAdmin
+@admin.register(StatusLog)
+class ParkingPermitsStatusLogAdmin(StatusLogAdmin):
+    search_fields = ("msg",)  # Add search field for the message
+    list_per_page = 20
