@@ -517,10 +517,10 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
             _("Vehicle registration number is mandatory for the permit")
         )
 
-    has_valid_permit = active_permits.filter(
+    valid_permit_exists = active_permits.filter(
         vehicle__registration_number=registration_number
     ).exists()
-    if has_valid_permit:
+    if valid_permit_exists:
         raise CreatePermitError(
             _("User already has a valid permit for the given vehicle.")
         )
@@ -578,10 +578,19 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     ]:
         permit_status = ParkingPermitStatus.VALID
 
+    permit_id = permit.get("id")
+    # always update existing draft permit if it exists for the given vehicle
+    draft_permits = customer.permits.fixed_period().filter(
+        vehicle__registration_number=registration_number,
+        status__in=[ParkingPermitStatus.DRAFT, ParkingPermitStatus.PRELIMINARY],
+    )
+    if draft_permits.exists():
+        permit_id = draft_permits.first().id
+
     primary_vehicle = active_permits_count == 0
     # only create a new permit when it doesn't exist
     parking_permit, permit_created = ParkingPermit.objects.update_or_create(
-        pk=permit.get("id"),
+        pk=permit_id,
         defaults={
             "contract_type": ContractType.FIXED_PERIOD,
             "customer": customer,
