@@ -350,6 +350,7 @@ class OrderItemAdmin(admin.ModelAdmin):
     )
     raw_id_fields = ("permit", "order", "product", "subscription")
     list_display = (
+        "id",
         "order",
         "subscription",
         "product",
