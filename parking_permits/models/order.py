@@ -743,6 +743,7 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     quantity = models.IntegerField(_("Quantity"))
     start_time = models.DateTimeField(_("Start time"), null=True, blank=True)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
+    is_refunded = models.BooleanField(default=False, verbose_name=_("Is refunded"))
 
     serialize_fields = (
         {"name": "product", "accessor": lambda x: str(x)},

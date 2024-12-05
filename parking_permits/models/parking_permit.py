@@ -850,9 +850,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 totals_per_vat[vat] = {
                     "total": Decimal(0),
                     "orders": set(),
+                    "order_items": set(),
                 }
             totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
             totals_per_vat[vat]["orders"].add(order_item.order)
+            totals_per_vat[vat]["order_items"].add(order_item)
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
@@ -955,7 +957,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.get_unused_order_items_for_order(self.latest_order)
 
     def get_unused_order_items_for_open_ended_permit(self):
-        order_items = self.latest_order_items
+        order_items = self.latest_order_items.filter(is_refunded=False, permit=self)
         return [
             [
                 item,
@@ -983,6 +985,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date,
+            is_refunded=False,
             permit=self,
         ).order_by("start_time")
 

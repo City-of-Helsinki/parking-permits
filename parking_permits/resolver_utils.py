@@ -91,9 +91,11 @@ def create_fixed_period_refunds(
                 total_sums_per_vat[vat] = {
                     "total": Decimal(0),
                     "orders": set(),
+                    "order_items": set(),
                 }
             total_sums_per_vat[vat]["total"] += vat_data.get("total") or Decimal(0)
             total_sums_per_vat[vat]["orders"].update(vat_data.get("orders"))
+            total_sums_per_vat[vat]["order_items"].update(vat_data.get("order_items"))
 
     total_sum = sum([vat["total"] for vat in total_sums_per_vat.values()])
 
@@ -110,6 +112,10 @@ def create_fixed_period_refunds(
                     vat=vat,
                 )
             )
+            # mark the order items as refunded
+            for order_item in data["order_items"]:
+                order_item.is_refunded = True
+                order_item.save()
         if refunds:
             send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
