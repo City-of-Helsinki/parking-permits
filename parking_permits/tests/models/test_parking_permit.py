@@ -1182,7 +1182,7 @@ class ParkingPermitTestCase(TestCase):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.OPEN_ENDED,
-            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            start_time=timezone.make_aware(datetime(2024, 1, 11, 12, 0), pytz.UTC),
             end_time=timezone.make_aware(datetime(2024, 3, 10, 21, 59), pytz.UTC),
             month_count=1,
         )
@@ -1206,7 +1206,7 @@ class ParkingPermitTestCase(TestCase):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.OPEN_ENDED,
-            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            start_time=timezone.make_aware(datetime(2024, 1, 13, 12, 0), pytz.UTC),
             end_time=timezone.make_aware(datetime(2024, 10, 12, 20, 59), pytz.UTC),
             month_count=1,
         )

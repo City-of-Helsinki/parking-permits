@@ -136,30 +136,10 @@ def get_last_day_of_month(date: datetime):
 
 def increment_end_time(start_time, end_time, months=1):
     """
-    The logic for this function is as follows:
-    - If start_time is 1st of the month, always set end_time to next month's last day.
-    - If end_time is 28th or later, increment end_time by a month - 1 day.
-    - If end_time is 28th or later AND start_time is in February, set end_time start_time - 1 day.
-    - If end_time is end_time is between 1-27, increment end_time by a month.
+    Calculate the end time by adding `months` to the start time.
     """
-    existing_end_time = end_time
-    next_end_time = existing_end_time + relativedelta(months=1)
-
-    end_day = next_end_time.day
-    if existing_end_time.month == 2 and existing_end_time.day > 27:
-        end_day = get_last_day_of_month(next_end_time)
-        if next_end_time.day >= 28 and start_time.day > 1:
-            end_day = start_time.day - 1
-    if next_end_time.month == 2 and existing_end_time.day > 27:
-        end_day = get_last_day_of_month(next_end_time)
-    if existing_end_time.month in [4, 6, 9, 11] and existing_end_time.day == 30:
-        end_day = 31
-
-    end_time = end_time.astimezone(tz.get_default_timezone())
-    end_time += relativedelta(months=months)
-
-    end_time = end_time.replace(day=end_day)
-    return normalize_end_time(end_time)
+    month_diff = diff_months_floor(start_time, end_time + relativedelta(days=1))
+    return get_end_time(start_time, month_diff + months)
 
 
 def normalize_end_time(end_time):
