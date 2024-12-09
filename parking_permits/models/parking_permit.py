@@ -820,11 +820,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def renew_open_ended_permit(self):
         """Add month to open-ended permit after subscription renewal"""
+
         if self.contract_type != ContractType.OPEN_ENDED:
             raise ValueError("This permit is not open-ended so cannot be renewed")
-        self.end_time = increment_end_time(
-            self.start_time, self.end_time or self.current_period_end_time(), months=1
-        )
+        self.end_time = increment_end_time(self.start_time, self.end_time, months=1)
         self.save()
 
     def extend_permit(self, additional_months):
