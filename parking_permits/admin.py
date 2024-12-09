@@ -159,10 +159,6 @@ class ParkingPermitAdmin(admin.ModelAdmin):
     )
     list_filter = ("contract_type", "status")
     list_select_related = ("customer", "vehicle", "parking_zone")
-    ordering = (
-        "customer__first_name",
-        "customer__last_name",
-    )
     raw_id_fields = (
         "address",
         "customer",
@@ -227,6 +223,7 @@ class VehicleAdmin(admin.ModelAdmin):
 class RefundAdmin(admin.ModelAdmin):
     search_fields = ("name", "iban", "orders__id")
     list_display = (
+        "id",
         "name",
         "iban",
         "get_orders",
