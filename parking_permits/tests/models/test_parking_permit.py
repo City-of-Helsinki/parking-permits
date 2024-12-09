@@ -927,6 +927,7 @@ class ParkingPermitTestCase(TestCase):
             end_time=now + relativedelta(months=4, days=-1),
         )
         secondary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
             customer=primary.customer,
             primary_vehicle=False,
             end_time=now + relativedelta(months=1, days=-1),
