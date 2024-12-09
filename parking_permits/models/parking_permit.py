@@ -419,7 +419,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     @property
     def months_left(self):
         if self.is_open_ended:
-            return None
+            # if the open-ended permit is not yet started, return 1
+            return 1 if self.start_time > timezone.now() else None
         return self.month_count - self.months_used
 
     @property
@@ -430,6 +431,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_end_time(self):
+        if self.is_open_ended:
+            return self.end_time
         return self.current_period_end_time_with_fixed_months(self.months_used)
 
     @property
