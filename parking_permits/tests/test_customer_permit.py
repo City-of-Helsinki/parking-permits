@@ -9,7 +9,7 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext as _
 from freezegun import freeze_time
 
-from parking_permits.customer_permit import CustomerPermit
+from parking_permits.customer_permit import PRELIMINARY, CustomerPermit
 from parking_permits.exceptions import (
     InvalidContractType,
     InvalidUserAddress,
@@ -243,7 +243,7 @@ class GetCustomerPermitTestCase(TestCase):
         )
         ParkingPermitFactory(
             customer=self.customer_a,
-            status=DRAFT,
+            status=PRELIMINARY,
             primary_vehicle=False,
             parking_zone=self.zone,
             vehicle=self.vehicle_b,
@@ -264,7 +264,8 @@ class GetCustomerPermitTestCase(TestCase):
     @override_settings(TRAFICOM_MOCK=True)
     def test_customer_b_should_delete_draft_permit_that_is_created_before_today(self):
         query_set = ParkingPermit.objects.filter(
-            customer=self.customer_b, status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT]
+            customer=self.customer_b,
+            status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT, PRELIMINARY],
         )
         self.assertEqual(query_set.count(), 1)
         ParkingPermitFactory(
@@ -398,6 +399,9 @@ class DeleteCustomerPermitTestCase(TestCase):
         self.c_a_draft = ParkingPermitFactory(
             customer=self.customer_a, status=DRAFT, primary_vehicle=False
         )
+        self.c_a_preliminary = ParkingPermitFactory(
+            customer=self.customer_a, status=PRELIMINARY
+        )
         self.c_a_valid = ParkingPermitFactory(customer=self.customer_a, status=VALID)
         self.c_b_draft = ParkingPermitFactory(customer=self.customer_b, status=DRAFT)
 
@@ -416,6 +420,10 @@ class DeleteCustomerPermitTestCase(TestCase):
         result = CustomerPermit(self.customer_a.id).delete(self.c_a_draft.id)
         self.assertEqual(result, True)
 
+    def test_customer_a_can_delete_preliminary_permit(self):
+        result = CustomerPermit(self.customer_a.id).delete(self.c_a_preliminary.id)
+        self.assertEqual(result, True)
+
     def test_customer_a_can_not_delete_others_permit(self):
         with self.assertRaises(ObjectDoesNotExist):
             CustomerPermit(self.customer_a.id).delete(self.c_b_draft.id)
@@ -432,9 +440,11 @@ class UpdateCustomerPermitTestCase(TestCase):
             address=self.cus_a.primary_address,
             parking_zone=self.cus_a.primary_address.zone,
         )
-        self.c_a_can = ParkingPermitFactory(customer=self.cus_a, status=CLOSED)
+        self.c_a_closed = ParkingPermitFactory(customer=self.cus_a, status=CLOSED)
         self.c_b_valid = ParkingPermitFactory(customer=self.cus_b, status=VALID)
-        self.c_b_draft = ParkingPermitFactory(customer=self.cus_b, status=DRAFT)
+        self.c_b_preliminary = ParkingPermitFactory(
+            customer=self.cus_b, status=PRELIMINARY
+        )
         self.c_a_draft_sec = ParkingPermitFactory(
             customer=self.cus_a,
             status=DRAFT,
@@ -446,7 +456,7 @@ class UpdateCustomerPermitTestCase(TestCase):
     def test_can_not_update_others_permit(self):
         data = {"consent_low_emission_accepted": True}
         with self.assertRaises(ObjectDoesNotExist):
-            CustomerPermit(self.cus_a.id).update(data, self.c_b_draft.id)
+            CustomerPermit(self.cus_a.id).update(data, self.c_b_preliminary.id)
 
     def test_can_update_consent_low_emission_accepted_for_a_permit(self):
         data = {"consent_low_emission_accepted": True}
@@ -459,13 +469,19 @@ class UpdateCustomerPermitTestCase(TestCase):
     ):
         data = {"consent_low_emission_accepted": True}
         with self.assertRaises(ObjectDoesNotExist):
-            CustomerPermit(self.cus_a.id).update(data, self.c_a_can.id)
+            CustomerPermit(self.cus_a.id).update(data, self.c_a_closed.id)
+
+    def test_can_update_preliminary_permit(self):
+        data = {"consent_low_emission_accepted": True}
+        self.assertEqual(self.c_b_preliminary.consent_low_emission_accepted, False)
+        res = CustomerPermit(self.cus_b.id).update(data, self.c_b_preliminary.id)
+        self.assertEqual(res[0].consent_low_emission_accepted, True)
 
     def test_toggle_primary_vehicle_of_customer_a(self):
         data = {"primary_vehicle": True}
         self.assertEqual(self.c_a_draft.primary_vehicle, True)
         self.assertEqual(self.c_a_draft_sec.primary_vehicle, False)
-        pri, sec = CustomerPermit(self.cus_a.id).update(data, self.c_a_can.id)
+        pri, sec = CustomerPermit(self.cus_a.id).update(data, self.c_a_closed.id)
 
         # Check if they are same
         self.assertEqual(pri.id, self.c_a_draft.id)

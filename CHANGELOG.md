@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2024-12-09
+
+### Added
+
+- Add support for webshop permit preliminary status ([d8b3846](https://github.com/City-of-Helsinki/parking-permits/commit/d8b38460c1ef77d83cd05117308f1ed5ff1d4dc2))
+- Enable login for both Tunnistamo and KeyCloak ([3365134](https://github.com/City-of-Helsinki/parking-permits/commit/3365134237d0c4672a1b147d353a7bc4b00876db))
+- Add management command to change consent_low_emission_accepted to False ([03e440e](https://github.com/City-of-Helsinki/parking-permits/commit/03e440e703d422d53bae973d99b27f3fd0b5a1b5))
+- Allow StatusLog searches ([a7d35c2](https://github.com/City-of-Helsinki/parking-permits/commit/a7d35c2e9022c8abf6ac8cf66af35519dad0116c))
+- Add id to OrderItemAdmin list display ([021c8da](https://github.com/City-of-Helsinki/parking-permits/commit/021c8da55acad6c4256c7090d3e07d0d1934db6e))
+
+### Changed
+
+- Update OIDC auth accepted audience format to list ([3b81294](https://github.com/City-of-Helsinki/parking-permits/commit/3b81294ef2750a84e66b210be3972c04c4bc9807))
+- Update customer permit tests ([31128aa](https://github.com/City-of-Helsinki/parking-permits/commit/31128aa0ad39c4bd2752793f682bdf5c5591590d))
+- Update Django Admin search fields ([37bd5d9](https://github.com/City-of-Helsinki/parking-permits/commit/37bd5d960acae3b5331f61fc327f76294e8791b2))
+- Update existing draft permit if it exists ([c0ca12a](https://github.com/City-of-Helsinki/parking-permits/commit/c0ca12acfd6c56f1255754d61054099e6649b3b1))
+- Update permit renewal end time calculation ([a0d4528](https://github.com/City-of-Helsinki/parking-permits/commit/a0d4528da7a815e5350f3d08d2357508345c18a8))
+- Update Django Admin fields and ordering ([40257ca](https://github.com/City-of-Helsinki/parking-permits/commit/40257ca87dee3cbb243788829f3d31acbf5aa662))
+
+### Fixed
+
+- Fix a date bug where there might be gaps in days sent to Talpa ([3d1122c](https://github.com/City-of-Helsinki/parking-permits/commit/3d1122c42fcc3bbe9a6f7ef9c1069670dbc94e34))
+- Increase Gunicorn header size limit ([e2d9803](https://github.com/City-of-Helsinki/parking-permits/commit/e2d98030108d8d410dcd8ce9a4523ba319623a37))
+- Limit order items refunding to one time only ([81e4368](https://github.com/City-of-Helsinki/parking-permits/commit/81e43688f54274828d02d8e6ad5bc85036999e83))
+- Update open-ended permit months left calculation ([24a8e9e](https://github.com/City-of-Helsinki/parking-permits/commit/24a8e9ed6f7911a7faa439064cb7d82e838b1ffb))
+
 ## [1.4.0] - 2024-11-25
 
 ### Added

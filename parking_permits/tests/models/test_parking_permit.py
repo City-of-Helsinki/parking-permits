@@ -417,7 +417,7 @@ class ParkingZoneTestCase(TestCase):
         ]
         products = self._create_zone_products(self.zone_a, product_detail_list)
         start_time = timezone.make_aware(datetime(2021, 2, 15))
-        end_time = get_end_time(start_time, 10)  # ends at 2021-2-14, 23:59
+        end_time = get_end_time(start_time, 10)  # ends at 2021-12-14, 23:59
         permit = ParkingPermitFactory(
             parking_zone=self.zone_a,
             contract_type=ContractType.FIXED_PERIOD,
@@ -432,6 +432,12 @@ class ParkingZoneTestCase(TestCase):
         self.assertEqual(products_with_quantities[1][1], 2)
         self.assertEqual(products_with_quantities[2][0].id, products[2].id)
         self.assertEqual(products_with_quantities[2][1], 4)
+        total_quantity = (
+            products_with_quantities[0][1]
+            + products_with_quantities[1][1]
+            + products_with_quantities[2][1]
+        )
+        self.assertEqual(total_quantity, 10)
 
     @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
     def test_active_temporary_vehicles_active_in_time_range(self):
@@ -476,7 +482,7 @@ class ParkingZoneTestCase(TestCase):
         ]
         products = self._create_zone_products(self.zone_a, product_detail_list)
         start_time = timezone.make_aware(datetime(2021, 2, 15))
-        end_time = get_end_time(start_time, 10)  # ends at 2021-2-14, 23:59
+        end_time = get_end_time(start_time, 10)  # ends at 2021-12-14, 23:59
         permit = ParkingPermitFactory(
             parking_zone=self.zone_a,
             contract_type=ContractType.FIXED_PERIOD,
@@ -491,6 +497,12 @@ class ParkingZoneTestCase(TestCase):
         self.assertEqual(products_with_quantities[1][1], 3)
         self.assertEqual(products_with_quantities[2][0].id, products[2].id)
         self.assertEqual(products_with_quantities[2][1], 4)
+        total_quantity = (
+            products_with_quantities[0][1]
+            + products_with_quantities[1][1]
+            + products_with_quantities[2][1]
+        )
+        self.assertEqual(total_quantity, 10)
 
     def test_get_products_with_quantities_should_raise_error_when_products_does_not_cover_permit_duration(
         self,
@@ -915,6 +927,7 @@ class ParkingPermitTestCase(TestCase):
             end_time=now + relativedelta(months=4, days=-1),
         )
         secondary = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
             customer=primary.customer,
             primary_vehicle=False,
             end_time=now + relativedelta(months=1, days=-1),
@@ -1170,7 +1183,7 @@ class ParkingPermitTestCase(TestCase):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.OPEN_ENDED,
-            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            start_time=timezone.make_aware(datetime(2024, 1, 11, 12, 0), pytz.UTC),
             end_time=timezone.make_aware(datetime(2024, 3, 10, 21, 59), pytz.UTC),
             month_count=1,
         )
@@ -1194,7 +1207,7 @@ class ParkingPermitTestCase(TestCase):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.OPEN_ENDED,
-            start_time=timezone.make_aware(datetime(2024, 1, 1, 12, 0), pytz.UTC),
+            start_time=timezone.make_aware(datetime(2024, 1, 13, 12, 0), pytz.UTC),
             end_time=timezone.make_aware(datetime(2024, 10, 12, 20, 59), pytz.UTC),
             month_count=1,
         )

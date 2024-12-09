@@ -743,6 +743,7 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     quantity = models.IntegerField(_("Quantity"))
     start_time = models.DateTimeField(_("Start time"), null=True, blank=True)
     end_time = models.DateTimeField(_("End time"), blank=True, null=True)
+    is_refunded = models.BooleanField(default=False, verbose_name=_("Is refunded"))
 
     serialize_fields = (
         {"name": "product", "accessor": lambda x: str(x)},
@@ -808,6 +809,16 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     def timeframe(self):
         if self.start_time and self.end_time:
             start_time = tz.localtime(self.start_time).strftime(DATE_FORMAT)
+            end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
+            return f"{start_time} - {end_time}"
+        return ""
+
+    def adjusted_timeframe(self, start_time):
+        """
+        Custom timeframe used to make sure subsequent order items don't have gaps in days
+        """
+        if start_time and self.end_time:
+            start_time = tz.localtime(start_time).strftime(DATE_FORMAT)
             end_time = tz.localtime(self.end_time).strftime(DATE_FORMAT)
             return f"{start_time} - {end_time}"
         return ""

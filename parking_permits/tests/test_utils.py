@@ -367,6 +367,16 @@ class DiffMonthsFloorTestCase(TestCase):
         self.assertEqual(diff_months_floor(date(2021, 10, 15), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_floor(date(2021, 12, 1), date(2021, 10, 1)), 0)
         self.assertEqual(diff_months_floor(date(2021, 1, 1), date(2021, 1, 1)), 0)
+        self.assertEqual(diff_months_floor(date(2024, 1, 31), date(2024, 2, 29)), 1)
+        self.assertEqual(diff_months_floor(date(2024, 1, 31), date(2024, 3, 1)), 1)
+        self.assertEqual(diff_months_floor(date(2024, 1, 31), date(2024, 2, 28)), 0)
+        self.assertEqual(diff_months_floor(date(2025, 1, 31), date(2025, 2, 28)), 1)
+        self.assertEqual(diff_months_floor(date(2025, 1, 30), date(2025, 2, 28)), 1)
+        self.assertEqual(diff_months_floor(date(2025, 1, 29), date(2025, 2, 28)), 1)
+        self.assertEqual(diff_months_floor(date(2025, 1, 28), date(2025, 2, 28)), 1)
+        self.assertEqual(diff_months_floor(date(2025, 1, 27), date(2025, 2, 28)), 1)
+        self.assertEqual(diff_months_floor(date(2025, 2, 1), date(2025, 2, 28)), 0)
+        self.assertEqual(diff_months_floor(date(2025, 2, 1), date(2025, 3, 1)), 1)
 
 
 class DiffMonthsCeilTestCase(TestCase):

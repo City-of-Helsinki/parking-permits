@@ -419,7 +419,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     @property
     def months_left(self):
         if self.is_open_ended:
-            return None
+            # if the open-ended permit is not yet started, return 1
+            return 1 if self.start_time > timezone.now() else None
         return self.month_count - self.months_used
 
     @property
@@ -430,6 +431,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_end_time(self):
+        if self.is_open_ended:
+            return self.end_time
         return self.current_period_end_time_with_fixed_months(self.months_used)
 
     @property
@@ -820,11 +823,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def renew_open_ended_permit(self):
         """Add month to open-ended permit after subscription renewal"""
+
         if self.contract_type != ContractType.OPEN_ENDED:
             raise ValueError("This permit is not open-ended so cannot be renewed")
-        self.end_time = increment_end_time(
-            self.start_time, self.end_time or self.current_period_end_time(), months=1
-        )
+        self.end_time = increment_end_time(self.start_time, self.end_time, months=1)
         self.save()
 
     def extend_permit(self, additional_months):
@@ -850,9 +852,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 totals_per_vat[vat] = {
                     "total": Decimal(0),
                     "orders": set(),
+                    "order_items": set(),
                 }
             totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
             totals_per_vat[vat]["orders"].add(order_item.order)
+            totals_per_vat[vat]["order_items"].add(order_item)
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
@@ -955,7 +959,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.get_unused_order_items_for_order(self.latest_order)
 
     def get_unused_order_items_for_open_ended_permit(self):
-        order_items = self.latest_order_items
+        order_items = self.latest_order_items.filter(is_refunded=False, permit=self)
         return [
             [
                 item,
@@ -983,6 +987,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date,
+            is_refunded=False,
             permit=self,
         ).order_by("start_time")
 

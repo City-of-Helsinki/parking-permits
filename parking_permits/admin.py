@@ -1,6 +1,8 @@
+from django.contrib.admin.sites import NotRegistered
 from django.contrib.gis import admin
 from django.urls import reverse
 from django.utils.html import format_html
+from django_db_logger.models import StatusLog
 
 from parking_permits.models import (
     Address,
@@ -28,7 +30,14 @@ from parking_permits.models.vehicle import VehiclePowerType, VehicleUser
 
 @admin.register(Address)
 class AddressAdmin(admin.GISModelAdmin):
-    search_fields = ("street_name", "street_name_sv", "city", "city_sv")
+    search_fields = (
+        "id",
+        "street_name",
+        "street_name_sv",
+        "city",
+        "city_sv",
+        "postal_code",
+    )
     list_display = (
         "id",
         "street_name",
@@ -47,6 +56,7 @@ class AddressAdmin(admin.GISModelAdmin):
 
 @admin.register(Announcement)
 class AnnouncementAdmin(admin.ModelAdmin):
+    search_fields = ("id", "subject_en", "subject_fi", "subject_sv")
     list_display = (
         "id",
         "subject_en",
@@ -67,7 +77,13 @@ class CompanyAdmin(admin.ModelAdmin):
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    search_fields = ("first_name", "last_name")
+    search_fields = (
+        "id",
+        "first_name",
+        "last_name",
+        "national_id_number",
+        "email",
+    )
     list_display = (
         "__str__",
         "id",
@@ -90,7 +106,11 @@ class DrivingClassAdmin(admin.ModelAdmin):
 
 @admin.register(DrivingLicence)
 class DrivingLicenceAdmin(admin.ModelAdmin):
-    search_fields = ("customer__first_name", "customer__last_name")
+    search_fields = (
+        "customer__first_name",
+        "customer__last_name",
+        "customer__national_id_number",
+    )
     list_display = ("id", "customer", "start_date", "end_date", "active")
     list_select_related = ("customer",)
 
@@ -139,10 +159,6 @@ class ParkingPermitAdmin(admin.ModelAdmin):
     )
     list_filter = ("contract_type", "status")
     list_select_related = ("customer", "vehicle", "parking_zone")
-    ordering = (
-        "customer__first_name",
-        "customer__last_name",
-    )
     raw_id_fields = (
         "address",
         "customer",
@@ -163,6 +179,7 @@ class ParkingPermitAdmin(admin.ModelAdmin):
 class ParkingPermitEventAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     search_fields = (
+        "parking_permit__id",
         "parking_permit__customer__first_name",
         "parking_permit__customer__last_name",
         "parking_permit__customer__national_id_number",
@@ -178,6 +195,7 @@ class ParkingPermitEventAdmin(admin.ModelAdmin):
 
 @admin.register(ParkingZone)
 class ParkingZoneAdmin(admin.GISModelAdmin):
+    search_fields = ("name", "description", "description_sv")
     list_display = ("id", "name", "description", "description_sv")
     ordering = ("name",)
 
@@ -203,7 +221,9 @@ class VehicleAdmin(admin.ModelAdmin):
 
 @admin.register(Refund)
 class RefundAdmin(admin.ModelAdmin):
+    search_fields = ("name", "iban", "orders__id")
     list_display = (
+        "id",
         "name",
         "iban",
         "get_orders",
@@ -250,6 +270,7 @@ class AccountingAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    search_fields = ("zone__name",)
     list_display = (
         "zone",
         "type",
@@ -271,6 +292,14 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
+    search_fields = (
+        "id",
+        "customer__last_name",
+        "customer__first_name",
+        "customer__national_id_number",
+        "talpa_order_id",
+        "vehicles",
+    )
     list_filter = ("status", "type")
     list_display = (
         "id",
@@ -281,18 +310,13 @@ class OrderAdmin(admin.ModelAdmin):
         "parking_zone_name",
         "vehicles",
         "get_vat_percents",
+        "talpa_order_id",
     )
     list_select_related = ("customer",)
     readonly_fields = (
         "talpa_order_id",
         "total_payment_price",
         "get_vat_percents",
-    )
-    search_fields = (
-        "customer__last_name",
-        "customer__first_name",
-        "customer__national_id_number",
-        "talpa_order_id",
     )
     raw_id_fields = (
         "customer",
@@ -313,8 +337,17 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
+    search_fields = (
+        "id",
+        "order__id",
+        "talpa_order_item_id",
+        "order__talpa_order_id",
+        "subscription__talpa_subscription_id",
+        "permit__id",
+    )
     raw_id_fields = ("permit", "order", "product", "subscription")
     list_display = (
+        "id",
         "order",
         "subscription",
         "product",
@@ -323,6 +356,7 @@ class OrderItemAdmin(admin.ModelAdmin):
         "payment_unit_price",
         "quantity",
         "get_vat_percent",
+        "talpa_order_item_id",
     )
     list_select_related = ("order", "subscription", "product", "permit")
     readonly_fields = ("talpa_order_item_id",)
@@ -335,21 +369,26 @@ class OrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(ParkingPermitExtensionRequest)
 class ParkingPermitExtensionRequestAdmin(admin.ModelAdmin):
-    raw_id_fields = ("permit", "order")
-    list_filter = ("status",)
-    ordering = ("-created_at",)
     search_fields = (
         "permit__id",
         "permit__customer__first_name",
         "permit__customer__last_name",
         "permit__vehicle__registration_number",
     )
+    raw_id_fields = ("permit", "order")
+    list_filter = ("status",)
+    ordering = ("-created_at",)
     list_display = ("permit", "status", "month_count")
     list_select_related = True
 
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
+    search_fields = (
+        "id",
+        "talpa_subscription_id",
+        "order_items__talpa_order_item_id",
+    )
     list_filter = ("status",)
     list_display = (
         "id",
@@ -374,7 +413,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(TemporaryVehicle)
 class TemporaryVehicleAdmin(admin.ModelAdmin):
+    search_fields = ("id", "vehicle__registration_number")
     list_display = (
+        "id",
         "vehicle",
         "start_time",
         "end_time",
@@ -385,9 +426,30 @@ class TemporaryVehicleAdmin(admin.ModelAdmin):
 
 @admin.register(VehicleUser)
 class VehicleUserAdmin(admin.ModelAdmin):
+    search_fields = (
+        "national_id_number",
+        "vehicles__registration_number",
+    )
     list_display = ("national_id_number", "get_vehicles")
     ordering = ("national_id_number",)
 
     @admin.display(description="Vehicles")
     def get_vehicles(self, obj):
         return [vehicle.registration_number for vehicle in obj.vehicles.all()]
+
+
+# Importing the default StatusLogAdmin will automatically register the StatusLog model
+from django_db_logger.admin import StatusLogAdmin  # noqa: F401, E402
+
+# Unregister the StatusLog model from the admin site registry
+try:
+    admin.site.unregister(StatusLog)
+except NotRegistered:
+    pass
+
+
+# Create application specific StatusLogAdmin
+@admin.register(StatusLog)
+class ParkingPermitsStatusLogAdmin(StatusLogAdmin):
+    search_fields = ("msg",)  # Add search field for the message
+    list_per_page = 30
