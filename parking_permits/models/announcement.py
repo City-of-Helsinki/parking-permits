@@ -13,6 +13,7 @@ class Announcement(UserStampedModelMixin, TimestampedModelMixin):
     subject_sv = models.CharField(_("Subject (SV)"), max_length=255)
     content_sv = models.TextField(_("Content (SV)"))
     _parking_zones = models.ManyToManyField(ParkingZone, "announcements")
+    emails_handled = models.BooleanField(_("Emails handled"), default=False)
 
     @property
     def parking_zones(self):

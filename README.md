@@ -73,3 +73,8 @@ pip-sync requirements.txt requirements-dev.txt
     ```bash
     fd --extension py | entr -c docker-compose exec graphql-api pytest
     ```
+
+## Testing emails locally with [Mailpit](https://github.com/axllent/mailpit)
+- Start Mailpit with `docker compose up mailpit`
+- In your `.env` file, set `EMAIL_HOST=0.0.0.0`, `EMAIL_PORT=1025` and `DEBUG_MAILPIT=True`
+- Emails sent by the application will be visible in Mailpit's web interface at [localhost:8025](http://localhost:8025)

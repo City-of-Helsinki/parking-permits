@@ -88,7 +88,7 @@ from .services.dvv import get_person_info
 from .services.mail import (
     PermitEmailType,
     RefundEmailType,
-    send_announcement_email,
+    send_announcement_emails,
     send_permit_email,
     send_refund_email,
     send_vehicle_low_emission_discount_email,
@@ -1428,7 +1428,7 @@ def post_create_announcement(announcement: Announcement):
         .distinct()
     )
     customers = Customer.objects.filter(id__in=customer_ids)
-    send_announcement_email(customers, announcement)
+    send_announcement_emails(customers, announcement)
 
 
 @mutation.field("createAnnouncement")
@@ -1450,8 +1450,6 @@ def resolve_create_announcement(obj, info, announcement):
         new_announcement._parking_zones.set(
             ParkingZone.objects.filter(name__in=announcement["parking_zones"])
         )
-
-    post_create_announcement(new_announcement)
 
     return {"success": True}
 
