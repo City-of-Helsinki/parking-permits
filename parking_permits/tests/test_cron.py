@@ -233,7 +233,9 @@ class CronTestCase(TestCase):
         product = ProductFactory(
             unit_price=unit_price,
         )
-        order = OrderFactory(customer=self.customer, status=OrderStatus.CONFIRMED)
+        order = OrderFactory(
+            customer=self.customer, status=OrderStatus.CONFIRMED, talpa_order_id=None
+        )
         OrderItemFactory(
             order=order,
             permit=permit_1,
