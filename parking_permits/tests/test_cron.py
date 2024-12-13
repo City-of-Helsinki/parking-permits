@@ -382,9 +382,9 @@ class AnnouncementEmailHandlingTestCase(TestCase):
         self.zone_b = ParkingZoneFactory(name="B")
         self.zone_c = ParkingZoneFactory(name="C")
         self.announcement = AnnouncementFactory(subject_en="Test announcement")
-        self.customer_1 = CustomerFactory(zone=self.zone_a, email="test@mail.com")
-        self.customer_2 = CustomerFactory(zone=self.zone_b, email="test2@mail.com")
-        self.customer_3 = CustomerFactory(zone=self.zone_c, email="test3@mail.com")
+        self.customer_1 = CustomerFactory(email="test@mail.com")
+        self.customer_2 = CustomerFactory(email="test2@mail.com")
+        self.customer_3 = CustomerFactory(email="test3@mail.com")
 
         self.customer_1_permit_1 = ParkingPermitFactory(
             customer=self.customer_1,

@@ -28,7 +28,7 @@ def handle_announcement_emails():
     logger.info(f"Found unhandled announcements: {announcements.count()}")
     for announcement in announcements:
         customers = Customer.objects.filter(
-            zone__in=announcement.parking_zones.all(),
+            permits__parking_zone__in=announcement.parking_zones.all(),
             permits__status=ParkingPermitStatus.VALID,
         ).distinct()
         logger.info(
