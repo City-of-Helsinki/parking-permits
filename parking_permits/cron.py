@@ -30,7 +30,7 @@ def handle_announcement_emails():
         customers = Customer.objects.filter(
             zone__in=announcement.parking_zones.all(),
             permits__status=ParkingPermitStatus.VALID,
-        )
+        ).distinct()
         logger.info(
             f"Found {customers.count()} customers for announcement {announcement.pk}"
         )

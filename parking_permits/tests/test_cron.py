@@ -401,6 +401,11 @@ class AnnouncementEmailHandlingTestCase(TestCase):
             parking_zone=self.zone_c,
             status=ParkingPermitStatus.CANCELLED,
         )
+        self.customer_1_permit_4 = ParkingPermitFactory(
+            customer=self.customer_1,
+            parking_zone=self.zone_a,
+            status=ParkingPermitStatus.VALID,
+        )
 
         self.customer_2_permit_1 = ParkingPermitFactory(
             customer=self.customer_2,
