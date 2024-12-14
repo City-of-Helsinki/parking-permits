@@ -64,6 +64,7 @@ class AnnouncementAdmin(admin.ModelAdmin):
         "subject_sv",
         "created_at",
         "created_by",
+        "emails_handled",
     )
     ordering = ("-created_at",)
 
