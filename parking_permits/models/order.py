@@ -684,6 +684,9 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 vat=(order.vat if order.vat else DEFAULT_VAT),
                 description=f"Refund for ending permit {str(permit.id)}",
             )
+            # Mark the order item as refunded
+            order_item.is_refunded = True
+            order_item.save()
             send_refund_email(RefundEmailType.CREATED, permit.customer, [refund])
             logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
