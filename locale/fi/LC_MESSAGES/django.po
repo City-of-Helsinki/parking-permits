@@ -594,7 +594,7 @@ msgid "Unit price"
 msgstr "Tuotteen hinta"
 
 msgid "Payment unit price"
-msgstr "Maksun tuotteen hinta"
+msgstr "Maksun hinta"
 
 msgid "Quantity"
 msgstr "Määrä"
