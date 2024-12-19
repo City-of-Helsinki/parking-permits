@@ -18,7 +18,7 @@ class Command(BaseCommand):
         ).select_related("power_type")
         i = 0
         for vehicle in vehicles:
-            if not vehicle.power_type.is_electric():
+            if not vehicle.power_type.is_electric:
                 vehicle.consent_low_emission_accepted = False
                 if not dry_run:
                     vehicle.save()

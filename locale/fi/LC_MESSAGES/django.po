@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-22 08:50+0200\n"
+"POT-Creation-Date: 2024-12-13 08:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -407,6 +407,9 @@ msgstr "Otsikko (SV)"
 msgid "Content (SV)"
 msgstr "Sisältö (SV)"
 
+msgid "Emails handled"
+msgstr "Sähköpostit käsitelty"
+
 msgid "Company name"
 msgstr "Yrityksen nimi"
 
@@ -591,10 +594,13 @@ msgid "Unit price"
 msgstr "Tuotteen hinta"
 
 msgid "Payment unit price"
-msgstr "Maksun tuotteen hinta"
+msgstr "Maksun hinta"
 
 msgid "Quantity"
 msgstr "Määrä"
+
+msgid "Is refunded"
+msgstr "Palautettu"
 
 msgid "Order item"
 msgstr "Tilausrivi"

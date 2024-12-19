@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-11-22 08:50+0200\n"
+"POT-Creation-Date: 2024-12-13 08:15+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -403,6 +403,9 @@ msgstr "Ämne (SV)"
 msgid "Content (SV)"
 msgstr "Innehåll (SV)"
 
+msgid "Emails handled"
+msgstr "E-post hanterad"
+
 msgid "Company name"
 msgstr "Företagets namn"
 
@@ -591,6 +594,9 @@ msgstr "Pris"
 
 msgid "Quantity"
 msgstr "Antal"
+
+msgid "Is refunded"
+msgstr "Återbetalad"
 
 msgid "Order item"
 msgstr "Beställningsrad"

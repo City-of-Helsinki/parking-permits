@@ -5,18 +5,39 @@ from django.db.models import Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
-from parking_permits.models import Customer, ParkingPermit
+from parking_permits.models import Announcement, Customer, ParkingPermit
 from parking_permits.models.order import SubscriptionCancelReason
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermitEndType,
     ParkingPermitStatus,
 )
-from parking_permits.services.mail import PermitEmailType, send_permit_email
+from parking_permits.services.mail import (
+    PermitEmailType,
+    send_announcement_emails,
+    send_permit_email,
+)
 from parking_permits.services.parkkihubi import sync_with_parkkihubi
 
 logger = logging.getLogger("django")
 db_logger = logging.getLogger("db")
+
+
+def handle_announcement_emails():
+    announcements = Announcement.objects.filter(emails_handled=False)
+    logger.info(f"Found unhandled announcements: {announcements.count()}")
+    for announcement in announcements:
+        customers = Customer.objects.filter(
+            permits__parking_zone__in=announcement.parking_zones.all(),
+            permits__status=ParkingPermitStatus.VALID,
+        ).distinct()
+        logger.info(
+            f"Found {customers.count()} customers for announcement {announcement.pk}"
+        )
+        send_announcement_emails(customers, announcement)
+        announcement.emails_handled = True
+        announcement.save()
+        logger.info(f"Announcement {announcement.pk} emails handled")
 
 
 def automatic_expiration_of_permits():

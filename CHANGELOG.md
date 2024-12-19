@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2024-12-19
+
+### Added
+
+- Add emails_handled-flag to AnnouncementAdmin ([39e0b0c](https://github.com/City-of-Helsinki/parking-permits/commit/39e0b0cdfe55fae55ec2aef7707ba01ad0f3bf83))
+- Add more logging to Talpa PaymentView ([7e7b612](https://github.com/City-of-Helsinki/parking-permits/commit/7e7b6123cc7ff4d149b5c03bf55c8ad57fd218b0))
+- Improve permit automatic expiration tests ([e4f3334](https://github.com/City-of-Helsinki/parking-permits/commit/e4f3334e43a93b349ef0429ab50e25f5864da886))
+
+### Changed
+
+- Handle announcement emails from management command ([337b3a4](https://github.com/City-of-Helsinki/parking-permits/commit/337b3a4ddc15516c751dd72a512f70322d73d6ab))
+
+### Fixed
+
+- Fix issue with low emission consent command ([6a1e816](https://github.com/City-of-Helsinki/parking-permits/commit/6a1e81645c83d62c1786e1c8da000e3b786b17bf))
+- Mark open-ended order items as refunded first time ([97e17bb](https://github.com/City-of-Helsinki/parking-permits/commit/97e17bbeaab16cf200d385f3e3f4a3160486a63c))
+- Update to use next vehicle in new order ([b3ed47a](https://github.com/City-of-Helsinki/parking-permits/commit/b3ed47ae6526c2004acf175c42d1dd88c6c792fb))
+
 ## [1.5.0] - 2024-12-09
 
 ### Added

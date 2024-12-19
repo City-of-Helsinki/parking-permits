@@ -317,7 +317,8 @@ class OrderManager(SerializableMixin.SerializableManager):
             new_order.save()
 
         for permit in customer_permits:
-            new_order.vehicles.append(permit.vehicle.registration_number)
+            vehicle = permit.next_vehicle if permit.next_vehicle else permit.vehicle
+            new_order.vehicles.append(vehicle.registration_number)
             new_order.save()
             start_date = tz.localdate(permit.next_period_start_time)
             end_date = tz.localdate(permit.end_time)
@@ -354,7 +355,6 @@ class OrderManager(SerializableMixin.SerializableManager):
                         "Error on product date ranges or order item date ranges"
                     )
 
-                vehicle = permit.next_vehicle if permit.next_vehicle else permit.vehicle
                 is_low_emission = vehicle.is_low_emission
                 unit_price = product.get_modified_unit_price(
                     is_low_emission, permit.is_secondary_vehicle
@@ -684,6 +684,9 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 vat=(order.vat if order.vat else DEFAULT_VAT),
                 description=f"Refund for ending permit {str(permit.id)}",
             )
+            # Mark the order item as refunded
+            order_item.is_refunded = True
+            order_item.save()
             send_refund_email(RefundEmailType.CREATED, permit.customer, [refund])
             logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
