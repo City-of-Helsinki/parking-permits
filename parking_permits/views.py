@@ -496,6 +496,10 @@ class PaymentView(APIView):
                 ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
                 sync_with_parkkihubi(ext_request.permit)
                 send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+                logger.info(
+                    f"Permit {ext_request.permit.pk} extended, new permit validity period is:"
+                    f" {ext_request.permit.start_time} - {ext_request.permit.end_time}"
+                )
 
             contract_type = ""
             for permit in order.permits.all():
@@ -506,6 +510,10 @@ class PaymentView(APIView):
                 if order.type == OrderType.SUBSCRIPTION_RENEWED:
                     permit.renew_open_ended_permit()
                     send_permit_email(PermitEmailType.UPDATED, permit)
+                    logger.info(
+                        f"Permit {permit.pk} renewed, new permit validity period is:"
+                        f" {permit.start_time} - {permit.end_time}"
+                    )
 
                 if order.type == OrderType.VEHICLE_CHANGED:
                     if (
@@ -521,6 +529,9 @@ class PaymentView(APIView):
                         permit.next_vehicle = None
                         permit.save()
                         send_permit_email(PermitEmailType.UPDATED, permit)
+                    logger.info(
+                        f"Permit {permit.pk} vehicle changed to: {permit.vehicle.registration_number}"
+                    )
 
                 if order.type == OrderType.ADDRESS_CHANGED:
                     if (
@@ -537,10 +548,14 @@ class PaymentView(APIView):
                     permit.next_address = None
                     permit.save()
                     send_permit_email(PermitEmailType.UPDATED, permit)
+                    logger.info(
+                        f"Permit {permit.pk} address changed to: {permit.address}"
+                    )
 
                 if order.type == OrderType.CREATED:
                     permit.save()
                     send_permit_email(PermitEmailType.CREATED, permit)
+                    logger.info(f"Permit {permit.pk} created")
 
                 if (
                     permit.consent_low_emission_accepted
