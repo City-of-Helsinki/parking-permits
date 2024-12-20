@@ -1226,6 +1226,31 @@ class ParkingPermitTestCase(TestCase):
             "2024-11-12T23:59:59.999999+02:00",
         )
 
+    @freeze_time("2024-10-05")
+    def test_renew_parking_permit_with_already_shifted_end_date(self):
+        # Test that the end date is not shifted again if it has already been shifted
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=timezone.make_aware(datetime(2024, 1, 10, 12, 0), pytz.UTC),
+            end_time=timezone.make_aware(datetime(2024, 10, 8, 20, 59), pytz.UTC),
+            month_count=1,
+        )
+
+        permit.renew_open_ended_permit()
+        permit.refresh_from_db()
+
+        # should be 23:59 Helsinki time i.e. UTC + 2 hours
+        self.assertEqual(
+            permit.end_time.isoformat(),
+            "2024-11-09T21:59:59.999999+00:00",
+        )
+
+        self.assertEqual(
+            timezone.localtime(permit.end_time).isoformat(),
+            "2024-11-09T23:59:59.999999+02:00",
+        )
+
     @freeze_time("2024-3-15 9:00+02:00")
     @override_settings(TIME_ZONE="Europe/Helsinki")
     def test_parse_temporary_vehicle_times(self):
