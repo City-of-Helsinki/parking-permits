@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2024-12-20
+
+### Fixed
+
+- Enhance open-ended permit end time calculation ([75f7006](https://github.com/City-of-Helsinki/parking-permits/commit/75f7006073a3bbe0b052743b9b7ab8441ccdcfc2))
+
 ## [1.6.0] - 2024-12-19
 
 ### Added
