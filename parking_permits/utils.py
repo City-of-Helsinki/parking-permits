@@ -18,6 +18,8 @@ from pytz import utc
 
 HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
 
+PERMIT_END_TIME_SHIFT_TOLERANCE = relativedelta(days=5)
+
 Currency = Optional[Union[str, float, Decimal]]
 
 
@@ -138,7 +140,9 @@ def increment_end_time(start_time, end_time, months=1):
     """
     Calculate the end time by adding `months` to the start time.
     """
-    month_diff = diff_months_floor(start_time, end_time + relativedelta(days=1))
+    month_diff = diff_months_floor(
+        start_time, end_time + PERMIT_END_TIME_SHIFT_TOLERANCE
+    )
     return get_end_time(start_time, month_diff + months)
 
 
