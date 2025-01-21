@@ -817,6 +817,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
         ):
             self.status = ParkingPermitStatus.CLOSED
+            self.temp_vehicles.update(is_active=False, end_time=end_time)
 
         self.cancel_extension_requests()
         self.save()

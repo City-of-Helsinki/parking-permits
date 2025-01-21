@@ -472,6 +472,160 @@ class ParkingZoneTestCase(TestCase):
         permit.temp_vehicles.add(vehicle)
         self.assertEqual(permit.active_temporary_vehicle, None)
 
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_temporary_vehicle_changed_inactive_when_ending_immediately(self):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.IMMEDIATELY)
+
+        self.assertFalse(permit.temp_vehicles.first().is_active)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_temporary_vehicle_changed_inactive_when_ending_previous_day_end(self):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.PREVIOUS_DAY_END)
+
+        self.assertFalse(permit.temp_vehicles.first().is_active)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
+    def test_temporary_vehicle_not_inactivated_immediately_when_ending_after_current_period(
+        self,
+    ):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.AFTER_CURRENT_PERIOD)
+
+        self.assertTrue(permit.temp_vehicles.first().is_active)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 2, 2)))
+    def test_temporary_vehicle_end_time_stays_original(self):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.AFTER_CURRENT_PERIOD)
+
+        self.assertEqual(
+            permit.temp_vehicles.first().end_time, start_time + timedelta(weeks=2)
+        )
+
+    @freeze_time(timezone.make_aware(datetime(2024, 2, 2)))
+    def test_temporary_vehicle_end_time_changed_to_permit_end_time_if_ended_previous_day_end(
+        self,
+    ):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.PREVIOUS_DAY_END)
+
+        previous_day = timezone.localtime() - timezone.timedelta(days=1)
+        previous_day_end = previous_day.replace(
+            hour=23,
+            minute=59,
+            second=59,
+            microsecond=999999,
+        )
+
+        self.assertEqual(permit.temp_vehicles.first().end_time, previous_day_end)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 2, 2)))
+    def test_temporary_vehicle_end_time_changed_to_permit_end_time_if_ended_immediately(
+        self,
+    ):
+        start_time = timezone.make_aware(datetime(2024, 2, 1))
+        end_time = get_end_time(start_time, 6)
+
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=6,
+        )
+
+        vehicle = TemporaryVehicleFactory(
+            start_time=start_time,
+            end_time=start_time + timedelta(weeks=2),
+            is_active=True,
+        )
+        permit.temp_vehicles.add(vehicle)
+
+        permit.end_permit(ParkingPermitEndType.IMMEDIATELY)
+
+        self.assertEqual(permit.temp_vehicles.first().end_time, permit.end_time)
+
     def test_get_products_with_quantities_should_return_products_with_quantities_for_fix_period_with_mid_month_start(
         self,
     ):
