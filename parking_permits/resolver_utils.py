@@ -173,9 +173,10 @@ def end_permit(
 
     Ends Subscription for open ended permit and issues refund if applicable.
 
-    Any active temporary vehicles are deactivated.
-
     Parkkihubi is updated with new status.
+
+    Any active temporary vehicles are deactivated in permit.end_permit()
+    if end_type in [IMMEDIATELY, PREVIOUS_DAY_END]
     """
     if permit.is_open_ended:
         if subscription := (
@@ -198,8 +199,6 @@ def end_permit(
                 .exists()
             ):
                 order.cancel(cancel_from_talpa=cancel_from_talpa)
-
-    permit.temp_vehicles.update(is_active=False)
 
     if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
         send_vehicle_low_emission_discount_email(
