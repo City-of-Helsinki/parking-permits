@@ -932,7 +932,7 @@ class ParkingPermitTestCase(TestCase):
             primary_vehicle=False,
             end_time=now + relativedelta(months=1, days=-1),
         )
-        self.assertEqual(secondary.max_extension_month_count, 2)
+        self.assertEqual(secondary.max_extension_month_count, 3)
 
     def test_max_extension_month_count_for_secondary_vehicle_zero(self):
         now = timezone.now()
