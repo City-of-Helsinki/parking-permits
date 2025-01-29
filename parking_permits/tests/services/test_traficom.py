@@ -801,7 +801,7 @@ class TestTraficom(TestCase):
                 nedc_max_emission_limit=37,
                 wltp_max_emission_limit=50,
                 start_date=datetime.datetime(2024, 1, 1),
-                end_date=datetime.datetime(2024, 12, 31),
+                end_date=datetime.datetime(3000, 12, 31),
                 euro_min_class_limit=6,
             )
             vehicle = self.traficom.fetch_vehicle_details("111-500")
