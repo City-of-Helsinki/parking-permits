@@ -1040,6 +1040,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             permit_end_date = timezone.localdate(self.end_time)
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
 
+    def get_currently_active_product(self):
+        """Use if multiple products for single zone, gets
+        the one that's currently active"""
+
+        current_time = timezone.now()
+        return self.get_products_for_resident().get_for_date(current_time)
+
 
 class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
     class EventType(models.TextChoices):

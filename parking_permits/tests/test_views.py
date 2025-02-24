@@ -489,6 +489,66 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         self.assertEqual(response.data.get("userId"), self.user_id)
         self.assertNotEqual(response.data.get("errorMessage"), "")
 
+    @freeze_time(tz.make_aware(datetime.datetime(2025, 2, 24, 0, 22)))
+    def test_resolve_price_view_should_return_correct_product_if_price_changes(
+        self,
+    ):
+        # Original product
+        unit_price = Decimal(60)
+        low_emission_discount = Decimal(0.25)
+        start_date = datetime.date(2024, 1, 1)
+        end_date = datetime.date(2024, 11, 30)
+
+        zone_d = ParkingZoneFactory(name="D")
+        product_detail_list = [[(start_date, end_date), unit_price]]
+        self.create_product_for_zone(
+            zone_d, product_detail_list, low_emission_discount, self.talpa_product_id
+        )
+
+        # Price change for the product 1.12.
+        unit_price = Decimal(64.50)
+        low_emission_discount = Decimal(0.25)
+        start_date = datetime.date(2024, 12, 1)
+        end_date = datetime.date(2025, 12, 31)
+
+        product_detail_list = [[(start_date, end_date), unit_price]]
+        self.create_product_for_zone(
+            zone_d,
+            product_detail_list,
+            low_emission_discount,
+            "e490e13e-ecd1-4f4f-8e26-a29a5de42b81",
+        )
+
+        # Permit
+        permit_start_time = datetime.datetime(
+            2024, 1, 20, 14, 26, 0, tzinfo=HELSINKI_TZ
+        )
+        permit_end_time = datetime.datetime(2025, 2, 19, 23, 59, 0, tzinfo=HELSINKI_TZ)
+
+        permit = ParkingPermitFactory(
+            id=self.permit_id,
+            parking_zone=zone_d,
+            # vehicle=vehicle,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=permit_start_time,
+            end_time=permit_end_time,
+            month_count=1,
+            primary_vehicle=True,
+        )
+
+        url = reverse("parking_permits:talpa-price")
+        data = self.prepare_request_data(
+            permit,
+            self.talpa_order_id,
+            self.talpa_order_item_id,
+            self.talpa_subscription_id,
+            self.user_id,
+        )
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data.get("priceGross"), "64.50")
+
 
 class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
     def test_resolve_product_view_should_return_bad_request_if_subscription_id_missing(
