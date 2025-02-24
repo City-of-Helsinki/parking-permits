@@ -305,17 +305,11 @@ class TalpaResolvePrice(APIView):
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
-            products_with_quantity = permit.get_products_with_quantities()
-            if not products_with_quantity:
-                return bad_request_response("No products found for permit")
-            product_with_quantity = products_with_quantity[0]
-            if not product_with_quantity:
-                return bad_request_response(
-                    "Product with quantity not found for permit"
-                )
-            product = product_with_quantity[0]
+            product = permit.get_currently_active_product()
+
             if not product:
-                return bad_request_response("Product not found")
+                return bad_request_response("No products found for permit")
+
             response = snake_to_camel_dict(
                 {
                     "subscription_id": subscription_id,
