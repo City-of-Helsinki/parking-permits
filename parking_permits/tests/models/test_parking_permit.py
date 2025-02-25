@@ -924,7 +924,7 @@ class ParkingPermitTestCase(TestCase):
             contract_type=ContractType.FIXED_PERIOD,
             primary_vehicle=True,
             status=ParkingPermitStatus.VALID,
-            end_time=now + relativedelta(months=4, days=-1),
+            end_time=now + relativedelta(months=4),
         )
         secondary = ParkingPermitFactory(
             contract_type=ContractType.FIXED_PERIOD,
