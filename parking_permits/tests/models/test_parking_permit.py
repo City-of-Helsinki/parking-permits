@@ -884,7 +884,7 @@ class ParkingPermitTestCase(TestCase):
         ProductFactory(
             zone=permit.parking_zone,
             type=ProductType.RESIDENT,
-            start_date=(now - timedelta(days=61)).date(),
+            start_date=(now + timedelta(days=61)).date(),
             end_date=(now + timedelta(days=365)).date(),
             unit_price=Decimal("40.00"),
         )
