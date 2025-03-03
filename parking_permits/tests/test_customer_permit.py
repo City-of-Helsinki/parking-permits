@@ -433,6 +433,8 @@ class UpdateCustomerPermitTestCase(TestCase):
     def setUp(self):
         self.cus_a = CustomerFactory(first_name="Firstname A", last_name="")
         self.cus_b = CustomerFactory(first_name="Firstname B", last_name="")
+        zone_a = ParkingZoneFactory(name="A")
+        zone_b = ParkingZoneFactory(name="B")
 
         self.c_a_draft = ParkingPermitFactory(
             customer=self.cus_a,
@@ -440,8 +442,12 @@ class UpdateCustomerPermitTestCase(TestCase):
             address=self.cus_a.primary_address,
             parking_zone=self.cus_a.primary_address.zone,
         )
-        self.c_a_closed = ParkingPermitFactory(customer=self.cus_a, status=CLOSED)
-        self.c_b_valid = ParkingPermitFactory(customer=self.cus_b, status=VALID)
+        self.c_a_closed = ParkingPermitFactory(
+            customer=self.cus_a, status=CLOSED, parking_zone=zone_a
+        )
+        self.c_b_valid = ParkingPermitFactory(
+            customer=self.cus_b, status=VALID, parking_zone=zone_b
+        )
         self.c_b_preliminary = ParkingPermitFactory(
             customer=self.cus_b, status=PRELIMINARY
         )
