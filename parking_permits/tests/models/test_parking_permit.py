@@ -884,7 +884,7 @@ class ParkingPermitTestCase(TestCase):
         ProductFactory(
             zone=permit.parking_zone,
             type=ProductType.RESIDENT,
-            start_date=(now - timedelta(days=61)).date(),
+            start_date=(now + timedelta(days=61)).date(),
             end_date=(now + timedelta(days=365)).date(),
             unit_price=Decimal("40.00"),
         )
@@ -924,7 +924,7 @@ class ParkingPermitTestCase(TestCase):
             contract_type=ContractType.FIXED_PERIOD,
             primary_vehicle=True,
             status=ParkingPermitStatus.VALID,
-            end_time=now + relativedelta(months=4, days=-1),
+            end_time=now + relativedelta(months=4),
         )
         secondary = ParkingPermitFactory(
             contract_type=ContractType.FIXED_PERIOD,
@@ -932,7 +932,7 @@ class ParkingPermitTestCase(TestCase):
             primary_vehicle=False,
             end_time=now + relativedelta(months=1, days=-1),
         )
-        self.assertEqual(secondary.max_extension_month_count, 2)
+        self.assertEqual(secondary.max_extension_month_count, 3)
 
     def test_max_extension_month_count_for_secondary_vehicle_zero(self):
         now = timezone.now()

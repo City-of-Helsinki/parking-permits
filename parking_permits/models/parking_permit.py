@@ -638,13 +638,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         # for each product in our range, find the start and end dates
         # of whole months within that range
-        while product and start_date < end_date:
+        # add hard limit that more products can't be returned than there is months
+        loop_count = 0
+        while product and start_date < end_date and loop_count < month_count:
             yield {
                 "product": product,
                 "start_date": start_date,
                 "end_date": start_date + relativedelta(months=1, days=-1),
             }
             start_date += relativedelta(months=1)
+            loop_count += 1
 
             if start_date > product.end_date:
                 product = next(products, None)
@@ -1039,6 +1042,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             permit_start_date = timezone.localdate(self.start_time)
             permit_end_date = timezone.localdate(self.end_time)
             return qs.get_products_with_quantities(permit_start_date, permit_end_date)
+
+    def get_currently_active_product(self):
+        """Use if multiple products for single zone, gets
+        the one that's currently active"""
+
+        current_time = timezone.now()
+        return self.get_products_for_resident().get_for_date(current_time)
 
 
 class ParkingPermitEvent(TimestampedModelMixin, UserStampedModelMixin):
