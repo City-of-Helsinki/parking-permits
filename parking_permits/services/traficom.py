@@ -170,9 +170,12 @@ class Traficom:
         vehicle_identity = et.find(".//tunnus")
         registration_number_et = et.find(".//rekisteritunnus")
         if registration_number_et is not None and registration_number_et.text:
-            registration_number = registration_number_et.text.encode("latin-1").decode(
-                "utf-8"
-            )
+            try:
+                registration_number = registration_number_et.text.encode(
+                    "latin-1"
+                ).decode("utf-8")
+            except UnicodeDecodeError:
+                registration_number = registration_number_et.text
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")

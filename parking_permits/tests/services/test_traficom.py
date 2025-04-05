@@ -21,10 +21,10 @@ class MockResponse:
         self.status_code = status_code
 
 
-def get_mock_xml(filename):
+def get_mock_xml(filename, encoding="latin-1"):
     return (
         (pathlib.Path(__file__).parent / "mocks" / "traficom" / filename)
-        .open("r", encoding="latin-1")
+        .open("r", encoding=encoding)
         .read()
     )
 
@@ -676,7 +676,7 @@ class TestTraficom(TestCase):
         # Special chars in registration number
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/AOA-2.xml")),
+            return_value=MockResponse(get_mock_xml("special_cases/AOA-2.xml", "utf-8")),
         ):
             registration_number = "ÄÖÅ-2"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
@@ -688,7 +688,7 @@ class TestTraficom(TestCase):
         # Special chars in registration number
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/AOA-3.xml")),
+            return_value=MockResponse(get_mock_xml("special_cases/AOA-3.xml", "utf-8")),
         ):
             registration_number = "ÄÖÅ-3"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
