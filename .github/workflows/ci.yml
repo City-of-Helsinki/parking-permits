@@ -21,7 +21,7 @@ jobs:
       DJANGO_SETTINGS_MODULE: project.settings_test
     services:
         postgres:
-            image: postgis/postgis:13-3.3
+            image: postgis/postgis:14-3.5
             env:
                 POSTGRES_HOST_AUTH_METHOD: trust
             options: >-
