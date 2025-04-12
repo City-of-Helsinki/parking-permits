@@ -1,26 +1,26 @@
-ariadne-django==0.3.0                         # schema-first graphql server implementation
-dj-database-url==2.2.0                        # to be able to parse DATABASE_URL
-django-environ==0.11.2                        # Read .env file
-django-extensions==3.2.3                      # useful django extensions
-django==5.0.6                                 # web framework itself
-djangorestframework==3.15.1                   # creating rest APIs
-gunicorn==22.0.0                              # application server
-psycopg2-binary==2.9.9                        # postgres database adapter
-requests==2.32.3                              # http requests
-django-cors-headers==4.3.1                    # enabling CORS
-whitenoise==6.6.0                             # enabling Django to serve its own static files
-xmltodict==0.13.0                             # parsing xml to dictionary
-django-helusers==0.13.0                       # app for City of Helsinki user infrastructure
-django-db-logger==0.1.12                      # logging to database
-drf-yasg==1.21.7                              # generating swagger documentation
-django-crontab==0.7.1                         # cron jobs
-helsinki-profile-gdpr-api==0.2.0               # app for implementing Helsinki profile GDPR API
-fpdf==1.7.2                                   # pdf generation
-django-searchable-encrypted-fields==0.2.1      # encrypted fields
-pycryptodome==3.20.0                          # cryptographic primitives
-cryptography==42.0.8                          # cryptography
-sentry-sdk==2.3.1                             # error logging
-numpy==1.24.4                                 # scientific computing
-python-dateutil==2.9.0                        # date utilities
-urllib3==2.2.1                                # http client
-django-mailer==2.3.2                          # better email backend
+ariadne-django                         # schema-first graphql server implementation
+dj-database-url                        # to be able to parse DATABASE_URL
+django-environ                         # Read .env file
+django-extensions                      # useful django extensions
+django                                 # web framework itself
+djangorestframework                    # creating rest APIs
+gunicorn                               # application server
+psycopg2-binary                        # postgres database adapter
+requests                               # http requests
+django-cors-headers                    # enabling CORS
+whitenoise                             # enabling Django to serve its own static files
+xmltodict                              # parsing xml to dictionary
+django-helusers                        # app for City of Helsinki user infrastructure
+django-db-logger                       # logging to database
+drf-yasg                               # generating swagger documentation
+django-crontab                         # cron jobs
+helsinki-profile-gdpr-api              # app for implementing Helsinki profile GDPR API
+fpdf                                   # pdf generation
+django-searchable-encrypted-fields     # encrypted fields
+pycryptodome                           # cryptographic primitives
+cryptography                           # cryptography
+sentry-sdk                             # error logging
+numpy                                  # scientific computing
+python-dateutil                        # date utilities
+urllib3                                # http client
+django-mailer                          # better email backend
