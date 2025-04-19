@@ -432,6 +432,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     @property
     def current_period_end_time(self):
         if self.is_open_ended:
+            # If open-ended permit is already renewed for the new period,
+            # then use previous period end time
+            now = timezone.now()
+            if self.end_time and self.end_time - relativedelta(months=1) > now:
+                return self.end_time - relativedelta(months=1)
             return self.end_time
         return self.current_period_end_time_with_fixed_months(self.months_used)
 
