@@ -2,7 +2,7 @@ ariadne-django                         # schema-first graphql server implementat
 dj-database-url                        # to be able to parse DATABASE_URL
 django-environ                         # Read .env file
 django-extensions                      # useful django extensions
-django==5.1.*                          # web framework itself
+django                                 # web framework itself
 djangorestframework                    # creating rest APIs
 gunicorn                               # application server
 psycopg2-binary                        # postgres database adapter

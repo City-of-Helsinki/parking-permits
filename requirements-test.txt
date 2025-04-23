@@ -24,7 +24,7 @@ inflection==0.5.1
     # via pytest-factoryboy
 iniconfig==2.1.0
     # via pytest
-packaging==24.2
+packaging==25.0
     # via
     #   pytest
     #   pytest-factoryboy

@@ -35,7 +35,7 @@ deprecation==2.1.0
     # via django-helusers
 dj-database-url==2.3.0
     # via -r requirements.in
-django==5.1.8
+django==5.2
     # via
     #   -r requirements.in
     #   ariadne-django
@@ -97,9 +97,9 @@ inflection==0.5.1
     # via drf-yasg
 lockfile==0.12.2
     # via django-mailer
-numpy==2.2.4
+numpy==2.2.5
     # via -r requirements.in
-packaging==24.2
+packaging==25.0
     # via
     #   deprecation
     #   drf-yasg
