@@ -381,6 +381,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return self.status == ParkingPermitStatus.VALID
 
     @property
+    def is_closed(self):
+        return self.status == ParkingPermitStatus.CLOSED
+
+    @property
     def is_open_ended(self):
         return self.contract_type == ContractType.OPEN_ENDED
 
@@ -992,11 +996,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         return unused_order_items
 
     def get_unused_order_items_for_order(self, order):
+        from .order import OrderStatus
+
         unused_start_date = timezone.localdate(self.next_period_start_time)
 
         order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date,
             is_refunded=False,
+            order__status=OrderStatus.CONFIRMED,
             permit=self,
         ).order_by("start_time")
 

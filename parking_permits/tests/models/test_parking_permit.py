@@ -768,7 +768,7 @@ class ParkingZoneTestCase(TestCase):
             end_time=end_time,
             month_count=12,
         )
-        Order.objects.create_for_permits([permit])
+        Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
         permit.refresh_from_db()
         permit.status = ParkingPermitStatus.VALID
         permit.save()
