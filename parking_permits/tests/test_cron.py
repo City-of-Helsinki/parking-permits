@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
 from django.core import mail
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import timezone as tz
 from freezegun import freeze_time
 
@@ -15,6 +15,7 @@ from parking_permits.cron import (
     automatic_syncing_of_permits_to_parkkihubi,
     handle_announcement_emails,
 )
+from parking_permits.customer_permit import CustomerPermit
 from parking_permits.models import Customer, Refund
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import (
@@ -23,6 +24,7 @@ from parking_permits.models.parking_permit import (
     ParkingPermitEndType,
     ParkingPermitStatus,
 )
+from parking_permits.models.product import ProductType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
 from parking_permits.tests.factories.customer import CustomerFactory
@@ -169,6 +171,103 @@ class CronTestCase(TestCase):
         )
         # Make sure that no refunds were created for these cases
         self.assertEqual(Refund.objects.count(), 0)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_automatic_expiration_permits_with_pending_extension_request(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        permit.address = permit.customer.primary_address
+        permit.save()
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        permit_extension_request = CustomerPermit(
+            permit.customer_id
+        ).create_permit_extension_request(permit.pk, 3)
+        self.assertTrue(permit_extension_request.is_pending())
+        with freeze_time(now + timedelta(days=15)):
+            automatic_expiration_of_permits()
+            permit.refresh_from_db()
+            self.assertTrue(permit.is_closed)
+            self.assertEqual(permit.end_type, ParkingPermitEndType.PREVIOUS_DAY_END)
+            permit_extension_request.refresh_from_db()
+            self.assertTrue(permit_extension_request.is_cancelled)
+            self.assertEqual(permit.month_count, 1)
+            # Make sure that no refunds were created
+            self.assertEqual(Refund.objects.count(), 0)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_automatic_expiration_permits_with_approved_extension_request(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        permit.address = permit.customer.primary_address
+        permit.save()
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        permit_extension_request = CustomerPermit(
+            permit.customer_id
+        ).create_permit_extension_request(permit.pk, 3)
+        self.assertTrue(permit_extension_request.is_pending())
+        permit_extension_request.approve()
+        with freeze_time(now + timedelta(days=15)):
+            automatic_expiration_of_permits()
+            permit.refresh_from_db()
+            self.assertTrue(permit.is_valid)
+            permit_extension_request.refresh_from_db()
+            self.assertTrue(permit_extension_request.is_approved)
+            self.assertEqual(permit.month_count, 4)
+            # Make sure that no refunds were created
+            self.assertEqual(Refund.objects.count(), 0)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_automatic_expiration_permits_with_cancelled_extension_request(self):
+        now = tz.now()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now,
+            end_time=now + timedelta(days=10),
+        )
+        permit.address = permit.customer.primary_address
+        permit.save()
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        permit_extension_request = CustomerPermit(
+            permit.customer_id
+        ).create_permit_extension_request(permit.pk, 3)
+        self.assertTrue(permit_extension_request.is_pending())
+        permit_extension_request.cancel()
+        with freeze_time(now + timedelta(days=15)):
+            automatic_expiration_of_permits()
+            permit.refresh_from_db()
+            self.assertTrue(permit.is_closed)
+            self.assertEqual(permit.end_type, ParkingPermitEndType.PREVIOUS_DAY_END)
+            permit_extension_request.refresh_from_db()
+            self.assertTrue(permit_extension_request.is_cancelled)
+            self.assertEqual(permit.month_count, 1)
+            # Make sure that no refunds were created
+            self.assertEqual(Refund.objects.count(), 0)
 
     @freeze_time(tz.make_aware(datetime(2023, 11, 30, 0, 22)))
     def test_automatic_expiration_permits_with_primary_permit_change(self):

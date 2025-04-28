@@ -89,7 +89,7 @@ def test_recent_draft_permits_not_deleted():
 
 
 @pytest.mark.django_db()
-def test_recent_draft_permits_not_deleted_with_hour_argument():
+def test_recent_draft_permits_not_deleted_with_hours_argument():
     ParkingPermitFactory(
         status=ParkingPermitStatus.DRAFT,
     )
@@ -97,4 +97,34 @@ def test_recent_draft_permits_not_deleted_with_hour_argument():
         created_at=timezone.localtime() - timedelta(minutes=40)
     )
     call_command("delete_draft_permits", hours=3)
+    assert ParkingPermit.objects.exists()
+
+
+@pytest.mark.django_db()
+def test_preliminary_permits_deleted():
+    ParkingPermitFactory(
+        status=ParkingPermitStatus.PRELIMINARY,
+    )
+    ParkingPermit.objects.update(created_at=timezone.localtime() - timedelta(hours=73))
+    call_command("delete_draft_permits")
+    assert not ParkingPermit.objects.exists()
+
+
+@pytest.mark.django_db()
+def test_recent_preliminary_permits_not_deleted():
+    ParkingPermitFactory(
+        status=ParkingPermitStatus.PRELIMINARY,
+    )
+    ParkingPermit.objects.update(created_at=timezone.localtime() - timedelta(hours=10))
+    call_command("delete_draft_permits")
+    assert ParkingPermit.objects.exists()
+
+
+@pytest.mark.django_db()
+def test_preliminary_permits_not_deleted_with_preliminary_hours_argument():
+    ParkingPermitFactory(
+        status=ParkingPermitStatus.PRELIMINARY,
+    )
+    ParkingPermit.objects.update(created_at=timezone.localtime() - timedelta(hours=3))
+    call_command("delete_draft_permits", preliminary_hours=30)
     assert ParkingPermit.objects.exists()

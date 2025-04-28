@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     environment: test
     strategy:
       matrix:
@@ -21,7 +21,7 @@ jobs:
       DJANGO_SETTINGS_MODULE: project.settings_test
     services:
         postgres:
-            image: postgis/postgis:13-3.3
+            image: postgis/postgis:14-3.5
             env:
                 POSTGRES_HOST_AUTH_METHOD: trust
             options: >-
@@ -53,6 +53,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+          pip install -r requirements-dev.txt
 
       - name: Run Python side code neatness tests
         run: |

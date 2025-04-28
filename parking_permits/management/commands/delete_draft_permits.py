@@ -18,11 +18,18 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--hours", type=int, default=0)
         parser.add_argument("--minutes", type=int, default=30)
+        parser.add_argument("--preliminary_hours", type=int, default=72)
+        parser.add_argument("--preliminary_minutes", type=int, default=0)
 
     def handle(self, *args, **options):
         minutes = options["minutes"] + (60 * options["hours"])
         now = timezone.localtime()
         time_limit = now - timedelta(minutes=minutes)
+
+        preliminary_minutes = options["preliminary_minutes"] + (
+            60 * options["preliminary_hours"]
+        )
+        preliminary_time_limit = now - timedelta(minutes=preliminary_minutes)
 
         # Delete draft permits
         # NOTE: there should not be draft permits with orders, but exclude
@@ -41,6 +48,26 @@ class Command(BaseCommand):
             self.stdout.write(f"{num_permits} draft permit(s) deleted")
         else:
             self.stdout.write("No draft permits deleted")
+
+        # Delete preliminary permits
+        # NOTE: there should not be preliminary permits with orders, but exclude
+        # these just in case.
+
+        preliminary_permits = ParkingPermit.objects.annotate(
+            has_orders=Exists(OrderItem.objects.filter(permit=OuterRef("pk")))
+        ).filter(
+            has_orders=False,
+            created_at__lt=preliminary_time_limit,
+            status=ParkingPermitStatus.PRELIMINARY,
+        )
+
+        if num_preliminary_permits := preliminary_permits.count():
+            preliminary_permits.delete()
+            self.stdout.write(
+                f"{num_preliminary_permits} preliminary permit(s) deleted"
+            )
+        else:
+            self.stdout.write("No preliminary permits deleted")
 
         # Delete permit extension requests
         # These will all have FK to Order, so we don't want to delete them completely,

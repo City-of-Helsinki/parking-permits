@@ -1,10 +1,7 @@
-black==24.4.2
-flake8==7.0.0
-isort==5.12.0
-pytest==8.2.1
-pytest-cov==5.0.0
-pytest-django==4.8.0
-pytest-factoryboy==2.7.0
-requests-mock==1.12.1
-factory-boy==3.3.0
-freezegun==1.5.1
+pytest
+pytest-cov
+pytest-django
+pytest-factoryboy
+requests-mock
+factory-boy
+freezegun

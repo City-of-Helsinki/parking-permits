@@ -7,12 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2025-04-28
+
+### Added
+
+- Delete outdated preliminary permits via cronjob ([cce6be3](https://github.com/City-of-Helsinki/parking-permits/commit/cce6be33db15d99ea449a90b5ea43da41adf32f3))
+
+### Fixed
+
+- Improve special character handling ([60aa672](https://github.com/City-of-Helsinki/parking-permits/commit/60aa6726ba12e00e103c9b373ab268110d6376dd))
+- Update open-ended end time calculation ([6eae382](https://github.com/City-of-Helsinki/parking-permits/commit/6eae38257e64476762f0379a790006eed27410b3))
+- Refund only confirmed extension requests ([6e704f1](https://github.com/City-of-Helsinki/parking-permits/commit/6e704f1cb400b1f3c047c29df9a180fa9b8c82fd))
+
+### Dependencies
+
+- Update requirements ([27b16bf](https://github.com/City-of-Helsinki/parking-permits/commit/27b16bf881bd887bc1443dd103a3d911378df694))
+
 ## [1.6.2] - 2025-03-06
 
 ### Fixed
 
 - Fix permit getting wrong price ([859dd36](https://github.com/City-of-Helsinki/parking-permits/commit/859dd36b171d41eca38cc46d091f283a46ae2551))
-- Add hard limit for amount of returted products ([518cf4d](https://github.com/City-of-Helsinki/parking-permits/commit/518cf4db675329f9b148c79bef0c0e56bc134f5f))
+- Add hard limit for amount of returned products ([518cf4d](https://github.com/City-of-Helsinki/parking-permits/commit/518cf4db675329f9b148c79bef0c0e56bc134f5f))
+- Don't disable temporary vehicle immediately when ending permit ([01f84ad](https://github.com/City-of-Helsinki/parking-permits/commit/01f84ada0e7bab600f880e21d33c8fe57f7e0a4c))
 
 ## [1.6.1] - 2024-12-20
 
