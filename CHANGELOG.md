@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2025-05-01
+
+### Fixed
+
+- Add links to email footer ([493611d](https://github.com/City-of-Helsinki/parking-permits/commit/493611d8f3ab0850092fa80bad3ebcb9271b626f))
+- Use prefetch_related in refund approval ([d79e244](https://github.com/City-of-Helsinki/parking-permits/commit/d79e2444457db1116b1c0ec799be73a5faa0d273))
+
+## Dependencies
+
+- Update requirements ([27b16bf](https://github.com/City-of-Helsinki/parking-permits/commit/27b16bf881bd887bc1443dd103a3d911378df694))
+
 ## [1.7.0] - 2025-04-28
 
 ### Added
