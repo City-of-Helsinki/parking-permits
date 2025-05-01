@@ -1194,7 +1194,7 @@ def resolve_accept_refunds(obj, info, ids):
     )
     accepted_refunds = Refund.objects.filter(
         id__in=ids, status=RefundStatus.ACCEPTED
-    ).select_related("order__customer")
+    ).prefetch_related("orders__customer")
     for refund in accepted_refunds:
         send_refund_email(
             RefundEmailType.ACCEPTED, refund.orders.first().customer, [refund]
