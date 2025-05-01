@@ -8,5 +8,5 @@
         {% translate "Your parking permit validity period has ended at" %} {{ permit.end_time|date:"j.n.Y, H:i" }}.
         {% translate "If you want to continue permit usage, you will need to make a new order." %}
     </p>
-    {% include "emails/_permit_info.html" %}
+{% include "emails/_permit_info.html" %}
 {% endblock %}
