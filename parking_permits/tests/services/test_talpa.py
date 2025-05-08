@@ -15,6 +15,7 @@ from parking_permits.tests.factories.order import OrderItemFactory
         pytest.param(0, "0.00", "0.00", "0.00", id="gross: 0"),
         pytest.param(30, "30.00", "23.90", "6.10", id="gross: 30"),
         pytest.param(30.50, "30.50", "24.30", "6.20", id="gross: 30.50"),
+        pytest.param(48.40, "48.40", "38.57", "9.83", id="gross: 48.50"),
         pytest.param(60, "60.00", "47.81", "12.19", id="gross: 60"),
         pytest.param(100, "100.00", "79.68", "20.32", id="gross: 100"),
         pytest.param(120, "120.00", "95.62", "24.38", id="gross: 120"),
@@ -38,8 +39,8 @@ def test_add_pricing():
     total_pricing += Pricing.calculate(120, 0.255)
 
     assert total_pricing.format_gross() == "180.00"
-    assert total_pricing.format_net() == "143.42"
-    assert total_pricing.format_vat() == "36.58"
+    assert total_pricing.format_net() == "143.43"
+    assert total_pricing.format_vat() == "36.57"
 
 
 class TestTalpaOrderManager(TestCase):
