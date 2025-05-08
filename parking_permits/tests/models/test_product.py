@@ -109,7 +109,7 @@ class TestProduct(TestCase):
             "vat_percentage": "25.50",
         }
 
-    def test_get_talpa_pricing_prev_vat(self):
+    def test_get_talpa_pricing_other_vat(self):
         product = ProductFactory(
             unit_price=Decimal(20),
             vat=0.24,
@@ -125,18 +125,74 @@ class TestProduct(TestCase):
     def test_get_talpa_pricing_with_discount(self):
         product = ProductFactory(
             unit_price=Decimal(60),
-            low_emission_discount=Decimal(0.5),
+            low_emission_discount=Decimal(0.25),
             vat=0.255,
         )
         pricing = product.get_talpa_pricing(True, False)
         assert pricing == {
-            "price_gross": "30.00",
-            "price_net": "23.90",
-            "price_vat": "6.10",
+            "price_gross": "45.00",
+            "price_net": "35.86",
+            "price_vat": "9.14",
             "vat_percentage": "25.50",
         }
 
-    def test_get_talpa_pricing_with_discount_prev_vat(self):
+    def test_get_talpa_pricing_with_secondary_vehicle(self):
+        product = ProductFactory(
+            unit_price=Decimal(60),
+            low_emission_discount=Decimal(0.25),
+            vat=0.255,
+        )
+        pricing = product.get_talpa_pricing(False, True)
+        assert pricing == {
+            "price_gross": "90.00",
+            "price_net": "71.71",
+            "price_vat": "18.29",
+            "vat_percentage": "25.50",
+        }
+
+    def test_get_talpa_pricing_with_discount_secondary_vehicle(self):
+        product = ProductFactory(
+            unit_price=Decimal(60),
+            low_emission_discount=Decimal(0.25),
+            vat=0.255,
+        )
+        pricing = product.get_talpa_pricing(True, True)
+        assert pricing == {
+            "price_gross": "67.50",
+            "price_net": "53.78",
+            "price_vat": "13.72",
+            "vat_percentage": "25.50",
+        }
+
+    def test_get_talpa_pricing_with_precise_discount(self):
+        product = ProductFactory(
+            unit_price=Decimal(64.50),
+            low_emission_discount=Decimal(0.2496124031),
+            vat=0.255,
+        )
+        pricing = product.get_talpa_pricing(True, False)
+        assert pricing == {
+            "price_gross": "48.40",
+            "price_net": "38.57",
+            "price_vat": "9.83",
+            "vat_percentage": "25.50",
+        }
+
+    def test_get_talpa_pricing_with_precise_discount_secondary_vehicle(self):
+        product = ProductFactory(
+            unit_price=Decimal(64.50),
+            low_emission_discount=Decimal(0.2496124031),
+            vat=0.255,
+        )
+        pricing = product.get_talpa_pricing(True, True)
+        assert pricing == {
+            "price_gross": "72.60",
+            "price_net": "57.85",
+            "price_vat": "14.75",
+            "vat_percentage": "25.50",
+        }
+
+    def test_get_talpa_pricing_with_discount_other_vat(self):
         product = ProductFactory(
             unit_price=Decimal(20),
             low_emission_discount=Decimal(0.5),
