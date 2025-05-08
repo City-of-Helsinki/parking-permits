@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2025-05-08
+
+### Fixed
+
+- Increase decimal rounding accuracy ([dc4b8a4](https://github.com/City-of-Helsinki/parking-permits/commit/dc4b8a4e0b0c5bad86ee35af55b53854544b2e91))
+
 ## [1.7.1] - 2025-05-01
 
 ### Fixed
