@@ -423,7 +423,7 @@ def calc_vat_price(gross_price: Currency, vat: Currency) -> Decimal:
 
 
 def quantize(value) -> Decimal:
-    return Decimal(value or 0).quantize(Decimal(".001"), rounding=ROUND_UP)
+    return Decimal(value or 0).quantize(Decimal(".0001"), rounding=ROUND_UP)
 
 
 def format_currency(value) -> str:
