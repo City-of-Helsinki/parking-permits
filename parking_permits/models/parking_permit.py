@@ -934,7 +934,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         If `check_limit` is `True` and limit is exceeded, will raise a TemporaryVehicleValidationError.
 
         """
-        if check_limit and self.is_temporary_vehicle_limit_exceeded():
+        if check_limit and self.is_temporary_vehicle_limit_exceeded(user):
             raise TemporaryVehicleValidationError(
                 _(
                     "Can not have more than 2 temporary vehicles in 365 days from first one."
@@ -947,6 +947,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             vehicle=vehicle,
             end_time=end_time,
             start_time=start_time,
+            created_by=user,
+            created_at=timezone.now(),
         )
 
         self.temp_vehicles.add(temp_vehicle)
@@ -957,18 +959,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         return temp_vehicle
 
-    def is_temporary_vehicle_limit_exceeded(self) -> bool:
-        """Check limit of temporary vehicles. A user can only
-        have max 2 temp vehicles over 12 months."""
+    def is_temporary_vehicle_limit_exceeded(self, user) -> bool:
+        """Check limit of temporary vehicles.
+        A user can only create max 2 temp vehicles over 12 months."""
         return (
-            len(
-                self.temp_vehicles.filter(
-                    start_time__gte=get_end_time(timezone.now(), -12)
-                )
-                .order_by("-start_time")
-                .values("pk")[:2]
+            self.temp_vehicles.filter(
+                start_time__gte=get_end_time(timezone.now(), -12),
+                created_by=user,
             )
-            == 2
+            .order_by("-start_time")
+            .count()
+            >= 2
         )
 
     def get_unused_order_items(self):
