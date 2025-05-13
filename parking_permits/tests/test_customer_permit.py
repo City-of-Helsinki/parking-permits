@@ -197,9 +197,10 @@ class AddTemporaryVehicleTestCase(TestCase):
 
         self.assertEqual(self.permit.temp_vehicles.count(), 3)
 
-    def test_add_temporary_vehicle_more_than_one_in_a_year(self):
+    def test_add_temporary_vehicle_more_than_two_in_a_year(self):
+        user = self.permit.customer.user
         temp_vehicles = TemporaryVehicleFactory.create_batch(
-            2, start_time=self.start_time - timedelta(days=30)
+            2, start_time=self.start_time - timedelta(days=30), created_by=user
         )
         self.permit.temp_vehicles.set(temp_vehicles)
 

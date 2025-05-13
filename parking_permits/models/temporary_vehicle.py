@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.gis.db import models
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -15,6 +16,14 @@ class TemporaryVehicle(TimestampedModelMixin):
     start_time = models.DateTimeField(_("Start time"), default=tz.now)
     end_time = models.DateTimeField(_("End time"))
     is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("Created by"),
+        related_name="+",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = _("Temporary vehicle")
