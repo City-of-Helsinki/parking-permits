@@ -7,7 +7,6 @@ from django.contrib.postgres.forms import SimpleArrayField
 from django.db import models
 from django.db.models import OuterRef, Q, Subquery, Value
 from django.db.models.functions import Concat
-from django.utils import timezone
 
 from parking_permits.models import (
     Address,
@@ -137,8 +136,6 @@ class PermitSearchForm(SearchFormBase):
         if not q:
             return self.get_empty_queryset()
 
-        now = timezone.now()
-
         fields = [
             "vehicle__registration_number",
             "temp_vehicles__vehicle__registration_number",
@@ -170,8 +167,6 @@ class PermitSearchForm(SearchFormBase):
                 TemporaryVehicle.objects.filter(
                     parkingpermit__pk=OuterRef("pk"),
                     is_active=True,
-                    start_time__lte=now,
-                    end_time__gte=now,
                 ).values("vehicle__registration_number")[:1]
             )
         ).filter(query)
