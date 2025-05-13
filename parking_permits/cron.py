@@ -72,9 +72,10 @@ def automatic_expiration_of_permits():
 def automatic_expiration_remind_notification_of_permits():
     logger.info("Automatically sending remind notifications for permits started...")
     count = 0
-    now = tz.localdate(tz.now())
+    current_date = tz.localdate(tz.now())
     expiring_permits = ParkingPermit.objects.filter(
-        end_time__lt=now + relativedelta(weeks=1),
+        Q(end_time__date=current_date + relativedelta(weeks=1))
+        | Q(end_time__date=current_date + relativedelta(days=1)),
         status=ParkingPermitStatus.VALID,
         contract_type=ContractType.FIXED_PERIOD,
     )
