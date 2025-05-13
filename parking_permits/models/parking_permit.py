@@ -291,12 +291,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def active_temporary_vehicle(self):
-        now = timezone.now()
+        """Get the active temporary vehicle for the permit"""
         return (
             self.temporary_vehicles.filter(
                 is_active=True,
-                start_time__lte=now,
-                end_time__gte=now,
             )
             .select_related("vehicle")
             .first()
@@ -908,9 +906,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 _("Temporary vehicle start time has to be after permit start time")
             )
 
+        # prevent end time from being less than start time + 1 hour
         end_dt = max(
             timezone.localtime(isoparse(end_time)),
             start_dt + timezone.timedelta(hours=1),
+        )
+
+        # prevent end time from being more than permit end time
+        end_dt = min(
+            end_dt,
+            self.end_time,
         )
 
         return start_dt, end_dt

@@ -487,7 +487,7 @@ class ParkingZoneTestCase(TestCase):
         self.assertEqual(total_quantity, 10)
 
     @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
-    def test_active_temporary_vehicles_active_in_time_range(self):
+    def test_active_temporary_vehicles_active(self):
         vehicle = TemporaryVehicleFactory(
             start_time=datetime(2023, 12, 20),
             end_time=datetime(2024, 1, 29),
@@ -503,17 +503,6 @@ class ParkingZoneTestCase(TestCase):
             start_time=datetime(2023, 12, 20),
             end_time=datetime(2024, 1, 29),
             is_active=False,
-        )
-        permit = ParkingPermitFactory()
-        permit.temp_vehicles.add(vehicle)
-        self.assertEqual(permit.active_temporary_vehicle, None)
-
-    @freeze_time(timezone.make_aware(datetime(2024, 1, 1)))
-    def test_active_temporary_vehicles_not_in_time_range(self):
-        vehicle = TemporaryVehicleFactory(
-            start_time=datetime(2024, 1, 3),
-            end_time=datetime(2024, 1, 29),
-            is_active=True,
         )
         permit = ParkingPermitFactory()
         permit.temp_vehicles.add(vehicle)

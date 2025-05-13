@@ -83,13 +83,15 @@ class RemoveTemporaryVehicleTestCase(TestCase):
 class AddTemporaryVehicleTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.permit = ParkingPermitFactory(
-            status=VALID,
-            primary_vehicle=True,
-        )
         cls.vehicle = VehicleFactory()
         cls.start_time = tz.now()
         cls.end_time = cls.start_time + timedelta(days=7)
+        cls.permit = ParkingPermitFactory(
+            status=VALID,
+            primary_vehicle=True,
+            start_time=cls.start_time,
+            end_time=cls.end_time,
+        )
 
     def test_add_temporary_vehicle(self):
         self.assertTrue(
