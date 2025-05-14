@@ -18,7 +18,6 @@ from ..exceptions import (
     SubscriptionCancelError,
     SubscriptionValidationError,
 )
-from ..services.mail import RefundEmailType, send_refund_email
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -675,7 +674,7 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             logger.info(f"Creating Refund for permit {str(permit.id)}")
             from ..resolver_utils import create_refund
 
-            refund = create_refund(
+            create_refund(
                 user=permit.customer.user,
                 permits=[permit],
                 orders=[order],
@@ -687,7 +686,6 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
             # Mark the order item as refunded
             order_item.is_refunded = True
             order_item.save()
-            send_refund_email(RefundEmailType.CREATED, permit.customer, [refund])
             logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
         # Try to cancel subscription from Talpa as well

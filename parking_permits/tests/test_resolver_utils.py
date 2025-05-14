@@ -68,10 +68,8 @@ class TestEndPermits:
     @patch(MOCK_VALIDATE_ORDER)
     @patch(MOCK_SEND_PERMIT_EMAIL)
     @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_end_open_ended_permit_with_subscription(
         self,
-        mock_send_refund_email,
         mock_send_vehicle_discount_email,
         mock_send_permit_email,
         mock_validate_order,
@@ -109,16 +107,13 @@ class TestEndPermits:
         mock_validate_order.assert_called()
         mock_send_permit_email.assert_called()
         mock_send_vehicle_discount_email.assert_not_called()
-        mock_send_refund_email.assert_not_called()
 
     @pytest.mark.django_db()
     @patch(MOCK_SYNC_WITH_PARKKIHUBI)
     @patch(MOCK_SEND_PERMIT_EMAIL)
     @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_fixed_period_permit(
         self,
-        mock_send_refund_email,
         mock_send_vehicle_discount_email,
         mock_send_permit_email,
         mock_sync_with_parkkihubi,
@@ -171,16 +166,13 @@ class TestEndPermits:
         mock_sync_with_parkkihubi.assert_called()
         mock_send_permit_email.assert_called()
         mock_send_vehicle_discount_email.assert_not_called()
-        mock_send_refund_email.assert_called()
 
     @pytest.mark.django_db()
     @patch(MOCK_SYNC_WITH_PARKKIHUBI)
     @patch(MOCK_SEND_PERMIT_EMAIL)
     @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_multiple_fixed_period_permit(
         self,
-        mock_send_refund_email,
         mock_send_vehicle_discount_email,
         mock_send_permit_email,
         mock_sync_with_parkkihubi,
@@ -247,7 +239,6 @@ class TestEndPermits:
         mock_sync_with_parkkihubi.assert_called()
         mock_send_permit_email.assert_called()
         mock_send_vehicle_discount_email.assert_not_called()
-        mock_send_refund_email.assert_called()
 
 
 class TestEndPermit:
@@ -386,8 +377,7 @@ class TestEndPermit:
 
 class TestCreateRefund:
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_new_refund_fixed_period(self, mock_send_refund_email, zone):
+    def test_new_refund_fixed_period(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -426,11 +416,8 @@ class TestCreateRefund:
         # 3 months unused at 60 EUR/month
         assert refunds[0].amount == 180
 
-        mock_send_refund_email.assert_called()
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_new_refund_open_ended(self, mock_send_refund_email, zone):
+    def test_new_refund_open_ended(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -466,11 +453,8 @@ class TestCreateRefund:
 
         assert refunds == []
 
-        mock_send_refund_email.assert_not_called()
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_new_refund_multiple_permits(self, mock_send_refund_email, zone):
+    def test_new_refund_multiple_permits(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -520,12 +504,9 @@ class TestCreateRefund:
         # 3 months unused at 60 EUR/month
         assert refunds[0].amount == 180
 
-        mock_send_refund_email.assert_called()
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_new_refund_with_permit_extension_request(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -583,12 +564,9 @@ class TestCreateRefund:
             assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
             assert refund.vat_amount == pytest.approx(Decimal(34.84), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_multiple_vat_refunds_with_permit_extension_request(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -657,12 +635,9 @@ class TestCreateRefund:
             assert second_refund.vat_percent == pytest.approx(Decimal(25.5), delta)
             assert second_refund.vat_amount == pytest.approx(Decimal(24.38), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_new_refund_with_permit_extension_request_multiple_products(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -735,12 +710,9 @@ class TestCreateRefund:
             assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
             assert refund.vat_amount == pytest.approx(Decimal(61.93), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_multiple_vat_refunds_with_permit_extension_request_multiple_products(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -824,12 +796,9 @@ class TestCreateRefund:
             assert second_refund.vat_percent == pytest.approx(Decimal(25.5), delta)
             assert second_refund.vat_amount == pytest.approx(Decimal(52.83), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_new_refund_with_permit_low_emission_vehicle(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -878,11 +847,8 @@ class TestCreateRefund:
             assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
             assert refund.vat_amount == pytest.approx(Decimal(17.42), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_new_refund_with_permit_vehicle_change(self, mock_send_refund_email, zone):
+    def test_new_refund_with_permit_vehicle_change(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 12, 31))
@@ -963,12 +929,9 @@ class TestCreateRefund:
             assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
             assert refund.vat_amount == pytest.approx(Decimal(34.84), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_multiple_vat_refunds_with_permit_vehicle_change(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -1060,12 +1023,9 @@ class TestCreateRefund:
             assert second_refund.vat_percent == pytest.approx(Decimal(25.5), delta)
             assert second_refund.vat_amount == pytest.approx(Decimal(18.29), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_new_refund_with_permit_vehicle_change_multiple_products(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -1164,12 +1124,9 @@ class TestCreateRefund:
             assert refund.vat_percent == pytest.approx(Decimal(24.0), delta)
             assert refund.vat_amount == pytest.approx(Decimal(61.95), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
     def test_multiple_vat_refunds_with_permit_vehicle_change_multiple_products(
-        self, mock_send_refund_email, zone
+        self, zone
     ):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
@@ -1278,11 +1235,8 @@ class TestCreateRefund:
             assert second_refund.vat_percent == pytest.approx(Decimal(25.5), delta)
             assert second_refund.vat_amount == pytest.approx(Decimal(32.51), delta)
 
-            mock_send_refund_email.assert_called
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_not_refundable(self, mock_send_refund_email, zone):
+    def test_not_refundable(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -1318,11 +1272,8 @@ class TestCreateRefund:
 
         assert refunds == []
 
-        mock_send_refund_email.assert_not_called()
-
     @pytest.mark.django_db()
-    @patch(MOCK_SEND_REFUND_EMAIL)
-    def test_refundable_amount_zero(self, mock_send_refund_email, zone):
+    def test_refundable_amount_zero(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -1357,8 +1308,6 @@ class TestCreateRefund:
             )
 
         assert refunds == []
-
-        mock_send_refund_email.assert_not_called()
 
 
 def _create_zone_products(zone, product_detail_list):

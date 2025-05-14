@@ -39,9 +39,7 @@ from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
 from .services.mail import (
     PermitEmailType,
-    RefundEmailType,
     send_permit_email,
-    send_refund_email,
 )
 from .services.parkkihubi import sync_with_parkkihubi
 from .services.traficom import Traficom
@@ -508,8 +506,6 @@ def resolve_update_permit_vehicle(
                 )
                 refunds.append(refund)
                 logger.info(f"Refund for updating permits created: {refund}")
-            if refunds:
-                send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     permit.vehicle_changed = False
     permit.vehicle_changed_date = None
@@ -719,7 +715,6 @@ def resolve_change_address(
                         description=f"Refund for updating permits zone (customer switch address to: {address})",
                     )
                     logger.info(f"Refund for updating permits zone created: {refund}")
-                    send_refund_email(RefundEmailType.CREATED, customer, [refund])
         elif customer_total_price_change > 0:
             # update permit new zone to next parking zone and use that in price calculation
             fixed_period_permits.update(

@@ -873,8 +873,6 @@ def resolve_update_resident_permit(
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
             refunds.append(refund)
-        if refunds:
-            send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
 
@@ -1178,6 +1176,16 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
 def resolve_request_for_approval(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.OPEN)
     qs.update(status=RefundStatus.REQUEST_FOR_APPROVAL)
+    # send emails to customers
+    refunds = Refund.objects.filter(
+        id__in=ids, status=RefundStatus.REQUEST_FOR_APPROVAL
+    ).prefetch_related("orders__customer")
+    for refund in refunds:
+        send_refund_email(
+            RefundEmailType.CREATED,
+            refund.orders.first().customer,
+            [refund],
+        )
     return qs.count()
 
 
