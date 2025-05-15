@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2025-05-15
+
+### Added
+
+- Remind permit expiration in 1 week or 1 day ([68f240e](https://github.com/City-of-Helsinki/parking-permits/commit/68f240e0b65514d83af7a4e2c0423eb604ec01b1))
+- Add permit end time to expiration remind ([0539567](https://github.com/City-of-Helsinki/parking-permits/commit/0539567202fcc2e1937a39cb1706da5305b7ab1b))
+- Remove dates from active temporary vehicle ([a3275ec](https://github.com/City-of-Helsinki/parking-permits/commit/a3275ec159fefd06b0e5ea1f1fc5d30426cc0ff5))
+- Limit webshop temporary vehicle creation ([e1a9e89](https://github.com/City-of-Helsinki/parking-permits/commit/e1a9e893d85b3d0038656ada71e06f8d2cd49034))
+- Improve expiration remind email messages ([6586d19](https://github.com/City-of-Helsinki/parking-permits/commit/6586d193b146b770d4cdbb8c4efd21c6e0aca422))
+- Refund emails via admin request for approval ([9c5bd3c](https://github.com/City-of-Helsinki/parking-permits/commit/9c5bd3c76a57fa2251e1e9ff1c53dba978d716be))
+
+### Fixed
+
+- Call correct temporary vehicle event function ([78bee6c](https://github.com/City-of-Helsinki/parking-permits/commit/78bee6c2e0599da7b81cd2b49000034f7bbddfe3))
+
 ## [1.7.2] - 2025-05-08
 
 ### Fixed
