@@ -5,7 +5,8 @@
 
 {% block content %}
     <p>
-        {% translate "Your parking permit will expire soon. You can renew your permit by logging in to the service again." %}
+        {% translate "Your parking permit expires at" %}: {{ permit.end_time|date:"j.n.Y, H:i" }}. <br>
+        {% translate "You can renew your permit by logging in to the service and selecting 'Extend parking permit'." %}
     </p>
 {% include "emails/_permit_info.html" %}
 {% endblock %}

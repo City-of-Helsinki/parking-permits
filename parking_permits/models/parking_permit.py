@@ -291,12 +291,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def active_temporary_vehicle(self):
-        now = timezone.now()
+        """Get the active temporary vehicle for the permit"""
         return (
             self.temporary_vehicles.filter(
                 is_active=True,
-                start_time__lte=now,
-                end_time__gte=now,
             )
             .select_related("vehicle")
             .first()
@@ -908,9 +906,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 _("Temporary vehicle start time has to be after permit start time")
             )
 
+        # prevent end time from being less than start time + 1 hour
         end_dt = max(
             timezone.localtime(isoparse(end_time)),
             start_dt + timezone.timedelta(hours=1),
+        )
+
+        # prevent end time from being more than permit end time
+        end_dt = min(
+            end_dt,
+            self.end_time,
         )
 
         return start_dt, end_dt
@@ -929,7 +934,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         If `check_limit` is `True` and limit is exceeded, will raise a TemporaryVehicleValidationError.
 
         """
-        if check_limit and self.is_temporary_vehicle_limit_exceeded():
+        if check_limit and self.is_temporary_vehicle_limit_exceeded(user):
             raise TemporaryVehicleValidationError(
                 _(
                     "Can not have more than 2 temporary vehicles in 365 days from first one."
@@ -942,6 +947,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             vehicle=vehicle,
             end_time=end_time,
             start_time=start_time,
+            created_by=user,
+            created_at=timezone.now(),
         )
 
         self.temp_vehicles.add(temp_vehicle)
@@ -952,18 +959,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         return temp_vehicle
 
-    def is_temporary_vehicle_limit_exceeded(self) -> bool:
-        """Check limit of temporary vehicles. A user can only
-        have max 2 temp vehicles over 12 months."""
+    def is_temporary_vehicle_limit_exceeded(self, user) -> bool:
+        """Check limit of temporary vehicles.
+        A user can only create max 2 temp vehicles over 12 months."""
         return (
-            len(
-                self.temp_vehicles.filter(
-                    start_time__gte=get_end_time(timezone.now(), -12)
-                )
-                .order_by("-start_time")
-                .values("pk")[:2]
+            self.temp_vehicles.filter(
+                start_time__gte=get_end_time(timezone.now(), -12),
+                created_by=user,
             )
-            == 2
+            .order_by("-start_time")
+            .count()
+            >= 2
         )
 
     def get_unused_order_items(self):

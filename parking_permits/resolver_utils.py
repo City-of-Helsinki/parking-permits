@@ -13,9 +13,7 @@ from .models.parking_permit import (
 )
 from .services.mail import (
     PermitEmailType,
-    RefundEmailType,
     send_permit_email,
-    send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
 from .services.parkkihubi import sync_with_parkkihubi
@@ -78,8 +76,6 @@ def create_fixed_period_refunds(
     if not refundable_permits:
         return []
 
-    customer = refundable_permits[0].customer
-
     refunds = []
 
     total_sums_per_vat = {}
@@ -116,8 +112,6 @@ def create_fixed_period_refunds(
             for order_item in data["order_items"]:
                 order_item.is_refunded = True
                 order_item.save()
-        if refunds:
-            send_refund_email(RefundEmailType.CREATED, customer, refunds)
 
     return refunds
 

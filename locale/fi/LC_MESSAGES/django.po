@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-12-13 08:15+0200\n"
+"POT-Creation-Date: 2025-05-13 23:16+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -212,6 +212,9 @@ msgstr ""
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle %(primary_address)s."
 
+msgid "Source: Transport register, Traficom"
+msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
+
 msgid "Forbidden"
 msgstr "Lupa evätty"
 
@@ -340,6 +343,9 @@ msgstr "Palautukset"
 
 msgid "Refund ID"
 msgstr "Palautusnumero"
+
+msgid "incl. VAT"
+msgstr "sis. ALV"
 
 msgid "Extra info"
 msgstr "Lisätiedot"
@@ -1094,9 +1100,6 @@ msgstr ""
 "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun "
 "maksusuoritus on hyväksytty"
 
-msgid "Source: Transport register, Traficom"
-msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
-
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
 
@@ -1125,12 +1128,15 @@ msgstr "Palaute"
 msgid "Customer service contact info"
 msgstr "Asiakaspalvelu ja yhteystiedot"
 
+msgid "Your parking permit expires at"
+msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy"
+
 msgid ""
-"Your parking permit will expire soon. You can renew your permit by logging "
-"in to the service again."
+"You can renew your permit by logging in to the service and selecting 'Extend "
+"parking permit'."
 msgstr ""
-"Pysäköintitunnuksesi voimassaoloaika päättyy lähiaikoina. Voit uusia "
-"tunnuksen kirjautumalla palveluun"
+"Voit uusia tunnuksen kirjautumalla palveluun ja valitsemalla 'Jatka "
+"pysäköintitunnuksen voimassaoloa'."
 
 msgid "Thank you for your order!"
 msgstr "Kiitos tilauksestasi!"
@@ -1165,9 +1171,6 @@ msgstr ""
 
 msgid "Total refundable amount"
 msgstr "Palautettava summa yhteensä"
-
-msgid "incl. VAT"
-msgstr "sis. ALV"
 
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "

@@ -430,7 +430,19 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
         )
         ParkingPermitFactory(
             customer=self.customer,
+            end_time=datetime(2023, 4, 5, tzinfo=dt_tz.utc),
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+        )
+        ParkingPermitFactory(
+            customer=self.customer,
             end_time=datetime(2023, 4, 6, tzinfo=dt_tz.utc),
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+        )
+        ParkingPermitFactory(
+            customer=self.customer,
+            end_time=datetime(2023, 4, 7, tzinfo=dt_tz.utc),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
@@ -470,7 +482,7 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
     def test_automatic_expiration_remind_targets(self, mock_method):
         mock_method.return_value = None
         valid_permits = ParkingPermit.objects.filter(status=ParkingPermitStatus.VALID)
-        self.assertEqual(valid_permits.count(), 5)
+        self.assertEqual(valid_permits.count(), 7)
         expiring_permits = automatic_expiration_remind_notification_of_permits()
         self.assertEqual(expiring_permits.count(), 2)
 
