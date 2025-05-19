@@ -16,7 +16,7 @@ from parking_permits.cron import (
     handle_announcement_emails,
 )
 from parking_permits.customer_permit import CustomerPermit
-from parking_permits.models import Customer, Refund
+from parking_permits.models import Customer, Refund, TemporaryVehicle
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -31,6 +31,7 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
+from parking_permits.tests.factories.vehicle import TemporaryVehicleFactory
 
 
 class CronTestCase(TestCase):
@@ -75,6 +76,57 @@ class CronTestCase(TestCase):
             status=ParkingPermitStatus.CLOSED, synced_with_parkkihubi=False
         )
         automatic_syncing_of_permits_to_parkkihubi()
+        mock_sync.assert_called()
+
+    @patch("parking_permits.cron.sync_with_parkkihubi")
+    def test_automatic_syncing_of_permits_to_parkkihubi_expired_temporary_vehicles_deactivated(
+        self, mock_sync
+    ):
+        now = tz.now()
+        temp_vehicle_1 = TemporaryVehicleFactory(
+            start_time=now, end_time=now + timedelta(days=7), is_active=True
+        )
+        permit_1 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+        )
+        permit_1.temp_vehicles.add(temp_vehicle_1)
+        temp_vehicle_2 = TemporaryVehicleFactory(
+            start_time=now - timedelta(days=7),
+            end_time=now - timedelta(days=1),
+            is_active=True,
+        )
+        permit_2 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+        )
+        permit_2.temp_vehicles.add(temp_vehicle_2)
+        temp_vehicle_3 = TemporaryVehicleFactory(
+            start_time=now - timedelta(days=7),
+            end_time=now + timedelta(days=1),
+            is_active=True,
+        )
+        permit_3 = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            primary_vehicle=True,
+        )
+        permit_3.temp_vehicles.add(temp_vehicle_3)
+        self.assertEqual(TemporaryVehicle.objects.count(), 3)
+        self.assertEqual(TemporaryVehicle.objects.filter(is_active=True).count(), 3)
+
+        automatic_syncing_of_permits_to_parkkihubi()
+
+        temp_vehicle_1.refresh_from_db()
+        temp_vehicle_2.refresh_from_db()
+        temp_vehicle_3.refresh_from_db()
+        self.assertEqual(temp_vehicle_1.is_active, True)
+        self.assertEqual(temp_vehicle_2.is_active, False)
+        self.assertEqual(temp_vehicle_3.is_active, True)
+        self.assertEqual(TemporaryVehicle.objects.count(), 3)
+        self.assertEqual(TemporaryVehicle.objects.filter(is_active=True).count(), 2)
         mock_sync.assert_called()
 
     @freeze_time(tz.make_aware(datetime(2024, 11, 30, 0, 22)))
