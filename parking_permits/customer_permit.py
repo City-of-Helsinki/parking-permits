@@ -130,13 +130,7 @@ class CustomerPermit:
     def remove_temporary_vehicle(self, permit_id):
         permit_details = self._get_permit(permit_id)
         permit = permit_details[0]
-        active_temp_vehicles = permit.temp_vehicles.filter(is_active=True)
-        prev_active_temp_vehicles = list(active_temp_vehicles)
-        active_temp_vehicles.update(is_active=False)
-        for temp_vehicle in prev_active_temp_vehicles:
-            ParkingPermitEventFactory.make_remove_temporary_vehicle_event(
-                permit, temp_vehicle, created_by=self.customer.user
-            )
+        permit.remove_temporary_vehicle()
         sync_with_parkkihubi(permit)
         send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
         return True
