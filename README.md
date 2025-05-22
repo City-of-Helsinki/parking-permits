@@ -62,7 +62,7 @@ pip-sync requirements.txt requirements-dev.txt
 
 - You can run all the tests with:
   ```bash
-  docker-compose exec graphql-api pytest
+  docker-compose exec api pytest
   ```
 - If you want to run the tests continously while developing:
 
@@ -71,7 +71,7 @@ pip-sync requirements.txt requirements-dev.txt
   - Run pytest whenever a Python file changes with:
 
     ```bash
-    fd --extension py | entr -c docker-compose exec graphql-api pytest
+    fd --extension py | entr -c docker-compose exec api pytest
     ```
 
 ## Testing emails locally with [Mailpit](https://github.com/axllent/mailpit)
