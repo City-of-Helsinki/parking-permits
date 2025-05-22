@@ -32,6 +32,11 @@ Then you can run docker image with:
 
 ## Setting up local development environment with PyEnv and VirtualEnvWrapper
 
+# required packages:
+- pyenv
+- virtualenvwrapper
+- pyenv-virtualenvwrapper
+
 ```
 pyenv install -v 3.11.9
 pyenv virtualenv 3.11.9 parking_permits
