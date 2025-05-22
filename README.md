@@ -50,7 +50,8 @@ Install packages
 pip install -U pip pip-tools
 pip-compile -U requirements.in
 pip-compile -U requirements-dev.in
-pip-sync requirements.txt requirements-dev.txt
+pip-compile -U requirements-test.in
+pip-sync requirements.txt requirements-dev.txt requirements-test.txt
 ```
 
 
