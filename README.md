@@ -32,6 +32,11 @@ Then you can run docker image with:
 
 ## Setting up local development environment with PyEnv and VirtualEnvWrapper
 
+# required packages:
+- pyenv
+- virtualenvwrapper
+- pyenv-virtualenvwrapper
+
 ```
 pyenv install -v 3.11.9
 pyenv virtualenv 3.11.9 parking_permits
@@ -45,7 +50,8 @@ Install packages
 pip install -U pip pip-tools
 pip-compile -U requirements.in
 pip-compile -U requirements-dev.in
-pip-sync requirements.txt requirements-dev.txt
+pip-compile -U requirements-test.in
+pip-sync requirements.txt requirements-dev.txt requirements-test.txt
 ```
 
 
@@ -62,7 +68,7 @@ pip-sync requirements.txt requirements-dev.txt
 
 - You can run all the tests with:
   ```bash
-  docker-compose exec graphql-api pytest
+  docker-compose exec api pytest
   ```
 - If you want to run the tests continously while developing:
 
@@ -71,7 +77,7 @@ pip-sync requirements.txt requirements-dev.txt
   - Run pytest whenever a Python file changes with:
 
     ```bash
-    fd --extension py | entr -c docker-compose exec graphql-api pytest
+    fd --extension py | entr -c docker-compose exec api pytest
     ```
 
 ## Testing emails locally with [Mailpit](https://github.com/axllent/mailpit)
