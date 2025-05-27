@@ -224,10 +224,9 @@ def resolve_permit_detail(obj, info, permit_id):
 
 @PermitDetail.field("changeLogs")
 def resolve_permit_detail_history(permit, info):
-    events = ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
+    return ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
         "-created_at"
-    )[:10]
-    return events
+    )
 
 
 @query.field("zones")
