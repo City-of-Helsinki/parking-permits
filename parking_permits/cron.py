@@ -5,7 +5,11 @@ from django.db.models import Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
-from parking_permits.models import Announcement, Customer, ParkingPermit
+from parking_permits.models import (
+    Announcement,
+    Customer,
+    ParkingPermit,
+)
 from parking_permits.models.order import SubscriptionCancelReason
 from parking_permits.models.parking_permit import (
     ContractType,
@@ -105,6 +109,24 @@ def automatic_remove_obsolete_customer_data():
 
 
 def automatic_syncing_of_permits_to_parkkihubi():
+    logger.info("Automatically syncing permits to Parkkihubi started...")
+
+    # Automatically deactivate temporary vehicles that are in the past
+    # for valid permits
+    temp_vehicle_permits = ParkingPermit.objects.filter(
+        status=ParkingPermitStatus.VALID,
+        temp_vehicles__is_active=True,
+        temp_vehicles__end_time__lt=tz.localtime(tz.now()),
+    )
+    for permit in temp_vehicle_permits:
+        permit.remove_temporary_vehicle()
+        sync_with_parkkihubi(permit)
+        send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
+        logger.info(
+            f"Permit {permit.pk} temporary vehicle deactivated "
+            f"because it is in the past."
+        )
+
     statuses_to_sync = [
         ParkingPermitStatus.CLOSED,
         ParkingPermitStatus.VALID,
@@ -112,5 +134,11 @@ def automatic_syncing_of_permits_to_parkkihubi():
     permits = ParkingPermit.objects.filter(
         synced_with_parkkihubi=False, status__in=statuses_to_sync
     )
+    permit_count = permits.count()
     for permit in permits:
         sync_with_parkkihubi(permit)
+
+    logger.info(
+        "Automatically syncing permits to Parkkihubi completed. "
+        f"{permit_count} permits synced."
+    )

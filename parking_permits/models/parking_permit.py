@@ -959,6 +959,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         return temp_vehicle
 
+    def remove_temporary_vehicle(self):
+        """Remove active temporary vehicle from the permit."""
+        active_temp_vehicles = self.temp_vehicles.filter(is_active=True)
+        prev_active_temp_vehicles = list(active_temp_vehicles)
+        active_temp_vehicles.update(is_active=False)
+        for temp_vehicle in prev_active_temp_vehicles:
+            ParkingPermitEventFactory.make_remove_temporary_vehicle_event(
+                self, temp_vehicle
+            )
+        return True
+
     def is_temporary_vehicle_limit_exceeded(self, user) -> bool:
         """Check limit of temporary vehicles.
         A user can only create max 2 temp vehicles over 12 months."""

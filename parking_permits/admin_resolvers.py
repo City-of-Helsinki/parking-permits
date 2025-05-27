@@ -224,10 +224,9 @@ def resolve_permit_detail(obj, info, permit_id):
 
 @PermitDetail.field("changeLogs")
 def resolve_permit_detail_history(permit, info):
-    events = ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
+    return ParkingPermitEvent.objects.filter(parking_permit=permit).order_by(
         "-created_at"
-    )[:10]
-    return events
+    )
 
 
 @query.field("zones")
@@ -1527,19 +1526,8 @@ def add_temporary_vehicle(
 @convert_kwargs_to_snake_case
 @transaction.atomic
 def remove_temporary_vehicle(obj, info, permit_id):
-    request = info.context["request"]
     permit = ParkingPermit.objects.get(id=permit_id)
-    active_temp_vehicles = permit.temp_vehicles.filter(is_active=True)
-    prev_active_temp_vehicles = list(active_temp_vehicles)
-
-    active_temp_vehicles.update(is_active=False)
+    permit.remove_temporary_vehicle()
     sync_with_parkkihubi(permit)
-
-    for temp_vehicle in prev_active_temp_vehicles:
-        ParkingPermitEventFactory.make_remove_temporary_vehicle_event(
-            permit, temp_vehicle, request.user
-        )
-
     send_permit_email(PermitEmailType.TEMP_VEHICLE_DEACTIVATED, permit)
-
     return {"success": True}

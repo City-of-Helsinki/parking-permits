@@ -505,9 +505,7 @@ class TestCreateRefund:
         assert refunds[0].amount == 180
 
     @pytest.mark.django_db()
-    def test_new_refund_with_permit_extension_request(
-        self, zone
-    ):
+    def test_new_refund_with_permit_extension_request(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 12, 31))
@@ -565,9 +563,7 @@ class TestCreateRefund:
             assert refund.vat_amount == pytest.approx(Decimal(34.84), delta)
 
     @pytest.mark.django_db()
-    def test_multiple_vat_refunds_with_permit_extension_request(
-        self, zone
-    ):
+    def test_multiple_vat_refunds_with_permit_extension_request(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 12, 31))
@@ -636,9 +632,7 @@ class TestCreateRefund:
             assert second_refund.vat_amount == pytest.approx(Decimal(24.38), delta)
 
     @pytest.mark.django_db()
-    def test_new_refund_with_permit_extension_request_multiple_products(
-        self, zone
-    ):
+    def test_new_refund_with_permit_extension_request_multiple_products(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
@@ -797,9 +791,7 @@ class TestCreateRefund:
             assert second_refund.vat_amount == pytest.approx(Decimal(52.83), delta)
 
     @pytest.mark.django_db()
-    def test_new_refund_with_permit_low_emission_vehicle(
-        self, zone
-    ):
+    def test_new_refund_with_permit_low_emission_vehicle(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 12, 31))
@@ -930,9 +922,7 @@ class TestCreateRefund:
             assert refund.vat_amount == pytest.approx(Decimal(34.84), delta)
 
     @pytest.mark.django_db()
-    def test_multiple_vat_refunds_with_permit_vehicle_change(
-        self, zone
-    ):
+    def test_multiple_vat_refunds_with_permit_vehicle_change(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 12, 31))
@@ -1024,9 +1014,7 @@ class TestCreateRefund:
             assert second_refund.vat_amount == pytest.approx(Decimal(18.29), delta)
 
     @pytest.mark.django_db()
-    def test_new_refund_with_permit_vehicle_change_multiple_products(
-        self, zone
-    ):
+    def test_new_refund_with_permit_vehicle_change_multiple_products(self, zone):
         with freeze_time("2024-3-26"):
             start_time = timezone.make_aware(datetime(2024, 1, 1))
             end_time = timezone.make_aware(datetime(2024, 6, 30))
