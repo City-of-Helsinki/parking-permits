@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2025-05-27
+
+### Fixed
+
+- Auto-deactivate expired temporary vehicles ([43c008e](https://github.com/City-of-Helsinki/parking-permits/commit/43c008ebdb8aad28387f48dc4d5b9a441e6d27aa))
+- Use all requirements-files in Dockerfile ([fff588a](https://github.com/City-of-Helsinki/parking-permits/commit/fff588ad04002432dc481adf346ecd2f7a565503))
+- Show full permit detail history ([ca7d93e](https://github.com/City-of-Helsinki/parking-permits/commit/ca7d93e6c476504eadde81f1c78fe6b926e56759))
+
 ## [1.8.0] - 2025-05-15
 
 ### Added
