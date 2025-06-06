@@ -10,6 +10,7 @@ from django.utils.translation import gettext_lazy as _
 from freezegun import freeze_time
 
 from parking_permits.exceptions import (
+    DuplicatePermit,
     PermitCanNotBeEnded,
     ProductCatalogError,
     TemporaryVehicleValidationError,
@@ -985,6 +986,19 @@ class ParkingZoneTestCase(TestCase):
 
 
 class ParkingPermitTestCase(TestCase):
+
+    duplicable_statuses = [
+        ParkingPermitStatus.CANCELLED,
+        ParkingPermitStatus.CLOSED,
+    ]
+
+    non_duplicable_statuses = [
+        ParkingPermitStatus.VALID,
+        ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        ParkingPermitStatus.DRAFT,
+        ParkingPermitStatus.PRELIMINARY,
+    ]
+
     def setUp(self):
         self.permit = ParkingPermitFactory()
 
@@ -1674,3 +1688,61 @@ class ParkingPermitTestCase(TestCase):
         )
 
         self.assertTrue(ParkingPermitEvent.objects.filter(created_by=user).exists())
+
+    def test_saving_duplicate_permit_raises(self):
+        customer = CustomerFactory()
+        vehicle = VehicleFactory()
+
+        for status_for_preexisting in self.non_duplicable_statuses:
+            preexisting_permit = ParkingPermitFactory(
+                customer=customer, vehicle=vehicle, status=status_for_preexisting
+            )
+
+            for status_for_new in self.non_duplicable_statuses:
+                with self.assertRaises(DuplicatePermit):
+                    ParkingPermitFactory(
+                        customer=customer, vehicle=vehicle, status=status_for_new
+                    )
+
+            # Cleanup for the next pre-existing status
+            preexisting_permit.delete()
+
+    def test_saving_closed_or_cancelled_permit_does_not_raise(self):
+        customer = CustomerFactory()
+        vehicle = VehicleFactory()
+
+        for status_for_preexisting in ParkingPermitStatus.values:
+            preexisting_permit = ParkingPermitFactory(
+                customer=customer, vehicle=vehicle, status=status_for_preexisting
+            )
+
+            for status_for_new in self.duplicable_statuses:
+                new_permit = ParkingPermitFactory(
+                    customer=customer, vehicle=vehicle, status=status_for_new
+                )
+                # Cleanup to prevent multiple simultaneous new permits
+                new_permit.delete()
+
+            # Cleanup for the next pre-existing status
+            preexisting_permit.delete()
+
+    def test_preexisting_closed_or_cancelled_does_not_contribute_to_duplicates(self):
+        customer = CustomerFactory()
+        vehicle = VehicleFactory()
+
+        for status_for_preexisting in self.duplicable_statuses:
+            preexisting_permit = ParkingPermitFactory(
+                customer=customer, vehicle=vehicle, status=status_for_preexisting
+            )
+
+            for status_for_new in ParkingPermitStatus.values:
+                new_permit = ParkingPermitFactory(
+                    customer=customer, vehicle=vehicle, status=status_for_new
+                )
+                # Cleanup to prevent multiple simultaneous new permits
+                new_permit.delete()
+
+            # Cleanup for the next pre-existing status
+            preexisting_permit.delete()
+
+        # No exceptions raised by now => all good
