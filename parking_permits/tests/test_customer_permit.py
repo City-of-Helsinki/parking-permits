@@ -276,7 +276,7 @@ class GetCustomerPermitTestCase(TestCase):
             status=DRAFT,
             primary_vehicle=False,
             parking_zone=self.zone,
-            vehicle=self.vehicle_b,
+            vehicle=self.vehicle_c,
             start_type=IMMEDIATELY,
             start_time=previous_day(),
         )
