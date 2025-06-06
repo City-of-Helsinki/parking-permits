@@ -19,7 +19,11 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import PermitCanNotBeEnded, TemporaryVehicleValidationError
+from ..exceptions import (
+    DuplicatePermit,
+    PermitCanNotBeEnded,
+    TemporaryVehicleValidationError,
+)
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -541,6 +545,34 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         3. PERMIT_EXTENSIONS_ENABLED flag is True.
         """
         return self._can_extend_parking_permit(is_date_restriction=False)
+
+    def save(self, *args, **kwargs):
+        # Enforce unique customer-vehicle-pair depending on the status,
+        # duplicate customer-vehicle-pairs are allowed only for
+        # permits with cancelled/closed status
+        non_duplicable_statuses = [
+            ParkingPermitStatus.VALID,
+            ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            ParkingPermitStatus.DRAFT,
+            ParkingPermitStatus.PRELIMINARY,
+        ]
+
+        duplicate_query = ParkingPermit.objects.exclude(id=self.id).filter(
+            customer_id=self.customer_id,
+            vehicle__registration_number=self.vehicle.registration_number,
+            # Pre-existing cancelled/closed permits do not contribute
+            # towards potential duplicates
+            status__in=non_duplicable_statuses,
+        )
+
+        # If the permit being saved is cancelled/closed, we can
+        # short-circuit to avoid db-hit/query-evaluation
+        # as those statuses will never break the constraint
+        check_for_duplicates = self.status in non_duplicable_statuses
+        if check_for_duplicates and duplicate_query.exists():
+            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+
+        return super().save(*args, **kwargs)
 
     def _can_extend_parking_permit(self, *, is_date_restriction=True):
         if not all(
@@ -1234,7 +1266,7 @@ class ParkingPermitEventFactory:
             message=gettext_noop("Permit #%(permit_id)s updated"),
             context={
                 "permit_id": permit.id,
-                "changes": flatten_dict(changes or dict()),
+                "changes": flatten_dict(changes or {}),
             },
             validity_period=permit.current_period_range,
             type=ParkingPermitEvent.EventType.UPDATED,
