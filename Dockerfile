@@ -17,13 +17,11 @@ FROM base
 
 COPY requirements.in .
 COPY requirements-dev.in .
-COPY requirements-test.in .
 
 RUN pip install -U pip pip-tools && \
     pip-compile -U requirements.in && \
     pip-compile -U requirements-dev.in && \
-    pip-compile -U requirements-test.in && \
-    pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt -r requirements-test.txt
+    pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
 
 COPY . .
 
