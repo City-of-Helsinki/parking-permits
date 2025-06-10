@@ -1,33 +1,27 @@
-FROM public.ecr.aws/ubuntu/ubuntu:20.04 as base
+# ==============================
+FROM helsinki.azurecr.io/ubi9/python-312-gdal AS base
+# ==============================
 
 ENV STATIC_ROOT /srv/app/static
 
 WORKDIR /app
 
-RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::Check-Date=false update && \
-    apt-get install -y software-properties-common && \
-    add-apt-repository -y ppa:deadsnakes/ppa && \
-    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive apt-get install -y \
+RUN dnf update -y && \
+    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive dnf install -y \
     nano \
-    python3.11 \
-    python3.11-distutils \
-    python3.11-venv \
-    apt-transport-https \
-    gdal-bin \
     uwsgi \
     uwsgi-plugin-python3 \
-    libgdal26 \
     git-core \
-    postgresql-client \
     netcat \
     gettext \
-    libpq-dev \
-    unzip && \
-    ln -s /usr/bin/pip3.11 /usr/local/bin/pip && \
-    ln -s /usr/bin/pip3.11 /usr/local/bin/pip3 && \
-    ln -s /usr/bin/python3.11 /usr/local/bin/python && \
-    ln -s /usr/bin/python3.11 /usr/local/bin/python3 && \
-    python3.11 -m ensurepip && \
+    unzip \
+    postgresql \
+    libpq-devel && \
+    ln -s /usr/bin/pip3.12 /usr/local/bin/pip && \
+    ln -s /usr/bin/pip3.12 /usr/local/bin/pip3 && \
+    ln -s /usr/bin/python3.12 /usr/local/bin/python && \
+    ln -s /usr/bin/python3.12 /usr/local/bin/python3 && \
+    python3.12 -m ensurepip && \
     mkdir -p /srv/app/static
 
 # ==============================
