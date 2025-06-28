@@ -21,7 +21,7 @@ from parking_permits.models.parking_permit import (
 from parking_permits.models.product import Product, ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.resolver_utils import (
-    create_fixed_period_refunds,
+    create_permit_refunds,
     end_permit,
     end_permits,
 )
@@ -405,7 +405,7 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -418,9 +418,9 @@ class TestCreateRefund:
 
     @pytest.mark.django_db()
     def test_new_refund_open_ended(self, zone):
-        with freeze_time("2024-3-26"):
-            start_time = timezone.make_aware(datetime(2024, 1, 1))
-            end_time = timezone.make_aware(datetime(2024, 6, 30))
+        with freeze_time("2025-6-28"):
+            start_time = timezone.make_aware(datetime(2025, 6, 29))
+            end_time = timezone.make_aware(datetime(2025, 7, 28))
 
             _create_zone_products(
                 zone,
@@ -445,13 +445,15 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
             )
 
-        assert refunds == []
+        assert refunds != []
+        # 1 month unused at 60 EUR/month
+        assert refunds[0].amount == 60
 
     @pytest.mark.django_db()
     def test_new_refund_multiple_permits(self, zone):
@@ -493,7 +495,7 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit_a.customer.user,
                 *permits,
                 iban=IBAN,
@@ -545,7 +547,7 @@ class TestCreateRefund:
             # approve and extend permit immediately
             ext_request.approve()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -608,7 +610,7 @@ class TestCreateRefund:
             # approve and extend permit immediately
             ext_request.approve()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -685,7 +687,7 @@ class TestCreateRefund:
             # approve and extend permit immediately
             ext_request.approve()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -765,7 +767,7 @@ class TestCreateRefund:
             # approve and extend permit immediately
             ext_request.approve()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -824,7 +826,7 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -904,7 +906,7 @@ class TestCreateRefund:
                 create_renew_order_event=False,
             )
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -990,7 +992,7 @@ class TestCreateRefund:
                 create_renew_order_event=False,
             )
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -1091,7 +1093,7 @@ class TestCreateRefund:
                 create_renew_order_event=False,
             )
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -1196,7 +1198,7 @@ class TestCreateRefund:
                 create_renew_order_event=False,
             )
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -1252,7 +1254,7 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,
@@ -1289,7 +1291,7 @@ class TestCreateRefund:
             order.status = OrderStatus.CONFIRMED
             order.save()
 
-            refunds = create_fixed_period_refunds(
+            refunds = create_permit_refunds(
                 permit.customer.user,
                 permit,
                 iban=IBAN,

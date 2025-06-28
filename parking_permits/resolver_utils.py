@@ -37,7 +37,7 @@ def end_permits(
     create relevant events.
     """
 
-    create_fixed_period_refunds(
+    create_permit_refunds(
         user,
         *permits,
         iban=iban,
@@ -53,7 +53,7 @@ def end_permits(
         )
 
 
-def create_fixed_period_refunds(
+def create_permit_refunds(
     user: Optional[User],
     *permits: ParkingPermit,
     iban: Optional[str],
@@ -68,11 +68,7 @@ def create_fixed_period_refunds(
 
     Returns the created refund instances, or empty list if not available.
     """
-    refundable_permits = [
-        permit
-        for permit in permits
-        if permit.can_be_refunded and permit.is_fixed_period
-    ]
+    refundable_permits = [permit for permit in permits if permit.can_be_refunded]
     if not refundable_permits:
         return []
 
