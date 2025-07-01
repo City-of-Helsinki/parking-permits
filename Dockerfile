@@ -2,9 +2,10 @@
 FROM helsinki.azurecr.io/ubi9/python-312-gdal AS base
 # ==============================
 
-ENV STATIC_ROOT /srv/app/static
+ENV STATIC_ROOT=/srv/app/static
 
 WORKDIR /app
+USER root
 
 RUN dnf update -y && \
     TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive dnf install -y \
@@ -42,9 +43,7 @@ RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
     python manage.py collectstatic --noinput && \
     python manage.py compilemessages
 
-# Openshift starts the container process with group zero and random ID
-# we mimic that here with nobody and group zero
-USER nobody:0
+USER default
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
@@ -64,8 +63,6 @@ RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
     python manage.py collectstatic --noinput && \
     python manage.py compilemessages
 
-# Openshift starts the container process with group zero and random ID
-# we mimic that here with nobody and group zero
-USER nobody:0
+USER default
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
