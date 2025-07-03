@@ -1,68 +1,55 @@
 # ==============================
-FROM helsinki.azurecr.io/ubi9/python-312-gdal AS base
+FROM helsinki.azurecr.io/ubi9/python-312-gdal AS appbase
 # ==============================
 
-ENV STATIC_ROOT=/srv/app/static
+ENV TZ="Europe/Helsinki"
 
 WORKDIR /app
 USER root
 
-RUN dnf update -y && \
-    TZ="Europe/Helsinki" DEBIAN_FRONTEND=noninteractive dnf install -y \
-    nano \
-    uwsgi \
-    uwsgi-plugin-python3 \
-    git-core \
-    netcat \
+COPY requirements.txt .
+
+RUN dnf update -y && dnf install -y \
+    nmap-ncat \
     gettext \
-    unzip \
     postgresql \
-    libpq-devel && \
-    ln -s /usr/bin/pip3.12 /usr/local/bin/pip && \
-    ln -s /usr/bin/pip3.12 /usr/local/bin/pip3 && \
-    ln -s /usr/bin/python3.12 /usr/local/bin/python && \
-    ln -s /usr/bin/python3.12 /usr/local/bin/python3 && \
-    python3.12 -m ensurepip && \
-    mkdir -p /srv/app/static
+    && pip install -U pip setuptools wheel \
+    && pip install --no-cache-dir -r requirements.txt \
+    && mkdir -p /srv/app/static \
+    && dnf clean all
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+EXPOSE 8000/tcp
 
 # ==============================
-FROM base AS development
+FROM appbase AS development
 # ==============================
 
-COPY requirements.in .
-COPY requirements-dev.in .
+ENV DEV_SERVER=True
 
-RUN pip install -U pip pip-tools && \
-    pip-compile -U requirements.in && \
-    pip-compile -U requirements-dev.in && \
-    pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY . .
 
-RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
-    python manage.py collectstatic --noinput && \
-    python manage.py compilemessages
-
 USER default
 
-ENTRYPOINT ["./docker-entrypoint.sh"]
-
 # ==============================
-FROM base AS production
+FROM appbase AS staticbuilder
 # ==============================
 
-COPY requirements.in .
-
-RUN pip install -U pip pip-tools && \
-    pip-compile -U requirements.in && \
-    pip install --no-cache-dir -r requirements.txt
-
+ENV STATIC_ROOT=/srv/app/static
 COPY . .
 
-RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
-    python manage.py collectstatic --noinput && \
-    python manage.py compilemessages
+RUN python manage.py collectstatic
+
+# ==============================
+FROM appbase AS production
+# ==============================
+
+COPY --from=staticbuilder /srv/app/static /app/static
+COPY . .
+
+RUN python manage.py compilemessages
 
 USER default
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
