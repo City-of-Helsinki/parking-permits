@@ -448,6 +448,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_range(self):
+
+        # Workaround for invalid ranges in ParkingPermitEvent.validity_period
+        # NOTE:
+        # - permit end time is allowed to be None for historical reasons,
+        # but this _shouldn't_ happen.
+        # (Possible TODO: properly enforce this by migrating the field
+        # to not allow null values. Note that this may end up being difficult
+        # due to historical data and the need to adjust
+        # ParkingPermitEvent.validity_period end dates etc.)
+        # - this property is only used by some ParkingPermitEvent-creator
+        # methods (eg. make_update_permit_event())
+        # to set the validity_period-field in ParkingPermitEvent-model
+        # - validity_period is a DateTimeRangeField which raises an error
+        # if a save is attempted with non-null start time and null end time.
+        # (Or vice versa, but start time can't be null.)
+        # - we avoid this error by returning None here
+        if self.end_time is None:
+            return None
+
         return self.start_time, self.end_time
 
     @property
