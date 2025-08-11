@@ -419,6 +419,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         now = timezone.now()
         diff_months = diff_months_ceil(self.start_time, now)
         if self.is_fixed_period:
+            # self.month_count acts as an upper bound for diff_months
+            # which ensures nonnegative months_left
             return min(self.month_count, diff_months)
         return diff_months
 
