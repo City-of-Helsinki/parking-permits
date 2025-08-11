@@ -875,6 +875,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             )
 
         self.end_time = end_time
+        self.month_count = diff_months_ceil(self.start_time, end_time)
+
         if (
             end_type == ParkingPermitEndType.IMMEDIATELY
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
