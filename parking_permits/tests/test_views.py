@@ -1,4 +1,5 @@
 import datetime
+import json
 import zoneinfo
 from datetime import timezone as dt_tz
 from decimal import Decimal
@@ -1158,6 +1159,32 @@ class OrderViewTestCase(APITestCase):
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
 
+    def test_order_view_should_return_bad_request_if_subbing_fixed_period_permit(self):
+
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+
+        permit = ParkingPermitFactory(contract_type=ContractType.FIXED_PERIOD)
+        subscription = SubscriptionFactory(talpa_subscription_id=talpa_subscription_id)
+        OrderItemFactory(
+            subscription=subscription,
+            permit=permit,
+        )
+
+        url = reverse("parking_permits:order-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_RENEWAL_ORDER_CREATED",
+            "orderId": talpa_order_id,
+            "subscriptionId": talpa_subscription_id,
+        }
+
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 400)
+        response_message = json.loads(response.content.decode("utf-8"))["message"]
+        self.assertEqual(
+            response_message, "Permit contract type differs from open ended."
+        )
+
     def test_order_view_should_return_not_found_if_talpa_subscription_does_not_exist(
         self,
     ):
@@ -1586,6 +1613,54 @@ class SubscriptionViewTestCase(APITestCase):
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 400)
+
+    @patch.object(SubscriptionValidator, "validate_subscription")
+    @patch.object(OrderValidator, "validate_order")
+    def test_subscription_view_should_return_bad_request_if_subbing_fixed_period_permit(
+        self,
+        mock_validate_order,
+        mock_validate_subscription,
+    ):
+        talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+
+        customer = CustomerFactory()
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.FIXED_PERIOD,
+            customer=customer,
+        )
+        order = OrderFactory(
+            talpa_order_id=talpa_order_id,
+            customer=customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        OrderItemFactory(
+            order=order,
+            permit=permit,
+        )
+
+        mock_validate_order.return_value = get_validated_order_data(
+            talpa_order_id, order.order_items.first().talpa_order_item_id
+        )
+        mock_validate_subscription.return_value = get_validated_subscription_data(
+            talpa_subscription_id, talpa_order_id, talpa_order_item_id, permit.id
+        )
+
+        url = reverse("parking_permits:subscription-notify")
+        data = {
+            "eventType": "SUBSCRIPTION_CREATED",
+            "subscriptionId": talpa_subscription_id,
+            "orderId": talpa_order_id,
+            "orderItemId": talpa_order_item_id,
+        }
+        response = self.client.post(url, data)
+
+        self.assertEqual(response.status_code, 400)
+        response_message = json.loads(response.content.decode("utf-8"))["message"]
+        self.assertEqual(
+            response_message, "Permit contract type differs from open ended."
+        )
 
     @override_settings(DEBUG=True)
     @patch.object(SubscriptionValidator, "validate_subscription")
