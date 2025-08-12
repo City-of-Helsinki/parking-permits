@@ -53,6 +53,7 @@ from .models.order import (
     SubscriptionValidator,
 )
 from .models.parking_permit import (
+    ContractType,
     ParkingPermit,
     ParkingPermitEndType,
     ParkingPermitEventFactory,
@@ -655,6 +656,12 @@ class OrderView(APIView):
                 return bad_request_response(
                     f"Permit {permit} or customer {permit.customer} or user {permit.customer.user} is missing"
                 )
+
+            if permit.contract_type != ContractType.OPEN_ENDED:
+                return bad_request_response(
+                    "Permit contract type differs from open ended."
+                )
+
             try:
                 validated_order_data = OrderValidator.validate_order(
                     talpa_order_id, permit.customer.user.uuid
@@ -816,11 +823,17 @@ class SubscriptionView(APIView):
             order_item_qs = OrderItem.objects.filter(
                 order__talpa_order_id=talpa_order_id,
                 permit_id=permit_id,
-            )
+            ).select_related("permit")
             order_item = order_item_qs.first()
             if not order_item:
                 return not_found_response(
                     f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
+                )
+
+            permit = order_item.permit
+            if permit.contract_type != ContractType.OPEN_ENDED:
+                return bad_request_response(
+                    "Permit contract type differs from open ended."
                 )
 
             subscription = Subscription.objects.create(
