@@ -3,6 +3,7 @@ import re
 from collections import Counter
 from copy import deepcopy
 from decimal import Decimal
+from typing import Optional
 
 from ariadne import (
     MutationType,
@@ -260,19 +261,17 @@ def resolve_zone_by_location(obj, info, location):
     autotarget=audit.TARGET_RETURN,
     add_kwarg=True,
 )
-def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
+def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data) -> Customer:
     query_params = data.get("query")
-    customer = None
+    customer: Optional[Customer] = None
 
     if national_id_number := query_params.get("national_id_number"):
         # We're searching data from DVV now, so change the event type.
         audit_msg.event_type = audit.EventType.DVV
         logger.info("Searching customer from DVV...")
-        if customer := get_person_info(national_id_number):
-            if primary_address := customer.get("primary_address"):
-                customer["primary_address"] = update_or_create_address(primary_address)
-            if other_address := customer.get("other_address"):
-                customer["other_address"] = update_or_create_address(other_address)
+
+        if person_info := get_person_info(national_id_number):
+            customer = update_or_create_customer(person_info)
 
     if not customer:
         # We're searching data from APP now, so change the event type.
