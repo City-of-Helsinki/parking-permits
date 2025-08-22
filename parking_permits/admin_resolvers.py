@@ -271,7 +271,7 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data) -> Customer:
         logger.info("Searching customer from DVV...")
 
         if person_info := get_person_info(national_id_number):
-            customer = update_or_create_customer(person_info)
+            customer = update_or_create_customer(person_info, True)
 
     if not customer:
         # We're searching data from APP now, so change the event type.
@@ -354,7 +354,7 @@ def update_or_create_address(address_info):
     return address_obj[0]
 
 
-def update_or_create_customer(customer_info):
+def update_or_create_customer(customer_info, override_allow_empty_address: bool = False):
     if customer_info["address_security_ban"]:
         customer_info.pop("first_name", None)
         customer_info.pop("last_name", None)
@@ -373,7 +373,7 @@ def update_or_create_customer(customer_info):
     primary_address = customer_info.get("primary_address")
     other_address = customer_info.get("other_address")
 
-    if not customer_info["address_security_ban"] and (
+    if not override_allow_empty_address and not customer_info["address_security_ban"] and (
         not primary_address and not other_address
     ):
         raise AddressError(
