@@ -252,21 +252,11 @@ def resolve_zone_by_location(obj, info, location):
 @query.field("customer")
 @is_customer_service
 @convert_kwargs_to_snake_case
-@audit_logger.autolog(
-    AuditMsg(
-        "Admin retrieved customer details.",
-        operation=audit.Operation.READ,
-    ),
-    autotarget=audit.TARGET_RETURN,
-    add_kwarg=True,
-)
-def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
+def resolve_customer(obj, info, **data):
     query_params = data.get("query")
     customer = None
 
     if national_id_number := query_params.get("national_id_number"):
-        # We're searching data from DVV now, so change the event type.
-        audit_msg.event_type = audit.EventType.DVV
         logger.info("Searching customer from DVV...")
         if customer := get_person_info(national_id_number):
             if primary_address := customer.get("primary_address"):
@@ -275,8 +265,6 @@ def resolve_customer(obj, info, audit_msg: AuditMsg = None, **data):
                 customer["other_address"] = update_or_create_address(other_address)
 
     if not customer:
-        # We're searching data from APP now, so change the event type.
-        audit_msg.event_type = audit.EventType.APP
         logger.info("Searching customer from DB...")
         customer = Customer.objects.filter(**query_params).first()
         if not customer:
