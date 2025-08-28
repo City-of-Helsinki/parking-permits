@@ -43,7 +43,6 @@ class EventType(Enum):
 
     APP = "APP"
     TRAFICOM = "TRAFICOM"
-    DVV = "DVV"
     HELSINKI_PROFILE = "HELSINKI_PROFILE"
     TALPA = "TALPA"
 
