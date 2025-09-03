@@ -22,6 +22,7 @@ from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
     AddressError,
+    DuplicatePermit,
     ObjectNotFound,
     ParkingZoneError,
     TraficomFetchVehicleError,
@@ -465,6 +466,20 @@ def resolve_update_permit_vehicle(
     is_higher_price = permit_total_price_change > 0
 
     if is_higher_price:
+        # Changing only the next_vehicle-field avoids the duplicate detection
+        # in ParkingPermit.save() => validate that we are not introducing a duplicate:
+        non_duplicable_statuses = [
+            ParkingPermitStatus.VALID,
+            ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            ParkingPermitStatus.DRAFT,
+            ParkingPermitStatus.PRELIMINARY,
+        ]
+        duplicate_query = ParkingPermit.objects.filter(
+            customer=customer, vehicle_id=vehicle_id, status__in=non_duplicable_statuses
+        ).exclude(id=permit_id)
+        if duplicate_query.exists():
+            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+
         permit.next_vehicle = new_vehicle
         permit.save()
     else:
