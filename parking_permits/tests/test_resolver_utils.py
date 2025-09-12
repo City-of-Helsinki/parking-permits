@@ -3,9 +3,11 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from django.utils import timezone
 from freezegun import freeze_time
 
+from parking_permits.cron import automatic_expiration_of_permits
 from parking_permits.models import Order, Refund
 from parking_permits.models.order import (
     OrderPaymentType,
@@ -1298,6 +1300,76 @@ class TestCreateRefund:
             )
 
         assert refunds == []
+
+    @pytest.mark.xfail(
+        strict=True,
+        reason="Verify a bug concerning the wrong "
+        "order of operations when adding months before timezone-conversion "
+        "when computing unused_start_date during refund-calculation",
+    )
+    @pytest.mark.django_db()
+    def test_auto_expiring_single_calendar_month_fixed_period_permit_does_not_refund(
+        self, zone
+    ):
+        # non-leap and leap years.
+        years = [2023, 2024]
+        months = [i + 1 for i in range(12)]
+
+        for year in years:
+            for month in months:
+                # IMPORTANT: start_time must be at midnight so that the date ends up in the end of
+                # the previous month in UTC. This test has been originally added to verify
+                # a bug concerning erroneus unused_start_date-values in refund calculation,
+                # where adding months with relativedelta may (*) add a wrong amount of days
+                # when done on a date that is in wrong month due to being in the UTC-timezone
+                # _before_ adding the months.
+                # (*): This also requires that the previous month has a different
+                # amount of days than the current month.
+                start_time = timezone.make_aware(datetime(year, month, 1, 0, 0, 0))
+                first_of_next_month = start_time + relativedelta(months=1)
+                end_time = first_of_next_month - relativedelta(days=1)
+                # Normalize end time
+                end_time = end_time.replace(
+                    hour=23,
+                    minute=59,
+                    second=59,
+                    microsecond=999999,
+                )
+
+                first_of_previous_month = start_time - relativedelta(months=1)
+                # 26th of the previous month
+                creation_date = first_of_previous_month + relativedelta(days=25)
+                with freeze_time(creation_date):
+                    _create_zone_products(
+                        zone,
+                        [
+                            [
+                                (start_time.date(), end_time.date()),
+                                Decimal("60"),
+                            ],
+                        ],
+                    )
+
+                    permit = ParkingPermitFactory(
+                        contract_type=ContractType.FIXED_PERIOD,
+                        status=ParkingPermitStatus.VALID,
+                        start_time=start_time,
+                        end_time=end_time,
+                        month_count=1,
+                        parking_zone=zone,
+                    )
+
+                    order = Order.objects.create_for_permits([permit])
+                    order.status = OrderStatus.CONFIRMED
+                    order.save()
+
+                expiration_date = first_of_next_month
+                with freeze_time(expiration_date):
+                    automatic_expiration_of_permits()
+
+                order.refresh_from_db()
+                refunds = order.refunds.all()
+                assert not refunds.exists()
 
 
 def _create_zone_products(zone, product_detail_list):
