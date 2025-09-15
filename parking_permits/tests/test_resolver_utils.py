@@ -1301,12 +1301,6 @@ class TestCreateRefund:
 
         assert refunds == []
 
-    @pytest.mark.xfail(
-        strict=True,
-        reason="Verify a bug concerning the wrong "
-        "order of operations when adding months before timezone-conversion "
-        "when computing unused_start_date during refund-calculation",
-    )
     @pytest.mark.django_db()
     def test_auto_expiring_single_calendar_month_fixed_period_permit_does_not_refund(
         self, zone
