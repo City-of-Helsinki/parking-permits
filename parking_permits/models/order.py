@@ -276,7 +276,7 @@ class OrderManager(SerializableMixin.SerializableManager):
                     "Cannot create renewal order for open ended permits"
                 )
 
-            start_date = tz.localdate(permit.next_period_start_time)
+            start_date = permit.next_period_start_time
             end_date = tz.localdate(permit.end_time)
             date_ranges.append([start_date, end_date])
 
@@ -319,7 +319,7 @@ class OrderManager(SerializableMixin.SerializableManager):
             vehicle = permit.next_vehicle if permit.next_vehicle else permit.vehicle
             new_order.vehicles.append(vehicle.registration_number)
             new_order.save()
-            start_date = tz.localdate(permit.next_period_start_time)
+            start_date = permit.next_period_start_time
             end_date = tz.localdate(permit.end_time)
             if start_date >= end_date:
                 # permit already ended or will be ended after current month period

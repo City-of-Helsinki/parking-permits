@@ -473,7 +473,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def next_period_start_time(self):
-        return self.start_time + relativedelta(months=self.months_used)
+        start_time = timezone.localdate(self.start_time)
+        return start_time + relativedelta(months=self.months_used)
 
     @property
     def can_be_refunded(self):
@@ -731,7 +732,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         new_products = new_zone.products.for_resident()
         is_secondary = not self.primary_vehicle
         if self.is_open_ended:
-            start_date = timezone.localdate(self.next_period_start_time)
+            start_date = self.next_period_start_time
             end_date = start_date + relativedelta(months=1, days=-1)
             previous_product = previous_products.get_for_date(start_date)
             previous_price = previous_product.get_modified_unit_price(
@@ -769,7 +770,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         if self.is_fixed_period:
             # price change affected date range and products
-            start_date = timezone.localdate(self.next_period_start_time)
+            start_date = self.next_period_start_time
             end_date = timezone.localdate(self.end_time)
             previous_product_iter = previous_products.for_date_range(
                 start_date, end_date
@@ -1070,7 +1071,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def get_unused_order_items_for_order(self, order):
         from .order import OrderStatus
 
-        unused_start_date = timezone.localdate(self.next_period_start_time)
+        unused_start_date = self.next_period_start_time
 
         order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date,
