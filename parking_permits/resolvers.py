@@ -322,7 +322,7 @@ def resolve_create_parking_permit(_obj, info, address_id, registration):
         "User extended parking permit.",
         operation=audit.Operation.UPDATE,
     ),
-    autotarget=audit.TARGET_RETURN,
+    add_kwarg=True,
 )
 @transaction.atomic
 def resolve_extend_parking_permit(
@@ -345,6 +345,7 @@ def resolve_extend_parking_permit(
     )
 
     checkout_url = TalpaOrderManager.send_to_talpa(ext_request.order, ext_request)
+    audit_msg.target = checkout_url
     return {"checkout_url": checkout_url}
 
 
