@@ -10,7 +10,7 @@ USER root
 
 COPY requirements.txt .
 
-RUN dnf update -y && dnf install -y \
+RUN dnf install -y \
     nmap-ncat \
     gettext \
     postgresql \
