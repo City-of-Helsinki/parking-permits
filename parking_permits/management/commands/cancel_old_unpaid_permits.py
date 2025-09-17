@@ -1,7 +1,5 @@
-from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
-from django.utils import timezone as tz
 
 from parking_permits.models.order import Order, OrderStatus
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
@@ -18,25 +16,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         unpaid_permits = ParkingPermit.objects.filter(status=PAYMENT_IN_PROGRESS)
 
-        payment_wait_time_buffer = settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
-
         permits_to_update = []
         orders_to_update = []
 
         for permit in unpaid_permits:
-            latest_order = permit.latest_order
-            if not latest_order:
-                continue
-
-            old_enough_to_cancel = (
-                tz.localtime(
-                    latest_order.talpa_last_valid_purchase_time
-                    + tz.timedelta(minutes=payment_wait_time_buffer)
-                )
-                < tz.localtime()
-            )
-
-            if old_enough_to_cancel:
+            if permit.has_timed_out_payment_in_progress:
+                # NOTE: the existence of the latest order is already checked
+                # by the has_timed_out_payment_in_progress-property
+                latest_order = permit.latest_order
                 permit.status = CANCELLED
                 permits_to_update.append(permit)
 

@@ -568,6 +568,27 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         """
         return self._can_extend_parking_permit(is_date_restriction=False)
 
+    @property
+    def has_timed_out_payment_in_progress(self):
+        payment_wait_time_buffer = settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
+
+        if self.status != ParkingPermitStatus.PAYMENT_IN_PROGRESS:
+            return False
+
+        latest_order = self.latest_order
+        if not latest_order:
+            return False
+
+        payment_has_timed_out = (
+            timezone.localtime(
+                latest_order.talpa_last_valid_purchase_time
+                + timezone.timedelta(minutes=payment_wait_time_buffer)
+            )
+            < timezone.localtime()
+        )
+
+        return payment_has_timed_out
+
     def save(self, *args, **kwargs):
         # Enforce unique customer-vehicle-pair depending on the status,
         # duplicate customer-vehicle-pairs are allowed only for
