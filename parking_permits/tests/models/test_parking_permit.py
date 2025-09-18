@@ -1746,3 +1746,113 @@ class ParkingPermitTestCase(TestCase):
             preexisting_permit.delete()
 
         # No exceptions raised by now => all good
+
+
+class InitOrderForPermitMixin:
+
+    def init_order_for_permit(
+        self,
+        permit,
+        *,
+        purchase_time,
+        order_status=OrderStatus.DRAFT,
+    ):
+        order = OrderFactory(
+            talpa_last_valid_purchase_time=purchase_time,
+            status=order_status,
+        )
+        permit.orders.add(order)
+        return order
+
+
+talpa_override_minutes = 20
+
+
+@override_settings(TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=talpa_override_minutes)
+class HasTimedOutPaymentInProgressTestCase(TestCase, InitOrderForPermitMixin):
+
+    def test_has_timed_out_payment_in_progress(self):
+        """Test the positive case for has_timed_out_payment_in_progress-property"""
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        )
+
+        purchase_time = timezone.localtime() - timezone.timedelta(
+            minutes=talpa_override_minutes
+        )
+        self.init_order_for_permit(permit, purchase_time=purchase_time)
+
+        self.assertEqual(permit.has_timed_out_payment_in_progress, True)
+
+    def test_too_new_unpaid_permit_no_timed_out_payment(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        )
+
+        purchase_time = timezone.localtime()
+        order = self.init_order_for_permit(permit, purchase_time=purchase_time)
+
+        self.assertEqual(permit.has_timed_out_payment_in_progress, False)
+
+        self.assertEqual(permit.status, ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+        self.assertEqual(order.status, OrderStatus.DRAFT)
+
+    def test_permit_with_no_latest_order_has_no_timed_out_payment(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        )
+
+        self.assertEqual(permit.has_timed_out_payment_in_progress, False)
+
+    def test_only_permits_with_payment_in_progress_status_have_timed_out_payments(self):
+        # Check all other permit statuses
+        statuses = [
+            ParkingPermitStatus.DRAFT,
+            ParkingPermitStatus.PRELIMINARY,
+            ParkingPermitStatus.VALID,
+            ParkingPermitStatus.CANCELLED,
+            ParkingPermitStatus.CLOSED,
+        ]
+
+        for permit_initial_status in statuses:
+            permit = ParkingPermitFactory(
+                status=permit_initial_status,
+            )
+
+            purchase_time = timezone.localtime() - timezone.timedelta(
+                minutes=talpa_override_minutes
+            )
+            order = self.init_order_for_permit(permit, purchase_time=purchase_time)
+
+            self.assertEqual(permit.has_timed_out_payment_in_progress, False)
+
+            # Cleanup before next status
+            order.delete()
+            permit.delete()
+
+    def test_only_permits_with_draft_latest_order_have_timed_out_payments(self):
+        # Check all other order statuses
+        statuses = [
+            OrderStatus.CANCELLED,
+            OrderStatus.CONFIRMED,
+        ]
+
+        for order_status in statuses:
+            permit = ParkingPermitFactory(
+                status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            )
+
+            purchase_time = timezone.localtime() - timezone.timedelta(
+                minutes=talpa_override_minutes
+            )
+            order = self.init_order_for_permit(
+                permit,
+                purchase_time=purchase_time,
+                order_status=order_status,
+            )
+
+            self.assertEqual(permit.has_timed_out_payment_in_progress, False)
+
+            # Cleanup before next status
+            order.delete()
+            permit.delete()
