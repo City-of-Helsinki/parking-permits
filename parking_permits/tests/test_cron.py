@@ -33,6 +33,7 @@ from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import TemporaryVehicleFactory
+from parking_permits.tests.models.test_parking_permit import InitOrderForPermitMixin
 
 
 class CronTestCase(TestCase):
@@ -624,12 +625,7 @@ talpa_override_minutes = 20
 
 
 @override_settings(TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=talpa_override_minutes)
-class CancelOldUnpaidPermitTestCase(TestCase):
-
-    def init_order_for_permit(self, permit, *, purchase_time):
-        order = OrderFactory(talpa_last_valid_purchase_time=purchase_time)
-        permit.orders.add(order)
-        return order
+class CancelOldUnpaidPermitTestCase(TestCase, InitOrderForPermitMixin):
 
     def test_cancel_old_unpaid_permits(self):
         permit = ParkingPermitFactory(
@@ -675,7 +671,7 @@ class CancelOldUnpaidPermitTestCase(TestCase):
 
     def test_only_permits_with_payment_in_progress_status_are_cancelled(self):
 
-        # Check that all other statuses do not cancel the permit
+        # Check that all other permit statuses do not cancel the permit
         statuses = [
             ParkingPermitStatus.DRAFT,
             ParkingPermitStatus.PRELIMINARY,
@@ -701,6 +697,40 @@ class CancelOldUnpaidPermitTestCase(TestCase):
 
             self.assertEqual(permit.status, permit_initial_status)
             self.assertEqual(order.status, OrderStatus.DRAFT)
+
+            # Cleanup before next status
+            order.delete()
+            permit.delete()
+
+    def test_only_permits_with_draft_latest_order_are_cancelled(self):
+
+        # Check that all other order statuses do not cancel the permit
+        statuses = [
+            OrderStatus.CANCELLED,
+            OrderStatus.CONFIRMED,
+        ]
+
+        for order_status in statuses:
+            permit = ParkingPermitFactory(
+                status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            )
+
+            purchase_time = tz.localtime() - tz.timedelta(
+                minutes=talpa_override_minutes
+            )
+            order = self.init_order_for_permit(
+                permit,
+                purchase_time=purchase_time,
+                order_status=order_status,
+            )
+
+            call_command("cancel_old_unpaid_permits")
+
+            permit.refresh_from_db()
+            order.refresh_from_db()
+
+            self.assertEqual(permit.status, ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+            self.assertEqual(order.status, order_status)
 
             # Cleanup before next status
             order.delete()

@@ -570,6 +570,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def has_timed_out_payment_in_progress(self):
+        from .order import OrderStatus
+
         payment_wait_time_buffer = settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
 
         if self.status != ParkingPermitStatus.PAYMENT_IN_PROGRESS:
@@ -577,6 +579,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         latest_order = self.latest_order
         if not latest_order:
+            return False
+
+        if latest_order.status != OrderStatus.DRAFT:
             return False
 
         payment_has_timed_out = (
