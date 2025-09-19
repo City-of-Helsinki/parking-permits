@@ -349,9 +349,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def latest_extension_request_order(self):
-        if ext_request := self.permit_extension_requests.select_related(
-            "order"
-        ).first():
+        if ext_request := self.permit_extension_requests.select_related("order").last():
             return ext_request.order
         return None
 
