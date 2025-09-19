@@ -24,6 +24,9 @@ class Command(BaseCommand):
                 # NOTE: the existence of the latest order is already checked
                 # by the has_timed_out_payment_in_progress-property
                 latest_order = permit.latest_order
+                # NOTE: permit extension orders do NOT set the permit into
+                # PAYMENT_IN_PROGRESS-status, so there are no such permits
+                # which would need to be "returned" to VALID-status.
                 permit.status = CANCELLED
                 permits_to_update.append(permit)
 
