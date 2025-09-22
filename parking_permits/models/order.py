@@ -588,17 +588,39 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         return self.permit_extension_requests.pending()
 
     def process_order_extension_requests(self) -> None:
-        for ext_request in self.get_pending_permit_extension_requests().select_related(
-            "permit"
-        ):
-            ext_request.approve()
-            ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
-            sync_with_parkkihubi(ext_request.permit)
-            send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
-            logger.info(
-                f"Permit {ext_request.permit.pk} extended, new permit validity period is:"
-                f" {ext_request.permit.start_time} - {ext_request.permit.end_time}"
-            )
+        """
+        Approve the latest pending permit extension request of the
+        order if such exists. Any possible remaining pending permit
+        extension requests of the order are cancelled after the
+        approval.
+        """
+
+        ext_request = (
+            self.get_pending_permit_extension_requests().select_related("permit").last()
+        )
+        # NOTE: early return if there are no matching requests to pick
+        # the last one from as there will be nothing left to cancel.
+        if ext_request is None:
+            return
+
+        ext_request.approve()
+        ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
+        sync_with_parkkihubi(ext_request.permit)
+        send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+        logger.info(
+            f"Permit {ext_request.permit.pk} extended, new permit validity period is:"
+            f" {ext_request.permit.start_time} - {ext_request.permit.end_time}"
+        )
+
+        # NOTE: While the data model would allow for an order to have
+        # multiple extension requests that would be linked to different
+        # permit-instances, this _should_ not happen in practice. All
+        # GraphQL-resolvers handling extension request creation logic
+        # also create a new order that the request will be linked to.
+        # Hence we assume that all the earlier extension requests
+        # linked to the order can be cancelled. (These should not even
+        # exist due to the reason above.)
+        self.permit_extension_requests.cancel_pending()
 
 
 class SubscriptionStatus(models.TextChoices):
