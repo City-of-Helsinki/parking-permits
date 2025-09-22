@@ -484,17 +484,7 @@ class PaymentView(APIView):
             order.paid_time = tz.now()
             order.save()
 
-            for (
-                ext_request
-            ) in order.get_pending_permit_extension_requests().select_related("permit"):
-                ext_request.approve()
-                ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
-                sync_with_parkkihubi(ext_request.permit)
-                send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
-                logger.info(
-                    f"Permit {ext_request.permit.pk} extended, new permit validity period is:"
-                    f" {ext_request.permit.start_time} - {ext_request.permit.end_time}"
-                )
+            order.process_order_extension_requests()
 
             contract_type = ""
             for permit in order.permits.all():
