@@ -10,6 +10,12 @@ from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
+from parking_permits.services.mail import (
+    PermitEmailType,
+    send_permit_email,
+)
+from parking_permits.services.parkkihubi import sync_with_parkkihubi
+
 from ..constants import DEFAULT_VAT
 from ..exceptions import (
     OrderCancelError,
@@ -580,6 +586,19 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
 
     def get_pending_permit_extension_requests(self):
         return self.permit_extension_requests.pending()
+
+    def process_order_extension_requests(self) -> None:
+        for ext_request in self.get_pending_permit_extension_requests().select_related(
+            "permit"
+        ):
+            ext_request.approve()
+            ParkingPermitEventFactory.make_approve_ext_request_event(ext_request)
+            sync_with_parkkihubi(ext_request.permit)
+            send_permit_email(PermitEmailType.EXTENDED, ext_request.permit)
+            logger.info(
+                f"Permit {ext_request.permit.pk} extended, new permit validity period is:"
+                f" {ext_request.permit.start_time} - {ext_request.permit.end_time}"
+            )
 
 
 class SubscriptionStatus(models.TextChoices):
