@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2025-09-25
+
+### Fixed
+
+- Combine dev and test requirements-files ([7a9473c](https://github.com/City-of-Helsinki/parking-permits/commit/7a9473c1ebd03257e61357046634ce4806f55963))
+- Handle null end date properly when creating parking permit events ([911b7cc](https://github.com/City-of-Helsinki/parking-permits/commit/911b7cc4d4b0519f97fb74a4368334a74caee3ae))
+- Sync permit month count with permit start/end-time when ending the permit ([53f13ce](https://github.com/City-of-Helsinki/parking-permits/commit/53f13cec32e5ca85bcc47ac53bd9ce5fb8b55bf5))
+- Prevent subscriptions on fixed period permits ([b30eed9](https://github.com/City-of-Helsinki/parking-permits/commit/b30eed942b808c3de2765154edc981f50e70308c))
+- Fix permit unused start date calculation ([5a7e4a4](https://github.com/City-of-Helsinki/parking-permits/commit/5a7e4a4f4d9c1c845763dc9c17a959bed55e002e))
+- Do not update packages in Dockerfile ([2aba5fc](https://github.com/City-of-Helsinki/parking-permits/commit/2aba5fc44bd713cb59b7d17d9242d4071317791d))
+- Enforce draft order-status when cancelling unpaid permits ([4a61e4f](https://github.com/City-of-Helsinki/parking-permits/commit/4a61e4f61a64875f004c7067742f78123af7df98))
+- Fix query for permits latest extension order ([52e9bf8](https://github.com/City-of-Helsinki/parking-permits/commit/52e9bf8e36c4300a631346f14b47c61ea2d01cf8))
+
+### Added
+
+- Centrally enforce unique customer-vehicle-pairs on permits ([d387c7c](https://github.com/City-of-Helsinki/parking-permits/commit/d387c7cc4373977fbeea503b5d20c371e97cf94f))
+- Add command to cancel unpaid permits ([4ee82d0](https://github.com/City-of-Helsinki/parking-permits/commit/4ee82d0e5befc898ec808d2b1f069fcf04157c5f))
+- Add command to remove broken audit logs ([68540db](https://github.com/City-of-Helsinki/parking-permits/commit/68540dbc3698b965ef14047bcb5ee1b930b03ee0))
+- Add command to fix broken audit log targets ([6848908](https://github.com/City-of-Helsinki/parking-permits/commit/6848908dca287cdf7d772c42748244fe4d1f0f21))
+
+### Changed
+
+- Use separate dev/prod container build stages ([908a460](https://github.com/City-of-Helsinki/parking-permits/commit/908a460e0e0f57b1c12586a9ecddd095e5e9c753))
+- Change Dockerfile base image ([8c213d6](https://github.com/City-of-Helsinki/parking-permits/commit/8c213d69aac5774bcc19275a303b07150572fa23))
+- Allow refunding for all permits ([9bc8a24](https://github.com/City-of-Helsinki/parking-permits/commit/9bc8a24b346095e070d4322b0bf4aa36c4c5d33e))
+- Remove audit logging from customer-field query ([f42451e](https://github.com/City-of-Helsinki/parking-permits/commit/f42451e332818b4e36016956ee5133ac72d89b05))
+- Approve only the latest extension request when processing order payment ([a8d20cd](https://github.com/City-of-Helsinki/parking-permits/commit/a8d20cdc3fe038b5fcab184cefd2fde214b144c5))
+
 ## [1.8.1] - 2025-05-27
 
 ### Fixed
@@ -732,5 +760,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * @snyk-bot made their first contribution in https://github.com/City-of-Helsinki/parking-permits/pull/312
 * @danjacob-anders made their first contribution in https://github.com/City-of-Helsinki/parking-permits/pull/372
 * @tonipel made their first contribution in https://github.com/City-of-Helsinki/parking-permits/pull/512
+* @Nukasev made their first contribution in https://github.com/City-of-Helsinki/parking-permits/pull/585
 
 **Full Changelog**: https://github.com/City-of-Helsinki/parking-permits/commits/release-1.0.0
