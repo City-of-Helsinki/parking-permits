@@ -19,7 +19,11 @@ from django.utils.translation import gettext_lazy as _
 from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
-from ..exceptions import PermitCanNotBeEnded, TemporaryVehicleValidationError
+from ..exceptions import (
+    DuplicatePermit,
+    PermitCanNotBeEnded,
+    TemporaryVehicleValidationError,
+)
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -345,9 +349,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def latest_extension_request_order(self):
-        if ext_request := self.permit_extension_requests.select_related(
-            "order"
-        ).first():
+        if ext_request := self.permit_extension_requests.select_related("order").last():
             return ext_request.order
         return None
 
@@ -415,6 +417,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         now = timezone.now()
         diff_months = diff_months_ceil(self.start_time, now)
         if self.is_fixed_period:
+            # self.month_count acts as an upper bound for diff_months
+            # which ensures nonnegative months_left
             return min(self.month_count, diff_months)
         return diff_months
 
@@ -444,11 +448,31 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_range(self):
+
+        # Workaround for invalid ranges in ParkingPermitEvent.validity_period
+        # NOTE:
+        # - permit end time is allowed to be None for historical reasons,
+        # but this _shouldn't_ happen.
+        # (Possible TODO: properly enforce this by migrating the field
+        # to not allow null values. Note that this may end up being difficult
+        # due to historical data and the need to adjust
+        # ParkingPermitEvent.validity_period end dates etc.)
+        # - this property is only used by some ParkingPermitEvent-creator
+        # methods (eg. make_update_permit_event())
+        # to set the validity_period-field in ParkingPermitEvent-model
+        # - validity_period is a DateTimeRangeField which raises an error
+        # if a save is attempted with non-null start time and null end time.
+        # (Or vice versa, but start time can't be null.)
+        # - we avoid this error by returning None here
+        if self.end_time is None:
+            return None
+
         return self.start_time, self.end_time
 
     @property
     def next_period_start_time(self):
-        return self.start_time + relativedelta(months=self.months_used)
+        start_time = timezone.localdate(self.start_time)
+        return start_time + relativedelta(months=self.months_used)
 
     @property
     def can_be_refunded(self):
@@ -541,6 +565,60 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         3. PERMIT_EXTENSIONS_ENABLED flag is True.
         """
         return self._can_extend_parking_permit(is_date_restriction=False)
+
+    @property
+    def has_timed_out_payment_in_progress(self):
+        from .order import OrderStatus
+
+        payment_wait_time_buffer = settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
+
+        if self.status != ParkingPermitStatus.PAYMENT_IN_PROGRESS:
+            return False
+
+        latest_order = self.latest_order
+        if not latest_order:
+            return False
+
+        if latest_order.status != OrderStatus.DRAFT:
+            return False
+
+        payment_has_timed_out = (
+            timezone.localtime(
+                latest_order.talpa_last_valid_purchase_time
+                + timezone.timedelta(minutes=payment_wait_time_buffer)
+            )
+            < timezone.localtime()
+        )
+
+        return payment_has_timed_out
+
+    def save(self, *args, **kwargs):
+        # Enforce unique customer-vehicle-pair depending on the status,
+        # duplicate customer-vehicle-pairs are allowed only for
+        # permits with cancelled/closed status
+        non_duplicable_statuses = [
+            ParkingPermitStatus.VALID,
+            ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            ParkingPermitStatus.DRAFT,
+            ParkingPermitStatus.PRELIMINARY,
+        ]
+
+        duplicate_query = ParkingPermit.objects.exclude(id=self.id).filter(
+            customer_id=self.customer_id,
+            vehicle__registration_number=self.vehicle.registration_number,
+            # Pre-existing cancelled/closed permits do not contribute
+            # towards potential duplicates
+            status__in=non_duplicable_statuses,
+        )
+
+        # If the permit being saved is cancelled/closed, we can
+        # short-circuit to avoid db-hit/query-evaluation
+        # as those statuses will never break the constraint
+        check_for_duplicates = self.status in non_duplicable_statuses
+        if check_for_duplicates and duplicate_query.exists():
+            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+
+        return super().save(*args, **kwargs)
 
     def _can_extend_parking_permit(self, *, is_date_restriction=True):
         if not all(
@@ -678,7 +756,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         new_products = new_zone.products.for_resident()
         is_secondary = not self.primary_vehicle
         if self.is_open_ended:
-            start_date = timezone.localdate(self.next_period_start_time)
+            start_date = self.next_period_start_time
             end_date = start_date + relativedelta(months=1, days=-1)
             previous_product = previous_products.get_for_date(start_date)
             previous_price = previous_product.get_modified_unit_price(
@@ -716,7 +794,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         if self.is_fixed_period:
             # price change affected date range and products
-            start_date = timezone.localdate(self.next_period_start_time)
+            start_date = self.next_period_start_time
             end_date = timezone.localdate(self.end_time)
             previous_product_iter = previous_products.for_date_range(
                 start_date, end_date
@@ -822,6 +900,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             )
 
         self.end_time = end_time
+        self.month_count = diff_months_ceil(self.start_time, end_time)
+
         if (
             end_type == ParkingPermitEndType.IMMEDIATELY
             or end_type == ParkingPermitEndType.PREVIOUS_DAY_END
@@ -1015,7 +1095,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def get_unused_order_items_for_order(self, order):
         from .order import OrderStatus
 
-        unused_start_date = timezone.localdate(self.next_period_start_time)
+        unused_start_date = self.next_period_start_time
 
         order_items = order.order_items.filter(
             end_time__date__gte=unused_start_date,
@@ -1234,7 +1314,7 @@ class ParkingPermitEventFactory:
             message=gettext_noop("Permit #%(permit_id)s updated"),
             context={
                 "permit_id": permit.id,
-                "changes": flatten_dict(changes or dict()),
+                "changes": flatten_dict(changes or {}),
             },
             validity_period=permit.current_period_range,
             type=ParkingPermitEvent.EventType.UPDATED,

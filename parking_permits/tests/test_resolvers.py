@@ -7,7 +7,7 @@ import pytest
 from django.test import override_settings
 from django.utils import timezone
 
-from parking_permits.exceptions import PermitCanNotBeExtended
+from parking_permits.exceptions import DuplicatePermit, PermitCanNotBeExtended
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
@@ -258,6 +258,51 @@ def test_update_permit_vehicle_high_to_high_emission(rf):
     permit.refresh_from_db()
     assert permit.vehicle == new_vehicle
     assert permit.next_vehicle is None
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+def test_update_permit_vehicle_low_to_high_emission_raises_on_duplicate(rf):
+
+    request = rf.post("/")
+    customer = CustomerFactory()
+    request.user = customer.user
+    info = Info(context={"request": request})
+
+    new_vehicle = VehicleFactory(power_type__identifier="04")
+    ParkingPermitFactory(
+        customer=customer,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        vehicle=new_vehicle,
+    )
+
+    old_vehicle = VehicleFactory(power_type__identifier="00")
+    permit_to_update = ParkingPermitFactory(
+        customer=customer,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        vehicle=old_vehicle,
+    )
+
+    price_change_list = [
+        {
+            "new_price": 50.00,
+            "price_change_vat": 10.00,
+            "price_change": 50.00,
+            "month_count": 3,
+        },
+    ]
+
+    with (
+        _mock_jwt(request.user),
+        _mock_price_change_list(price_change_list),
+        _mock_talpa(),
+        pytest.raises(DuplicatePermit),
+    ):
+        resolve_update_permit_vehicle(
+            None, info, str(permit_to_update.pk), str(new_vehicle.pk)
+        )
 
 
 @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
