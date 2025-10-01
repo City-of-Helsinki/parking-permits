@@ -712,22 +712,24 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         self.save()
 
         if permit.can_be_refunded:
-            logger.info(f"Creating Refund for permit {str(permit.id)}")
-            from ..resolver_utils import create_refund
+            total_refund_amount = permit.total_refund_amount
+            if total_refund_amount > 0:
+                logger.info(f"Creating Refund for permit {str(permit.id)}")
+                from ..resolver_utils import create_refund
 
-            create_refund(
-                user=permit.customer.user,
-                permits=[permit],
-                orders=[order],
-                amount=permit.total_refund_amount,
-                iban=iban,
-                vat=(order.vat if order.vat else DEFAULT_VAT),
-                description=f"Refund for ending permit {str(permit.id)}",
-            )
-            # Mark the order item as refunded
-            order_item.is_refunded = True
-            order_item.save()
-            logger.info(f"Refund for permit {str(permit.id)} created successfully")
+                create_refund(
+                    user=permit.customer.user,
+                    permits=[permit],
+                    orders=[order],
+                    amount=total_refund_amount,
+                    iban=iban,
+                    vat=(order.vat if order.vat else DEFAULT_VAT),
+                    description=f"Refund for ending permit {str(permit.id)}",
+                )
+                # Mark the order item as refunded
+                order_item.is_refunded = True
+                order_item.save()
+                logger.info(f"Refund for permit {str(permit.id)} created successfully")
 
         # Try to cancel subscription from Talpa as well
         if cancel_from_talpa:
