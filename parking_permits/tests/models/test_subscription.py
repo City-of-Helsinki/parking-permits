@@ -61,7 +61,7 @@ class TestSubscriptionTestCase(TestCase):
     @patch(MOCK_SEND_PERMIT_EMAIL)
     @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
     @patch(MOCK_VALIDATE_ORDER)
-    def test_subscription_cancel_generates_additional_zero_refund(
+    def test_subscription_cancel_does_not_generate_additional_zero_refund(
         self,
         mock_validate_order,
         mock_send_vehicle_discount_email,
@@ -165,22 +165,18 @@ class TestSubscriptionTestCase(TestCase):
             )
             self.assertEqual(response.status_code, 200)
 
-        # Initial order item should have exactly one zero-amount refund
-        # due to the logic in subscription cancellation being run immediately after
-        # the usual refund-logic when ending a permit.
+        # Initial order item should not have refunds due to the logic
+        # in subscription cancellation being run immediately after the
+        # usual refund-logic when ending a permit.
         initial_order_item.refresh_from_db()
         order_item_refunds = initial_order_item.order.refunds.all()
-        self.assertEqual(order_item_refunds.count(), 1)
-        subscription_cancel_refund = order_item_refunds.first()
-        self.assertEqual(subscription_cancel_refund.amount, 0)
+        self.assertEqual(order_item_refunds.count(), 0)
 
         # The usual refunds are created before the sub is cancelled,
         # these should have positive amount.
-        other_refunds_after_end = Refund.objects.exclude(
-            id=subscription_cancel_refund.id
-        )
-        assert other_refunds_after_end.count() > 0
-        for refund in other_refunds_after_end:
+        refunds_after_end = permit.refunds.all()
+        assert refunds_after_end.count() > 0
+        for refund in refunds_after_end:
             assert refund.amount > 0
 
         subscription.refresh_from_db()
