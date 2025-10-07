@@ -175,7 +175,7 @@ class TestSubscriptionTestCase(TestCase):
         # The usual refunds are created before the sub is cancelled,
         # these should have positive amount.
         refunds_after_end = permit.refunds.all()
-        assert refunds_after_end.count() > 0
+        assert len(refunds_after_end) > 0
         for refund in refunds_after_end:
             assert refund.amount > 0
 
