@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.1] - 2025-10-16
+
+### Fixed
+
+- Do not create superfluous zero-amount refunds for open-ended permits ([41833a9](https://github.com/City-of-Helsinki/parking-permits/commit/41833a94f5857fd084feb2862c3b176f01c9ab79))
+
 ## [1.9.0] - 2025-09-25
 
 ### Fixed
