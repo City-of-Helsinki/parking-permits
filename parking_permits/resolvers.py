@@ -10,6 +10,7 @@ from ariadne import (
     snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
+from django.conf import settings
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
@@ -136,6 +137,14 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
+
+    if not settings.DVV_UPDATE_USER_PROFILE_DATA:
+        audit_msg.operation = audit.Operation.READ
+        audit_msg.message = "User profile was read automatically."
+        return Customer.objects.get(
+            national_id_number=customer.get("national_id_number")
+        )
+
     primary_address_data, other_address_data = get_addresses(
         customer.get("national_id_number")
     )
