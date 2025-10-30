@@ -19,6 +19,7 @@ env = environ.Env(
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi", "https://*.hel.ninja"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
+    DATABASE_PASSWORD=(str, ""),
     TALPA_NAMESPACE=(str, "asukaspysakointi"),
     TALPA_API_KEY=(str, ""),
     TALPA_MERCHANT_EXPERIENCE_API=(
@@ -172,6 +173,8 @@ WSGI_APPLICATION = "project.wsgi.application"
 
 DATABASES = {"default": dj_database_url.parse(env("DATABASE_URL"))}
 
+if env("DATABASE_PASSWORD"):
+    DATABASES["default"]["PASSWORD"] = env("DATABASE_PASSWORD")
 
 AUTH_PASSWORD_VALIDATORS = [
     {
