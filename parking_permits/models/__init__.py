@@ -10,6 +10,7 @@ from .parking_zone import ParkingZone
 from .permit_extension_request import ParkingPermitExtensionRequest
 from .product import Product
 from .refund import Refund
+from .reporting import PermitCountSnapshot
 from .temporary_vehicle import TemporaryVehicle
 from .vehicle import LowEmissionCriteria, Vehicle
 
@@ -31,4 +32,5 @@ __all__ = [
     "OrderItem",
     "Subscription",
     "TemporaryVehicle",
+    "PermitCountSnapshot",
 ]
