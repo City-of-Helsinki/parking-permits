@@ -33,6 +33,7 @@ resources:
     # Azure DevOps repository
     - repository: pysakoinnin-verkkokauppa-pipelines
       type: git
+      ref: ansible_automation_update
       # Azure DevOps project/repository
       name: pysakoinnin-verkkokauppa/pysakoinnin-verkkokauppa-pipelines
 
