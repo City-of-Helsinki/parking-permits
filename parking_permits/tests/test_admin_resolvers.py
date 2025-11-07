@@ -20,6 +20,7 @@ from parking_permits.exceptions import (
     AddressError,
     ObjectNotFound,
     PermitCanNotBeExtended,
+    TraficomFetchVehicleError,
 )
 from parking_permits.models import ParkingPermitExtensionRequest
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
@@ -445,3 +446,25 @@ def test_admin_vehicle_lookup_success(info, mock_jwt):
     assert vehicle is not None
     assert vehicle.registration_number == reg_number
     assert not hasattr(customer, "driving_licence")
+
+
+@pytest.mark.django_db
+@override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+@mock.patch("requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml")))
+def test_admin_vehicle_lookup_fails_for_non_owner(info, mock_jwt):
+    non_owner_nin_number = "131052-308T"  # From another mock XML file
+    # Customer has NO driving license in database
+    CustomerFactory(national_id_number=non_owner_nin_number)
+
+    with mock_jwt:
+        # Admin should NOT be able to fetch vehicle for non-owner
+        # Using registration number from mock XML: BCI-707
+        with pytest.raises(TraficomFetchVehicleError) as exc_info:
+            resolve_vehicle(
+                None,
+                info,
+                reg_number="BCI-707",
+                national_id_number=non_owner_nin_number,
+            )
+
+    assert "Owner/holder data of a vehicle could not be verified" in str(exc_info.value)
