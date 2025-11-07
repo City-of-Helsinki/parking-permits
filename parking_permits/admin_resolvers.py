@@ -305,8 +305,6 @@ def resolve_vehicle(obj, info, reg_number: str, national_id_number: str):
     customer, _created = Customer.objects.get_or_create(
         national_id_number=national_id_number.upper()
     )
-    if settings.TRAFICOM_CHECK:
-        customer.fetch_driving_licence_detail()
 
     vehicle = customer.fetch_vehicle_detail(reg_number)
     if not settings.TRAFICOM_CHECK:
@@ -316,12 +314,6 @@ def resolve_vehicle(obj, info, reg_number: str, national_id_number: str):
     if not is_user_of_vehicle:
         raise TraficomFetchVehicleError(
             _("Owner/holder data of a vehicle could not be verified")
-        )
-
-    has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
-    if not has_valid_driving_licence:
-        raise TraficomFetchVehicleError(
-            _("Customer does not have a valid driving licence for this vehicle")
         )
 
     return vehicle
