@@ -1,5 +1,6 @@
 import dataclasses
 import unittest
+from unittest import mock
 
 import pytest
 from dateutil.relativedelta import relativedelta
@@ -11,6 +12,7 @@ from parking_permits.admin_resolvers import (
     add_temporary_vehicle,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
+    resolve_vehicle,
     update_or_create_customer,
     update_or_create_vehicle,
 )
@@ -31,6 +33,14 @@ from parking_permits.tests.factories.vehicle import (
 )
 from users.models import ParkingPermitGroups, User
 from users.tests.factories.user import UserFactory
+
+from .services.test_traficom import get_mock_xml
+
+
+class MockResponse:
+    def __init__(self, text="", status_code=200):
+        self.text = text
+        self.status_code = status_code
 
 
 @dataclasses.dataclass
@@ -408,3 +418,30 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_is_not_found(
     with pytest.raises(ObjectNotFound) as exc_info:
         update_or_create_vehicle(vehicle_info)
     assert "Vehicle power type not found" in str(exc_info.value)
+
+
+@pytest.mark.django_db
+@override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+@mock.patch("requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml")))
+def test_admin_vehicle_lookup_success(info, mock_jwt):
+    # Data from mock XML file
+    customer_nin_number = "290200A905H"
+    reg_number = "BCI-707"
+
+    # Customer has NO driving license in database
+    customer = CustomerFactory(national_id_number=customer_nin_number)
+    assert not hasattr(customer, "driving_licence")
+
+    with mock_jwt:
+        # Admin should still be able to fetch vehicle
+        # Using registration number from mock XML: BCI-707
+        vehicle = resolve_vehicle(
+            None, info, reg_number=reg_number, national_id_number=customer_nin_number
+        )
+
+    # Refresh data to verify that no driving license was added to customer
+    customer.refresh_from_db()
+
+    assert vehicle is not None
+    assert vehicle.registration_number == reg_number
+    assert not hasattr(customer, "driving_licence")
