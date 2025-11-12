@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.9.1...parking-permits-v1.10.0) (2025-11-12)
+
+
+### Features
+
+* Remove drivers licence fetch ([12c4c6e](https://github.com/City-of-Helsinki/parking-permits/commit/12c4c6e02f3cfc8a0f49f3823866bad267c60cc0))
+* Skip DVV-sync with environment variable ([e36287d](https://github.com/City-of-Helsinki/parking-permits/commit/e36287dcf989aaec893123274a6840e2061ed312))
+* Use DATABASE_PASSWORD if present in env ([788cd0e](https://github.com/City-of-Helsinki/parking-permits/commit/788cd0e6cbe0aa039e048800792505de76267018))
+
 ## [Unreleased]
 
 ## [1.9.1] - 2025-10-16
