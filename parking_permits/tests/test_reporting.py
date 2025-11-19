@@ -3,6 +3,7 @@ import math
 from datetime import date, datetime, time
 
 from dateutil.relativedelta import relativedelta
+from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
@@ -115,7 +116,7 @@ class PermitCountSnapshotTestCase(TestCase):
                 datetime(test_date.year, test_date.month, test_date.day, 22)
             )
         ):
-            PermitCountSnapshot.build_daily_snapshot()
+            call_command("create_daily_permit_counts")
 
             now = timezone.now()
             now_date = now.date()
@@ -142,7 +143,7 @@ class PermitCountSnapshotTestCase(TestCase):
                 datetime(test_date.year, test_date.month, test_date.day, 22)
             )
         ):
-            PermitCountSnapshot.build_daily_snapshot()
+            call_command("create_daily_permit_counts")
 
         # Re-fetch data after running the updates on the snapshots
         permit_count_data = PermitCountSnapshot.objects.filter(date=now_date)
