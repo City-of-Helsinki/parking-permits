@@ -126,6 +126,7 @@ INSTALLED_APPS = [
     "parking_permits",
     "users",
     "rest_framework",
+    "rest_framework_api_key",
     "django_db_logger",
     "audit_logger",
     "drf_yasg",

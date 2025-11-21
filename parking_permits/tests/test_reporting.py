@@ -6,8 +6,11 @@ from dateutil.relativedelta import relativedelta
 from django.core.management import call_command
 from django.db import IntegrityError
 from django.test import TestCase
+from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
+from rest_framework.test import APITestCase
+from rest_framework_api_key.models import APIKey
 
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.reporting import PermitCountSnapshot
@@ -24,6 +27,7 @@ class PermitCountSnapshotTestCase(TestCase):
     def test_creating_duplicate_permit_count_snapshot_raises(self):
 
         test_date = date(2024, 11, 30)
+
         def create_snapshot(*, count: int):
             PermitCountSnapshot.objects.create(
                 permit_count=count,
@@ -155,3 +159,105 @@ class PermitCountSnapshotTestCase(TestCase):
             self.assertTrue(
                 permit_count_data.filter(permit_count=target_count).exists()
             )
+
+
+class PermitCountSnapshotViewTestCase(APITestCase):
+
+    url = reverse("parking_permits:permit-count-snapshot-list")
+
+    @classmethod
+    def setUpTestData(cls):
+        PermitCountSnapshot.objects.create(
+            permit_count=4,
+            date=date(2024, 11, 30),
+            parking_zone_name="A",
+            parking_zone_description="Kallio",
+            parking_zone_description_sv="Berghäll",
+            low_emission=True,
+            primary_vehicle=True,
+            contract_type=ContractType.OPEN_ENDED,
+        )
+        PermitCountSnapshot.objects.create(
+            permit_count=12,
+            date=date(2025, 10, 31),
+            parking_zone_name="B",
+            parking_zone_description="Etu-Töölö",
+            parking_zone_description_sv="Främre Tölö",
+            low_emission=False,
+            primary_vehicle=False,
+            contract_type=ContractType.FIXED_PERIOD,
+        )
+
+    def assert_failing_api_key_request(self, response):
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.reason_phrase, "Forbidden")
+        self.assertEqual(list(response.data.keys()), ["detail"])
+        error = str(response.data["detail"])
+        self.assertEqual(error, "Authentication credentials were not provided.")
+
+    def assert_successful_api_read(self, response):
+        self.assertEqual(response.status_code, 200)
+        expected_data = [
+            {
+                "permit_count": 4,
+                "date": "2024-11-30",
+                "parking_zone_name": "A",
+                "parking_zone_description": "Kallio",
+                "parking_zone_description_sv": "Berghäll",
+                "low_emission": True,
+                "primary_vehicle": True,
+                "contract_type": "OPEN_ENDED",
+            },
+            {
+                "permit_count": 12,
+                "date": "2025-10-31",
+                "parking_zone_name": "B",
+                "parking_zone_description": "Etu-Töölö",
+                "parking_zone_description_sv": "Främre Tölö",
+                "low_emission": False,
+                "primary_vehicle": False,
+                "contract_type": "FIXED_PERIOD",
+            },
+        ]
+        self.assertEqual(response.data, expected_data)
+
+    def test_permit_count_snapshot_list_view_with_valid_api_key(self):
+        key_string = APIKey.objects.create_key(name="valid key")[1]
+        headers = {"Authorization": f"Api-Key {key_string}"}
+        response = self.client.get(self.url, headers=headers)
+        self.assert_successful_api_read(response)
+
+    def test_permit_count_snapshot_list_view_without_api_key(self):
+        response = self.client.get(self.url)
+        self.assert_failing_api_key_request(response)
+
+    def test_permit_count_snapshot_list_view_with_invalid_api_key(self):
+        key_string = "SomethingResemblingAValidApiKey"
+        headers = {"Authorization": f"Api-Key {key_string}"}
+        response = self.client.get(self.url, headers=headers)
+        self.assert_failing_api_key_request(response)
+
+    def test_permit_count_snapshot_list_view_with_revoked_api_key(self):
+        key_instance, key_string = APIKey.objects.create_key(name="revoked key")
+
+        key_instance.revoked = True
+        key_instance.save()
+
+        headers = {"Authorization": f"Api-Key {key_string}"}
+        response = self.client.get(self.url, headers=headers)
+        self.assert_failing_api_key_request(response)
+
+    def test_permit_count_snapshot_list_view_with_expired_api_key(self):
+        key_creation_date = datetime(2025, 11, 30, 0, 0, 0)
+        key_expiration_time = datetime(2026, 11, 30, 0, 0, 0)
+        with freeze_time(timezone.make_aware(key_creation_date)):
+            key_string = APIKey.objects.create_key(
+                name="expired key", expiry_date=key_expiration_time
+            )[1]
+
+        auth_attempt_date = key_expiration_time + relativedelta(days=1)
+
+        with freeze_time(timezone.make_aware(auth_attempt_date)):
+            headers = {"Authorization": f"Api-Key {key_string}"}
+            response = self.client.get(self.url, headers=headers)
+            self.assert_failing_api_key_request(response)

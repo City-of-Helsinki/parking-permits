@@ -25,9 +25,11 @@ from helsinki_gdpr.views import DryRunSerializer, GDPRAPIView, GDPRScopesPermiss
 from rest_framework import generics, mixins
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_api_key.permissions import HasAPIKey
 
 import audit_logger as audit
 from audit_logger import AuditMsg
+from parking_permits.models.reporting import PermitCountSnapshot
 
 from .constants import Origin
 from .customer_permit import CustomerPermit
@@ -63,6 +65,7 @@ from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
     PaymentSerializer,
+    PermitCountSnapshotSerializer,
     ProductSerializer,
     ResolveAvailabilityRequestSerializer,
     ResolveAvailabilityResponseSerializer,
@@ -1012,3 +1015,23 @@ def pdf_export(request):
         content=pdf.output(dest="S").encode("latin-1"),
     )
     return response
+
+
+class PermitCountSnapshotView(mixins.ListModelMixin, generics.GenericAPIView):
+    queryset = PermitCountSnapshot.objects.all().order_by("date")
+    serializer_class = PermitCountSnapshotSerializer
+
+    permission_classes = [HasAPIKey]
+
+    @swagger_auto_schema(
+        operation_description="Retrieve all permit count snapshots.",
+        responses={
+            200: openapi.Response(
+                "Retrieve all permit count snapshots.",
+                PermitCountSnapshotSerializer,
+            )
+        },
+        tags=["PermitCountSnapshot"],
+    )
+    def get(self, request, *args, **kwargs):
+        return self.list(request, *args, **kwargs)

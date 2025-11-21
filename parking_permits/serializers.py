@@ -1,6 +1,8 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from parking_permits.models.reporting import PermitCountSnapshot
+
 
 class MetaItemSerializer(serializers.Serializer):
     key = serializers.CharField(help_text="Meta id")
@@ -126,3 +128,28 @@ class ResolveAvailabilityResponseSerializer(ResolveAvailabilityRequestSerializer
 
 class MessageResponseSerializer(serializers.Serializer):
     message = serializers.CharField(help_text="Success or error message")
+
+
+class PermitCountSnapshotSerializer(serializers.Serializer):
+
+    permit_count = serializers.IntegerField(read_only=True)
+    date = serializers.DateField(read_only=True)
+    parking_zone_name = serializers.CharField(read_only=True)
+    parking_zone_description = serializers.CharField(read_only=True)
+    parking_zone_description_sv = serializers.CharField(read_only=True)
+    low_emission = serializers.BooleanField(read_only=True)
+    primary_vehicle = serializers.BooleanField(read_only=True)
+    contract_type = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = PermitCountSnapshot
+        fields = (
+            "permit_count",
+            "date",
+            "parking_zone_name",
+            "parking_zone_description",
+            "parking_zone_description_sv",
+            "low_emission",
+            "primary_vehicle",
+            "contract_type",
+        )
