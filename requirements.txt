@@ -75,6 +75,8 @@ djangorestframework==3.16.1
     #   drf-oidc-auth
     #   drf-yasg
     #   helsinki-profile-gdpr-api
+djangorestframework-api-key==3.1.0
+    # via -r requirements.in
 drf-oidc-auth==3.0.0
     # via helsinki-profile-gdpr-api
 drf-yasg==1.21.11

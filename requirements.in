@@ -4,6 +4,7 @@ django-environ                         # Read .env file
 django-extensions                      # useful django extensions
 django==5.1.*                          # web framework itself
 djangorestframework                    # creating rest APIs
+djangorestframework-api-key            # creating and managing API keys
 gunicorn                               # application server
 psycopg2-binary                        # postgres database adapter
 requests                               # http requests

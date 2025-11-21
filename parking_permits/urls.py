@@ -56,6 +56,11 @@ urlpatterns = [
         views.ParkingPermitsGDPRAPIView.as_view(),
         name="gdpr_v1",
     ),
+    path(
+        "api/reporting/permit-count-snapshots",
+        views.PermitCountSnapshotView.as_view(),
+        name="permit-count-snapshot-list",
+    ),
     path("export/<str:data_type>", views.csv_export, name="export"),
     path("export_pdf", views.pdf_export, name="export_pdf"),
 ]
