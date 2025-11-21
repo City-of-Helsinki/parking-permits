@@ -46,7 +46,7 @@ CONSUMPTION_TYPE_NEDC = ("4", "7")
 CONSUMPTION_TYPE_WLTP = ("9", "10")
 VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
-VEHICLE_SEARCH = 841
+VEHICLE_SEARCH = 811
 DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
@@ -107,15 +107,15 @@ class Traficom:
         et = self._fetch_info(
             registration_number=registration_number, is_l_type_vehicle=False
         )
-        vehicle_detail = et.find(".//ajoneuvonTiedot")
+        vehicle_info = et.find(".//ajoneuvonTiedot")
 
-        if not vehicle_detail:
+        if not vehicle_info:
             # If normal vehicle was not found, fetch vehicle details from Traficom using light weight vehicle type
             et = self._fetch_info(
                 registration_number=registration_number, is_l_type_vehicle=True
             )
-            vehicle_detail = et.find(".//ajoneuvonTiedot")
-            if not vehicle_detail:
+            vehicle_info = et.find(".//ajoneuvonTiedot")
+            if not vehicle_info:
                 raise TraficomFetchVehicleError(
                     _(
                         "Could not find vehicle detail with given %(registration_number)s registration number"
@@ -123,8 +123,8 @@ class Traficom:
                     % {"registration_number": registration_number}
                 )
 
-        vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
-        vehicle_sub_class = vehicle_detail.findall("ajoneuvoryhmat/ajoneuvoryhma")
+        vehicle_class = vehicle_info.find("ajoneuvoluokka").text
+        vehicle_sub_class = vehicle_info.findall("ajoneuvoryhmat/ajoneuvoryhma")
         if (
             vehicle_sub_class
             and VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text, None)
@@ -132,8 +132,8 @@ class Traficom:
         ):
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
-        motor = et.find(".//moottori")
-        power = motor.find(".//suurinNettoteho")
+        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        power = vehicle_basic_info.find(".//suurinNettoteho")
 
         vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
 
@@ -178,7 +178,9 @@ class Traficom:
                 registration_number = registration_number_et.text
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
-        emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
+        emissions = vehicle_basic_info.findall(
+            "kayttovoimat/kayttovoima/kulutukset/kulutus"
+        )
         inspection_detail = et.find(".//ajoneuvonPerustiedot")
         last_inspection_date = inspection_detail.find("mkAjanLoppupvm")
 
@@ -219,8 +221,7 @@ class Traficom:
         if not co2emission:
             euro_class = EURO_CLASS_WITHOUT_EMISSIONS
 
-        mass = et.find(".//massa")
-        weight_et = mass.find("omamassa")
+        weight_et = vehicle_basic_info.find(".//tekninen-tieto/tieliikSuurSallKokmassa")
         try:
             weight = safe_cast(weight_et.text, int, 0)
         except AttributeError:
@@ -233,9 +234,9 @@ class Traficom:
                 % {"registration_number": registration_number}
             )
 
-        vehicle_power_type = motor.find("kayttovoima")
-        vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
-        vehicle_model = vehicle_detail.find("mallimerkinta")
+        vehicle_power_type = vehicle_basic_info.find("tekninen-tieto/kayttovoima")
+        vehicle_manufacturer = vehicle_info.find("merkkiSelvakielinen")
+        vehicle_model = vehicle_info.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
         user_ssns = [
             (
