@@ -62,6 +62,9 @@ class TestTraficom(TestCase):
         licence_A2.driving_classes.add(driving_class_A2)
         licence_A.driving_classes.add(driving_class_A)
 
+
+class TestTraficomVehicleFetch(TestTraficom):
+
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle(self):
         with mock.patch(
@@ -916,6 +919,74 @@ class TestTraficom(TestCase):
 
             mock_traficom.assert_not_called()
 
+    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+    def test_fetch_vehicle_C1_licence_C_C1_C1E_CE(self):
+        user_with_driving_licence_C = CustomerFactory()
+        user_with_driving_licence_C1 = CustomerFactory()
+        user_with_driving_licence_C1E = CustomerFactory()
+        user_with_driving_licence_CE = CustomerFactory()
+
+        driving_class_C = DrivingClass.objects.create(identifier="C")
+        driving_class_C1 = DrivingClass.objects.create(identifier="C1")
+        driving_class_C1E = DrivingClass.objects.create(identifier="C1E")
+        driving_class_CE = DrivingClass.objects.create(identifier="CE")
+
+        licence_C = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_C,
+            start_date=datetime.date(2023, 6, 3),
+        )
+        licence_C1 = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_C1,
+            start_date=datetime.date(2023, 6, 3),
+        )
+        licence_C1E = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_C1E,
+            start_date=datetime.date(2023, 6, 3),
+        )
+        licence_CE = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_CE,
+            start_date=datetime.date(2023, 6, 3),
+        )
+
+        licence_C.driving_classes.add(driving_class_C)
+        licence_C1.driving_classes.add(driving_class_C1)
+        licence_C1E.driving_classes.add(driving_class_C1E)
+        licence_CE.driving_classes.add(driving_class_CE)
+
+        with mock.patch(
+            "requests.post",
+            return_value=MockResponse(get_mock_xml("vehicle_C1.xml")),
+        ):
+            registration_number = "FNI-586"
+            vehicle = self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertTrue(
+                user_with_driving_licence_C.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertTrue(
+                user_with_driving_licence_C1.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertTrue(
+                user_with_driving_licence_C1E.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+            self.assertTrue(
+                user_with_driving_licence_CE.has_valid_driving_licence_for_vehicle(
+                    vehicle
+                )
+            )
+
+            self.assertEqual(vehicle.registration_number, registration_number)
+            self.assertEqual(vehicle.vehicle_class, VehicleClass.N2)
+
+
+class TestTraficomDrivingLicenceFetch(TestTraficom):
+
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_valid_licence(self):
         with mock.patch(
@@ -1048,68 +1119,3 @@ class TestTraficom(TestCase):
 
             for driving_class, licence in zip(driving_classes, expected_licences):
                 self.assertEqual(driving_class.identifier, licence)
-
-    @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_C1_licence_C_C1_C1E_CE(self):
-        user_with_driving_licence_C = CustomerFactory()
-        user_with_driving_licence_C1 = CustomerFactory()
-        user_with_driving_licence_C1E = CustomerFactory()
-        user_with_driving_licence_CE = CustomerFactory()
-
-        driving_class_C = DrivingClass.objects.create(identifier="C")
-        driving_class_C1 = DrivingClass.objects.create(identifier="C1")
-        driving_class_C1E = DrivingClass.objects.create(identifier="C1E")
-        driving_class_CE = DrivingClass.objects.create(identifier="CE")
-
-        licence_C = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C,
-            start_date=datetime.date(2023, 6, 3),
-        )
-        licence_C1 = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C1,
-            start_date=datetime.date(2023, 6, 3),
-        )
-        licence_C1E = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C1E,
-            start_date=datetime.date(2023, 6, 3),
-        )
-        licence_CE = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_CE,
-            start_date=datetime.date(2023, 6, 3),
-        )
-
-        licence_C.driving_classes.add(driving_class_C)
-        licence_C1.driving_classes.add(driving_class_C1)
-        licence_C1E.driving_classes.add(driving_class_C1E)
-        licence_CE.driving_classes.add(driving_class_CE)
-
-        with mock.patch(
-            "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_C1.xml")),
-        ):
-            registration_number = "FNI-586"
-            vehicle = self.traficom.fetch_vehicle_details(registration_number)
-
-            self.assertTrue(
-                user_with_driving_licence_C.has_valid_driving_licence_for_vehicle(
-                    vehicle
-                )
-            )
-            self.assertTrue(
-                user_with_driving_licence_C1.has_valid_driving_licence_for_vehicle(
-                    vehicle
-                )
-            )
-            self.assertTrue(
-                user_with_driving_licence_C1E.has_valid_driving_licence_for_vehicle(
-                    vehicle
-                )
-            )
-            self.assertTrue(
-                user_with_driving_licence_CE.has_valid_driving_licence_for_vehicle(
-                    vehicle
-                )
-            )
-
-            self.assertEqual(vehicle.registration_number, registration_number)
-            self.assertEqual(vehicle.vehicle_class, VehicleClass.N2)
