@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>77-ALH</rekisteritunnus>
                     <valmistenumero>VG5DE072000009103</valmistenumero>
@@ -54,6 +54,41 @@
                     <valmistenumeronSijaintiMuu>R, X=396, Y=24, Z=1027</valmistenumeronSijaintiMuu>
                     <tyyppinimi>DE07</tyyppinimi>
                     <ensirekisterointipvm>2011-08-16</ensirekisterointipvm>
+                    <tekninen-tieto>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>124</iskutilavuus>
+                        <suurinNettoteho>11.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>79.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>76.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>4375</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>0.85100</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>0.09400</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>06</paastolaji>
+                                        <maara>0.23300</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>01</tyyppi>
+                                        <paastolaji>17</paastolaji>
+                                        <maara>0.0000</maara>
+                                    </paasto>
+                                </paastot>
+                            </kayttovoima>
+                        </kayttovoimat>
+                    </tekninen-tieto>
                 </ajoneuvonPerustiedot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
@@ -90,109 +125,7 @@
                     <vakuutuksenottajanNimi>Haaparanta, Eve</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2020-09-18</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <akselienLkm>2</akselienLkm>
-                    <vaihteisto>7</vaihteisto>
-                    <vaihteidenLkm>6</vaihteidenLkm>
-                    <valmistajanKilvenSijainti>C, X=825, Y=0, Z=640</valmistajanKilvenSijainti>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>200</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>110/70-17</rengaskoko>
-                                <vannekoko>17X3.0</vannekoko>
-                                <kuormitusJaNopeusluokka>54H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <vetava>true</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>265</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>140/70-17</rengaskoko>
-                                <vannekoko>17X3.50</vannekoko>
-                                <kuormitusJaNopeusluokka>66H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>124</iskutilavuus>
-                    <suurinNettoteho>11.0</suurinNettoteho>
-                    <huippunopeus>105</huippunopeus>
-                    <sylintereidenLkm>1</sylintereidenLkm>
-                    <moottorinTunnus>E3D9E</moottorinTunnus>
-                    <paastotaso>119</paastotaso>
-                    <pakokaasunPuhdistus>
-                        <laite>03</laite>
-                    </pakokaasunPuhdistus>
-                    <polttoainesailio>
-                        <tilavuus>8.5</tilavuus>
-                    </polttoainesailio>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>79.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>76.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>4375</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>0.85100</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>0.09400</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>06</paastolaji>
-                                    <maara>0.23300</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>01</tyyppi>
-                                    <paastolaji>17</paastolaji>
-                                    <maara>0.0000</maara>
-                                </paasto>
-                            </paastot>
-                        </kayttovoima>
-                    </kayttovoimat>
-                </moottori>
-                <massa>
-                    <omamassa>137</omamassa>
-                    <teknSuurSallKokmassa>322</teknSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>2090</ajonKokPituus>
-                    <ajonLeveys>790</ajonLeveys>
-                    <ajonKorkeus>1260</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1430</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <ohjaamotyyppi>4</ohjaamotyyppi>
-                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

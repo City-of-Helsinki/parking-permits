@@ -8,7 +8,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="1">
                     <rekisteritunnus>BCI-707</rekisteritunnus>
                     <valmistenumero>WF0WXXGCDW5D05303</valmistenumero>
@@ -46,6 +46,15 @@
                         <vari>8</vari>
                         <lisavari>c</lisavari>
                         <ovienLukumaara>2</ovienLukumaara>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>4563</iskutilavuus>
+                        <suurinNettoteho>224.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <tieliikSuurSallKokmassa>2178</tieliikSuurSallKokmassa>
                     </tekninen-tieto>
                     <tyyppinimi>CADILLAC ELDORADO NORTH STAR 32V</tyyppinimi>
                     <ensirekisterointipvm>2008-03-15</ensirekisterointipvm>
@@ -76,98 +85,7 @@
                     <vakuutusyhtionNimi>XYZ</vakuutusyhtionNimi>
                     <vakuutuksenAlkupvm>2008-02-20</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>02</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <meistoksenVarmennus>false</meistoksenVarmennus>
-                    <vaihteisto>2</vaihteisto>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>true</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <seisontajarru>false</seisontajarru>
-                            <tieliikSuurSallMassa>1212</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>1212</teknSuurSallMassa>
-                            <jarruttava>false</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>225/60R16</rengaskoko>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>false</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <seisontajarru>false</seisontajarru>
-                            <tieliikSuurSallMassa>968</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>968</teknSuurSallMassa>
-                            <jarruttava>false</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>225760R16</rengaskoko>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>4563</iskutilavuus>
-                    <suurinNettoteho>224.0</suurinNettoteho>
-                    <sylintereidenLkm>8</sylintereidenLkm>
-                    <ahdin>false</ahdin>
-                    <valijaahdytin>false</valijaahdytin>
-                    <pakokaasunPuhdistus>
-                        <laite>09</laite>
-                    </pakokaasunPuhdistus>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                        </kayttovoima>
-                    </kayttovoimat>
-                </moottori>
-                <massa>
-                    <omamassa>1760</omamassa>
-                    <teknSuurSallKokmassa>2178</teknSuurSallKokmassa>
-                    <tieliikSuurSallKokmassa>2178</tieliikSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>5140</ajonKokPituus>
-                    <ajonLeveys>1920</ajonLeveys>
-                    <ajonKorkeus>1370</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>2740</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <korityyppi>AD</korityyppi>
-                    <ohjaamotyyppi>1</ohjaamotyyppi>
-                    <istuimetKuljVieressa>1</istuimetKuljVieressa>
-                    <istumapaikkojenLkm>5</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>05</voimanvalJaTehostamistapa>
-                    <voimanvalJaTehostamistapaLisatieto>
-                        <lisatieto>1</lisatieto>
-                    </voimanvalJaTehostamistapaLisatieto>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

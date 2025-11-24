@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>IT-236</rekisteritunnus>
                     <valmistenumero>9G30577J0</valmistenumero>
@@ -44,41 +44,18 @@
                     <ulkomainenRekisteritunnus>GL-DD4</ulkomainenRekisteritunnus>
                     <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
                     <ensirekisterointipvm>2001-04-25</ensirekisterointipvm>
+                    <tekninen-tieto>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>1340</iskutilavuus>
+                        <suurinNettoteho>46.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluOhiajossa>86.0</voimakkuusMeluOhiajossa>
+                            </kayttovoima>
+                        </kayttovoimat>
+                    </tekninen-tieto>
                 </ajoneuvonPerustiedot>
-                <erikoisehdot>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
-                        <teksti>99312</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
-                        <teksti>FXWG WIDE GLIDE/1340</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3001</erikoisehdOsaalue>
-                        <teksti>Renkaat: MH90-21 MT90-16</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3002</erikoisehdOsaalue>
-                        <teksti>Vetojärjestelmä: 2X1</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3008</erikoisehdOsaalue>
-                        <teksti>AJONEUVOON VAIHDETTU: TAKAROISKESUOJA, ISTUIN, OHJAUSTANKO JA PAKOPUTKISTO.</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3009</erikoisehdOsaalue>
-                        <teksti>Valmistusmaa: USA</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
                         <omistajanTunnus>070975-223A</omistajanTunnus>
@@ -102,60 +79,7 @@
                     <vakuutuksenottajanNimi>Kallioinen, Aulis</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2013-11-29</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>01</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <vetava>false</vetava>
-                            <omaMassaKevYlh>120</omaMassaKevYlh>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <vetava>true</vetava>
-                            <omaMassaKevYlh>160</omaMassaKevYlh>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>1340</iskutilavuus>
-                    <suurinNettoteho>46.0</suurinNettoteho>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluOhiajossa>86.0</voimakkuusMeluOhiajossa>
-                        </kayttovoima>
-                    </kayttovoimat>
-                </moottori>
-                <massa>
-                    <omamassa>275</omamassa>
-                </massa>
-                <mitat>
-                    <ajonLeveys>860</ajonLeveys>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1650</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <istumapaikkojenLkm>1</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
-                </jarrut>
-                <vaihdetutOsat>
-                    <vaihdettuOsa>
-                        <nimi>-</nimi>
-                        <todettuProsentti>13.0</todettuProsentti>
-                    </vaihdettuOsa>
-                </vaihdetutOsat>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

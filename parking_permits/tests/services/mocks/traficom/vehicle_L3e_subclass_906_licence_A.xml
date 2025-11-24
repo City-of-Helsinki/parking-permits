@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>68-AKY</rekisteritunnus>
                     <valmistenumero>JKAZR900DDA002495</valmistenumero>
@@ -52,6 +52,37 @@
                     <valmistenumeronSijainti>22</valmistenumeronSijainti>
                     <tyyppinimi>ZR900D</tyyppinimi>
                     <ensirekisterointipvm>2020-03-03</ensirekisterointipvm>
+                    <tekninen-tieto>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>948</iskutilavuus>
+                        <suurinNettoteho>70.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>91.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>71.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>4000</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>534.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>38.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>06</paastolaji>
+                                        <maara>79.00</maara>
+                                    </paasto>
+                                </paastot>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <sahkohybridi>false</sahkohybridi>
+                    </tekninen-tieto>
                 </ajoneuvonPerustiedot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
@@ -62,7 +93,7 @@
                         <omistajuustyyppi>01</omistajuustyyppi>
                         <suhteenAlkupvm>2021-04-12</suhteenAlkupvm>
                         <markkinointikielto>false</markkinointikielto>
-                        <lahiosoite>Möisavaha 51-36</lahiosoite>
+                        <lahiosoite>Mï¿½isavaha 51-36</lahiosoite>
                         <postitoimipaikka>TARTO, Viro</postitoimipaikka>
                         <asiointikieli>fi</asiointikieli>
                     </omistajaHaltija>
@@ -75,112 +106,7 @@
                     <vakuutuksenottajanNimi>Gruzdev, Eljas Nikolai</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2021-04-16</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <akselienLkm>2</akselienLkm>
-                    <vaihteisto>7</vaihteisto>
-                    <vaihteidenLkm>6</vaihteidenLkm>
-                    <valmistajanKilvenSijainti>R, x1130, y130, z670</valmistajanKilvenSijainti>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>160</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>120/70ZR17M/C</rengaskoko>
-                                <vannekoko>17M/C x MT3.50</vannekoko>
-                                <kuormitusJaNopeusluokka>44V</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <vetava>true</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>280</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>180/55ZR17M/C</rengaskoko>
-                                <vannekoko>17M/C x MT5.50</vannekoko>
-                                <kuormitusJaNopeusluokka>64V</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>948</iskutilavuus>
-                    <suurinNettoteho>70.0</suurinNettoteho>
-                    <huippunopeus>217</huippunopeus>
-                    <sylintereidenLkm>4</sylintereidenLkm>
-                    <moottorinTunnus>ZR900DE</moottorinTunnus>
-                    <paastotaso>529</paastotaso>
-                    <pakokaasunPuhdistus>
-                        <laite>02</laite>
-                        <laite>03</laite>
-                        <laite>04</laite>
-                        <laite>05</laite>
-                        <laite>07</laite>
-                    </pakokaasunPuhdistus>
-                    <polttoainesailio>
-                        <tilavuus>17.0</tilavuus>
-                    </polttoainesailio>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>91.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>71.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>4000</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>534.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>38.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>06</paastolaji>
-                                    <maara>79.00</maara>
-                                </paasto>
-                            </paastot>
-                        </kayttovoima>
-                    </kayttovoimat>
-                    <sahkohybridi>false</sahkohybridi>
-                </moottori>
-                <massa>
-                    <omamassa>210</omamassa>
-                    <teknSuurSallKokmassa>390</teknSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>2065</ajonKokPituus>
-                    <ajonLeveys>825</ajonLeveys>
-                    <ajonKorkeus>1065</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1450</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <ohjaamotyyppi>4</ohjaamotyyppi>
-                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
-                    <voimanvalJaTehostamistapaLisatieto>
-                        <lisatieto>1</lisatieto>
-                    </voimanvalJaTehostamistapaLisatieto>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

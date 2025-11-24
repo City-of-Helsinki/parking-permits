@@ -8,7 +8,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="1">
                     <rekisteritunnus>BCI-707</rekisteritunnus>
                     <valmistenumero>WVWZZZ3CZ6E116952</valmistenumero>
@@ -48,6 +48,58 @@
                     <tekninen-tieto>
                         <vari>1</vari>
                         <lisavari>c</lisavari>
+                        <kayttovoima>02</kayttovoima>
+                        <iskutilavuus>1890</iskutilavuus>
+                        <suurinNettoteho>77.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>02</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>80.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>72.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>3000</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>0.19300</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>0.19400</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>10</paastolaji>
+                                        <maara>0.01800</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>11</paastolaji>
+                                        <maara>0.22900</maara>
+                                    </paasto>
+                                </paastot>
+                                <kulutukset>
+                                    <kulutus>
+                                        <kulutuslaji>1</kulutuslaji>
+                                        <maara>4.9</maara>
+                                    </kulutus>
+                                    <kulutus>
+                                        <kulutuslaji>2</kulutuslaji>
+                                        <maara>7.4</maara>
+                                    </kulutus>
+                                    <kulutus>
+                                        <kulutuslaji>3</kulutuslaji>
+                                        <maara>5.8</maara>
+                                    </kulutus>
+                                    <kulutus>
+                                        <kulutuslaji>4</kulutuslaji>
+                                        <maara>157.0</maara>
+                                    </kulutus>
+                                </kulutukset>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <tieliikSuurSallKokmassa>2100</tieliikSuurSallKokmassa>
                     </tekninen-tieto>
                     <tyyppinimi>3C</tyyppinimi>
                     <ensirekisterointipvm>2005-11-30</ensirekisterointipvm>
@@ -58,40 +110,6 @@
                         </kilometrilukema>
                     </viimeisinkilometrilukema>
                 </ajoneuvonPerustiedot>
-                <erikoisehdot>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0003/1007</kooditettuHuomautus>
-                        <teksti>MOOTTORINTUNNISTE BKC, 5-V. KÄSIVALINTAINEN VAIHTEISTO.</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
-                        <teksti>e1*01/116*0307*05 VARIANTTI: ACBKCX0 VERSIO: FM5FM5A4032STO0GG</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VETOJÄRJESTELMÄ: 4X2</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VOIMASSA VALMISTENUMEROSTA/AJANKOHDASTA: E1*01/116*0307*05</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VALMISTUSMAA: DE</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
-                        <teksti>5267077510</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
-                        <teksti>5D PASSAT VARIANT 1.9TDI-3C/271</teksti>
-                    </erikoisehto>
-                </erikoisehdot>
                 <rajoitustiedot>
                     <rajoitustieto>
                         <rajoitusLaji>10</rajoitusLaji>
@@ -128,233 +146,7 @@
                     <vakuutuksenottajanNimi>Julkunen, Eljas Nikolai</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2021-11-20</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>01</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <vetava>true</vetava>
-                            <tieliikSuurSallMassa>1070</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>1070</teknSuurSallMassa>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>205/55R16</rengaskoko>
-                                <vannekoko>6,5JX16</vannekoko>
-                                <offset>42.0</offset>
-                                <kuormitusJaNopeusluokka>91H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>205/55R16</rengaskoko>
-                                <vannekoko>7JX16</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>91H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>215/55R16</rengaskoko>
-                                <vannekoko>6,5JX16</vannekoko>
-                                <offset>42.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>215/55R16</rengaskoko>
-                                <vannekoko>7JX16</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>235/45R17</rengaskoko>
-                                <vannekoko>7,5JX17</vannekoko>
-                                <offset>47.0</offset>
-                                <kuormitusJaNopeusluokka>94H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>205/50R17 M+S</rengaskoko>
-                                <vannekoko>6JX17</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <vetava>false</vetava>
-                            <tieliikSuurSallMassa>1080</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>1080</teknSuurSallMassa>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>205/55R16</rengaskoko>
-                                <vannekoko>6,5JX16</vannekoko>
-                                <offset>42.0</offset>
-                                <kuormitusJaNopeusluokka>91H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>205/55R16</rengaskoko>
-                                <vannekoko>7JX16</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>91H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>215/55R16</rengaskoko>
-                                <vannekoko>6,5JX16</vannekoko>
-                                <offset>42.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>215/55R16</rengaskoko>
-                                <vannekoko>7JX16</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>235/45R17</rengaskoko>
-                                <vannekoko>7,5JX17</vannekoko>
-                                <offset>47.0</offset>
-                                <kuormitusJaNopeusluokka>94H</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>205/50R17 M+S</rengaskoko>
-                                <vannekoko>6JX17</vannekoko>
-                                <offset>45.0</offset>
-                                <kuormitusJaNopeusluokka>93H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>02</kayttovoima>
-                    <iskutilavuus>1890</iskutilavuus>
-                    <suurinNettoteho>77.0</suurinNettoteho>
-                    <sylintereidenLkm>4</sylintereidenLkm>
-                    <ahdin>true</ahdin>
-                    <paastotaso>23</paastotaso>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>02</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>80.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>72.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>3000</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>0.19300</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>0.19400</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>10</paastolaji>
-                                    <maara>0.01800</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>11</paastolaji>
-                                    <maara>0.22900</maara>
-                                </paasto>
-                            </paastot>
-                            <kulutukset>
-                                <kulutus>
-                                    <kulutuslaji>1</kulutuslaji>
-                                    <maara>4.9</maara>
-                                </kulutus>
-                                <kulutus>
-                                    <kulutuslaji>2</kulutuslaji>
-                                    <maara>7.4</maara>
-                                </kulutus>
-                                <kulutus>
-                                    <kulutuslaji>3</kulutuslaji>
-                                    <maara>5.8</maara>
-                                </kulutus>
-                                <kulutus>
-                                    <kulutuslaji>4</kulutuslaji>
-                                    <maara>157.0</maara>
-                                </kulutus>
-                            </kulutukset>
-                        </kayttovoima>
-                    </kayttovoimat>
-                </moottori>
-                <massa>
-                    <kattokuorma>100</kattokuorma>
-                    <omamassa>1552</omamassa>
-                    <teknSuurSallKokmassa>2100</teknSuurSallKokmassa>
-                    <tieliikSuurSallKokmassa>2100</tieliikSuurSallKokmassa>
-                    <modulinKokonaismassa>3600</modulinKokonaismassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>4770</ajonKokPituus>
-                    <ajonLeveys>1820</ajonLeveys>
-                    <ajonKorkeus>1470</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>2710</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <korityyppi>AC</korityyppi>
-                    <istuimetKuljVieressa>1</istuimetKuljVieressa>
-                    <istumapaikkojenLkm>5</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>05</voimanvalJaTehostamistapa>
-                    <voimanvalJaTehostamistapaLisatieto>
-                        <lisatieto>1</lisatieto>
-                    </voimanvalJaTehostamistapaLisatieto>
-                </jarrut>
-                <kevyenKytkenta>
-                    <autonKokmassaPVkaytossa>2135</autonKokmassaPVkaytossa>
-                    <yhdistelmanSuurSallMassa>3600</yhdistelmanSuurSallMassa>
-                    <massaJarruitta>750</massaJarruitta>
-                    <massaJarruin>1500</massaJarruin>
-                    <massaJarruittaValmSall>750</massaJarruittaValmSall>
-                    <massaJarruinValmSall>1500</massaJarruinValmSall>
-                </kevyenKytkenta>
-                <turvavarusteet>
-                    <turvavaruste>
-                        <laji>et</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>1</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>et</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>3</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>vk</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>1</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>vk</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>3</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                </turvavarusteet>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

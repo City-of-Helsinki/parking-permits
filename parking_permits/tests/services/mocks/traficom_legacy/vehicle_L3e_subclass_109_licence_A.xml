@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi/>
+        <sekvenssinumero/>
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="2">
+                    <rekisteritunnus>35-AKX</rekisteritunnus>
+                    <valmistenumero>5HD1FV4168Y674242</valmistenumero>
+                    <jarjestelmatunnus>0091560012</jarjestelmatunnus>
+                </tunnus>
+                <ajoneuvonTiedot>
+                    <ajoneuvoluokka>L3e</ajoneuvoluokka>
+                    <merkki>931</merkki>
+                    <merkkiSelvakielinen>Harley-Davidson</merkkiSelvakielinen>
+                    <tila>3</tila>
+                    <ajoneuvoryhmat>
+                        <ajoneuvoryhma>109</ajoneuvoryhma>
+                    </ajoneuvoryhmat>
+                    <ajoneuvonKaytto>01</ajoneuvonKaytto>
+                    <rekisterointitod1Osa>
+                        <jarjestysnumero>2</jarjestysnumero>
+                        <tulostuspaiva>2015-04-21</tulostuspaiva>
+                    </rekisterointitod1Osa>
+                    <rekisterointitod2Osa>
+                        <jarjestysnumero>2</jarjestysnumero>
+                        <tulostuspaiva>2015-04-21</tulostuspaiva>
+                    </rekisterointitod2Osa>
+                </ajoneuvonTiedot>
+                <ennakkoilmoitus>
+                    <ilmoituspvm>2008-03-11</ilmoituspvm>
+                    <tunnus>0114209-4</tunnus>
+                    <paayksikko>SUMEKO OY</paayksikko>
+                    <katuosoite>Juurakkokuja 4</katuosoite>
+                    <postinumero>01510</postinumero>
+                    <postitoimipaikka>VANTAA</postitoimipaikka>
+                </ennakkoilmoitus>
+                <ajoneuvonPerustiedot>
+                    <tyyppihyvaksyntanro>e4*2002/24*0030*13</tyyppihyvaksyntanro>
+                    <variantti>C4F</variantti>
+                    <versio>GSAAA0</versio>
+                    <kaupallinenNimi>FLHT ELECTRA GLIDE STANDA</kaupallinenNimi>
+                    <tyyppikoodi>9931281227</tyyppikoodi>
+                    <kayttoonottopvm>20080411</kayttoonottopvm>
+                    <ajovakaudenHallinta>false</ajovakaudenHallinta>
+                    <valmistenumeronSijainti>Z</valmistenumeronSijainti>
+                    <valmistenumeronSijaintiMuu>MEISTETTYNÄ RUNKOPALKISSA EDESSÄ OIKEALLA.</valmistenumeronSijaintiMuu>
+                    <tyyppinimi>FL1</tyyppinimi>
+                    <ensirekisterointipvm>2008-04-11</ensirekisterointipvm>
+                </ajoneuvonPerustiedot>
+                <erikoisehdot>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
+                        <teksti>e4*2002/24*0030*13 VARIANTTI: C4F VERSIO: GSAAA0</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VANTEET: 3.00 D</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VETOJÄRJESTELMÄ: 2X1</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VALMISTUSMAA: US</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
+                        <teksti>9931281227</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
+                        <teksti>FLHT-FV4/1584</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0008/2003</kooditettuHuomautus>
+                        <teksti>MT90-B16 72H, MU85-B16 77H</teksti>
+                    </erikoisehto>
+                </erikoisehdot>
+                <omistajatHaltijat>
+                    <omistajaHaltija luovutusrajoitus="1">
+                        <omistajanTunnus>290200A905H</omistajanTunnus>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>01</omistajuustyyppi>
+                        <suhteenAlkupvm>2015-04-13</suhteenAlkupvm>
+                    </omistajaHaltija>
+                </omistajatHaltijat>
+                <vakuutustiedot luovutusrajoitus="1">
+                    <vakuutusyhtiokoodi>41</vakuutusyhtiokoodi>
+                    <vakuutustyyppi>01</vakuutustyyppi>
+                    <vakuutusyhtionNimi>IF</vakuutusyhtionNimi>
+                    <vakuutuksenAlkupvm>2015-04-20</vakuutuksenAlkupvm>
+                </vakuutustiedot>
+                <rakenne>
+                    <akselienLkm>2</akselienLkm>
+                    <vaihteidenLkm>6</vaihteidenLkm>
+                    <tehostettuOhjaus>false</tehostettuOhjaus>
+                    <akselitiedot>
+                        <akseli>
+                            <sijainti>1</sijainti>
+                            <ohjaava>true</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>false</vetava>
+                            <tieliikSuurSallMassa>227</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>227</teknSuurSallMassa>
+                        </akseli>
+                        <akseli>
+                            <sijainti>2</sijainti>
+                            <ohjaava>false</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>true</vetava>
+                            <tieliikSuurSallMassa>375</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>375</teknSuurSallMassa>
+                        </akseli>
+                    </akselitiedot>
+                </rakenne>
+                <moottori>
+                    <kayttovoima>01</kayttovoima>
+                    <iskutilavuus>1584</iskutilavuus>
+                    <suurinNettoteho>60.0</suurinNettoteho>
+                    <huippunopeus>170</huippunopeus>
+                    <sylintereidenLkm>2</sylintereidenLkm>
+                    <polttoainesailio>
+                        <tilavuus>23.0</tilavuus>
+                    </polttoainesailio>
+                    <kayttovoimat>
+                        <kayttovoima>
+                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                        </kayttovoima>
+                    </kayttovoimat>
+                </moottori>
+                <massa>
+                    <omamassa>345</omamassa>
+                    <teknSuurSallKokmassa>570</teknSuurSallKokmassa>
+                    <tieliikSuurSallKokmassa>570</tieliikSuurSallKokmassa>
+                </massa>
+                <mitat>
+                    <ajonKokPituus>2400</ajonKokPituus>
+                    <ajonLeveys>970</ajonLeveys>
+                    <akselivalit>
+                        <akselivali>
+                            <sijainti>1</sijainti>
+                            <pituus>1610</pituus>
+                        </akselivali>
+                    </akselivalit>
+                </mitat>
+                <kori>
+                    <ohjaamotyyppi>4</ohjaamotyyppi>
+                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
+                </kori>
+                <jarrut>
+                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
+                </jarrut>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>

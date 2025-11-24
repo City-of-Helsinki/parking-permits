@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>71-AKY</rekisteritunnus>
                     <valmistenumero>LBMM5710000004456</valmistenumero>
@@ -53,46 +53,18 @@
                     <valmistenumeronSijaintiMuu>VALMISTAJAN KILPI R,X850,Y115,Z645 JA MEISTOS R,X670,Y130,</valmistenumeronSijaintiMuu>
                     <tyyppinimi>M57</tyyppinimi>
                     <ensirekisterointipvm>2008-04-02</ensirekisterointipvm>
+                    <tekninen-tieto>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>124</iskutilavuus>
+                        <suurinNettoteho>7.6</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <tieliikSuurSallKokmassa>305</tieliikSuurSallKokmassa>
+                    </tekninen-tieto>
                 </ajoneuvonPerustiedot>
-                <erikoisehdot>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
-                        <teksti>e11*2002/24*0521*01 VARIANTTI: 1 VERSIO: 00</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VANTEET: 3.50, 3.00</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VETOJÄRJESTELMÄ: 2X1</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
-                        <teksti>VALMISTUSMAA: CN</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0001/2003</kooditettuHuomautus>
-                        <teksti>VAIHTOEHTOINEN RENGAS EDESSÄ JA TAKANA 120/70-12 56J.</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
-                        <teksti>9587120801</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
-                        <teksti>M57-M57100/124</teksti>
-                    </erikoisehto>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
-                        <kooditettuHuomautus>0008/2003</kooditettuHuomautus>
-                        <teksti>120/70-12 58P</teksti>
-                    </erikoisehto>
-                </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
                         <omistajanTunnus>160764-401D</omistajanTunnus>
@@ -116,67 +88,7 @@
                     <vakuutuksenottajanNimi>Haataja, Samuli</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2019-08-01</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>01</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <vetava>false</vetava>
-                            <tieliikSuurSallMassa>95</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>95</teknSuurSallMassa>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <vetava>true</vetava>
-                            <tieliikSuurSallMassa>220</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>220</teknSuurSallMassa>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>124</iskutilavuus>
-                    <suurinNettoteho>7.6</suurinNettoteho>
-                    <huippunopeus>94</huippunopeus>
-                    <sylintereidenLkm>1</sylintereidenLkm>
-                    <polttoainesailio>
-                        <tilavuus>8.0</tilavuus>
-                    </polttoainesailio>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                        </kayttovoima>
-                    </kayttovoimat>
-                </moottori>
-                <massa>
-                    <omamassa>121</omamassa>
-                    <teknSuurSallKokmassa>305</teknSuurSallKokmassa>
-                    <tieliikSuurSallKokmassa>305</tieliikSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>1880</ajonKokPituus>
-                    <ajonLeveys>740</ajonLeveys>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1340</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <ohjaamotyyppi>4</ohjaamotyyppi>
-                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>04</voimanvalJaTehostamistapa>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>
