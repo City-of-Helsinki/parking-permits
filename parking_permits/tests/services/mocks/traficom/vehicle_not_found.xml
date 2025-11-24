@@ -13,11 +13,11 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="1">
                     <rekisteritunnus>BCI-707</rekisteritunnus>
                 </tunnus>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

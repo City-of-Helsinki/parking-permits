@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>74-AKY</rekisteritunnus>
                     <valmistenumero>MH3RH211000001235</valmistenumero>
@@ -54,6 +54,42 @@
                     <valmistenumeronSijaintiMuu>R, X1395, Y5, Z909</valmistenumeronSijaintiMuu>
                     <tyyppinimi>RH21</tyyppinimi>
                     <ensirekisterointipvm>2022-06-23</ensirekisterointipvm>
+                    <tekninen-tieto>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>321</iskutilavuus>
+                        <suurinNettoteho>30.9</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>89.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>75.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>5375</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>387.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>13.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>06</paastolaji>
+                                        <maara>42.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>07</paastolaji>
+                                        <maara>34.00</maara>
+                                    </paasto>
+                                </paastot>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <sahkohybridi>false</sahkohybridi>
+                    </tekninen-tieto>
                 </ajoneuvonPerustiedot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
@@ -73,122 +109,12 @@
                 <vakuutustiedot luovutusrajoitus="0">
                     <vakuutusyhtiokoodi>44</vakuutusyhtiokoodi>
                     <vakuutustyyppi>01</vakuutustyyppi>
-                    <vakuutusyhtionNimi>LähiTapiola</vakuutusyhtionNimi>
+                    <vakuutusyhtionNimi>Lï¿½hiTapiola</vakuutusyhtionNimi>
                     <vakuutuksenottajanTunnus>311003A838V</vakuutuksenottajanTunnus>
                     <vakuutuksenottajanNimi>Komulainen, Emma Elina</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2022-06-23</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <akselienLkm>2</akselienLkm>
-                    <vaihteisto>7</vaihteisto>
-                    <vaihteidenLkm>6</vaihteidenLkm>
-                    <valmistajanKilvenSijainti>R, x333, y55, z832</valmistajanKilvenSijainti>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>110</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaskoko>110/70R17M/C</rengaskoko>
-                                <vannekoko>17M/CxMT2.75</vannekoko>
-                                <kuormitusJaNopeusluokka>54H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <vetava>true</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <teknSuurSallMassa>219</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaskoko>140/70R17M/C</rengaskoko>
-                                <vannekoko>17M/CxMT4.00</vannekoko>
-                                <kuormitusJaNopeusluokka>66H</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>321</iskutilavuus>
-                    <suurinNettoteho>30.9</suurinNettoteho>
-                    <huippunopeus>180</huippunopeus>
-                    <sylintereidenLkm>2</sylintereidenLkm>
-                    <moottorinTunnus>H406E</moottorinTunnus>
-                    <paastotaso>671</paastotaso>
-                    <pakokaasunPuhdistus>
-                        <laite>01</laite>
-                        <laite>02</laite>
-                        <laite>04</laite>
-                        <laite>05</laite>
-                        <laite>07</laite>
-                    </pakokaasunPuhdistus>
-                    <polttoainesailio>
-                        <tilavuus>14.0</tilavuus>
-                    </polttoainesailio>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>89.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>75.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>5375</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>387.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>13.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>06</paastolaji>
-                                    <maara>42.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>07</paastolaji>
-                                    <maara>34.00</maara>
-                                </paasto>
-                            </paastot>
-                        </kayttovoima>
-                    </kayttovoimat>
-                    <sahkohybridi>false</sahkohybridi>
-                </moottori>
-                <massa>
-                    <omamassa>169</omamassa>
-                    <teknSuurSallKokmassa>329</teknSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>2090</ajonKokPituus>
-                    <ajonLeveys>730</ajonLeveys>
-                    <ajonKorkeus>1140</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1380</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <ohjaamotyyppi>4</ohjaamotyyppi>
-                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
-                    <voimanvalJaTehostamistapaLisatieto>
-                        <lisatieto>1</lisatieto>
-                    </voimanvalJaTehostamistapaLisatieto>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

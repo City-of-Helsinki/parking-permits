@@ -21,9 +21,10 @@ class MockResponse:
         self.status_code = status_code
 
 
-def get_mock_xml(filename, encoding="latin-1"):
+def get_mock_xml(filename, encoding="latin-1", *, use_legacy_mock_xml=False):
+    subfolder_name = "traficom_legacy" if use_legacy_mock_xml else "traficom"
     return (
-        (pathlib.Path(__file__).parent / "mocks" / "traficom" / filename)
+        (pathlib.Path(__file__).parent / "mocks" / subfolder_name / filename)
         .open("r", encoding=encoding)
         .read()
     )
@@ -63,12 +64,21 @@ class TestTraficom(TestCase):
         licence_A.driving_classes.add(driving_class_A)
 
 
+@override_settings(TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False)
 class TestTraficomVehicleFetch(TestTraficom):
+
+    use_legacy_api = False
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle(self):
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_ok.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
@@ -81,7 +91,13 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_lower_case(self):
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_ok.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("bci-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
@@ -94,7 +110,13 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_spaces(self):
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_ok.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707   ")
             self.assertEqual(vehicle.registration_number, "BCI-707")
@@ -109,7 +131,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3_subclass_108_licence_A_A1_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3_subclass_108_licence_A_A1_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "OB-120"
@@ -139,7 +164,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3_subclass_109_licence_A_A1_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3_subclass_109_licence_A_A1_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "GT-407"
@@ -169,7 +197,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3_subclass_109_licence_A_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3_subclass_109_licence_A_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "84-VHJ"
@@ -199,7 +230,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3_subclass_109_licence_A.xml")
+                get_mock_xml(
+                    "vehicle_L3_subclass_109_licence_A.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "IT-236"
@@ -229,7 +263,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3_subclass_111_licence_A.xml")
+                get_mock_xml(
+                    "vehicle_L3_subclass_111_licence_A.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "FT-479"
@@ -259,7 +296,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_108_licence_A_A1_A3.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_108_licence_A_A1_A3.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "71-AKY"
@@ -289,7 +329,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_109_licence_A_A1_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_109_licence_A_A1_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "77-ALH"
@@ -319,7 +362,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_109_licence_A_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_109_licence_A_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "61-BOR"
@@ -349,7 +395,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_109_licence_A.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_109_licence_A.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "35-AKX"
@@ -379,7 +428,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_111_licence_A_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_111_licence_A_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "71-ECF"
@@ -409,7 +461,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_900_licence_A_A1_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_900_licence_A_A1_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "12-AKZ"
@@ -439,7 +494,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_905_licence_A_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_905_licence_A_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "74-AKY"
@@ -469,7 +527,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_906_licence_A.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_906_licence_A.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "68-AKY"
@@ -499,7 +560,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_907_licence_A_A1_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_907_licence_A_A1_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "CR-397"
@@ -529,7 +593,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_908_licence_A_A2.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_908_licence_A_A2.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "26-LHI"
@@ -559,7 +626,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_909_licence_A.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_909_licence_A.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "62-LHJ"
@@ -589,7 +659,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_909_licence_A_without_power.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_909_licence_A_without_power.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "62-LHJ"
@@ -619,7 +692,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_subclass_909_licence_A_missing_field.xml")
+                get_mock_xml(
+                    "vehicle_L3e_subclass_909_licence_A_missing_field.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "62-LHJ"
@@ -649,7 +725,10 @@ class TestTraficomVehicleFetch(TestTraficom):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
-                get_mock_xml("vehicle_L3e_no_subclass_or_power.xml")
+                get_mock_xml(
+                    "vehicle_L3e_no_subclass_or_power.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
             ),
         ):
             registration_number = "71-ECF"
@@ -679,7 +758,13 @@ class TestTraficomVehicleFetch(TestTraficom):
         # Special chars in registration number
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/AOA-2.xml", "utf-8")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "special_cases/AOA-2.xml",
+                    "utf-8",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             registration_number = "ÄÖÅ-2"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
@@ -691,7 +776,13 @@ class TestTraficomVehicleFetch(TestTraficom):
         # Special chars in registration number
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/AOA-3.xml", "utf-8")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "special_cases/AOA-3.xml",
+                    "utf-8",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             registration_number = "ÄÖÅ-3"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
@@ -703,7 +794,12 @@ class TestTraficomVehicleFetch(TestTraficom):
         # No valid registration
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/ABC-12.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "special_cases/ABC-12.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             self.assertRaises(
                 TraficomFetchVehicleError,
@@ -716,7 +812,12 @@ class TestTraficomVehicleFetch(TestTraficom):
         # Regular valid test
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/LAI-1.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "special_cases/LAI-1.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             registration_number = "LAI-1"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
@@ -728,7 +829,12 @@ class TestTraficomVehicleFetch(TestTraficom):
         # Person has a non-disclosure statement
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("special_cases/MOI-10.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "special_cases/MOI-10.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
 
             self.assertRaises(
@@ -741,7 +847,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_too_heavy.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_too_heavy.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             self.assertRaises(
                 TraficomFetchVehicleError,
@@ -754,7 +865,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_without_emissions(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_without_emissions.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_without_emissions.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             LowEmissionCriteriaFactory(
                 nedc_max_emission_limit=37,
@@ -773,7 +889,13 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_wltp(self):
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_wltp.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_wltp.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
@@ -785,7 +907,13 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_nedc(self):
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_nedc.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_nedc.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("111-500")
             self.assertEqual(vehicle.registration_number, "111-500")
@@ -798,7 +926,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_with_nedc_and_wltp(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_nedc_and_wltp.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_nedc_and_wltp.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             LowEmissionCriteriaFactory(
                 nedc_max_emission_limit=37,
@@ -818,7 +951,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_with_nedc_and_wltp_no_criteria(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_nedc_and_wltp.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_nedc_and_wltp.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             vehicle = self.traficom.fetch_vehicle_details("111-500")
             self.assertEqual(vehicle.registration_number, "111-500")
@@ -831,7 +969,13 @@ class TestTraficomVehicleFetch(TestTraficom):
         vehicle = VehicleFactory(registration_number="BCI-707")
 
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_ok.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             fetched_vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(fetched_vehicle, vehicle)
@@ -849,7 +993,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_vehicle_not_found(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_not_found.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_not_found.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             self.assertRaises(
                 TraficomFetchVehicleError,
@@ -861,7 +1010,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_unsupported_vehicle_class(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("unsupported_vehicle.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "unsupported_vehicle.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             self.assertRaises(
                 TraficomFetchVehicleError,
@@ -873,7 +1027,12 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_vehicle_decommissioned(self):
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("decommissioned_vehicle.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "decommissioned_vehicle.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             self.assertRaises(
                 TraficomFetchVehicleError,
@@ -902,7 +1061,13 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_from_db_if_permit_bypass_false(self):
         permit = ParkingPermitFactory(bypass_traficom_validation=False)
         with mock.patch(
-            "requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+            "requests.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_ok.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ) as mock_traficom:
             vehicle = self.traficom.fetch_vehicle_details("BCI-707", permit)
             self.assertEqual(vehicle.registration_number, "BCI-707")
@@ -955,7 +1120,12 @@ class TestTraficomVehicleFetch(TestTraficom):
 
         with mock.patch(
             "requests.post",
-            return_value=MockResponse(get_mock_xml("vehicle_C1.xml")),
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_C1.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
         ):
             registration_number = "FNI-586"
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
@@ -983,6 +1153,18 @@ class TestTraficomVehicleFetch(TestTraficom):
 
             self.assertEqual(vehicle.registration_number, registration_number)
             self.assertEqual(vehicle.vehicle_class, VehicleClass.N2)
+
+
+@override_settings(TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True)
+class TestTraficomLegacyVehicleFetch(TestTraficomVehicleFetch):
+
+    use_legacy_api = True
+
+    # NOTE: this class "duplicates" inherited test methods from
+    # TestTraficomVehicleFetch, this is to avoid duplicating all the
+    # test methods just to change the value of use_legacy_api as
+    # pytest's parametrize-decorator does not work with classes
+    # inheriting TestCase...
 
 
 class TestTraficomDrivingLicenceFetch(TestTraficom):

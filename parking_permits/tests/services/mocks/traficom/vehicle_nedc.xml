@@ -8,7 +8,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="1">
                     <rekisteritunnus>111-500</rekisteritunnus>
                     <valmistenumero>90909090909</valmistenumero>
@@ -52,6 +52,52 @@
                         <vari>9</vari>
                         <lisavari>0</lisavari>
                         <ovienLukumaara>4</ovienLukumaara>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>647</iskutilavuus>
+                        <suurinNettoteho>28.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>80.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>68.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>2200</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>53.10</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>2.00</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>06</paastolaji>
+                                        <maara>3.90</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>06</tyyppi>
+                                        <paastolaji>07</paastolaji>
+                                        <maara>3.70</maara>
+                                    </paasto>
+                                </paastot>
+                                <kulutukset>
+                                    <kulutus>
+                                        <kulutuslaji>7</kulutuslaji>
+                                        <maara>13.0</maara>
+                                    </kulutus>
+                                    <kulutus>
+                                        <kulutuslaji>8</kulutuslaji>
+                                        <maara>0.6</maara>
+                                    </kulutus>
+                                </kulutukset>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <sahkohybridi>true</sahkohybridi>
+                        <sahkohybridinluokka>01</sahkohybridinluokka>
+                        <tieliikSuurSallKokmassa>1730</tieliikSuurSallKokmassa>
                     </tekninen-tieto>
                     <tyyppinimi>BMWi-1</tyyppinimi>
                     <ensirekisterointipvm>2017-03-17</ensirekisterointipvm>
@@ -62,17 +108,6 @@
                         </kilometrilukema>
                     </viimeisinkilometrilukema>
                 </ajoneuvonPerustiedot>
-                <erikoisehdot>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>3001</erikoisehdOsaalue>
-                        <kooditettuHuomautus>1074/3001</kooditettuHuomautus>
-                        <teksti>Rek.katsastuksessa ei ole suoritettu määräaikaiskatsastusta
-                            vastaavaa tarkastusta. 1. Suomessa tehtävä määräaikaiskatsastus on
-                            suoritettava muista tälle todistukselle merkityistä tiedoista poiketen
-                            VNa 1245/2002 4 §:n mukaisesti viimeistään 07.05.2018.</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="0">
                         <omistajanTunnus>XXXXXX-X</omistajanTunnus>
@@ -111,186 +146,7 @@
                     <vakuutuksenottajanNimi>Ankku, Aku</vakuutuksenottajanNimi>
                     <vakuutuksenAlkupvm>2019-09-06</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>01</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <meistoksenVarmennus>false</meistoksenVarmennus>
-                    <vaihteisto>2</vaihteisto>
-                    <valmistajanKilvenSijainti>b-pilari, oikea</valmistajanKilvenSijainti>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>false</vetava>
-                            <seisontajarru>false</seisontajarru>
-                            <jarruttava>false</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>155/70 R 19</rengaskoko>
-                                <kuormitusJaNopeusluokka>84Q</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>175/60 R 19</rengaskoko>
-                                <kuormitusJaNopeusluokka>86Q</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>true</vetava>
-                            <seisontajarru>false</seisontajarru>
-                            <jarruttava>false</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>155/70 R 19</rengaskoko>
-                                <kuormitusJaNopeusluokka>84Q</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>175/60 R 19</rengaskoko>
-                                <kuormitusJaNopeusluokka>86Q</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>647</iskutilavuus>
-                    <suurinNettoteho>28.0</suurinNettoteho>
-                    <huippunopeus>150</huippunopeus>
-                    <sylintereidenLkm>2</sylintereidenLkm>
-                    <ahdin>false</ahdin>
-                    <valijaahdytin>false</valijaahdytin>
-                    <paastotaso>394</paastotaso>
-                    <pakokaasunPuhdistus>
-                        <laite>02</laite>
-                        <laite>03</laite>
-                        <laite>04</laite>
-                        <laite>07</laite>
-                    </pakokaasunPuhdistus>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>80.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>68.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>2200</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>53.10</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>2.00</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>06</paastolaji>
-                                    <maara>3.90</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>06</tyyppi>
-                                    <paastolaji>07</paastolaji>
-                                    <maara>3.70</maara>
-                                </paasto>
-                            </paastot>
-                            <kulutukset>
-                                <kulutus>
-                                    <kulutuslaji>7</kulutuslaji>
-                                    <maara>13.0</maara>
-                                </kulutus>
-                                <kulutus>
-                                    <kulutuslaji>8</kulutuslaji>
-                                    <maara>0.6</maara>
-                                </kulutus>
-                            </kulutukset>
-                        </kayttovoima>
-                    </kayttovoimat>
-                    <sahkohybridi>true</sahkohybridi>
-                    <sahkohybridinluokka>01</sahkohybridinluokka>
-                </moottori>
-                <massa>
-                    <omamassa>1390</omamassa>
-                    <teknSuurSallKokmassa>1730</teknSuurSallKokmassa>
-                    <tieliikSuurSallKokmassa>1730</tieliikSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>3999</ajonKokPituus>
-                    <ajonLeveys>1775</ajonLeveys>
-                    <ajonKorkeus>1578</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>2570</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <korityyppi>AA</korityyppi>
-                    <istuimetKuljVieressa>1</istuimetKuljVieressa>
-                    <istumapaikkojenLkm>4</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>05</voimanvalJaTehostamistapa>
-                    <voimanvalJaTehostamistapaLisatieto>
-                        <lisatieto>1</lisatieto>
-                    </voimanvalJaTehostamistapaLisatieto>
-                </jarrut>
-                <turvavarusteet>
-                    <turvavaruste>
-                        <laji>et</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>1</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>st</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>1</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>vk</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>1</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>et</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>3</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>st</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>3</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                    <turvavaruste>
-                        <laji>vk</laji>
-                        <penkkirivi>1</penkkirivi>
-                        <sijainti>3</sijainti>
-                        <pakollisuus>1</pakollisuus>
-                    </turvavaruste>
-                </turvavarusteet>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

@@ -51,7 +51,11 @@ VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
 VEHICLE_SEARCH_NEW = 811
 VEHICLE_SEARCH_LEGACY = 841
-VEHICLE_SEARCH = VEHICLE_SEARCH_LEGACY
+VEHICLE_SEARCH = (
+    VEHICLE_SEARCH_LEGACY
+    if settings.TRAFICOM_USE_LEGACY_VEHICLE_FETCH
+    else VEHICLE_SEARCH_NEW
+)
 DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
@@ -354,6 +358,14 @@ class Traficom:
     def fetch_vehicle_details(
         self, registration_number: str, permit: Optional[ParkingPermit] = None
     ) -> Vehicle:
+        if settings.TRAFICOM_USE_LEGACY_VEHICLE_FETCH:
+            return self._fetch_vehicle_details_legacy(registration_number, permit)
+        else:
+            return self._fetch_vehicle_details_new(registration_number, permit)
+
+    def _fetch_vehicle_details_legacy(
+        self, registration_number: str, permit: Optional[ParkingPermit] = None
+    ) -> Vehicle:
         if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
@@ -379,9 +391,8 @@ class Traficom:
         vehicle = synchronizer.synchronize(response=et)
         return vehicle
 
-    # TODO: refactor to use a synchronizer-class, add separate tests
-    # for the new API, implement API-selection logic
-    def fetch_vehicle_details__NEW(self, registration_number, permit=None):
+    # TODO: refactor to use a synchronizer-class
+    def _fetch_vehicle_details_new(self, registration_number, permit=None):
         if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
@@ -461,7 +472,7 @@ class Traficom:
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         emissions = vehicle_basic_info.findall(
-            "kayttovoimat/kayttovoima/kulutukset/kulutus"
+            "tekninen-tieto/kayttovoimat/kayttovoima/kulutukset/kulutus"
         )
         inspection_detail = et.find(".//ajoneuvonPerustiedot")
         last_inspection_date = inspection_detail.find("mkAjanLoppupvm")

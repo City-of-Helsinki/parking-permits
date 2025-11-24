@@ -9,7 +9,7 @@
     </yleinen>
     <sanoma>
         <ajoneuvontiedot>
-            <laaja hetu="true">
+            <perus hetu="true">
                 <tunnus laji="2">
                     <rekisteritunnus>CR-397</rekisteritunnus>
                     <valmistenumero>VBKGSA209GM142411</valmistenumero>
@@ -50,6 +50,35 @@
                     <tekninen-tieto>
                         <vari>X</vari>
                         <lisavari>9</lisavari>
+                        <kayttovoima>01</kayttovoima>
+                        <iskutilavuus>125</iskutilavuus>
+                        <suurinNettoteho>4.0</suurinNettoteho>
+                        <kayttovoimat>
+                            <kayttovoima>
+                                <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                                <voimakkuusMeluPaikallaan>78.0</voimakkuusMeluPaikallaan>
+                                <voimakkuusMeluOhiajossa>76.0</voimakkuusMeluOhiajossa>
+                                <kierroksillaMeluPaikallaan>3250</kierroksillaMeluPaikallaan>
+                                <paastot>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>01</paastolaji>
+                                        <maara>1.07300</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>03</paastolaji>
+                                        <maara>0.02100</maara>
+                                    </paasto>
+                                    <paasto>
+                                        <tyyppi>03</tyyppi>
+                                        <paastolaji>06</paastolaji>
+                                        <maara>0.39200</maara>
+                                    </paasto>
+                                </paastot>
+                            </kayttovoima>
+                        </kayttovoimat>
+                        <sahkohybridi>false</sahkohybridi>
                     </tekninen-tieto>
                     <tyyppinimi>KTM EXC</tyyppinimi>
                     <ensirekisterointipvm>2019-10-09</ensirekisterointipvm>
@@ -60,13 +89,6 @@
                         </kilometrilukema>
                     </viimeisinkilometrilukema>
                 </ajoneuvonPerustiedot>
-                <erikoisehdot>
-                    <erikoisehto>
-                        <erikoisehdOsaalue>1000</erikoisehdOsaalue>
-                        <teksti>vaihtoehtoinen polttoainesäiliö 10l</teksti>
-                        <tulostettava>true</tulostettava>
-                    </erikoisehto>
-                </erikoisehdot>
                 <omistajatHaltijat>
                     <omistajaHaltija luovutusrajoitus="1">
                         <omistajanTunnus>290200A905H</omistajanTunnus>
@@ -78,164 +100,10 @@
                 <vakuutustiedot luovutusrajoitus="1">
                     <vakuutusyhtiokoodi>44</vakuutusyhtiokoodi>
                     <vakuutustyyppi>01</vakuutustyyppi>
-                    <vakuutusyhtionNimi>LähiTapiola</vakuutusyhtionNimi>
+                    <vakuutusyhtionNimi>Lï¿½hiTapiola</vakuutusyhtionNimi>
                     <vakuutuksenAlkupvm>2022-06-17</vakuutuksenAlkupvm>
                 </vakuutustiedot>
-                <rakenne>
-                    <kilvenMalli>03</kilvenMalli>
-                    <akselienLkm>2</akselienLkm>
-                    <meistoksenVarmennus>false</meistoksenVarmennus>
-                    <vaihteisto>7</vaihteisto>
-                    <vaihteidenLkm>6</vaihteidenLkm>
-                    <valmistajanKilvenSijainti>Ohjauksen laakeriputkessa oik.</valmistajanKilvenSijainti>
-                    <tehostettuOhjaus>false</tehostettuOhjaus>
-                    <akselitiedot>
-                        <akseli>
-                            <sijainti>1</sijainti>
-                            <ohjaava>true</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>false</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <seisontajarru>false</seisontajarru>
-                            <tieliikSuurSallMassa>145</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>145</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>80/100-21</rengaskoko>
-                                <vannekoko>1.60x21</vannekoko>
-                                <kuormitusJaNopeusluokka>41M</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>90/90-21</rengaskoko>
-                                <vannekoko>1.60x21</vannekoko>
-                                <kuormitusJaNopeusluokka>41M</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>1</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>90/90R21</rengaskoko>
-                                <vannekoko>1.60x21</vannekoko>
-                                <kuormitusJaNopeusluokka>41M</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                        <akseli>
-                            <sijainti>2</sijainti>
-                            <ohjaava>false</ohjaava>
-                            <kevennettava>false</kevennettava>
-                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
-                            <nostettava>false</nostettava>
-                            <vetava>true</vetava>
-                            <pyorajarrunTyyppi>1</pyorajarrunTyyppi>
-                            <seisontajarru>false</seisontajarru>
-                            <tieliikSuurSallMassa>190</tieliikSuurSallMassa>
-                            <teknSuurSallMassa>190</teknSuurSallMassa>
-                            <jarruttava>true</jarruttava>
-                            <ohjautuva>false</ohjautuva>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>120/80-18</rengaskoko>
-                                <vannekoko>2.15;2.50</vannekoko>
-                                <kuormitusJaNopeusluokka>50M</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>120/90-18</rengaskoko>
-                                <vannekoko>2.15;2.50</vannekoko>
-                                <kuormitusJaNopeusluokka>50M</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>140/80-18</rengaskoko>
-                                <vannekoko>2.15;2.50</vannekoko>
-                                <kuormitusJaNopeusluokka>50M</kuormitusJaNopeusluokka>
-                            </rengas>
-                            <rengas>
-                                <sijainti>2</sijainti>
-                                <rengaslaji>1</rengaslaji>
-                                <rengaskoko>140/80R18</rengaskoko>
-                                <vannekoko>2.15;2.50</vannekoko>
-                                <kuormitusJaNopeusluokka>50M</kuormitusJaNopeusluokka>
-                            </rengas>
-                        </akseli>
-                    </akselitiedot>
-                </rakenne>
-                <moottori>
-                    <kayttovoima>01</kayttovoima>
-                    <iskutilavuus>125</iskutilavuus>
-                    <suurinNettoteho>4.0</suurinNettoteho>
-                    <huippunopeus>80</huippunopeus>
-                    <sylintereidenLkm>1</sylintereidenLkm>
-                    <moottorinTunnus>503</moottorinTunnus>
-                    <ahdin>false</ahdin>
-                    <valijaahdytin>false</valijaahdytin>
-                    <paastotaso>445</paastotaso>
-                    <pakokaasunPuhdistus>
-                        <laite>03</laite>
-                    </pakokaasunPuhdistus>
-                    <polttoainesailio>
-                        <tilavuus>8.5</tilavuus>
-                        <lisasailio>false</lisasailio>
-                    </polttoainesailio>
-                    <kayttovoimat>
-                        <kayttovoima>
-                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
-                            <voimakkuusMeluPaikallaan>78.0</voimakkuusMeluPaikallaan>
-                            <voimakkuusMeluOhiajossa>76.0</voimakkuusMeluOhiajossa>
-                            <kierroksillaMeluPaikallaan>3250</kierroksillaMeluPaikallaan>
-                            <paastot>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>01</paastolaji>
-                                    <maara>1.07300</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>03</paastolaji>
-                                    <maara>0.02100</maara>
-                                </paasto>
-                                <paasto>
-                                    <tyyppi>03</tyyppi>
-                                    <paastolaji>06</paastolaji>
-                                    <maara>0.39200</maara>
-                                </paasto>
-                            </paastot>
-                        </kayttovoima>
-                    </kayttovoimat>
-                    <sahkohybridi>false</sahkohybridi>
-                </moottori>
-                <massa>
-                    <omamassa>99</omamassa>
-                    <teknSuurSallKokmassa>335</teknSuurSallKokmassa>
-                </massa>
-                <mitat>
-                    <ajonKokPituus>2269</ajonKokPituus>
-                    <ajonLeveys>818</ajonLeveys>
-                    <ajonKorkeus>1297</ajonKorkeus>
-                    <akselivalit>
-                        <akselivali>
-                            <sijainti>1</sijainti>
-                            <pituus>1482</pituus>
-                        </akselivali>
-                    </akselivalit>
-                </mitat>
-                <kori>
-                    <ohjaamotyyppi>4</ohjaamotyyppi>
-                    <istumapaikkojenLkm>1</istumapaikkojenLkm>
-                </kori>
-                <jarrut>
-                    <voimanvalJaTehostamistapa>02</voimanvalJaTehostamistapa>
-                </jarrut>
-            </laaja>
+            </perus>
         </ajoneuvontiedot>
     </sanoma>
 </kehys>

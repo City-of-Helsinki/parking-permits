@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<kehys>
+    <yleinen>
+        <sanomatyyppi>TPSUOTIEDOTLAAJAHAKUOUT</sanomatyyppi>
+        <erakoodi/>
+        <sekvenssinumero/>
+        <sovellus>TPSUO</sovellus>
+        <ymparisto>LONTOO,LONTOO</ymparisto>
+    </yleinen>
+    <sanoma>
+        <ajoneuvontiedot>
+            <laaja hetu="true">
+                <tunnus laji="2">
+                    <rekisteritunnus>71-AKY</rekisteritunnus>
+                    <valmistenumero>LBMM5710000004456</valmistenumero>
+                    <jarjestelmatunnus>0022879882</jarjestelmatunnus>
+                </tunnus>
+                <ajoneuvonTiedot>
+                    <ajoneuvoluokka>L3e</ajoneuvoluokka>
+                    <merkki>587</merkki>
+                    <merkkiSelvakielinen>Piaggio</merkkiSelvakielinen>
+                    <mallimerkinta>M57-M57100/124</mallimerkinta>
+                    <tila>3</tila>
+                    <ajoneuvoryhmat>
+                        <ajoneuvoryhma>108</ajoneuvoryhma>
+                    </ajoneuvoryhmat>
+                    <ajoneuvonKaytto>01</ajoneuvonKaytto>
+                    <rekisterointitod1Osa>
+                        <jarjestysnumero>7</jarjestysnumero>
+                        <tulostuspaiva>2019-08-01</tulostuspaiva>
+                    </rekisterointitod1Osa>
+                    <rekisterointitod2Osa>
+                        <jarjestysnumero>6</jarjestysnumero>
+                        <tulostuspaiva>2019-08-01</tulostuspaiva>
+                    </rekisterointitod2Osa>
+                </ajoneuvonTiedot>
+                <ennakkoilmoitus>
+                    <ilmoituspvm>2007-05-29</ilmoituspvm>
+                    <tunnus>0114209-4</tunnus>
+                    <paayksikko>SUMEKO OY</paayksikko>
+                    <katuosoite>Juurakkokuja 4</katuosoite>
+                    <postinumero>01510</postinumero>
+                    <postitoimipaikka>VANTAA</postitoimipaikka>
+                </ennakkoilmoitus>
+                <ajoneuvonPerustiedot>
+                    <tyyppihyvaksyntanro>e11*2002/24*0521*01</tyyppihyvaksyntanro>
+                    <variantti>1</variantti>
+                    <versio>00</versio>
+                    <tyyppikoodi>9587120801</tyyppikoodi>
+                    <kayttoonottopvm>20080402</kayttoonottopvm>
+                    <valmistenumeronSijainti>Z</valmistenumeronSijainti>
+                    <rakennettuAjoneuvo>false</rakennettuAjoneuvo>
+                    <valmistenumeronSijaintiMuu>VALMISTAJAN KILPI R,X850,Y115,Z645 JA MEISTOS R,X670,Y130,</valmistenumeronSijaintiMuu>
+                    <tyyppinimi>M57</tyyppinimi>
+                    <ensirekisterointipvm>2008-04-02</ensirekisterointipvm>
+                </ajoneuvonPerustiedot>
+                <erikoisehdot>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0007/1007</kooditettuHuomautus>
+                        <teksti>e11*2002/24*0521*01 VARIANTTI: 1 VERSIO: 00</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VANTEET: 3.50, 3.00</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VETOJÄRJESTELMÄ: 2X1</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>1007</erikoisehdOsaalue>
+                        <teksti>VALMISTUSMAA: CN</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0001/2003</kooditettuHuomautus>
+                        <teksti>VAIHTOEHTOINEN RENGAS EDESSÄ JA TAKANA 120/70-12 56J.</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0005/2003</kooditettuHuomautus>
+                        <teksti>9587120801</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0006/2003</kooditettuHuomautus>
+                        <teksti>M57-M57100/124</teksti>
+                    </erikoisehto>
+                    <erikoisehto>
+                        <erikoisehdOsaalue>2003</erikoisehdOsaalue>
+                        <kooditettuHuomautus>0008/2003</kooditettuHuomautus>
+                        <teksti>120/70-12 58P</teksti>
+                    </erikoisehto>
+                </erikoisehdot>
+                <omistajatHaltijat>
+                    <omistajaHaltija luovutusrajoitus="0">
+                        <omistajanTunnus>160764-401D</omistajanTunnus>
+                        <sukunimiPaayksikko>Haataja</sukunimiPaayksikko>
+                        <etunimiAlayksikko>Samuli</etunimiAlayksikko>
+                        <asiakaslaji>0</asiakaslaji>
+                        <omistajuustyyppi>01</omistajuustyyppi>
+                        <suhteenAlkupvm>2019-07-15</suhteenAlkupvm>
+                        <markkinointikielto>false</markkinointikielto>
+                        <lahiosoite>Ruskontie 7</lahiosoite>
+                        <postinumero>25110</postinumero>
+                        <postitoimipaikka>KRUUSILA</postitoimipaikka>
+                        <asiointikieli>fi</asiointikieli>
+                    </omistajaHaltija>
+                </omistajatHaltijat>
+                <vakuutustiedot luovutusrajoitus="0">
+                    <vakuutusyhtiokoodi>41</vakuutusyhtiokoodi>
+                    <vakuutustyyppi>01</vakuutustyyppi>
+                    <vakuutusyhtionNimi>IF</vakuutusyhtionNimi>
+                    <vakuutuksenottajanTunnus>160764-401D</vakuutuksenottajanTunnus>
+                    <vakuutuksenottajanNimi>Haataja, Samuli</vakuutuksenottajanNimi>
+                    <vakuutuksenAlkupvm>2019-08-01</vakuutuksenAlkupvm>
+                </vakuutustiedot>
+                <rakenne>
+                    <kilvenMalli>01</kilvenMalli>
+                    <akselienLkm>2</akselienLkm>
+                    <tehostettuOhjaus>false</tehostettuOhjaus>
+                    <akselitiedot>
+                        <akseli>
+                            <sijainti>1</sijainti>
+                            <ohjaava>true</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>false</vetava>
+                            <tieliikSuurSallMassa>95</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>95</teknSuurSallMassa>
+                        </akseli>
+                        <akseli>
+                            <sijainti>2</sijainti>
+                            <ohjaava>false</ohjaava>
+                            <paripyorillaVarustettu>false</paripyorillaVarustettu>
+                            <vetava>true</vetava>
+                            <tieliikSuurSallMassa>220</tieliikSuurSallMassa>
+                            <teknSuurSallMassa>220</teknSuurSallMassa>
+                        </akseli>
+                    </akselitiedot>
+                </rakenne>
+                <moottori>
+                    <kayttovoima>01</kayttovoima>
+                    <iskutilavuus>124</iskutilavuus>
+                    <suurinNettoteho>7.6</suurinNettoteho>
+                    <huippunopeus>94</huippunopeus>
+                    <sylintereidenLkm>1</sylintereidenLkm>
+                    <polttoainesailio>
+                        <tilavuus>8.0</tilavuus>
+                    </polttoainesailio>
+                    <kayttovoimat>
+                        <kayttovoima>
+                            <yksittaisKayttovoima>01</yksittaisKayttovoima>
+                        </kayttovoima>
+                    </kayttovoimat>
+                </moottori>
+                <massa>
+                    <omamassa>121</omamassa>
+                    <teknSuurSallKokmassa>305</teknSuurSallKokmassa>
+                    <tieliikSuurSallKokmassa>305</tieliikSuurSallKokmassa>
+                </massa>
+                <mitat>
+                    <ajonKokPituus>1880</ajonKokPituus>
+                    <ajonLeveys>740</ajonLeveys>
+                    <akselivalit>
+                        <akselivali>
+                            <sijainti>1</sijainti>
+                            <pituus>1340</pituus>
+                        </akselivali>
+                    </akselivalit>
+                </mitat>
+                <kori>
+                    <ohjaamotyyppi>4</ohjaamotyyppi>
+                    <istumapaikkojenLkm>2</istumapaikkojenLkm>
+                </kori>
+                <jarrut>
+                    <voimanvalJaTehostamistapa>04</voimanvalJaTehostamistapa>
+                </jarrut>
+            </laaja>
+        </ajoneuvontiedot>
+    </sanoma>
+</kehys>
