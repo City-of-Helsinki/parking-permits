@@ -89,6 +89,9 @@ VEHICLE_SUB_CLASS_MAPPER = {
 
 class TraficomVehicleDetailsSynchronizer:
 
+    vehicle_basic_info_path = ".//ajoneuvonPerustiedot"
+    motor_path = ".//moottori"
+
     def __init__(self, registration_number: str):
         self.registration_number = registration_number
 
@@ -114,7 +117,7 @@ class TraficomVehicleDetailsSynchronizer:
         ):
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
-        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         power = self._get_power(et)
 
         vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
@@ -238,19 +241,19 @@ class TraficomVehicleDetailsSynchronizer:
         return VehicleClass.L3eA1
 
     def _get_power(self, et):
-        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         power = vehicle_basic_info.find(".//suurinNettoteho")
         return power
 
     def _get_emissions_list(self, et):
-        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         emissions = vehicle_basic_info.findall(
             "tekninen-tieto/kayttovoimat/kayttovoima/kulutukset/kulutus"
         )
         return emissions
 
     def _get_vehicle_power_type(self, et):
-        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         vehicle_power_type = vehicle_basic_info.find("tekninen-tieto/kayttovoima")
         return vehicle_power_type
 
@@ -272,22 +275,28 @@ class TraficomVehicleDetailsSynchronizer:
         co2emission = None
         for e in emissions:
             kulutuslaji = e.find("kulutuslaji").text
-            if kulutuslaji in CONSUMPTION_TYPE_NEDC + CONSUMPTION_TYPE_WLTP:
-                co2emission = e.find("maara").text
-                # if emission are under or equal of the max value of one of the consumption
-                # types (WLTP|NEDC) the emission type and value that makes the vehicle eligible
-                # for low emissions pricing should be saved to db.
-                if kulutuslaji in CONSUMPTION_TYPE_WLTP:
-                    emission_type = EmissionType.WLTP
-                    if le_criteria:
-                        if float(co2emission) <= le_criteria.wltp_max_emission_limit:
-                            break
+            if kulutuslaji not in CONSUMPTION_TYPE_NEDC + CONSUMPTION_TYPE_WLTP:
+                continue
+            co2emission = e.find("maara").text
 
-                elif kulutuslaji in CONSUMPTION_TYPE_NEDC:
-                    emission_type = EmissionType.NEDC
-                    if le_criteria:
-                        if float(co2emission) <= le_criteria.nedc_max_emission_limit:
-                            break
+            # if emission are under or equal of the max value of one of the consumption
+            # types (WLTP|NEDC) the emission type and value that makes the vehicle eligible
+            # for low emissions pricing should be saved to db.
+            if kulutuslaji in CONSUMPTION_TYPE_WLTP:
+                emission_type = EmissionType.WLTP
+                if (
+                    le_criteria
+                    and float(co2emission) <= le_criteria.wltp_max_emission_limit
+                ):
+                    break
+
+            elif kulutuslaji in CONSUMPTION_TYPE_NEDC:
+                emission_type = EmissionType.NEDC
+                if (
+                    le_criteria
+                    and float(co2emission) <= le_criteria.nedc_max_emission_limit
+                ):
+                    break
 
         return emissions, emission_type, co2emission
 
@@ -328,8 +337,7 @@ class TraficomVehicleDetailsSynchronizer:
         return restrictions
 
     def _get_weight_et(self, et):
-        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
-        vehicle_basic_info = vehicle_basic_info
+        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         weight_et = vehicle_basic_info.find(".//tekninen-tieto/tieliikSuurSallKokmassa")
         return weight_et
 
@@ -369,17 +377,17 @@ class TraficomVehicleDetailsSynchronizer:
 class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronizer):
 
     def _get_power(self, et):
-        motor = et.find(".//moottori")
+        motor = et.find(self.motor_path)
         power = motor.find(".//suurinNettoteho")
         return power
 
     def _get_emissions_list(self, et):
-        motor = et.find(".//moottori")
+        motor = et.find(self.motor_path)
         emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
         return emissions
 
     def _get_vehicle_power_type(self, et):
-        motor = et.find(".//moottori")
+        motor = et.find(self.motor_path)
         vehicle_power_type = motor.find("kayttovoima")
         return vehicle_power_type
 
