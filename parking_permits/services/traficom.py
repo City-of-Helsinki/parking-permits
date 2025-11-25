@@ -115,7 +115,7 @@ class TraficomVehicleDetailsSynchronizer:
             vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
 
         vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
-        power = vehicle_basic_info.find(".//suurinNettoteho")
+        power = self._get_power(et)
 
         vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
         if vehicle_class not in VehicleClass:
@@ -129,110 +129,35 @@ class TraficomVehicleDetailsSynchronizer:
                 }
             )
 
-        restrictions = []
-        for restriction in et.findall(".//rajoitustiedot/rajoitustieto"):
-            try:
-                restriction_type = restriction.find("rajoitusLaji").text
-            except AttributeError:
-                continue
-
-            if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
-                raise TraficomFetchVehicleError(
-                    _("Vehicle %(registration_number)s is decommissioned")
-                    % {
-                        "registration_number": registration_number,
-                    }
-                )
-
-            if restriction_type in VEHICLE_RESTRICTIONS:
-                restrictions.append(restriction_type)
+        restrictions_et = et.findall(".//rajoitustiedot/rajoitustieto")
+        restrictions = self._get_restrictions(restrictions_et)
 
         vehicle_identity = et.find(".//tunnus")
         registration_number_et = et.find(".//rekisteritunnus")
-        if registration_number_et is not None and registration_number_et.text:
-            try:
-                registration_number = registration_number_et.text.encode(
-                    "latin-1"
-                ).decode("utf-8")
-            except UnicodeDecodeError:
-                registration_number = registration_number_et.text
+        new_registration_number = self._get_new_registration_number(
+            registration_number_et
+        )
 
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
-        emissions = vehicle_basic_info.findall(
-            "tekninen-tieto/kayttovoimat/kayttovoima/kulutukset/kulutus"
-        )
-        inspection_detail = et.find(".//ajoneuvonPerustiedot")
-        last_inspection_date = inspection_detail.find("mkAjanLoppupvm")
+        last_inspection_date = vehicle_basic_info.find("mkAjanLoppupvm")
 
-        try:
-            now = tz.now()
-            le_criteria = LowEmissionCriteria.objects.get(
-                start_date__lte=now,
-                end_date__gte=now,
-            )
-        except LowEmissionCriteria.DoesNotExist:
-            le_criteria = None
-            logger.warning(
-                "Low emission criteria not found. Please update LowEmissionCriteria to contain active criteria"
-            )
-
-        emission_type = EmissionType.NEDC
-        co2emission = None
-        for e in emissions:
-            kulutuslaji = e.find("kulutuslaji").text
-            if kulutuslaji in CONSUMPTION_TYPE_NEDC + CONSUMPTION_TYPE_WLTP:
-                co2emission = e.find("maara").text
-                # if emission are under or equal of the max value of one of the consumption
-                # types (WLTP|NEDC) the emission type and value that makes the vehicle eligible
-                # for low emissions pricing should be saved to db.
-                if kulutuslaji in CONSUMPTION_TYPE_WLTP:
-                    emission_type = EmissionType.WLTP
-                    if le_criteria:
-                        if float(co2emission) <= le_criteria.wltp_max_emission_limit:
-                            break
-
-                elif kulutuslaji in CONSUMPTION_TYPE_NEDC:
-                    emission_type = EmissionType.NEDC
-                    if le_criteria:
-                        if float(co2emission) <= le_criteria.nedc_max_emission_limit:
-                            break
+        emissions, emission_type, co2emission = self._get_emission_data(et)
 
         euro_class = EURO_CLASS
         if not co2emission:
             euro_class = EURO_CLASS_WITHOUT_EMISSIONS
 
-        weight_et = vehicle_basic_info.find(".//tekninen-tieto/tieliikSuurSallKokmassa")
-        try:
-            weight = safe_cast(weight_et.text, int, 0)
-        except AttributeError:
-            weight = 0
-        if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
-                )
-                % {"registration_number": registration_number}
-            )
+        weight = self._get_weight(et)
 
-        vehicle_power_type = vehicle_basic_info.find("tekninen-tieto/kayttovoima")
+        vehicle_power_type = self._get_vehicle_power_type(et)
         vehicle_manufacturer = vehicle_info.find("merkkiSelvakielinen")
         vehicle_model = vehicle_info.find("mallimerkinta")
         vehicle_serial_number = vehicle_identity.find("valmistenumero")
-        user_ssns = [
-            (
-                owner_et.find("omistajanTunnus").text
-                if owner_et.find("omistajanTunnus") is not None
-                else ""
-            )
-            for owner_et in owners_et
-        ]
 
-        if not any(user_ssns):
-            raise TraficomFetchVehicleError(
-                _("This person has a non-disclosure statement")
-            )
+        user_ssns = self._get_user_ssns(owners_et)
 
         return {
+            "registration_number": new_registration_number,
             "emissions": emissions,
             "vehicle_power_type": vehicle_power_type,
             "vehicle_class": vehicle_class,
@@ -250,7 +175,7 @@ class TraficomVehicleDetailsSynchronizer:
 
     @transaction.atomic
     def _sync_with_db(self, vehicle_data) -> Vehicle:
-        registration_number = self.registration_number
+        registration_number = vehicle_data["registration_number"]
         vehicle_power_type = vehicle_data["vehicle_power_type"]
         vehicle_class = vehicle_data["vehicle_class"]
         vehicle_manufacturer = vehicle_data["vehicle_manufacturer"]
@@ -312,119 +237,25 @@ class TraficomVehicleDetailsSynchronizer:
         # Fallback to L3eA1 in case traficom doesn't return anything useful
         return VehicleClass.L3eA1
 
-    def synchronize(self, *, response) -> Vehicle:
-        vehicle_data = self._serialize(response)
-        vehicle = self._sync_with_db(vehicle_data)
-        return vehicle
+    def _get_power(self, et):
+        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        power = vehicle_basic_info.find(".//suurinNettoteho")
+        return power
 
+    def _get_emissions_list(self, et):
+        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        emissions = vehicle_basic_info.findall(
+            "tekninen-tieto/kayttovoimat/kayttovoima/kulutukset/kulutus"
+        )
+        return emissions
 
-class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronizer):
+    def _get_vehicle_power_type(self, et):
+        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_power_type = vehicle_basic_info.find("tekninen-tieto/kayttovoima")
+        return vehicle_power_type
 
-    def _serialize(self, response):
-        registration_number = self.registration_number
-        et = response
-
-        vehicle_detail = et.find(".//ajoneuvonTiedot")
-        if not vehicle_detail:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
-                )
-                % {"registration_number": registration_number}
-            )
-
-        vehicle_class = vehicle_detail.find("ajoneuvoluokka").text
-        vehicle_sub_class = vehicle_detail.findall("ajoneuvoryhmat/ajoneuvoryhma")
-        if (
-            vehicle_sub_class
-            and VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text, None)
-            is not None
-        ):
-            vehicle_class = VEHICLE_SUB_CLASS_MAPPER.get(vehicle_sub_class[-1].text)
-
-        motor = et.find(".//moottori")
-        power = motor.find(".//suurinNettoteho")
-
-        vehicle_class = self._resolve_vehicle_class(vehicle_class, power)
-
-        if vehicle_class not in VehicleClass:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
-                )
-                % {
-                    "vehicle_class": vehicle_class,
-                    "registration_number": registration_number,
-                }
-            )
-
-        restrictions = []
-
-        for restriction in et.findall(".//rajoitustiedot/rajoitustieto"):
-            try:
-                restriction_type = restriction.find("rajoitusLaji").text
-            except AttributeError:
-                continue
-
-            if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
-                raise TraficomFetchVehicleError(
-                    _("Vehicle %(registration_number)s is decommissioned")
-                    % {
-                        "registration_number": registration_number,
-                    }
-                )
-
-            if restriction_type in VEHICLE_RESTRICTIONS:
-                restrictions.append(restriction_type)
-
-        vehicle_identity = et.find(".//tunnus")
-        registration_number_et = et.find(".//rekisteritunnus")
-        if registration_number_et is not None and registration_number_et.text:
-            try:
-                registration_number = registration_number_et.text.encode(
-                    "latin-1"
-                ).decode("utf-8")
-            except UnicodeDecodeError:
-                registration_number = registration_number_et.text
-
-        owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
-        emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
-        inspection_detail = et.find(".//ajoneuvonPerustiedot")
-        last_inspection_date = inspection_detail.find("mkAjanLoppupvm")
-
-        vehicle_power_type = motor.find("kayttovoima")
-        vehicle_manufacturer = vehicle_detail.find("merkkiSelvakielinen")
-        vehicle_model = vehicle_detail.find("mallimerkinta")
-        vehicle_serial_number = vehicle_identity.find("valmistenumero")
-
-        user_ssns = [
-            (
-                owner_et.find("omistajanTunnus").text
-                if owner_et.find("omistajanTunnus") is not None
-                else ""
-            )
-            for owner_et in owners_et
-        ]
-
-        if not any(user_ssns):
-            raise TraficomFetchVehicleError(
-                _("This person has a non-disclosure statement")
-            )
-
-        mass = et.find(".//massa")
-        weight_et = mass.find("omamassa")
-        try:
-            weight = safe_cast(weight_et.text, int, 0)
-        except AttributeError:
-            weight = 0
-        if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
-            raise TraficomFetchVehicleError(
-                _(
-                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
-                )
-                % {"registration_number": registration_number}
-            )
-
+    def _get_emission_data(self, et):
+        emissions = self._get_emissions_list(et)
         try:
             now = tz.now()
             le_criteria = LowEmissionCriteria.objects.get(
@@ -458,25 +289,104 @@ class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronize
                         if float(co2emission) <= le_criteria.nedc_max_emission_limit:
                             break
 
-        euro_class = EURO_CLASS
-        if not co2emission:
-            euro_class = EURO_CLASS_WITHOUT_EMISSIONS
+        return emissions, emission_type, co2emission
 
-        return {
-            "emissions": emissions,
-            "vehicle_power_type": vehicle_power_type,
-            "vehicle_class": vehicle_class,
-            "vehicle_manufacturer": vehicle_manufacturer,
-            "vehicle_model": vehicle_model,
-            "euro_class": euro_class,
-            "co2emission": co2emission,
-            "emission_type": emission_type,
-            "weight": weight,
-            "vehicle_serial_number": vehicle_serial_number,
-            "last_inspection_date": last_inspection_date,
-            "restrictions": restrictions,
-            "user_ssns": user_ssns,
-        }
+    def _get_user_ssns(self, owners_et):
+        user_ssns = [
+            (
+                owner_et.find("omistajanTunnus").text
+                if owner_et.find("omistajanTunnus") is not None
+                else ""
+            )
+            for owner_et in owners_et
+        ]
+
+        if not any(user_ssns):
+            raise TraficomFetchVehicleError(
+                _("This person has a non-disclosure statement")
+            )
+        return user_ssns
+
+    def _get_restrictions(self, restrictions_et):
+        restrictions = []
+        for restriction in restrictions_et:
+            try:
+                restriction_type = restriction.find("rajoitusLaji").text
+            except AttributeError:
+                continue
+
+            if restriction_type in BLOCKING_VEHICLE_RESTRICTIONS:
+                raise TraficomFetchVehicleError(
+                    _("Vehicle %(registration_number)s is decommissioned")
+                    % {
+                        "registration_number": self.registration_number,
+                    }
+                )
+
+            if restriction_type in VEHICLE_RESTRICTIONS:
+                restrictions.append(restriction_type)
+        return restrictions
+
+    def _get_weight_et(self, et):
+        vehicle_basic_info = et.find(".//ajoneuvonPerustiedot")
+        vehicle_basic_info = vehicle_basic_info
+        weight_et = vehicle_basic_info.find(".//tekninen-tieto/tieliikSuurSallKokmassa")
+        return weight_et
+
+    def _get_weight(self, et):
+        weight_et = self._get_weight_et(et)
+        try:
+            weight = safe_cast(weight_et.text, int, 0)
+        except AttributeError:
+            weight = 0
+        if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
+            raise TraficomFetchVehicleError(
+                _(
+                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+                )
+                % {"registration_number": self.registration_number}
+            )
+        return weight
+
+    def _get_new_registration_number(self, registration_number_et):
+        # "new" as in inferred from the response data instead of referring to the
+        # registration number used in the API-call.
+        if registration_number_et is not None and registration_number_et.text:
+            try:
+                new_registration_number = registration_number_et.text.encode(
+                    "latin-1"
+                ).decode("utf-8")
+            except UnicodeDecodeError:
+                new_registration_number = registration_number_et.text
+        return new_registration_number
+
+    def synchronize(self, *, response) -> Vehicle:
+        vehicle_data = self._serialize(response)
+        vehicle = self._sync_with_db(vehicle_data)
+        return vehicle
+
+
+class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronizer):
+
+    def _get_power(self, et):
+        motor = et.find(".//moottori")
+        power = motor.find(".//suurinNettoteho")
+        return power
+
+    def _get_emissions_list(self, et):
+        motor = et.find(".//moottori")
+        emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
+        return emissions
+
+    def _get_vehicle_power_type(self, et):
+        motor = et.find(".//moottori")
+        vehicle_power_type = motor.find("kayttovoima")
+        return vehicle_power_type
+
+    def _get_weight_et(self, et):
+        mass = et.find(".//massa")
+        weight_et = mass.find("omamassa")
+        return weight_et
 
 
 class Traficom:
