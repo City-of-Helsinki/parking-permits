@@ -607,12 +607,7 @@ class Traficom:
             return True
         return False
 
-    def _fetch_info(self, registration_number=None, hetu=None, is_l_type_vehicle=False):
-        vehicle_payload = f"""
-            <laji>{LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE}</laji>
-            <rekisteritunnus>{registration_number}</rekisteritunnus>
-        """
-        hetu_payload = f"<hetu>{hetu}</hetu>"
+    def _build_payload(self, *, query_type, query_payload):
         payload = f"""
         <kehys xsi:noNamespaceSchemaLocation="schema.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
            <yleinen>
@@ -629,8 +624,8 @@ class Traficom:
            </yleinen>
            <sanoma>
               <ajoneuvonHakuehdot>
-                 {vehicle_payload if registration_number else hetu_payload}
-                 <kyselylaji>{VEHICLE_SEARCH if registration_number else DRIVING_LICENSE_SEARCH}</kyselylaji>
+                 {query_payload}
+                 <kyselylaji>{query_type}</kyselylaji>
                  <kayttotarkoitus>4</kayttotarkoitus>
                  <asiakas>{settings.TRAFICOM_ASIAKAS}</asiakas>
                  <soku-tunnus>{settings.TRAFICOM_SOKU_TUNNUS}</soku-tunnus>
@@ -639,6 +634,14 @@ class Traficom:
            </sanoma>
         </kehys>
         """
+        return payload
+
+    def _fetch_info_by_ssn(self, hetu):
+        query_payload = f"<hetu>{hetu}</hetu>"
+        payload = self._build_payload(
+            query_type=DRIVING_LICENSE_SEARCH,
+            query_payload=query_payload,
+        )
 
         response = requests.post(
             self.url,
@@ -646,6 +649,36 @@ class Traficom:
             headers=self.headers,
             verify=settings.TRAFICOM_VERIFY_SSL,
         )
+        return response
+
+    def _fetch_info_by_registration_number(
+        self, registration_number, is_l_type_vehicle
+    ):
+        query_payload = f"""
+            <laji>{LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE}</laji>
+            <rekisteritunnus>{registration_number}</rekisteritunnus>
+        """
+        payload = self._build_payload(
+            query_type=VEHICLE_SEARCH,
+            query_payload=query_payload,
+        )
+
+        response = requests.post(
+            self.url,
+            data=payload,
+            headers=self.headers,
+            verify=settings.TRAFICOM_VERIFY_SSL,
+        )
+        return response
+
+    def _fetch_info(self, registration_number=None, hetu=None, is_l_type_vehicle=False):
+        if registration_number:
+            response = self._fetch_info_by_registration_number(
+                registration_number, is_l_type_vehicle
+            )
+        else:
+            response = self._fetch_info_by_ssn(hetu)
+
         if response.status_code >= 300:
             logger.error(f"Fetching data from traficom failed. Error: {response.text}")
             raise TraficomFetchVehicleError(_("Failed to fetch data from traficom"))
