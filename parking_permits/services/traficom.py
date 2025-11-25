@@ -487,37 +487,10 @@ class Traficom:
         self, registration_number: str, permit: Optional[ParkingPermit] = None
     ) -> Vehicle:
         if settings.TRAFICOM_USE_LEGACY_VEHICLE_FETCH:
-            return self._fetch_vehicle_details_legacy(registration_number, permit)
+            synchronizer_class = TraficomVehicleDetailsLegacySynchronizer
         else:
-            return self._fetch_vehicle_details_new(registration_number, permit)
+            synchronizer_class = TraficomVehicleDetailsSynchronizer
 
-    def _fetch_vehicle_details_legacy(
-        self, registration_number: str, permit: Optional[ParkingPermit] = None
-    ) -> Vehicle:
-        if self._bypass_traficom(permit):
-            return self._fetch_vehicle_from_db(registration_number)
-
-        registration_number = (
-            registration_number.strip().upper() if registration_number else ""
-        )
-
-        # Fetch vehicle details from Traficom using normal vehicle type
-        et = self._fetch_info(
-            registration_number=registration_number, is_l_type_vehicle=False
-        )
-
-        vehicle_detail = et.find(".//ajoneuvonTiedot")
-        if not vehicle_detail:
-            # If normal vehicle was not found, fetch vehicle details from Traficom using light weight vehicle type
-            et = self._fetch_info(
-                registration_number=registration_number, is_l_type_vehicle=True
-            )
-
-        synchronizer = TraficomVehicleDetailsLegacySynchronizer(registration_number)
-        vehicle = synchronizer.synchronize(response=et)
-        return vehicle
-
-    def _fetch_vehicle_details_new(self, registration_number, permit=None):
         if self._bypass_traficom(permit):
             return self._fetch_vehicle_from_db(registration_number)
 
@@ -537,7 +510,7 @@ class Traficom:
                 registration_number=registration_number, is_l_type_vehicle=True
             )
 
-        synchronizer = TraficomVehicleDetailsSynchronizer(registration_number)
+        synchronizer = synchronizer_class(registration_number)
         vehicle = synchronizer.synchronize(response=et)
         return vehicle
 
