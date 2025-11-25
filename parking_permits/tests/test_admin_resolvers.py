@@ -422,7 +422,9 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_is_not_found(
 
 
 @pytest.mark.django_db
-@override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
+@override_settings(
+    TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False
+)
 @mock.patch("requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml")))
 def test_admin_vehicle_lookup_success(info, mock_jwt):
     # Data from mock XML file
@@ -449,9 +451,73 @@ def test_admin_vehicle_lookup_success(info, mock_jwt):
 
 
 @pytest.mark.django_db
-@override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-@mock.patch("requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml")))
+@override_settings(
+    TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True
+)
+@mock.patch(
+    "requests.post",
+    return_value=MockResponse(get_mock_xml("vehicle_ok.xml", use_legacy_mock_xml=True)),
+)
+def test_admin_vehicle_lookup_success_on_legacy_api(info, mock_jwt):
+    # Data from mock XML file
+    customer_nin_number = "290200A905H"
+    reg_number = "BCI-707"
+
+    # Customer has NO driving license in database
+    customer = CustomerFactory(national_id_number=customer_nin_number)
+    assert not hasattr(customer, "driving_licence")
+
+    with mock_jwt:
+        # Admin should still be able to fetch vehicle
+        # Using registration number from mock XML: BCI-707
+        vehicle = resolve_vehicle(
+            None, info, reg_number=reg_number, national_id_number=customer_nin_number
+        )
+
+    # Refresh data to verify that no driving license was added to customer
+    customer.refresh_from_db()
+
+    assert vehicle is not None
+    assert vehicle.registration_number == reg_number
+    assert not hasattr(customer, "driving_licence")
+
+
+@pytest.mark.django_db
+@override_settings(
+    TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False
+)
+@mock.patch(
+    "requests.post",
+    return_value=MockResponse(get_mock_xml("vehicle_ok.xml")),
+)
 def test_admin_vehicle_lookup_fails_for_non_owner(info, mock_jwt):
+    non_owner_nin_number = "131052-308T"  # From another mock XML file
+    # Customer has NO driving license in database
+    CustomerFactory(national_id_number=non_owner_nin_number)
+
+    with mock_jwt:
+        # Admin should NOT be able to fetch vehicle for non-owner
+        # Using registration number from mock XML: BCI-707
+        with pytest.raises(TraficomFetchVehicleError) as exc_info:
+            resolve_vehicle(
+                None,
+                info,
+                reg_number="BCI-707",
+                national_id_number=non_owner_nin_number,
+            )
+
+    assert "Owner/holder data of a vehicle could not be verified" in str(exc_info.value)
+
+
+@pytest.mark.django_db
+@override_settings(
+    TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True
+)
+@mock.patch(
+    "requests.post",
+    return_value=MockResponse(get_mock_xml("vehicle_ok.xml", use_legacy_mock_xml=True)),
+)
+def test_admin_vehicle_lookup_fails_for_non_owner_on_legacy_api(info, mock_jwt):
     non_owner_nin_number = "131052-308T"  # From another mock XML file
     # Customer has NO driving license in database
     CustomerFactory(national_id_number=non_owner_nin_number)
