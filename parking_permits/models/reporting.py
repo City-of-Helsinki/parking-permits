@@ -1,4 +1,5 @@
 import datetime
+import itertools
 
 from django.db import models, transaction
 from django.utils import timezone
@@ -9,6 +10,7 @@ from parking_permits.models.parking_permit import (
     ParkingPermit,
     ParkingPermitStatus,
 )
+from parking_permits.models.parking_zone import ParkingZone
 
 
 class PermitCountSnapshot(models.Model):
@@ -86,9 +88,60 @@ class PermitCountSnapshot(models.Model):
         return permit_count_data
 
     @staticmethod
+    def create_missing_daily_zero_counts(*, date):
+        """Generates 0-count entries for all the possible dimension
+        combinations which do not already have a pre-existing one.
+        This is to prevent missing entries in cases where some
+        dimension combinations do not have any matching valid permits
+        for the current date, as the rest of the logic in
+        build_daily_snapshot() can't capture these cases. Note that the
+        rest of the logic will update these to the correct counts in
+        cases where there are actual permits."""
+        parking_zone_fields = (
+            "name",
+            "description",
+            "description_sv",
+        )
+        parking_zones = list(ParkingZone.objects.all().values(*parking_zone_fields))
+
+        is_low_emission = (
+            True,
+            False,
+        )
+        contract_types = (
+            ContractType.FIXED_PERIOD,
+            ContractType.OPEN_ENDED,
+        )
+        vehicle_primarity = (
+            True,
+            False,
+        )
+        dimension_lists = (
+            parking_zones,
+            is_low_emission,
+            contract_types,
+            vehicle_primarity,
+        )
+
+        for dimension_combination in itertools.product(*dimension_lists):
+            PermitCountSnapshot.objects.get_or_create(
+                defaults={"permit_count": 0},
+                date=date,
+                parking_zone_name=dimension_combination[0]["name"],
+                parking_zone_description=dimension_combination[0]["description"],
+                parking_zone_description_sv=dimension_combination[0]["description_sv"],
+                low_emission=dimension_combination[1],
+                contract_type=dimension_combination[2],
+                primary_vehicle=dimension_combination[3],
+            )
+
+    @transaction.atomic
+    @staticmethod
     def build_daily_snapshot():
         now = timezone.now()
         now_date = now.date()
+
+        PermitCountSnapshot.create_missing_daily_zero_counts(date=now_date)
 
         # Get permits that are going to contribute to the
         # daily snapshot
@@ -125,7 +178,6 @@ class PermitCountSnapshot(models.Model):
             high_emission_permit_counts
         )
 
-        permit_counts_to_create = []
         permit_counts_to_update = []
 
         for count_entry in permit_counts:
@@ -151,18 +203,10 @@ class PermitCountSnapshot(models.Model):
             ).first():
                 permit_count_snapshot.id = pre_existing_snapshot.id
                 permit_counts_to_update.append(permit_count_snapshot)
-            else:
-                permit_counts_to_create.append(permit_count_snapshot)
 
-        with transaction.atomic():
-            fields_to_update = ("permit_count",)
-            PermitCountSnapshot.objects.bulk_update(
-                permit_counts_to_update,
-                fields=fields_to_update,
-                batch_size=5000,
-            )
-
-            PermitCountSnapshot.objects.bulk_create(
-                permit_counts_to_create,
-                batch_size=5000,
-            )
+        fields_to_update = ("permit_count",)
+        PermitCountSnapshot.objects.bulk_update(
+            permit_counts_to_update,
+            fields=fields_to_update,
+            batch_size=5000,
+        )

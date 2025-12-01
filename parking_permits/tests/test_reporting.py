@@ -14,6 +14,8 @@ from rest_framework_api_key.models import APIKey
 
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.reporting import PermitCountSnapshot
+from parking_permits.tests.factories.address import AddressFactory
+from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.vehicle import (
     VehicleFactory,
@@ -101,7 +103,7 @@ class PermitCountSnapshotTestCase(TestCase):
 
         combination_count = math.prod(len(dim_list) for dim_list in dimension_lists)
         for count_to_create, dimensions in enumerate(
-            itertools.product(*dimension_lists), start=1
+            itertools.product(*dimension_lists)
         ):
             for _ in range(count_to_create):
                 ParkingPermitFactory(
@@ -112,6 +114,14 @@ class PermitCountSnapshotTestCase(TestCase):
                     vehicle=dimensions[1],
                     contract_type=dimensions[2],
                     primary_vehicle=dimensions[3],
+                    # Explicitly re-use parking zones in the addresses
+                    # to avoid generating extras via sub-factories.
+                    # The actual choice for the addresses' zone is irrelevant.
+                    address=AddressFactory(_zone=dimensions[0]),
+                    customer=CustomerFactory(
+                        primary_address=AddressFactory(_zone=dimensions[0]),
+                        other_address=AddressFactory(_zone=dimensions[0]),
+                    ),
                 )
 
         # Run the snapshot-building logic on test_date
@@ -129,13 +139,13 @@ class PermitCountSnapshotTestCase(TestCase):
         self.assertEqual(len(permit_count_data), combination_count)
 
         # Check that a snapshot exists for all the expected
-        # permit count values. (from 1 to the total amount of dimension
-        # combinations, inclusive from both ends.)
+        # permit count values. (from 0 to the total amount of dimension
+        # combinations reduced by one, inclusive from both ends.)
         # NOTE: we're relying heavily here on the unique-constraint on
         # the PermitCountSnapshot-model as it guarantees that the
         # different counts correspond to different dimension value
         # combinations.
-        for target_count in range(1, combination_count + 1):
+        for target_count in range(combination_count):
             self.assertTrue(
                 permit_count_data.filter(permit_count=target_count).exists()
             )
@@ -155,10 +165,77 @@ class PermitCountSnapshotTestCase(TestCase):
         # Previus assertions should still hold as we're just updating
         # the daily counts with unchanged permit data
         self.assertEqual(len(permit_count_data), combination_count)
-        for target_count in range(1, combination_count + 1):
+        for target_count in range(combination_count):
             self.assertTrue(
                 permit_count_data.filter(permit_count=target_count).exists()
             )
+
+    def test_create_daily_zero_counts(self):
+        zone_a = ParkingZoneFactory(
+            name="A",
+            description="Kallio",
+            description_sv="Berghäll",
+        )
+        zone_b = ParkingZoneFactory(
+            name="B",
+            description="Etu-Töölö",
+            description_sv="Främre Tölö",
+        )
+
+        parking_zones = (
+            zone_a.name,
+            zone_b.name,
+        )
+        is_low_emission = (
+            True,
+            False,
+        )
+        contract_types = (
+            ContractType.FIXED_PERIOD,
+            ContractType.OPEN_ENDED,
+        )
+        vehicle_primarity = (
+            True,
+            False,
+        )
+
+        dimension_lists = (
+            parking_zones,
+            is_low_emission,
+            contract_types,
+            vehicle_primarity,
+        )
+
+        now = timezone.now()
+        now_date = now.date()
+        PermitCountSnapshot.create_missing_daily_zero_counts(date=now_date)
+
+        combination_count = math.prod(len(dim_list) for dim_list in dimension_lists)
+        self.assertEqual(PermitCountSnapshot.objects.count(), combination_count)
+        for dimensions in itertools.product(*dimension_lists):
+            exists = PermitCountSnapshot.objects.filter(
+                date=now_date,
+                permit_count=0,
+                parking_zone_name=dimensions[0],
+                low_emission=dimensions[1],
+                contract_type=dimensions[2],
+                primary_vehicle=dimensions[3],
+            ).exists()
+            self.assertTrue(exists)
+
+        # Run the generation again, same assertions should still hold.
+        PermitCountSnapshot.create_missing_daily_zero_counts(date=now_date)
+        self.assertEqual(PermitCountSnapshot.objects.count(), combination_count)
+        for dimensions in itertools.product(*dimension_lists):
+            exists = PermitCountSnapshot.objects.filter(
+                date=now_date,
+                permit_count=0,
+                parking_zone_name=dimensions[0],
+                low_emission=dimensions[1],
+                contract_type=dimensions[2],
+                primary_vehicle=dimensions[3],
+            ).exists()
+            self.assertTrue(exists)
 
 
 class PermitCountSnapshotViewTestCase(APITestCase):
