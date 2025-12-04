@@ -52,7 +52,7 @@ class AuditMessage:
     origin: str = ""
     version: str = "v1"
     extra: Optional[dict] = None
-    log_level: Optional[enums.AuditLogLevel] = None
+    log_level: Optional[int] = None
 
     # "Do not touch" params
     date_time: datetime.datetime = field(init=False, default_factory=timezone.now)
@@ -70,6 +70,10 @@ class AuditMessage:
         # original value back as well.
         d["date_time"] = self.date_time
         return d
+
+    def safe_asdict(self) -> dict:
+        s = AuditMessageEncoder().encode(self.asdict())
+        return json.loads(s)
 
     def replace(self, **changes):
         return replace(self, **changes)
