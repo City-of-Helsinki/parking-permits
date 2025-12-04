@@ -92,6 +92,11 @@ env = environ.Env(
     FIELD_ENCRYPTION_KEYS=(str, ""),
     SENTRY_DSN=(str, ""),
     SENTRY_ENVIRONMENT=(str, ""),
+    AUDIT_LOG_ENV=(str, ""),
+    AUDIT_LOG_ES_URL=(str, ""),
+    AUDIT_LOG_ES_USERNAME=(str, ""),
+    AUDIT_LOG_ES_PASSWORD=(str, ""),
+    AUDIT_LOG_ES_INDEX=(str, ""),
 )
 
 if path.exists(".env"):
@@ -133,6 +138,7 @@ INSTALLED_APPS = [
     "django_crontab",
     "encrypted_fields",
     "mailer",
+    "resilient_logger",
 ]
 
 MIDDLEWARE = [
@@ -358,6 +364,27 @@ sentry_sdk.init(
     send_default_pii=True,
     integrations=[DjangoIntegration()],
 )
+
+# Audit logging through django-resilient-logger
+RESILIENT_LOGGER = {
+    "origin": "parking_permits",
+    "environment": env("AUDIT_LOG_ENV"),
+    "sources": [{"class": "resilient_logger.sources.ResilientLogSource"}],
+    "targets": [
+        {
+            "class": "resilient_logger.targets.ElasticsearchLogTarget",
+            "es_url": env("AUDIT_LOG_ES_URL"),
+            "es_username": env("AUDIT_LOG_ES_USERNAME"),
+            "es_password": env("AUDIT_LOG_ES_PASSWORD"),
+            "es_index": env("AUDIT_LOG_ES_INDEX"),
+            "required": True,
+        }
+    ],
+    "batch_limit": 5000,
+    "chunk_size": 500,
+    "submit_unsent_entries": False,  # Change this after PR review
+    "clear_sent_entries": False,  # Change this after PR review
+}
 
 # Debug
 

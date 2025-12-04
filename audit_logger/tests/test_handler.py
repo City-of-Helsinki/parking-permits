@@ -1,11 +1,12 @@
 import logging
 
 import pytest
+from resilient_logger.models import ResilientLogEntry
+from resilient_logger.sources import ResilientLogSource
 
 from audit_logger import enums
 from audit_logger.data import AuditMessage
 from audit_logger.db_log_handler import AuditLogHandler
-from audit_logger.models import AuditLog
 from audit_logger.tests.utils import MockLogRecord, make_mock_model
 
 Actor = make_mock_model(name="Actor")
@@ -30,7 +31,7 @@ def make_audit_msg():
 
 class TestMakeAuditMessage:
     def test_should_make_audit_message_with_audit_message(self, make_audit_msg):
-        audit_msg = make_audit_msg(log_level=enums.AuditLogLevel.DEBUG)
+        audit_msg = make_audit_msg(log_level=logging.DEBUG)
         record = MockLogRecord(msg=audit_msg)
 
         created_audit_msg = AuditLogHandler.makeAuditMessage(record)
@@ -45,7 +46,7 @@ class TestMakeAuditMessage:
 
         created_audit_msg = AuditLogHandler.makeAuditMessage(record)
 
-        assert created_audit_msg.log_level == enums.AuditLogLevel.DEBUG
+        assert created_audit_msg.log_level == logging.DEBUG
 
     def test_should_raise_error_with_non_audit_message_message(self, make_audit_msg):
         audit_msg = make_audit_msg()
@@ -68,6 +69,11 @@ def test_should_create_audit_log_from_record(make_audit_msg):
         record.exc_info = (type(exc_info), exc_info, exc_info.__traceback__)
 
     created_audit_log = AuditLogHandler.createAuditLogFromRecord(record)
-    assert len(AuditLog.objects.all()) == 1
-    assert AuditLog.objects.first() == created_audit_log
-    assert "ZeroDivisionError" in created_audit_log.trace
+    created_document = created_audit_log.get_document()
+
+    assert len(ResilientLogEntry.objects.all()) == 1
+    assert (
+        ResilientLogSource(ResilientLogEntry.objects.first()).get_document()
+        == created_document
+    )
+    assert "ZeroDivisionError" in created_document["audit_event"]["extra"]["trace"]

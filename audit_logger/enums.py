@@ -54,14 +54,3 @@ class AuditType(Enum):
 
     APP = "APP"
     AUDIT = "AUDIT"
-
-
-class AuditLogLevel(Enum):
-    """
-    Log level or severity.
-    """
-
-    TRACE = "TRACE"
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    ERROR = "ERROR"

@@ -6,12 +6,12 @@ import freezegun
 from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
+from resilient_logger.models.resilient_log_entry import ResilientLogEntry
 
 from audit_logger import (
     TARGET_RETURN,
     AuditLoggerAdapter,
     AuditLogHandler,
-    AuditLogLevel,
     AuditMessage,
     AuditMsg,
     AuditType,
@@ -21,7 +21,6 @@ from audit_logger import (
     Status,
     getAuditLoggerAdapter,
 )
-from audit_logger.models import AuditLog
 from audit_logger.tests.utils import make_mock_model
 
 MockModel = make_mock_model()
@@ -107,9 +106,8 @@ class AuditLoggerTest(TestCase):
                 )
 
         assert len(cm.records) == 6
-        assert len(AuditLog.objects.all()) == 6
-        assert len(AuditLog.objects.filter(message__log_level=AuditLogLevel.ERROR)) == 4
-        assert len(AuditLog.objects.filter(level__gte=logging.WARNING)) == 4
+        assert len(ResilientLogEntry.objects.all()) == 6
+        assert len(ResilientLogEntry.objects.filter(level__gte=logging.WARNING)) == 4
 
     def test_logger_adapter(self):
         with self.assertLogs("audit_logger", logging.DEBUG) as cm, transaction.atomic():

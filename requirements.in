@@ -17,6 +17,7 @@ drf-yasg                               # generating swagger documentation
 django-crontab                         # cron jobs
 helsinki-profile-gdpr-api              # app for implementing Helsinki profile GDPR API
 fpdf                                   # pdf generation
+django-resilient-logger                # audit logging
 django-searchable-encrypted-fields     # encrypted fields
 pycryptodome                           # cryptographic primitives
 cryptography                           # cryptography

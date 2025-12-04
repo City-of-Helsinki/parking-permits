@@ -1,4 +1,5 @@
 import logging
+from warnings import warn
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +13,12 @@ LOG_LEVELS = (
     (logging.DEBUG, _("Debug")),
     (logging.ERROR, _("Error")),
     (logging.FATAL, _("Fatal")),
+)
+
+warn(
+    "AuditLog is deprecated, use ResilientLogger instead",
+    DeprecationWarning,
+    stacklevel=2,
 )
 
 
