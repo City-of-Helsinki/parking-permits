@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.10.0...parking-permits-v1.11.0) (2025-12-06)
+
+
+### Features
+
+* Add Traficom basic vehicle query support ([acf10bc](https://github.com/City-of-Helsinki/parking-permits/commit/acf10bcb96d03599bac4c82a8628e4812cc34e1f))
+* Calculate daily permit count snapshots ([95b8ed7](https://github.com/City-of-Helsinki/parking-permits/commit/95b8ed73acba2bb4a342958f791383f21cb8f085))
+* Introduce PermitCountSnapshot-model ([c90635e](https://github.com/City-of-Helsinki/parking-permits/commit/c90635ed0ecadf02b57c349e8fa0d24e44e53d0a))
+* Management command for daily permit counts ([c4104d6](https://github.com/City-of-Helsinki/parking-permits/commit/c4104d65a5987c10c2cc10514bd29a7881265a66))
+* PermitCountSnapshotView-endpoint ([a5d2517](https://github.com/City-of-Helsinki/parking-permits/commit/a5d251753b226f3293ecf37fb2492b268316f638))
+* Reintroduce Traficom legacy-API ([4ac588f](https://github.com/City-of-Helsinki/parking-permits/commit/4ac588faf99388ecde7e6f5883798900295ccc28))
+* Select fetch-vehicle API by setting ([43d4be8](https://github.com/City-of-Helsinki/parking-permits/commit/43d4be8c70407f01de66c1341a393776a7e5cd80))
+* Use django-resilient-logger with audit logs ([104c091](https://github.com/City-of-Helsinki/parking-permits/commit/104c0911db0d305a0cb7855de7a71174f360ff97))
+
+
+### Bug Fixes
+
+* Ensure zero-count permit count snapshots ([0789921](https://github.com/City-of-Helsinki/parking-permits/commit/0789921177febae14fcfa89f7bde49de9be2bced))
+* Fix Traficom-mock dependent resolver-tests ([8ec0cb6](https://github.com/City-of-Helsinki/parking-permits/commit/8ec0cb6876843f36e7a66369b8f1c026da8401e4))
+* Use legacy Traficom-API by default ([559a16c](https://github.com/City-of-Helsinki/parking-permits/commit/559a16c7ca9b78b54f25df29f1049b352a276993))
+
 ## [1.10.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.9.1...parking-permits-v1.10.0) (2025-11-12)
 
 
