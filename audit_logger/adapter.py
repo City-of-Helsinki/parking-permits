@@ -21,7 +21,7 @@ def _value_or_missing(val, default=None):
     return val
 
 
-def TARGET_RETURN(return_val, *_, **__):
+def target_return(return_val, *_, **__):
     return return_val
 
 
@@ -30,7 +30,8 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
     An adapter that sets default values to AuditMessage.
 
     Useful for reducing the number of repeated lines in a file.
-    E.g. if most of the logs have the same origin, you can set up the adapter like this::
+    E.g. if most of the logs have the same origin,
+    you can set up the adapter like this:
 
         adapter = AuditLoggerAdapter(logger, dict(origin="foo-bar"))
 
@@ -70,7 +71,8 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         :param post_process: Callable for post-processing the audit message. This lets
                           you edit the audit message as you wish after every other
                           processing.
-                          Called with audit_msg, func_return_val, *func_args, **func_kwargs.
+                          Called with audit_msg, func_return_val,
+                          *func_args, **func_kwargs.
         :return:
         """
         autoactor = _value_or_missing(
@@ -118,7 +120,8 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                     _autostatus(msg, Status.FAILURE)
                     raise
                 finally:
-                    # Replacing with nothing creates a new AuditMessage, re-initializing date_time.
+                    # Replacing with nothing creates a new AuditMessage,
+                    # re-initializing date_time.
                     msg = msg.replace()
 
                     # Perform target processing (if target not set)
@@ -151,7 +154,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
 
-def getAuditLoggerAdapter(name, extra, **kwargs) -> AuditLoggerAdapter:
+def get_audit_logger_adapter(name, extra, **kwargs) -> AuditLoggerAdapter:
     """
     Gets a logger and creates an AuditLoggerAdapter that uses that logger.
     """

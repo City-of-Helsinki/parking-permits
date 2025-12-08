@@ -33,7 +33,8 @@ def end_permits(
 
     Any refunds should be created for the permits if applicable.
 
-    For each ended permit, will sync with Parkkihubi and send relevant customer emails and
+    For each ended permit, will sync with Parkkihubi
+    and send relevant customer emails and
     create relevant events.
     """
 
@@ -63,7 +64,8 @@ def create_permit_refunds(
     If refunds are created, then will send refund receipt email to customer
     and create the relevant events.
 
-    If OPEN ENDED permits, the Refund will always be None: refunds are issued for open-ended
+    If OPEN ENDED permits, the Refund will always be None:
+       refunds are issued for open-ended
     permits when cancelling the subscription (see `end_permit()`).
 
     Returns the created refund instances, or empty list if not available.
@@ -134,7 +136,8 @@ def create_refund(
         description=(
             description
             if description
-            else f"Refund for ending permits {','.join([str(permit.id) for permit in permits])}"
+            else f"Refund for ending permits "
+            f"{','.join([str(permit.id) for permit in permits])}"
         ),
     )
     refund.permits.add(*permits)
@@ -154,7 +157,7 @@ def end_permit(
     end_type: ParkingPermitEndType,
     *,
     iban: Optional[str] = None,
-    subscription_cancel_reason: SubscriptionCancelReason = SubscriptionCancelReason.USER_CANCELLED,
+    subscription_cancel_reason: SubscriptionCancelReason = SubscriptionCancelReason.USER_CANCELLED,  # noqa: E501
     cancel_from_talpa: bool = True,
     force_end: bool = False,
 ) -> None:
@@ -180,7 +183,8 @@ def end_permit(
                 iban=iban or "",
             )
     else:
-        # Cancel fixed period permit order when this is the last valid permit in that order
+        # Cancel fixed period permit order when this
+        # is the last valid permit in that order
         for order in permit.orders.all():
             if (
                 order

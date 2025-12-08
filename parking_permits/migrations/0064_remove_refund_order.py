@@ -4,7 +4,6 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0063_refund_many_orders_support"),
     ]

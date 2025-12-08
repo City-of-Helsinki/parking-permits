@@ -4,9 +4,13 @@ from unittest.mock import MagicMock
 
 from django.db import models
 
-MockLogRecord = lambda *args, **kwargs: MagicMock(  # noqa: E731
-    spec=logging.LogRecord, *args, **kwargs
-)
+
+def mock_log_record(*args, **kwargs):  # noqa: B026
+    return MagicMock(
+        spec=logging.LogRecord,
+        *args,  # noqa: B026
+        **kwargs,  # noqa: B026
+    )
 
 
 def make_mock_model(name: str = "MockModel"):

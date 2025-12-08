@@ -28,7 +28,10 @@ def get_wfs_result(street_name="", street_number_token=""):
         int(street_number_first_part.group()) if street_number_first_part else 0
     )
 
-    street_address = f"katunimi=''{cql_street_name(street_name)}'' AND osoitenumero=''{street_number}''"
+    street_address = (
+        f"katunimi=''{cql_street_name(street_name)}'' "
+        f"AND osoitenumero=''{street_number}''"
+    )
     query_single_args = [
         "'avoindata:Helsinki_osoiteluettelo'",
         "'geom'",

@@ -23,8 +23,8 @@ from .customer_permit import CustomerPermit
 from .decorators import is_authenticated
 from .exceptions import (
     AddressError,
-    DuplicatePermit,
-    ObjectNotFound,
+    DuplicatePermitError,
+    ObjectNotFoundError,
     ParkingZoneError,
     TraficomFetchVehicleError,
 )
@@ -49,7 +49,7 @@ from .talpa.order import TalpaOrderManager
 from .utils import ModelDiffer, get_user_from_resolver_args, is_valid_city
 
 logger = logging.getLogger("db")
-audit_logger = audit.getAuditLoggerAdapter(
+audit_logger = audit.get_audit_logger_adapter(
     "audit",
     dict(
         origin=Origin.WEBSHOP,
@@ -92,7 +92,7 @@ def is_valid_address(address):
         "User retrieved parking permits.",
         operation=audit.Operation.READ,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
 )
 @transaction.atomic
 def resolve_customer_permits(_obj, info):
@@ -129,7 +129,7 @@ def save_profile_address(address):
         "User retrieved user profile.",
         operation=audit.Operation.READ,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
     add_kwarg=True,
 )
 @transaction.atomic
@@ -164,7 +164,8 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
         defaults={
             "user": request.user,
             **customer,
-            **{"primary_address": primary_address, "other_address": other_address},
+            "primary_address": primary_address,
+            "other_address": other_address,
             "primary_address_apartment": (
                 primary_address_data.get("apartment")
                 if is_valid_address(primary_address_data)
@@ -205,7 +206,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
         "User updated language.",
         operation=audit.Operation.UPDATE,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
 )
 @transaction.atomic
 def resolve_update_language(_obj, info, lang):
@@ -242,7 +243,7 @@ def validate_customer_address(customer, address_id):
         return Address.objects.get(id=address_id)
     except Address.DoesNotExist:
         logger.error(f"updatePermitsAddress: address with id {address_id} not found")
-        raise ObjectNotFound(_("Address not found"))
+        raise ObjectNotFoundError(_("Address not found"))
 
 
 @query.field("getUpdateAddressPriceChanges")
@@ -257,7 +258,7 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
-        raise ObjectNotFound(_("No active permits for the customer"))
+        raise ObjectNotFoundError(_("No active permits for the customer"))
 
     permit_price_changes = []
     for permit in permits:
@@ -284,7 +285,7 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
             ParkingPermit.objects.active().filter(customer=customer).get(pk=permit_id)
         )
     except ParkingPermit.DoesNotExist:
-        raise ObjectNotFound(_("Permit not found"))
+        raise ObjectNotFoundError(_("Permit not found"))
 
     return permit.get_price_list_for_extended_permit(month_count)
 
@@ -315,7 +316,7 @@ def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = N
         "User created parking permit.",
         operation=audit.Operation.CREATE,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
 )
 @transaction.atomic
 def resolve_create_parking_permit(_obj, info, address_id, registration):
@@ -413,7 +414,7 @@ def resolve_end_permit(
         "User retrieved vehicle information.",
         operation=audit.Operation.READ,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
 )
 @transaction.atomic
 def resolve_get_vehicle_information(_obj, info, registration):
@@ -488,7 +489,7 @@ def resolve_update_permit_vehicle(
             customer=customer, vehicle_id=vehicle_id, status__in=non_duplicable_statuses
         ).exclude(id=permit_id)
         if duplicate_query.exists():
-            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+            raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
 
         permit.next_vehicle = new_vehicle
         permit.save()
@@ -527,7 +528,8 @@ def resolve_update_permit_vehicle(
                         if item["price_change_vat_percent"]
                         else DEFAULT_VAT
                     ),
-                    description=f"Refund for updating permits, customer switched vehicle to: {new_vehicle}",
+                    description=f"Refund for updating permits, "
+                    f"customer switched vehicle to: {new_vehicle}",
                 )
                 refunds.append(refund)
                 logger.info(f"Refund for updating permits created: {refund}")
@@ -655,7 +657,7 @@ def resolve_change_address(
     permits = ParkingPermit.objects.active().filter(customer=customer)
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
-        raise ObjectNotFound(_("No active permits for the customer"))
+        raise ObjectNotFoundError(_("No active permits for the customer"))
 
     audit_msg.target = permits
 
@@ -663,7 +665,8 @@ def resolve_change_address(
     permit_zone_ids = [permit.parking_zone_id for permit in permits]
     if len(set(permit_zone_ids)) > 1:
         logger.error(
-            f"updatePermitsAddress: active permits have conflict parking zones. Customer: {customer}"
+            f"updatePermitsAddress: active permits have conflict "
+            f"parking zones. Customer: {customer}"
         )
         raise ParkingZoneError(_("Conflict parking zones for active permits"))
 
@@ -737,11 +740,13 @@ def resolve_change_address(
                         amount=Decimal(abs(order_total_price_change)),
                         iban=iban if iban else "",
                         vat=(order.vat if order.vat else DEFAULT_VAT),
-                        description=f"Refund for updating permits zone (customer switch address to: {address})",
+                        description=f"Refund for updating permits zone "
+                        f"(customer switch address to: {address})",
                     )
                     logger.info(f"Refund for updating permits zone created: {refund}")
         elif customer_total_price_change > 0:
-            # update permit new zone to next parking zone and use that in price calculation
+            # update permit new zone to next parking zone and
+            # use that in price calculation
             fixed_period_permits.update(
                 next_parking_zone=new_zone,
                 next_address=address,
@@ -761,7 +766,8 @@ def resolve_change_address(
             response["checkout_url"] = TalpaOrderManager.send_to_talpa(new_order)
             fixed_period_permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
         else:
-            # Refresh the updated fixed-period permits and send email and update parkkihubi
+            # Refresh the updated fixed-period permits and
+            # send email and update parkkihubi
             fixed_period_permits = permits.fixed_period().all()
             for permit in fixed_period_permits:
                 sync_with_parkkihubi(permit)

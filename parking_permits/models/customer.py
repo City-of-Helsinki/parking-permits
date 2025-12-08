@@ -180,9 +180,11 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     @property
     def full_primary_address_sv(self):
         return (
-            f"{self.primary_address.street_name_sv} {self.primary_address.street_number} "
+            f"{self.primary_address.street_name_sv} "
+            f"{self.primary_address.street_number} "
             f"{self.primary_address_apartment_sv}, "
-            f"{self.primary_address.postal_code} {self.primary_address.city_sv}"
+            f"{self.primary_address.postal_code} "
+            f"{self.primary_address.city_sv}"
             if self.primary_address
             else ""
         )

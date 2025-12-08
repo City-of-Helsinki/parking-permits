@@ -51,11 +51,11 @@ permit_email_templates = {
     PermitEmailType.UPDATED: "emails/permit_updated.html",
     PermitEmailType.ENDED: "emails/permit_ended.html",
     PermitEmailType.EXTENDED: "emails/permit_extended.html",
-    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "emails/temporary_vehicle_activated.html",
-    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "emails/temporary_vehicle_deactivated.html",
+    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "emails/temporary_vehicle_activated.html",  # noqa: E501
+    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "emails/temporary_vehicle_deactivated.html",  # noqa: E501
     PermitEmailType.EXPIRATION_REMIND: "emails/expiration_remind.html",
-    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "emails/vehicle_low_emission_discount_activated.html",
-    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "emails/vehicle_low_emission_discount_deactivated.html",
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "emails/vehicle_low_emission_discount_activated.html",  # noqa: E501
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "emails/vehicle_low_emission_discount_deactivated.html",  # noqa: E501
 }
 
 
@@ -84,7 +84,8 @@ def send_permit_email(action, permit):
 def send_vehicle_low_emission_discount_email(action, permit):
     with translation.override("fi"):
         logger.info(
-            f"Sending vehicle low emission discount email for permit {permit.pk} {action} email"
+            f"Sending vehicle low emission discount email "
+            f"for permit {permit.pk} {action} email"
         )
         subject = permit_email_subjects[action]
         template = permit_email_templates[action]
@@ -147,7 +148,11 @@ def send_refund_email(action, customer, refunds):
 
 
 def send_announcement_emails(customers, announcement):
-    subject = f"{announcement.subject_fi} | {announcement.subject_sv} | {announcement.subject_en}"
+    subject = (
+        f"{announcement.subject_fi}"
+        f" | {announcement.subject_sv}"
+        f" | {announcement.subject_en}"
+    )
     template = "emails/announcement.html"
 
     # Generate the messages

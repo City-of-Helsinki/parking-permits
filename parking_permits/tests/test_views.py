@@ -1160,7 +1160,6 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_order_view_should_return_bad_request_if_subbing_fixed_period_permit(self):
-
         talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
 

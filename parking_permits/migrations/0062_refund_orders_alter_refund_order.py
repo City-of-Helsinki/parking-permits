@@ -5,7 +5,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0061_parkingpermit_address_changed_fields"),
     ]

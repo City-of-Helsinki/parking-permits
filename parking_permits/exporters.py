@@ -274,13 +274,11 @@ class ParkingPermitPDF(BasePDF):
             _("Customer") + ": " + customer_name,
             _("Address") + ": " + address,
             _("Area") + ": " + str(permit.parking_zone.name),
-            _("Vehicle")
-            + ": "
-            + f"{permit.vehicle.registration_number} ({permit.vehicle.manufacturer} {permit.vehicle.model})",
+            _("Vehicle") + ": " + f"{permit.vehicle.registration_number} "
+            f"({permit.vehicle.manufacturer} {permit.vehicle.model})",
             _("Type") + ": " + permit.get_contract_type_display(),
-            _("Validity period")
-            + ": "
-            + f"{_format_datetime(permit.start_time)} - {_format_datetime(permit_end_time)}",
+            _("Validity period") + ": " + f"{_format_datetime(permit.start_time)} - "
+            f"{_format_datetime(permit_end_time)}",
         ]
 
     def set_content(self, obj):
@@ -312,9 +310,8 @@ class RefundPDF(ParkingPermitPDF):
         return [
             _("Refund ID") + ": " + f"{refund.id}",
             _("Customer") + ": " + f"{customer.first_name} {customer.last_name}",
-            _("Amount")
-            + ": "
-            + f"{refund.amount} e ({_('incl. VAT')} {_format_percentage(refund.vat_percent)} %)",
+            _("Amount") + ": " + f"{refund.amount} e ({_('incl. VAT')} "
+            f"{_format_percentage(refund.vat_percent)} %)",
             _("IBAN") + ": " + f"{refund.iban}",
             _("Status") + ": " + f"{refund.get_status_display()}",
             _("Extra info") + ": " + f"{refund.description}",

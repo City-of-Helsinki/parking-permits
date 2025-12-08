@@ -1,122 +1,122 @@
-class ParkingPermitBaseException(Exception):
+class ParkingPermitBaseError(Exception):
     pass
 
 
-class PermitLimitExceeded(ParkingPermitBaseException):
+class PermitLimitExceededError(ParkingPermitBaseError):
     pass
 
 
-class DuplicatePermit(ParkingPermitBaseException):
+class DuplicatePermitError(ParkingPermitBaseError):
     pass
 
 
-class PriceError(ParkingPermitBaseException):
+class PriceError(ParkingPermitBaseError):
     pass
 
 
-class InvalidUserAddress(ParkingPermitBaseException):
+class InvalidUserAddressError(ParkingPermitBaseError):
     pass
 
 
-class InvalidContractType(ParkingPermitBaseException):
+class InvalidContractTypeError(ParkingPermitBaseError):
     pass
 
 
-class RefundError(ParkingPermitBaseException):
+class RefundError(ParkingPermitBaseError):
     pass
 
 
-class NonDraftPermitUpdateError(ParkingPermitBaseException):
+class NonDraftPermitUpdateError(ParkingPermitBaseError):
     pass
 
 
-class PermitCanNotBeDeleted(ParkingPermitBaseException):
+class PermitCanNotBeDeletedError(ParkingPermitBaseError):
     pass
 
 
-class PermitCanNotBeExtended(ParkingPermitBaseException):
+class PermitCanNotBeExtendedError(ParkingPermitBaseError):
     pass
 
 
-class PermitCanNotBeEnded(ParkingPermitBaseException):
+class PermitCanNotBeEndedError(ParkingPermitBaseError):
     pass
 
 
-class ObjectNotFound(ParkingPermitBaseException):
+class ObjectNotFoundError(ParkingPermitBaseError):
     pass
 
 
-class CreateTalpaProductError(ParkingPermitBaseException):
+class CreateTalpaProductError(ParkingPermitBaseError):
     pass
 
 
-class OrderValidationError(ParkingPermitBaseException):
+class OrderValidationError(ParkingPermitBaseError):
     pass
 
 
-class SubscriptionValidationError(ParkingPermitBaseException):
+class SubscriptionValidationError(ParkingPermitBaseError):
     pass
 
 
-class OrderCancelError(ParkingPermitBaseException):
+class OrderCancelError(ParkingPermitBaseError):
     pass
 
 
-class SubscriptionCancelError(ParkingPermitBaseException):
+class SubscriptionCancelError(ParkingPermitBaseError):
     pass
 
 
-class SetTalpaFlowStepsError(ParkingPermitBaseException):
+class SetTalpaFlowStepsError(ParkingPermitBaseError):
     pass
 
 
-class OrderCreationFailed(ParkingPermitBaseException):
+class OrderCreationFailedError(ParkingPermitBaseError):
     pass
 
 
-class UpdatePermitError(ParkingPermitBaseException):
+class UpdatePermitError(ParkingPermitBaseError):
     pass
 
 
-class CreatePermitError(ParkingPermitBaseException):
+class CreatePermitError(ParkingPermitBaseError):
     pass
 
 
-class EndPermitError(ParkingPermitBaseException):
+class EndPermitError(ParkingPermitBaseError):
     pass
 
 
-class ProductCatalogError(ParkingPermitBaseException):
+class ProductCatalogError(ParkingPermitBaseError):
     pass
 
 
-class ParkingZoneError(ParkingPermitBaseException):
+class ParkingZoneError(ParkingPermitBaseError):
     pass
 
 
-class ParkkihubiPermitError(ParkingPermitBaseException):
+class ParkkihubiPermitError(ParkingPermitBaseError):
     pass
 
 
-class AddressError(ParkingPermitBaseException):
+class AddressError(ParkingPermitBaseError):
     pass
 
 
-class TraficomFetchVehicleError(ParkingPermitBaseException):
+class TraficomFetchVehicleError(ParkingPermitBaseError):
     pass
 
 
-class DVVIntegrationError(ParkingPermitBaseException):
+class DVVIntegrationError(ParkingPermitBaseError):
     pass
 
 
-class SearchError(ParkingPermitBaseException):
+class SearchError(ParkingPermitBaseError):
     pass
 
 
-class TemporaryVehicleValidationError(ParkingPermitBaseException):
+class TemporaryVehicleValidationError(ParkingPermitBaseError):
     pass
 
 
-class DeletionNotAllowed(ParkingPermitBaseException):
+class DeletionNotAllowedError(ParkingPermitBaseError):
     pass

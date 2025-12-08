@@ -7,7 +7,7 @@ import pytest
 from django.test import override_settings
 from django.utils import timezone
 
-from parking_permits.exceptions import DuplicatePermit, PermitCanNotBeExtended
+from parking_permits.exceptions import DuplicatePermitError, PermitCanNotBeExtendedError
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
@@ -263,7 +263,6 @@ def test_update_permit_vehicle_high_to_high_emission(rf):
 @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @pytest.mark.django_db()
 def test_update_permit_vehicle_low_to_high_emission_raises_on_duplicate(rf):
-
     request = rf.post("/")
     customer = CustomerFactory()
     request.user = customer.user
@@ -298,7 +297,7 @@ def test_update_permit_vehicle_low_to_high_emission_raises_on_duplicate(rf):
         _mock_jwt(request.user),
         _mock_price_change_list(price_change_list),
         _mock_talpa(),
-        pytest.raises(DuplicatePermit),
+        pytest.raises(DuplicatePermitError),
     ):
         resolve_update_permit_vehicle(
             None, info, str(permit_to_update.pk), str(new_vehicle.pk)
@@ -539,7 +538,7 @@ def test_resolve_extend_parking_permit_invalid(rf):
     info = Info(context={"request": request})
 
     with _mock_jwt(request.user):
-        with pytest.raises(PermitCanNotBeExtended):
+        with pytest.raises(PermitCanNotBeExtendedError):
             resolve_extend_parking_permit(None, info, str(permit.pk), 3)
 
     assert ParkingPermitExtensionRequest.objects.count() == 0

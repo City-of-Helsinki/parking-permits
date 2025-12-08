@@ -88,7 +88,6 @@ VEHICLE_SUB_CLASS_MAPPER = {
 
 
 class TraficomVehicleDetailsSynchronizer:
-
     vehicle_basic_info_path = ".//ajoneuvonPerustiedot"
     motor_path = ".//moottori"
 
@@ -103,7 +102,8 @@ class TraficomVehicleDetailsSynchronizer:
         if not vehicle_info:
             raise TraficomFetchVehicleError(
                 _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
+                    "Could not find vehicle detail with given "
+                    "%(registration_number)s registration number"
                 )
                 % {"registration_number": registration_number}
             )
@@ -124,7 +124,8 @@ class TraficomVehicleDetailsSynchronizer:
         if vehicle_class not in VehicleClass:
             raise TraficomFetchVehicleError(
                 _(
-                    "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
+                    "Unsupported vehicle class %(vehicle_class)s "
+                    "for %(registration_number)s"
                 )
                 % {
                     "vehicle_class": vehicle_class,
@@ -268,7 +269,8 @@ class TraficomVehicleDetailsSynchronizer:
         except LowEmissionCriteria.DoesNotExist:
             le_criteria = None
             logger.warning(
-                "Low emission criteria not found. Please update LowEmissionCriteria to contain active criteria"
+                "Low emission criteria not found. "
+                "Please update LowEmissionCriteria to contain active criteria"
             )
 
         emission_type = EmissionType.NEDC
@@ -279,8 +281,9 @@ class TraficomVehicleDetailsSynchronizer:
                 continue
             co2emission = e.find("maara").text
 
-            # if emission are under or equal of the max value of one of the consumption
-            # types (WLTP|NEDC) the emission type and value that makes the vehicle eligible
+            # if emission are under or equal of the max value of
+            # one of the consumption types (WLTP|NEDC) the
+            # emission type and value that makes the vehicle eligible
             # for low emissions pricing should be saved to db.
             if kulutuslaji in CONSUMPTION_TYPE_WLTP:
                 emission_type = EmissionType.WLTP
@@ -350,7 +353,8 @@ class TraficomVehicleDetailsSynchronizer:
         if weight and weight >= VEHICLE_MAX_WEIGHT_KG:
             raise TraficomFetchVehicleError(
                 _(
-                    "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+                    "Vehicle's %(registration_number)s weight exceeds "
+                    "maximum allowed limit"
                 )
                 % {"registration_number": self.registration_number}
             )
@@ -375,7 +379,6 @@ class TraficomVehicleDetailsSynchronizer:
 
 
 class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronizer):
-
     def _get_power(self, et):
         motor = et.find(self.motor_path)
         power = motor.find(".//suurinNettoteho")
@@ -423,7 +426,8 @@ class Traficom:
         vehicle_info = et.find(".//ajoneuvonTiedot")
 
         if not vehicle_info:
-            # If normal vehicle was not found, fetch vehicle details from Traficom using light weight vehicle type
+            # If normal vehicle was not found, fetch vehicle details
+            # from Traficom using light weight vehicle type
             et = self._fetch_info(
                 registration_number=registration_number, is_l_type_vehicle=True
             )
@@ -475,7 +479,8 @@ class Traficom:
         except Vehicle.DoesNotExist:
             raise TraficomFetchVehicleError(
                 _(
-                    "Could not find vehicle detail with given %(registration_number)s registration number"
+                    "Could not find vehicle detail with given "
+                    "%(registration_number)s registration number"
                 )
                 % {"registration_number": registration_number}
             )
@@ -546,7 +551,9 @@ class Traficom:
         self, registration_number, is_l_type_vehicle
     ):
         query_payload = f"""
-            <laji>{LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE}</laji>
+            <laji>{
+            LIGHT_WEIGHT_VEHICLE_TYPE if is_l_type_vehicle else VEHICLE_TYPE
+        }</laji>
             <rekisteritunnus>{registration_number}</rekisteritunnus>
         """
         payload = self._build_payload(

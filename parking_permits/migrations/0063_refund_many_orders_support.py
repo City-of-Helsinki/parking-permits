@@ -15,7 +15,6 @@ def make_many_orders(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0062_refund_orders_alter_refund_order"),
     ]

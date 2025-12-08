@@ -184,7 +184,7 @@ class Vehicle(TimestampedModelMixin):
 
     @property
     def description(self):
-        return f'{_("Vehicle")}: {str(self)}'
+        return f"{_('Vehicle')}: {str(self)}"
 
     def __str__(self):
         vehicle_str = "%s" % self.registration_number or ""

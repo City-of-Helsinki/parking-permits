@@ -321,7 +321,8 @@ def get_model_diff(a: models.Model, b: models.Model, fields: list = None) -> dic
         raise TypeError(f"a and b must have the same type ({type(a)} != {type(b)}))")
     if not isinstance(a, models.Model):
         raise TypeError(
-            f"Must be an instance of {type(models.Model)} or its subclass (was: {type(a)}"
+            f"Must be an instance of {type(models.Model)} or "
+            f"its subclass (was: {type(a)}"
         )
     difference = dict()
     a_dict = vars(a)

@@ -62,7 +62,7 @@ class TestProduct(TestCase):
 
     def test_should_return_correct_product_name(self):
         with translation.override("fi"):
-            self.assertEqual(self.product.name, f'{_("Parking zone")} A')
+            self.assertEqual(self.product.name, f"{_('Parking zone')} A")
 
     @patch(
         "requests.post",

@@ -13,7 +13,7 @@ from parking_permits.management.commands.import_pasi_csv import Command as PasiC
 from parking_permits.management.commands.import_pasi_csv import (
     PasiCsvReader,
     PasiImportError,
-    PasiPermitExists,
+    PasiPermitExistsError,
     PasiResidentPermit,
     PasiValidationError,
     parse_pasi_datetime,
@@ -148,8 +148,8 @@ class TestPasiCsvReader:
 
     def test_smoke_test(self, pasi_permits_csv):
         reader = PasiCsvReader(pasi_permits_csv)
-        for row in reader:
-            print(row)
+        for _row in reader:
+            pass
 
 
 @pytest.mark.django_db
@@ -343,7 +343,7 @@ class TestPasiImportCommand:
     @patch.object(PasiCommand, "vehicle_has_active_permit", lambda *_, **__: False)
     def test_pre_process_raise_error_if_permit_exists(self, pasi_resident_permit):
         pasi_command = PasiCommand()
-        with pytest.raises(PasiPermitExists, match="already exists"):
+        with pytest.raises(PasiPermitExistsError, match="already exists"):
             pasi_command.pre_process(pasi_resident_permit)
 
     @patch.object(PasiCommand, "permit_exists", lambda *_, **__: False)

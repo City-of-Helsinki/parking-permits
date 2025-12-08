@@ -10,13 +10,13 @@ from django.utils.translation import gettext_lazy as _
 
 from .constants import SECONDARY_VEHICLE_PRICE_INCREASE, EventFields
 from .exceptions import (
-    DuplicatePermit,
-    InvalidContractType,
-    InvalidUserAddress,
+    DuplicatePermitError,
+    InvalidContractTypeError,
+    InvalidUserAddressError,
     NonDraftPermitUpdateError,
-    PermitCanNotBeDeleted,
-    PermitCanNotBeExtended,
-    PermitLimitExceeded,
+    PermitCanNotBeDeletedError,
+    PermitCanNotBeExtendedError,
+    PermitLimitExceededError,
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
 )
@@ -83,10 +83,10 @@ class CustomerPermit:
         """
         permit, _primary_vehicle = self._get_permit(permit_id)
         if not permit.can_extend_permit:
-            raise PermitCanNotBeExtended(_("You cannot extend this permit."))
+            raise PermitCanNotBeExtendedError(_("You cannot extend this permit."))
 
         if month_count > permit.max_extension_month_count:
-            raise PermitCanNotBeExtended(_("Month count exceeds maximum"))
+            raise PermitCanNotBeExtendedError(_("Month count exceeds maximum"))
 
         order = Order.objects.create_for_extended_permit(
             permit,
@@ -183,7 +183,8 @@ class CustomerPermit:
                 permit.address_changed_date = tz.localdate()
                 permit.save()
 
-            # automatically cancel permit and it's latest order if payment is not completed in configured time
+            # automatically cancel permit and it's latest order if
+            # payment is not completed in configured time
             # (default 15 minutes)
             if permit.has_timed_out_payment_in_progress:
                 # NOTE: permit extension orders do NOT set the permit into
@@ -201,7 +202,7 @@ class CustomerPermit:
         if self.customer_permit_query.filter(
             vehicle__registration_number=registration
         ).count():
-            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+            raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
         address = Address.objects.get(id=address_id)
         if self._can_buy_permit_for_address(address.id):
             contract_type = OPEN_ENDED
@@ -265,7 +266,7 @@ class CustomerPermit:
     def delete(self, permit_id):
         permit = ParkingPermit.objects.get(customer=self.customer, id=permit_id)
         if permit.status not in [DRAFT, PRELIMINARY]:
-            raise PermitCanNotBeDeleted(_("Non draft permit can not be deleted"))
+            raise PermitCanNotBeDeletedError(_("Non draft permit can not be deleted"))
         OrderItem.objects.filter(permit=permit).delete()
         permit.delete()
 
@@ -316,15 +317,16 @@ class CustomerPermit:
             end_time = get_end_time(primary.start_time, month_count)
 
             if not contract_type:
-                raise InvalidContractType(_("Contract type is required"))
+                raise InvalidContractTypeError(_("Contract type is required"))
 
-            # Second permit can not be open ended if primary permit valid or processing and is fixed period
+            # Second permit can not be open ended if
+            # primary permit valid or processing and is fixed period
             if (
                 primary.status not in [DRAFT, PRELIMINARY]
                 and primary.contract_type == FIXED_PERIOD
                 and contract_type != FIXED_PERIOD
             ):
-                raise InvalidContractType(
+                raise InvalidContractTypeError(
                     _("Only %(fixed_period)s is allowed")
                     % {"fixed_period": FIXED_PERIOD}
                 )
@@ -461,13 +463,13 @@ class CustomerPermit:
 
     def _can_buy_permit_for_address(self, address_id):
         if not self._is_valid_user_address(address_id):
-            raise InvalidUserAddress(_("Invalid user address."))
+            raise InvalidUserAddressError(_("Invalid user address."))
 
         max_allowed_permit = settings.MAX_ALLOWED_USER_PERMIT
 
         # User can not exceed max allowed permit per user
         if self.customer_permit_query.count() > max_allowed_permit:
-            raise PermitLimitExceeded(
+            raise PermitLimitExceededError(
                 _("You can have a max of %(max_allowed_permit)s permits.")
                 % {"max_allowed_permit": max_allowed_permit}
             )
@@ -478,7 +480,7 @@ class CustomerPermit:
         if self.customer_permit_query.count():
             primary, secondary = self._get_primary_and_secondary_permit()
             if primary.address_id != address_id and primary.status != DRAFT:
-                raise InvalidUserAddress(
+                raise InvalidUserAddressError(
                     _("You can buy permit only for address %(primary_address)s.")
                     % {"primary_address": primary.address}
                 )

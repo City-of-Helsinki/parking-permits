@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("parking_permits", "0065_alter_refund_permits"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),

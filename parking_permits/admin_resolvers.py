@@ -54,10 +54,10 @@ from .exceptions import (
     AddressError,
     CreatePermitError,
     EndPermitError,
-    ObjectNotFound,
+    ObjectNotFoundError,
     ParkingZoneError,
-    PermitCanNotBeExtended,
-    PermitLimitExceeded,
+    PermitCanNotBeExtendedError,
+    PermitLimitExceededError,
     SearchError,
     TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
@@ -102,7 +102,7 @@ from .utils import (
 )
 
 logger = logging.getLogger("db")
-audit_logger = audit.getAuditLoggerAdapter(
+audit_logger = audit.get_audit_logger_adapter(
     "audit",
     dict(
         origin=Origin.ADMIN_UI,
@@ -143,8 +143,10 @@ def _audit_post_process_paged_search(
     **__,
 ):
     """
-    Custom-tailored audit log post-process hook for resolvers with the following signature:
-    (obj, info, page_input, order_by=None, search_params=None) -> {"page_info": dict, "objects": QuerySet}
+    Custom-tailored audit log post-process hook for
+    resolvers with the following signature:
+    (obj, info, page_input, order_by=None, search_params=None)
+     -> {"page_info": dict, "objects": QuerySet}
     """
     try:
         msg.extra = dict()
@@ -268,7 +270,7 @@ def resolve_customer(obj, info, **data):
         logger.info("Searching customer from DB...")
         customer = Customer.objects.filter(**query_params).first()
         if not customer:
-            raise ObjectNotFound(_("Customer not found"))
+            raise ObjectNotFoundError(_("Customer not found"))
 
     return customer
 
@@ -299,7 +301,7 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
         operation=audit.Operation.READ,
         event_type=audit.EventType.TRAFICOM,
     ),
-    autotarget=audit.TARGET_RETURN,
+    autotarget=audit.target_return,
 )
 def resolve_vehicle(obj, info, reg_number: str, national_id_number: str):
     customer, _created = Customer.objects.get_or_create(
@@ -396,7 +398,7 @@ def update_or_create_vehicle(vehicle_info):
             identifier=vehicle_info["power_type"]["identifier"]
         )
     except VehiclePowerType.DoesNotExist:
-        raise ObjectNotFound(_("Vehicle power type not found"))
+        raise ObjectNotFoundError(_("Vehicle power type not found"))
 
     registration_number = (
         vehicle_info["registration_number"].upper()
@@ -480,12 +482,13 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     active_permits = customer.active_permits
     active_permits_count = active_permits.count()
     if active_permits_count >= 2:
-        raise PermitLimitExceeded(_("Cannot create more than 2 permits"))
+        raise PermitLimitExceededError(_("Cannot create more than 2 permits"))
 
     if active_permits_count == 1 and active_permits.first().is_open_ended:
         raise CreatePermitError(
             _(
-                "Creating a fixed-period permit is not allowed when the first permit is open-ended"
+                "Creating a fixed-period permit is not allowed "
+                "when the first permit is open-ended"
             )
         )
 
@@ -533,7 +536,8 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
             ):
                 raise CreatePermitError(
                     _(
-                        "Cannot create permit. User already has a valid existing permit in other address %(address)s."
+                        "Cannot create permit. User already has a valid "
+                        "existing permit in other address %(address)s."
                     )
                     % {"address": str(active_permit_address)}
                 )
@@ -548,7 +552,8 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         if parking_zone != active_parking_zone:
             raise CreatePermitError(
                 _(
-                    "Cannot create permit. User already has a valid existing permit in zone %(parking_zone)s."
+                    "Cannot create permit. User already has a valid "
+                    "existing permit in zone %(parking_zone)s."
                 )
                 % {"parking_zone": active_parking_zone.name}
             )
@@ -609,7 +614,8 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
                 parking_permit, created_by=request.user
             )
 
-    # when creating from Admin UI and permit status is valid, it's considered the payment is completed
+    # when creating from Admin UI and permit status is valid,
+    # it's considered the payment is completed
     # and the order status should be confirmed
     if permit_status == ParkingPermitStatus.VALID:
         ParkingPermitEventFactory.make_create_permit_event(
@@ -679,7 +685,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     try:
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
-        raise ObjectNotFound(_("Parking permit not found"))
+        raise ObjectNotFoundError(_("Parking permit not found"))
 
     address_changed = False
     previous_address_identifier = None
@@ -748,7 +754,7 @@ def resolve_update_resident_permit(
     try:
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
-        raise ObjectNotFound(_("Parking permit not found"))
+        raise ObjectNotFoundError(_("Parking permit not found"))
 
     request = info.context["request"]
     audit_msg.target = permit
@@ -808,7 +814,8 @@ def resolve_update_resident_permit(
         if first_permit.contract_type != second_permit.contract_type:
             raise UpdatePermitError(
                 _(
-                    "Changing address for different type (fixed-period / open-ended) permits is not allowed"
+                    "Changing address for different type "
+                    "(fixed-period / open-ended) permits is not allowed"
                 )
             )
 
@@ -852,7 +859,8 @@ def resolve_update_resident_permit(
                 amount=Decimal(abs(order_total_price_change)),
                 iban=iban,
                 vat=(order.vat if order.vat else DEFAULT_VAT),
-                description=f"Refund for updating permits: {','.join([str(permit.id) for permit in permits])}",
+                description=f"Refund for updating permits: "
+                f"{','.join([str(permit.id) for permit in permits])}",
             )
             logger.info(f"Refund for lowered permit price created: {refund}")
             refunds.append(refund)
@@ -952,7 +960,7 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
     try:
         permit = ParkingPermit.objects.active().get(pk=permit_id)
     except ParkingPermit.DoesNotExist as e:
-        raise ObjectNotFound from e
+        raise ObjectNotFoundError from e
     return permit.get_price_list_for_extended_permit(month_count)
 
 
@@ -977,11 +985,11 @@ def resolve_extend_parking_permit(
     try:
         permit = ParkingPermit.objects.active().get(id=permit_id)
     except ParkingPermit.DoesNotExist as e:
-        raise ObjectNotFound from e
+        raise ObjectNotFoundError from e
 
     audit_msg.target = permit
     if not permit.can_admin_extend_permit:
-        raise PermitCanNotBeExtended(_("You cannot extend this permit."))
+        raise PermitCanNotBeExtendedError(_("You cannot extend this permit."))
 
     order = Order.objects.create_for_extended_permit(
         permit,
@@ -1200,7 +1208,7 @@ def resolve_refund(obj, info, refund_id):
     try:
         return Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
-        raise ObjectNotFound(_("Refund not found"))
+        raise ObjectNotFoundError(_("Refund not found"))
 
 
 @mutation.field("updateRefund")
@@ -1211,7 +1219,7 @@ def resolve_update_refund(obj, info, refund_id, refund):
     try:
         r = Refund.objects.get(id=refund_id)
     except Refund.DoesNotExist:
-        raise ObjectNotFound(_("Refund not found"))
+        raise ObjectNotFoundError(_("Refund not found"))
 
     r.name = refund["name"]
     r.iban = refund["iban"]
@@ -1405,7 +1413,7 @@ def resolve_announcement(obj, info, announcement_id):
     try:
         return Announcement.objects.get(id=announcement_id)
     except Announcement.DoesNotExist:
-        raise ObjectNotFound(_("Announcement not found"))
+        raise ObjectNotFoundError(_("Announcement not found"))
 
 
 def post_create_announcement(announcement: Announcement):
