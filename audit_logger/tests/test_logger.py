@@ -9,7 +9,6 @@ from django.utils import timezone
 from resilient_logger.models.resilient_log_entry import ResilientLogEntry
 
 from audit_logger import (
-    TARGET_RETURN,
     AuditLoggerAdapter,
     AuditLogHandler,
     AuditMessage,
@@ -19,7 +18,8 @@ from audit_logger import (
     Operation,
     Reason,
     Status,
-    getAuditLoggerAdapter,
+    get_audit_logger_adapter,
+    target_return,
 )
 from audit_logger.tests.utils import make_mock_model
 
@@ -81,7 +81,7 @@ class AuditLoggerTest(TestCase):
                 )
             )
             try:
-                1 / 0
+                1 / 0  # noqa: B018
             except Exception as e:
                 logger.critical(
                     AuditMsg(
@@ -133,7 +133,7 @@ class AuditLoggerTest(TestCase):
     def test_get_logger_adapter(self):
         with self.assertLogs("audit_logger", logging.DEBUG) as cm, transaction.atomic():
             # Setup the logger.
-            adapter = getAuditLoggerAdapter("audit_logger", dict(origin="foo"))
+            adapter = get_audit_logger_adapter("audit_logger", dict(origin="foo"))
             adapter.logger.addHandler(AuditLogHandler())
             adapter.logger.setLevel(logging.DEBUG)
 
@@ -381,7 +381,7 @@ class AdapterAutologTest(TestCase):
             return new_actor
 
         @self.adapter.autolog(
-            base_msg, autostatus=True, autotarget=TARGET_RETURN, autoactor=autoactor
+            base_msg, autostatus=True, autotarget=target_return, autoactor=autoactor
         )
         def decorated_func():
             new_target = MockModel

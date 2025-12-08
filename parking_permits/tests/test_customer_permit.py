@@ -11,11 +11,11 @@ from freezegun import freeze_time
 
 from parking_permits.customer_permit import PRELIMINARY, CustomerPermit
 from parking_permits.exceptions import (
-    InvalidContractType,
-    InvalidUserAddress,
+    InvalidContractTypeError,
+    InvalidUserAddressError,
     NonDraftPermitUpdateError,
-    PermitCanNotBeDeleted,
-    PermitCanNotBeExtended,
+    PermitCanNotBeDeletedError,
+    PermitCanNotBeExtendedError,
     TemporaryVehicleValidationError,
 )
 from parking_permits.models.parking_permit import (
@@ -347,7 +347,9 @@ class CreateCustomerPermitTestCase(TestCase):
 
     def test_customer_a_can_not_create_permit_in_zone_outside_his_address(self):
         address = AddressFactory()
-        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
+        with self.assertRaisesMessage(
+            InvalidUserAddressError, _("Invalid user address.")
+        ):
             CustomerPermit(self.customer_a.id).create(address.id, "ABC-123")
 
     @override_settings(TRAFICOM_MOCK=True, TRAFICOM_CHECK=False)
@@ -410,13 +412,13 @@ class DeleteCustomerPermitTestCase(TestCase):
 
     def test_customer_a_can_not_delete_non_draft_permit(self):
         msg = _("Non draft permit can not be deleted")
-        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeletedError, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_closed.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeletedError, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_valid.id)
 
-        with self.assertRaisesMessage(PermitCanNotBeDeleted, msg):
+        with self.assertRaisesMessage(PermitCanNotBeDeletedError, msg):
             CustomerPermit(self.customer_a.id).delete(self.c_a_payment_in_progress.id)
 
     def test_customer_a_can_delete_draft_permit(self):
@@ -502,12 +504,16 @@ class UpdateCustomerPermitTestCase(TestCase):
     def test_can_not_update_address_id_of_drafts_if_not_in_his_address(self):
         address = AddressFactory()
         data = {"address_id": str(address.id)}
-        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
+        with self.assertRaisesMessage(
+            InvalidUserAddressError, _("Invalid user address.")
+        ):
             CustomerPermit(self.cus_a.id).update(data)
 
     def test_can_not_update_address_id_of_valid_if_not_in_his_address(self):
         data = {"address_id": str(self.cus_b.other_address.id)}
-        with self.assertRaisesMessage(InvalidUserAddress, _("Invalid user address.")):
+        with self.assertRaisesMessage(
+            InvalidUserAddressError, _("Invalid user address.")
+        ):
             CustomerPermit(self.cus_a.id).update(data)
 
     def test_can_update_zone_id_of_all_drafts_with_zone_that_either_of_his_address_has(
@@ -532,7 +538,7 @@ class UpdateCustomerPermitTestCase(TestCase):
             msg = _("You can buy permit only for address %(primary_address)s.") % {
                 "primary_address": self.cus_a.primary_address
             }
-            with self.assertRaisesMessage(InvalidUserAddress, msg):
+            with self.assertRaisesMessage(InvalidUserAddressError, msg):
                 CustomerPermit(self.cus_a.id).update(data)
 
     def test_all_draft_permit_to_have_same_immediately_start_type(self):
@@ -607,7 +613,7 @@ class UpdateCustomerPermitTestCase(TestCase):
 
         permit_id = str(secondary.id)
         msg = _("Only %(fixed_period)s is allowed") % {"fixed_period": FIXED_PERIOD}
-        with self.assertRaisesMessage(InvalidContractType, msg):
+        with self.assertRaisesMessage(InvalidContractTypeError, msg):
             data = {"contract_type": OPEN_ENDED}
             CustomerPermit(customer.id).update(data, permit_id=permit_id)
 
@@ -627,7 +633,7 @@ class UpdateCustomerPermitTestCase(TestCase):
 
     def test_throw_error_for_missing_contract_type(self):
         msg = _("Contract type is required")
-        with self.assertRaisesMessage(InvalidContractType, msg):
+        with self.assertRaisesMessage(InvalidContractTypeError, msg):
             data = {"month_count": 1}
             CustomerPermit(self.cus_a.id).update(data, permit_id=str(self.c_a_draft.id))
 
@@ -721,7 +727,7 @@ class ExtendCustomerPermitTestCase(TestCase):
             end_date=(now + timedelta(days=360)).date(),
         )
         self.assertRaises(
-            PermitCanNotBeExtended,
+            PermitCanNotBeExtendedError,
             CustomerPermit(permit.customer_id).create_permit_extension_request,
             permit.pk,
             13,
@@ -738,7 +744,7 @@ class ExtendCustomerPermitTestCase(TestCase):
             end_time=now + timedelta(days=30),
         )
         self.assertRaises(
-            PermitCanNotBeExtended,
+            PermitCanNotBeExtendedError,
             CustomerPermit(permit.customer_id).create_permit_extension_request,
             permit.pk,
             3,

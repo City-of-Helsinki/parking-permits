@@ -46,9 +46,9 @@ class GetPersonInfoTestCase(TestCase):
         self, mock_post, mock_get_address_details
     ):
         mock_info = self.get_mock_info()
-        mock_info["Henkilo"]["VakinainenKotimainenLahiosoite"][
-            "LahiosoiteS"
-        ] = "Käsivoide 1"
+        mock_info["Henkilo"]["VakinainenKotimainenLahiosoite"]["LahiosoiteS"] = (
+            "Käsivoide 1"
+        )
         mock_post.return_value = self.MockResponse(data=mock_info)
         mock_get_address_details.return_value = {"location": generate_multi_polygon()}
         customer = get_person_info("12345")
@@ -66,12 +66,12 @@ class GetPersonInfoTestCase(TestCase):
         self, mock_post, mock_get_address_details
     ):
         mock_info = self.get_mock_info()
-        mock_info["Henkilo"]["VakinainenKotimainenLahiosoite"][
-            "PostitoimipaikkaS"
-        ] = "Vantaa"
-        mock_info["Henkilo"]["TilapainenKotimainenLahiosoite"][
-            "PostitoimipaikkaS"
-        ] = "Espoo"
+        mock_info["Henkilo"]["VakinainenKotimainenLahiosoite"]["PostitoimipaikkaS"] = (
+            "Vantaa"
+        )
+        mock_info["Henkilo"]["TilapainenKotimainenLahiosoite"]["PostitoimipaikkaS"] = (
+            "Espoo"
+        )
         mock_post.return_value = self.MockResponse(data=mock_info)
         mock_get_address_details.return_value = {"location": generate_multi_polygon()}
         customer = get_person_info("12345")

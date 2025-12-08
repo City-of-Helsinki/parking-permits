@@ -19,7 +19,7 @@ from parking_permits.services.parkkihubi import sync_with_parkkihubi
 from ..constants import DEFAULT_VAT
 from ..exceptions import (
     OrderCancelError,
-    OrderCreationFailed,
+    OrderCreationFailedError,
     OrderValidationError,
     SubscriptionCancelError,
     SubscriptionValidationError,
@@ -62,10 +62,12 @@ class OrderValidator:
             order = response.json()
             if order["user"] != str(user_id):
                 logger.error(
-                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                    f"Talpa order user id {order['userId']} "
+                    f"does not match with user id {user_id}"
                 )
                 raise OrderValidationError(
-                    f"Talpa order user id {order['userId']} does not match with user id {user_id}"
+                    f"Talpa order user id {order['userId']} "
+                    f"does not match with user id {user_id}"
                 )
             logger.info("Talpa order is valid")
             return order
@@ -96,17 +98,26 @@ class SubscriptionValidator:
                 if meta_subscription_id is None or meta_subscription_id != str(
                     subscription_id
                 ):
-                    msg = f"Subscription id does not match with the requested subscription id value {subscription_id}"
+                    msg = (
+                        f"Subscription id does not match with the "
+                        f"requested subscription id value {subscription_id}"
+                    )
                     logger.error(msg)
                     raise SubscriptionValidationError(msg)
                 if meta_order_id is None or meta_order_id != str(order_id):
-                    msg = f"Order id does not match with the requested order id value: {order_id}"
+                    msg = (
+                        f"Order id does not match with the "
+                        f"requested order id value: {order_id}"
+                    )
                     logger.error(msg)
                     raise SubscriptionValidationError(msg)
                 if meta_order_item_id is None or meta_order_item_id != str(
                     order_item_id
                 ):
-                    msg = f"Order item id does not match with the requested order item id value: {order_item_id}"
+                    msg = (
+                        f"Order item id does not match with the "
+                        f"requested order item id value: {order_item_id}"
+                    )
                     logger.error(msg)
                     raise SubscriptionValidationError(msg)
                 logger.info("Talpa subscription is valid")
@@ -161,12 +172,12 @@ class OrderType(models.TextChoices):
 class OrderManager(SerializableMixin.SerializableManager):
     def _validate_permits(self, permits):
         if len(permits) > 2:
-            raise OrderCreationFailed("More than 2 draft permits found")
+            raise OrderCreationFailedError("More than 2 draft permits found")
         if len(permits) == 2:
             if permits[0].contract_type != permits[1].contract_type:
-                raise OrderCreationFailed("Permits contract types do not match")
+                raise OrderCreationFailedError("Permits contract types do not match")
             if permits[0].customer_id != permits[1].customer_id:
-                raise OrderCreationFailed("Permits customer do not match")
+                raise OrderCreationFailedError("Permits customer do not match")
 
     @transaction.atomic
     def create_for_permits(self, permits, status=OrderStatus.DRAFT, **kwargs):
@@ -257,8 +268,9 @@ class OrderManager(SerializableMixin.SerializableManager):
 
         OrderItem.objects.bulk_create(order_items)
 
-        start_time, end_time = min([order.start_time for order in order_items]), max(
-            [order.end_time for order in order_items]
+        start_time, end_time = (
+            min([order.start_time for order in order_items]),
+            max([order.end_time for order in order_items]),
         )
 
         ParkingPermitEventFactory.make_create_ext_request_order_event(
@@ -271,14 +283,14 @@ class OrderManager(SerializableMixin.SerializableManager):
         date_ranges = []
         for permit in permits:
             if permit.status != ParkingPermitStatus.VALID:
-                raise OrderCreationFailed(
+                raise OrderCreationFailedError(
                     "Cannot create renewal order for non-valid permits"
                 )
             if (
                 permit.is_open_ended
                 and order_type not in self.model.OPEN_ENDED_RENEWABLE_ORDER_TYPES
             ):
-                raise OrderCreationFailed(
+                raise OrderCreationFailedError(
                     "Cannot create renewal order for open ended permits"
                 )
 
@@ -308,7 +320,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         try:
             first_permit = customer_permits[0]
         except IndexError:
-            raise OrderCreationFailed("No valid permits found for renewal order")
+            raise OrderCreationFailedError("No valid permits found for renewal order")
         new_order = Order.objects.create(
             customer=customer,
             status=status,
@@ -674,7 +686,8 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         )
         if response.status_code == 200:
             logger.info(
-                f"Talpa subscription cancelling successful: {self.talpa_subscription_id}"
+                f"Talpa subscription cancelling successful: "
+                f"{self.talpa_subscription_id}"
             )
             return True
         else:
@@ -737,7 +750,8 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 self._cancel_talpa_subcription(customer_id)
             except SubscriptionCancelError:
                 logger.warning(
-                    "Talpa subscription cancelling failed. Continuing the cancel process.."
+                    "Talpa subscription cancelling failed. "
+                    "Continuing the cancel process.."
                 )
 
         remaining_valid_order_subscriptions = Subscription.objects.filter(
@@ -859,7 +873,8 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
 
     def adjusted_timeframe(self, start_time):
         """
-        Custom timeframe used to make sure subsequent order items don't have gaps in days
+        Custom timeframe used to make sure subsequent
+        order items don't have gaps in days
         """
         if start_time and self.end_time:
             start_time = tz.localtime(start_time).strftime(DATE_FORMAT)

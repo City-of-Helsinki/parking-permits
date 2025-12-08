@@ -7,7 +7,7 @@ import requests
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.exceptions import ObjectNotFound
+from parking_permits.exceptions import ObjectNotFoundError
 from parking_permits.models import Customer, ParkingZone
 from parking_permits.services.kami import get_address_details, parse_street_data
 from parking_permits.utils import is_valid_city
@@ -65,7 +65,7 @@ def get_addresses(national_id_number):
     if national_id_number:
         customer = get_person_info(national_id_number)
         if not customer:
-            raise ObjectNotFound(_("Person not found"))
+            raise ObjectNotFoundError(_("Person not found"))
         primary_address = _extract_address_data(customer.get("primary_address"))
         other_address = _extract_address_data(customer.get("other_address"))
     return primary_address, other_address

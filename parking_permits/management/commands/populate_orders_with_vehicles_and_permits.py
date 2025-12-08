@@ -14,7 +14,8 @@ class Command(BaseCommand):
 
         if options["dry_run"]:
             self.stdout.write(
-                f"This action populates {orders.count()} orders with vehicle and permit data."
+                f"This action populates {orders.count()} "
+                f"orders with vehicle and permit data."
             )
             return
 

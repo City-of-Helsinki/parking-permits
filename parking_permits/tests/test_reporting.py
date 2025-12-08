@@ -25,9 +25,7 @@ from parking_permits.tests.factories.zone import ParkingZoneFactory
 
 
 class PermitCountSnapshotTestCase(TestCase):
-
     def test_creating_duplicate_permit_count_snapshot_raises(self):
-
         test_date = date(2024, 11, 30)
 
         def create_snapshot(*, count: int):
@@ -47,7 +45,6 @@ class PermitCountSnapshotTestCase(TestCase):
             create_snapshot(count=2)
 
     def test_build_daily_permit_count_snapshot(self):
-
         test_date = date(2024, 11, 30)
         # First day of the previous month from test_date
         permit_start_date = (test_date - relativedelta(months=2)) + relativedelta(
@@ -239,7 +236,6 @@ class PermitCountSnapshotTestCase(TestCase):
 
 
 class PermitCountSnapshotViewTestCase(APITestCase):
-
     url = reverse("parking_permits:permit-count-snapshot-list")
 
     @classmethod

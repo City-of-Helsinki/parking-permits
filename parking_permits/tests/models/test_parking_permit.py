@@ -10,8 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from freezegun import freeze_time
 
 from parking_permits.exceptions import (
-    DuplicatePermit,
-    PermitCanNotBeEnded,
+    DuplicatePermitError,
+    PermitCanNotBeEndedError,
     ProductCatalogError,
     TemporaryVehicleValidationError,
 )
@@ -377,7 +377,7 @@ class ParkingZoneTestCase(TestCase):
             end_time=secondary_end_time,
             month_count=2,
         )
-        with self.assertRaises(PermitCanNotBeEnded):
+        with self.assertRaises(PermitCanNotBeEndedError):
             primary_vehicle_permit.end_permit(ParkingPermitEndType.AFTER_CURRENT_PERIOD)
 
     def test_get_refund_amount_for_unused_items_should_return_correct_total(self):
@@ -799,7 +799,7 @@ class ParkingZoneTestCase(TestCase):
                 price_change_list = permit.get_price_change_list(self.zone_a, True)
                 self.assertEqual(len(price_change_list), 1)
                 self.assertEqual(
-                    price_change_list[0]["product"], f'{_("Parking zone")} A'
+                    price_change_list[0]["product"], f"{_('Parking zone')} A"
                 )
                 self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("10"))
@@ -840,7 +840,7 @@ class ParkingZoneTestCase(TestCase):
                 price_change_list = permit.get_price_change_list(self.zone_a, True)
                 self.assertEqual(len(price_change_list), 1)
                 self.assertEqual(
-                    price_change_list[0]["product"], f'{_("Parking zone")} A'
+                    price_change_list[0]["product"], f"{_('Parking zone')} A"
                 )
                 self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("10"))
@@ -884,7 +884,7 @@ class ParkingZoneTestCase(TestCase):
                 price_change_list = permit.get_price_change_list(self.zone_b, True)
                 self.assertEqual(len(price_change_list), 2)
                 self.assertEqual(
-                    price_change_list[0]["product"], f'{_("Parking zone")} B'
+                    price_change_list[0]["product"], f"{_('Parking zone')} B"
                 )
                 self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("15"))
@@ -896,7 +896,7 @@ class ParkingZoneTestCase(TestCase):
                 self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
                 self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 30))
                 self.assertEqual(
-                    price_change_list[1]["product"], f'{_("Parking zone")} B'
+                    price_change_list[1]["product"], f"{_('Parking zone')} B"
                 )
                 self.assertEqual(price_change_list[1]["previous_price"], Decimal("30"))
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("20"))
@@ -952,7 +952,7 @@ class ParkingZoneTestCase(TestCase):
                 price_change_list = permit.get_price_change_list(self.zone_b, False)
                 self.assertEqual(len(price_change_list), 2)
                 self.assertEqual(
-                    price_change_list[0]["product"], f'{_("Parking zone")} B'
+                    price_change_list[0]["product"], f"{_('Parking zone')} B"
                 )
                 self.assertEqual(price_change_list[0]["previous_price"], Decimal("10"))
                 self.assertEqual(price_change_list[0]["new_price"], Decimal("30"))
@@ -968,7 +968,7 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[0]["end_date"], date(CURRENT_YEAR, 6, 30)
                 )
                 self.assertEqual(
-                    price_change_list[1]["product"], f'{_("Parking zone")} B'
+                    price_change_list[1]["product"], f"{_('Parking zone')} B"
                 )
                 self.assertEqual(price_change_list[1]["previous_price"], Decimal("15"))
                 self.assertEqual(price_change_list[1]["new_price"], Decimal("40"))
@@ -986,7 +986,6 @@ class ParkingZoneTestCase(TestCase):
 
 
 class ParkingPermitTestCase(TestCase):
-
     duplicable_statuses = [
         ParkingPermitStatus.CANCELLED,
         ParkingPermitStatus.CLOSED,
@@ -1002,10 +1001,10 @@ class ParkingPermitTestCase(TestCase):
     def setUp(self):
         self.permit = ParkingPermitFactory()
 
-    def test_should_have_is_order_confirmed_property_False(self):
+    def test_should_have_is_order_confirmed_property_false(self):
         assert self.permit.is_order_confirmed is False
 
-    def test_should_have_is_order_confirmed_property_True(self):
+    def test_should_have_is_order_confirmed_property_true(self):
         order = OrderFactory(status=OrderStatus.CONFIRMED)
         order.permits.add(self.permit)
         assert self.permit.is_order_confirmed is True
@@ -1699,7 +1698,7 @@ class ParkingPermitTestCase(TestCase):
             )
 
             for status_for_new in self.non_duplicable_statuses:
-                with self.assertRaises(DuplicatePermit):
+                with self.assertRaises(DuplicatePermitError):
                     ParkingPermitFactory(
                         customer=customer, vehicle=vehicle, status=status_for_new
                     )
@@ -1749,7 +1748,6 @@ class ParkingPermitTestCase(TestCase):
 
 
 class InitOrderForPermitMixin:
-
     def init_order_for_permit(
         self,
         permit,
@@ -1770,7 +1768,6 @@ talpa_override_minutes = 20
 
 @override_settings(TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=talpa_override_minutes)
 class HasTimedOutPaymentInProgressTestCase(TestCase, InitOrderForPermitMixin):
-
     def test_has_timed_out_payment_in_progress(self):
         """Test the positive case for has_timed_out_payment_in_progress-property"""
         permit = ParkingPermitFactory(

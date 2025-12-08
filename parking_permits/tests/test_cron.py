@@ -626,7 +626,6 @@ talpa_override_minutes = 20
 
 @override_settings(TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS=talpa_override_minutes)
 class CancelOldUnpaidPermitTestCase(TestCase, InitOrderForPermitMixin):
-
     def test_cancel_old_unpaid_permits(self):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
@@ -670,7 +669,6 @@ class CancelOldUnpaidPermitTestCase(TestCase, InitOrderForPermitMixin):
         self.assertEqual(order.status, OrderStatus.DRAFT)
 
     def test_only_permits_with_payment_in_progress_status_are_cancelled(self):
-
         # Check that all other permit statuses do not cancel the permit
         statuses = [
             ParkingPermitStatus.DRAFT,
@@ -703,7 +701,6 @@ class CancelOldUnpaidPermitTestCase(TestCase, InitOrderForPermitMixin):
             permit.delete()
 
     def test_only_permits_with_draft_latest_order_are_cancelled(self):
-
         # Check that all other order statuses do not cancel the permit
         statuses = [
             OrderStatus.CANCELLED,

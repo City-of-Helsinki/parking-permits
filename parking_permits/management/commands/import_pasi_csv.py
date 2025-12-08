@@ -34,11 +34,11 @@ class PasiValidationError(PasiImportError):
     pass
 
 
-class PasiPermitExists(PasiImportError):
+class PasiPermitExistsError(PasiImportError):
     pass
 
 
-class PasiDryRun(PasiImportError):
+class PasiDryRunError(PasiImportError):
     pass
 
 
@@ -181,7 +181,8 @@ class Command(BaseCommand):
         parser.add_argument(
             "--encoding",
             default="utf-8-sig",
-            help="Set the encoding used for reading the CSV file. Defaults to utf-8-sig",
+            help="Set the encoding used for reading the CSV file. "
+            "Defaults to utf-8-sig",
         )
         parser.add_argument(
             "--dry-run",
@@ -196,18 +197,18 @@ class Command(BaseCommand):
             reader = PasiCsvReader(f)
             for idx, pasi_permit in enumerate(reader, start=2):
 
-                def prefix(msg):
-                    return f"{filename}:{idx} ID: {pasi_permit.id:9} {msg}"
+                def prefix(msg, permit=pasi_permit, line_num=idx):
+                    return f"{filename}:{line_num} ID: {permit.id:9} {msg}"
 
                 captured_exc = None
                 try:
                     with transaction.atomic():
                         created_permit = self.process_pasi_permit(pasi_permit)
                         if options["dry_run"] is True:
-                            raise PasiDryRun
-                except PasiPermitExists:
+                            raise PasiDryRunError
+                except PasiPermitExistsError:
                     continue
-                except PasiDryRun:
+                except PasiDryRunError:
                     self.stdout.write(
                         self.style.SUCCESS(prefix("Success, rolling back"))
                     )
@@ -296,11 +297,14 @@ class Command(BaseCommand):
         filtering here before moving on to more integration/database heavy stuff."""
 
         if self.permit_exists(pasi_permit.id):
-            raise PasiPermitExists(f"Permit with ID #{pasi_permit.id} already exists")
+            raise PasiPermitExistsError(
+                f"Permit with ID #{pasi_permit.id} already exists"
+            )
 
         if self.vehicle_has_active_permit(pasi_permit.registration_number):
             raise PasiValidationError(
-                f"Vehicle {pasi_permit.registration_number} already has at least one active permit"
+                f"Vehicle {pasi_permit.registration_number} "
+                f"already has at least one active permit"
             )
 
     @staticmethod

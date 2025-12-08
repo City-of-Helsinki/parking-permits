@@ -167,7 +167,8 @@ class Parkkihubi:
         # adjust subjects to ensure none overlapping
         # example: permit starts 1st March and ends 31st March.
         # temp vehicle starts 15th March and ends 20th March.
-        # = 3 subjects: default permit 1st-15th;  temp vehicle 15th-20th; default 20th > 31st.
+        # = 3 subjects: default permit 1st-15th;
+        # temp vehicle 15th-20th; default 20th > 31st.
 
         extra_subjects = []
 
@@ -187,8 +188,8 @@ class Parkkihubi:
                     )
                 )
 
-        # add another subject for default permit if the end time of the last subject is less
-        # than end of this permit
+        # add another subject for default permit if the end time
+        # of the last subject is less than end of this permit
         last_end_time = max([subject.end_time for subject in subjects])
 
         if end_time > last_end_time:

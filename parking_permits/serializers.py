@@ -14,51 +14,51 @@ class OrderItemSerializer(serializers.Serializer):
 
 
 class TalpaPayloadSerializer(serializers.Serializer):
-    userId = serializers.CharField(help_text="User id")
-    orderItem = OrderItemSerializer()
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    orderItem = OrderItemSerializer()  # noqa: N815
 
 
 class RightOfPurchaseResponseSerializer(serializers.Serializer):
-    rightOfPurchase = serializers.BooleanField(help_text="Has rights to purchase")
-    userId = serializers.CharField(help_text="User id")
-    errorMessage = serializers.CharField(help_text="Error if exists", default="")
+    rightOfPurchase = serializers.BooleanField(help_text="Has rights to purchase")  # noqa: N815
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")  # noqa: N815
 
 
 class ResolvePriceRequestSerializer(serializers.Serializer):
-    userId = serializers.CharField(help_text="User id")
-    subscriptionId = serializers.CharField(help_text="Subscription id")
-    orderItem = OrderItemSerializer()
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    subscriptionId = serializers.CharField(help_text="Subscription id")  # noqa: N815
+    orderItem = OrderItemSerializer()  # noqa: N815
 
 
 class ResolvePriceResponseSerializer(serializers.Serializer):
-    userId = serializers.CharField(help_text="User id")
-    subscriptionId = serializers.CharField(help_text="Subscription id")
-    priceNet = serializers.FloatField(help_text="Total net price")
-    priceVat = serializers.FloatField(help_text="Total vat")
-    priceGross = serializers.FloatField(help_text="Gross price")
-    vatPercentage = serializers.FloatField(help_text="Vat percentage")
-    errorMessage = serializers.CharField(help_text="Error if exists", default="")
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    subscriptionId = serializers.CharField(help_text="Subscription id")  # noqa: N815
+    priceNet = serializers.FloatField(help_text="Total net price")  # noqa: N815
+    priceVat = serializers.FloatField(help_text="Total vat")  # noqa: N815
+    priceGross = serializers.FloatField(help_text="Gross price")  # noqa: N815
+    vatPercentage = serializers.FloatField(help_text="Vat percentage")  # noqa: N815
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")  # noqa: N815
 
 
 class ResolveProductRequestSerializer(serializers.Serializer):
-    userId = serializers.CharField(help_text="User id")
-    subscriptionId = serializers.CharField(help_text="Subscription id")
-    orderItem = OrderItemSerializer()
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    subscriptionId = serializers.CharField(help_text="Subscription id")  # noqa: N815
+    orderItem = OrderItemSerializer()  # noqa: N815
 
 
 class ResolveProductResponseSerializer(serializers.Serializer):
-    userId = serializers.CharField(help_text="User id")
-    subscriptionId = serializers.CharField(help_text="Subscription id")
-    productId = serializers.FloatField(help_text="Product id")
-    productName = serializers.FloatField(help_text="Product name")
-    productLabel = serializers.FloatField(help_text="Product label")
-    errorMessage = serializers.CharField(help_text="Error if exists", default="")
+    userId = serializers.CharField(help_text="User id")  # noqa: N815
+    subscriptionId = serializers.CharField(help_text="Subscription id")  # noqa: N815
+    productId = serializers.FloatField(help_text="Product id")  # noqa: N815
+    productName = serializers.FloatField(help_text="Product name")  # noqa: N815
+    productLabel = serializers.FloatField(help_text="Product label")  # noqa: N815
+    errorMessage = serializers.CharField(help_text="Error if exists", default="")  # noqa: N815
 
 
 class PaymentSerializer(serializers.Serializer):
-    paymentId = serializers.CharField(help_text="Id of a generated payment")
-    orderId = serializers.CharField(help_text="Id of a generated order")
-    eventType = serializers.ChoiceField(
+    paymentId = serializers.CharField(help_text="Id of a generated payment")  # noqa: N815
+    orderId = serializers.CharField(help_text="Id of a generated order")  # noqa: N815
+    eventType = serializers.ChoiceField(  # noqa: N815
         help_text="Event types",
         choices=[
             "PAYMENT_PAID",
@@ -68,13 +68,13 @@ class PaymentSerializer(serializers.Serializer):
     namespace = serializers.CharField(
         help_text="Application namespace", default=settings.NAMESPACE
     )
-    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")
+    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")  # noqa: N815
 
 
 class OrderSerializer(serializers.Serializer):
-    orderId = serializers.CharField(help_text="Id of a generated order")
-    subscriptionId = serializers.CharField(help_text="Id of a generated subscription")
-    eventType = serializers.ChoiceField(
+    orderId = serializers.CharField(help_text="Id of a generated order")  # noqa: N815
+    subscriptionId = serializers.CharField(help_text="Id of a generated subscription")  # noqa: N815
+    eventType = serializers.ChoiceField(  # noqa: N815
         help_text="Event types",
         choices=[
             "SUBSCRIPTION_RENEWAL_ORDER_CREATED",
@@ -84,21 +84,21 @@ class OrderSerializer(serializers.Serializer):
     namespace = serializers.CharField(
         help_text="Application namespace", default=settings.NAMESPACE
     )
-    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")
+    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")  # noqa: N815
 
 
 class SubscriptionSerializer(serializers.Serializer):
-    subscriptionId = serializers.CharField(help_text="Id of a generated subscription")
-    orderId = serializers.CharField(help_text="Id of a generated order")
-    namespace = serializers.CharField(
+    subscriptionId = serializers.CharField(help_text="Id of a generated subscription")  # noqa: N815
+    orderId = serializers.CharField(help_text="Id of a generated order")  # noqa: N815
+    namespace = serializers.CharField(  # noqa: N815
         help_text="Application namespace", default=settings.NAMESPACE
     )
-    eventType = serializers.ChoiceField(
+    eventType = serializers.ChoiceField(  # noqa: N815
         help_text="Event types",
         choices=["SUBSCRIPTION_CREATED", "SUBSCRIPTION_CANCELLED"],
         default="SUBSCRIPTION_CREATED",
     )
-    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")
+    eventTimestamp = serializers.DateTimeField(help_text="Event timestamp")  # noqa: N815
     reason = serializers.ChoiceField(
         help_text="Reason for cancellation",
         choices=["RENEWAL_FAILED", "USER_CANCELLED"],
@@ -108,7 +108,7 @@ class SubscriptionSerializer(serializers.Serializer):
 
 class ProductSerializer(serializers.Serializer):
     id = serializers.IntegerField(help_text="Service product id")
-    productId = serializers.CharField(
+    productId = serializers.CharField(  # noqa: N815
         help_text="Shared product id", source="talpa_product_id"
     )
     name = serializers.CharField(help_text="Product name")
@@ -119,7 +119,7 @@ class ProductSerializer(serializers.Serializer):
 
 
 class ResolveAvailabilityRequestSerializer(serializers.Serializer):
-    productId = serializers.CharField(help_text="Shared product id")
+    productId = serializers.CharField(help_text="Shared product id")  # noqa: N815
 
 
 class ResolveAvailabilityResponseSerializer(ResolveAvailabilityRequestSerializer):
@@ -131,7 +131,6 @@ class MessageResponseSerializer(serializers.Serializer):
 
 
 class PermitCountSnapshotSerializer(serializers.Serializer):
-
     permit_count = serializers.IntegerField(read_only=True)
     date = serializers.DateField(read_only=True)
     parking_zone_name = serializers.CharField(read_only=True)

@@ -60,7 +60,11 @@ class Accounting(TimestampedModelMixin, UserStampedModelMixin):
         verbose_name_plural = _("Accountings")
 
     def __str__(self):
-        return f"{self.pk} ({self.company_code} - {self.main_ledger_account} - {self.vat_code})"
+        return (
+            f"{self.pk} "
+            f"({self.company_code} - {self.main_ledger_account}"
+            f" - {self.vat_code})"
+        )
 
 
 class ProductQuerySet(models.QuerySet):
@@ -210,12 +214,12 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
 
     @property
     def name(self):
-        return f'{_("Parking zone")} {self.zone.name}'
+        return f"{_('Parking zone')} {self.zone.name}"
 
     @property
     def description(self):
         return (
-            f'{_("Parking zone")} {self.zone.name}, {self.start_date} - {self.end_date}'
+            f"{_('Parking zone')} {self.zone.name}, {self.start_date} - {self.end_date}"
         )
 
     def get_modified_unit_price(self, is_low_emission, is_secondary):

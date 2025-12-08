@@ -38,35 +38,34 @@ class TestTraficom(TestCase):
     def setUpTestData(cls):
         cls.traficom = Traficom()
 
-        cls.user_with_driving_licence_A1 = CustomerFactory()
-        cls.user_with_driving_licence_A2 = CustomerFactory()
-        cls.user_with_driving_licence_A = CustomerFactory()
+        cls.user_with_driving_licence_a1 = CustomerFactory()
+        cls.user_with_driving_licence_a2 = CustomerFactory()
+        cls.user_with_driving_licence_a = CustomerFactory()
 
-        driving_class_A1 = DrivingClass.objects.create(identifier="A1")
-        driving_class_A2 = DrivingClass.objects.create(identifier="A2")
-        driving_class_A = DrivingClass.objects.create(identifier="A")
+        driving_class_a1 = DrivingClass.objects.create(identifier="A1")
+        driving_class_a2 = DrivingClass.objects.create(identifier="A2")
+        driving_class_a = DrivingClass.objects.create(identifier="A")
 
-        licence_A1 = DrivingLicence.objects.create(
-            customer=cls.user_with_driving_licence_A1,
+        licence_a1 = DrivingLicence.objects.create(
+            customer=cls.user_with_driving_licence_a1,
             start_date=datetime.date(2023, 6, 3),
         )
-        licence_A2 = DrivingLicence.objects.create(
-            customer=cls.user_with_driving_licence_A2,
+        licence_a2 = DrivingLicence.objects.create(
+            customer=cls.user_with_driving_licence_a2,
             start_date=datetime.date(2023, 6, 3),
         )
-        licence_A = DrivingLicence.objects.create(
-            customer=cls.user_with_driving_licence_A,
+        licence_a = DrivingLicence.objects.create(
+            customer=cls.user_with_driving_licence_a,
             start_date=datetime.date(2023, 6, 3),
         )
 
-        licence_A1.driving_classes.add(driving_class_A1)
-        licence_A2.driving_classes.add(driving_class_A2)
-        licence_A.driving_classes.add(driving_class_A)
+        licence_a1.driving_classes.add(driving_class_a1)
+        licence_a2.driving_classes.add(driving_class_a2)
+        licence_a.driving_classes.add(driving_class_a)
 
 
 @override_settings(TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False)
 class TestTraficomVehicleFetch(TestTraficom):
-
     use_legacy_api = False
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -127,7 +126,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             assert vehicle.emission == 155
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3_subclass_108_licence_A_A1_A2(self):
+    def test_fetch_vehicle_l3_subclass_108_licence_a_a1_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -141,17 +140,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -160,7 +159,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3_subclass_109_licence_A_A1_A2(self):
+    def test_fetch_vehicle_l3_subclass_109_licence_a_a1_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -174,17 +173,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -193,7 +192,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3_subclass_109_licence_A_A2(self):
+    def test_fetch_vehicle_l3_subclass_109_licence_a_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -207,17 +206,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -226,7 +225,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA2)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3_subclass_109_licence_A(self):
+    def test_fetch_vehicle_l3_subclass_109_licence_a(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -240,17 +239,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -259,7 +258,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3_subclass_111_licence_A(self):
+    def test_fetch_vehicle_l3_subclass_111_licence_a(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -273,17 +272,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -292,7 +291,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_108_licence_A_A1_A3(self):
+    def test_fetch_vehicle_l3e_subclass_108_licence_a_a1_a3(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -306,17 +305,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -325,7 +324,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_109_licence_A_A1_A2(self):
+    def test_fetch_vehicle_l3e_subclass_109_licence_a_a1_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -339,17 +338,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -358,7 +357,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_109_licence_A_A2(self):
+    def test_fetch_vehicle_l3e_subclass_109_licence_a_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -372,17 +371,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -391,7 +390,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA2)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_109_licence_A(self):
+    def test_fetch_vehicle_l3e_subclass_109_licence_a(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -405,17 +404,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -424,7 +423,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_111_licence_A_A2(self):
+    def test_fetch_vehicle_l3e_subclass_111_licence_a_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -438,17 +437,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -457,7 +456,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA2)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_900_licence_A_A1_A2(self):
+    def test_fetch_vehicle_l3e_subclass_900_licence_a_a1_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -471,17 +470,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -490,7 +489,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_905_licence_A_A2(self):
+    def test_fetch_vehicle_l3e_subclass_905_licence_a_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -504,17 +503,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -523,7 +522,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA2)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_906_licence_A(self):
+    def test_fetch_vehicle_l3e_subclass_906_licence_a(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -537,17 +536,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -556,7 +555,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_907_licence_A_A1_A2(self):
+    def test_fetch_vehicle_l3e_subclass_907_licence_a_a1_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -570,17 +569,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -589,7 +588,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA1)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_908_licence_A_A2(self):
+    def test_fetch_vehicle_l3e_subclass_908_licence_a_a2(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -603,17 +602,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -622,7 +621,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA2)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_909_licence_A(self):
+    def test_fetch_vehicle_l3e_subclass_909_licence_a(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -636,17 +635,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -655,7 +654,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_909_licence_A_without_power(self):
+    def test_fetch_vehicle_l3e_subclass_909_licence_a_without_power(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -669,17 +668,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -688,7 +687,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_subclass_909_licence_A_missing_field(self):
+    def test_fetch_vehicle_l3e_subclass_909_licence_a_missing_field(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -702,17 +701,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertFalse(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertFalse(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -721,7 +720,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             self.assertEqual(vehicle.vehicle_class, VehicleClass.L3eA3)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_L3e_no_subclass_or_power(self):
+    def test_fetch_vehicle_l3e_no_subclass_or_power(self):
         with mock.patch(
             "requests.post",
             return_value=MockResponse(
@@ -735,17 +734,17 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                self.user_with_driving_licence_A1.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A2.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a2.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                self.user_with_driving_licence_A.has_valid_driving_licence_for_vehicle(
+                self.user_with_driving_licence_a.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -836,7 +835,6 @@ class TestTraficomVehicleFetch(TestTraficom):
                 )
             ),
         ):
-
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
@@ -1085,38 +1083,38 @@ class TestTraficomVehicleFetch(TestTraficom):
             mock_traficom.assert_not_called()
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
-    def test_fetch_vehicle_C1_licence_C_C1_C1E_CE(self):
-        user_with_driving_licence_C = CustomerFactory()
-        user_with_driving_licence_C1 = CustomerFactory()
-        user_with_driving_licence_C1E = CustomerFactory()
-        user_with_driving_licence_CE = CustomerFactory()
+    def test_fetch_vehicle_c1_licence_c_c1_c1e_ce(self):
+        user_with_driving_licence_c = CustomerFactory()
+        user_with_driving_licence_c1 = CustomerFactory()
+        user_with_driving_licence_c1_e = CustomerFactory()
+        user_with_driving_licence_ce = CustomerFactory()
 
-        driving_class_C = DrivingClass.objects.create(identifier="C")
-        driving_class_C1 = DrivingClass.objects.create(identifier="C1")
-        driving_class_C1E = DrivingClass.objects.create(identifier="C1E")
-        driving_class_CE = DrivingClass.objects.create(identifier="CE")
+        driving_class_c = DrivingClass.objects.create(identifier="C")
+        driving_class_c1 = DrivingClass.objects.create(identifier="C1")
+        driving_class_c1_e = DrivingClass.objects.create(identifier="C1E")
+        driving_class_ce = DrivingClass.objects.create(identifier="CE")
 
-        licence_C = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C,
+        licence_c = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_c,
             start_date=datetime.date(2023, 6, 3),
         )
-        licence_C1 = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C1,
+        licence_c1 = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_c1,
             start_date=datetime.date(2023, 6, 3),
         )
-        licence_C1E = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_C1E,
+        licence_c1e = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_c1_e,
             start_date=datetime.date(2023, 6, 3),
         )
-        licence_CE = DrivingLicence.objects.create(
-            customer=user_with_driving_licence_CE,
+        licence_ce = DrivingLicence.objects.create(
+            customer=user_with_driving_licence_ce,
             start_date=datetime.date(2023, 6, 3),
         )
 
-        licence_C.driving_classes.add(driving_class_C)
-        licence_C1.driving_classes.add(driving_class_C1)
-        licence_C1E.driving_classes.add(driving_class_C1E)
-        licence_CE.driving_classes.add(driving_class_CE)
+        licence_c.driving_classes.add(driving_class_c)
+        licence_c1.driving_classes.add(driving_class_c1)
+        licence_c1e.driving_classes.add(driving_class_c1_e)
+        licence_ce.driving_classes.add(driving_class_ce)
 
         with mock.patch(
             "requests.post",
@@ -1131,22 +1129,22 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details(registration_number)
 
             self.assertTrue(
-                user_with_driving_licence_C.has_valid_driving_licence_for_vehicle(
+                user_with_driving_licence_c.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                user_with_driving_licence_C1.has_valid_driving_licence_for_vehicle(
+                user_with_driving_licence_c1.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                user_with_driving_licence_C1E.has_valid_driving_licence_for_vehicle(
+                user_with_driving_licence_c1_e.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
             self.assertTrue(
-                user_with_driving_licence_CE.has_valid_driving_licence_for_vehicle(
+                user_with_driving_licence_ce.has_valid_driving_licence_for_vehicle(
                     vehicle
                 )
             )
@@ -1157,7 +1155,6 @@ class TestTraficomVehicleFetch(TestTraficom):
 
 @override_settings(TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True)
 class TestTraficomLegacyVehicleFetch(TestTraficomVehicleFetch):
-
     use_legacy_api = True
 
     # NOTE: this class "duplicates" inherited test methods from
@@ -1168,7 +1165,6 @@ class TestTraficomLegacyVehicleFetch(TestTraficomVehicleFetch):
 
 
 class TestTraficomDrivingLicenceFetch(TestTraficom):
-
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_valid_licence(self):
         with mock.patch(

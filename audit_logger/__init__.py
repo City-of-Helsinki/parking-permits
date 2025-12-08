@@ -1,8 +1,8 @@
 from audit_logger import enums  # noqa: F401
 from audit_logger.adapter import (  # noqa: F401
-    TARGET_RETURN,
     AuditLoggerAdapter,
-    getAuditLoggerAdapter,
+    get_audit_logger_adapter,
+    target_return,
 )
 from audit_logger.data import AuditMessage, ModelWithId  # noqa: F401
 from audit_logger.db_log_handler import AuditLogHandler  # noqa: F401

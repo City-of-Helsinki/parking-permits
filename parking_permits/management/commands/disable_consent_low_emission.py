@@ -27,7 +27,8 @@ class Command(BaseCommand):
         if dry_run:
             self.stdout.write("This is a dry run!")
             self.stdout.write(
-                f"Real run would change {i} vehicles to consent_low_emission_accepted=False"
+                f"Real run would change {i} vehicles "
+                f"to consent_low_emission_accepted=False"
             )
         else:
             self.stdout.write(

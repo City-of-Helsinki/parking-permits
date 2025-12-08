@@ -122,7 +122,8 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
-    # disable Django’s static file handling during development so that whitenoise can take over
+    # disable Django’s static file handling during development
+    # so that whitenoise can take over
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
     "ariadne_django",
@@ -186,7 +187,7 @@ if env("DATABASE_PASSWORD"):
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",  # noqa: E501
     },
     {
         "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
@@ -291,7 +292,8 @@ LOGGING = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s"
+            "format": "%(levelname)s %(asctime)s %(module)s %(process)d "
+            "%(thread)d %(message)s"
         },
         "simple": {"format": "%(levelname)s %(asctime)s %(message)s"},
     },

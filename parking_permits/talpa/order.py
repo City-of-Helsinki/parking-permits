@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.exceptions import OrderCreationFailed, SetTalpaFlowStepsError
+from parking_permits.exceptions import OrderCreationFailedError, SetTalpaFlowStepsError
 from parking_permits.models.order import OrderPaymentType, OrderType
 from parking_permits.talpa.pricing import Pricing
 from parking_permits.utils import (
@@ -46,8 +46,10 @@ class TalpaOrderManager:
         )
 
         timeframe = order_item.timeframe
-        # Send fake start time in metadata to make sure there is no gaps in days visible to customer
-        # This happens only if there is multiple products within the time range for the permit
+        # Send fake start time in metadata to make sure there is
+        # no gaps in days visible to customer.
+        # This happens only if there is multiple products within
+        # the time range for the permit
         if previous_end_time:
             new_start_time = previous_end_time + relativedelta(days=1)
             timeframe = order_item.adjusted_timeframe(new_start_time)
@@ -286,11 +288,12 @@ class TalpaOrderManager:
             logger.error(
                 f"Create talpa order failed for order {order}. Error: {response.text}"
             )
-            raise OrderCreationFailed(_("Failed to create the order"))
+            raise OrderCreationFailedError(_("Failed to create the order"))
 
         response_data = response.json()
         logger.info(
-            f"Sending order to talpa completed. Talpa order id: {response_data.get('orderId')}"
+            f"Sending order to talpa completed. "
+            f"Talpa order id: {response_data.get('orderId')}"
         )
 
         with transaction.atomic():

@@ -13,7 +13,10 @@ from parking_permits.models.parking_permit import ParkingPermitStatus
 
 
 class Command(BaseCommand):
-    help = "Remove/cancel draft permits and permit extension requests older than specified time."
+    help = (
+        "Remove/cancel draft permits and "
+        "permit extension requests older than specified time."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument("--hours", type=int, default=0)

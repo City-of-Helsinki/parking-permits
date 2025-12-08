@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
-from parking_permits.exceptions import OrderCreationFailed
+from parking_permits.exceptions import OrderCreationFailedError
 from parking_permits.models import Order
 from parking_permits.models.order import OrderStatus, OrderType
 from parking_permits.models.parking_permit import (
@@ -238,7 +238,7 @@ class TestOrderManager(TestCase):
         )
         Order.objects.create_for_permits([permit])
         with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
-            with self.assertRaises(OrderCreationFailed):
+            with self.assertRaises(OrderCreationFailedError):
                 Order.objects.create_renewal_order(self.customer)
 
     def test_create_renewable_order_should_raise_error_for_open_ended_permits(self):
@@ -257,7 +257,7 @@ class TestOrderManager(TestCase):
         permit.status = ParkingPermitStatus.VALID
         permit.save()
         with freeze_time(timezone.make_aware(datetime(self.current_year, 5, 5))):
-            with self.assertRaises(OrderCreationFailed):
+            with self.assertRaises(OrderCreationFailedError):
                 Order.objects.create_renewal_order(self.customer)
 
     def test_create_renewable_order_should_allow_open_ended_permits_vehicle_change(

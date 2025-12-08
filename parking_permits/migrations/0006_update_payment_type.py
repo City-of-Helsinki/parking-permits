@@ -2,7 +2,7 @@
 
 from django.db import migrations
 
-from parking_permits.models.order import OrderStatus, OrderPaymentType
+from parking_permits.models.order import OrderPaymentType, OrderStatus
 
 
 def update_payment_type(apps, schema_editor):

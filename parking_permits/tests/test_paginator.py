@@ -8,7 +8,7 @@ from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 class QuerySetPaginatorTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        for i in range(10):
+        for _i in range(10):
             ParkingPermitFactory()
 
     def test_paginator_with_default_page_size(self):

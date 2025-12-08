@@ -8,7 +8,7 @@ db_default_formatter = logging.Formatter()
 
 class AuditLogHandler(logging.Handler):
     @staticmethod
-    def makeAuditMessage(record) -> AuditMessage:
+    def make_audit_message(record) -> AuditMessage:
         msg = record.msg
 
         if isinstance(msg, AuditMessage):
@@ -21,10 +21,10 @@ class AuditLogHandler(logging.Handler):
         return audit_msg
 
     @staticmethod
-    def createAuditLogFromRecord(record):
+    def create_audit_log_from_record(record):
         from resilient_logger.sources import ResilientLogSource
 
-        msg = AuditLogHandler.makeAuditMessage(record)
+        msg = AuditLogHandler.make_audit_message(record)
 
         trace = None
 
@@ -53,6 +53,6 @@ class AuditLogHandler(logging.Handler):
 
     def emit(self, record):
         try:
-            self.createAuditLogFromRecord(record)
+            self.create_audit_log_from_record(record)
         except Exception:
             self.handleError(record)

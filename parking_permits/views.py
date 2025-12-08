@@ -94,7 +94,7 @@ from .utils import (
 
 logger = logging.getLogger("db")
 
-audit_logger = audit.getAuditLoggerAdapter(
+audit_logger = audit.get_audit_logger_adapter(
     "audit",
     dict(
         event_type=audit.EventType.APP,
@@ -171,7 +171,8 @@ class TalpaResolveAvailability(APIView):
     )
     def post(self, request, format=None):
         logger.info(
-            f"Data received for resolve availability = {json.dumps(request.data, default=str)}"
+            f"Data received for resolve availability = "
+            f"{json.dumps(request.data, default=str)}"
         )
         shared_product_id = request.data.get("productId")
         res = snake_to_camel_dict({"product_id": shared_product_id, "value": True})
@@ -190,7 +191,8 @@ class TalpaResolveProduct(APIView):
     )
     def post(self, request, format=None):
         logger.info(
-            f"Data received for resolve product = {json.dumps(request.data, default=str)}"
+            f"Data received for resolve product = "
+            f"{json.dumps(request.data, default=str)}"
         )
         subscription_id = request.data.get("subscriptionId")
         if not subscription_id:
@@ -214,7 +216,8 @@ class TalpaResolveProduct(APIView):
 
         try:
             permit = ParkingPermit.objects.get(pk=permit_id)
-            # If permit is open ended and it is the only permit for the customer, set it as primary vehicle
+            # If permit is open ended and it is the only permit for the customer,
+            # set it as primary vehicle
             if (
                 permit.is_open_ended
                 and not permit.primary_vehicle
@@ -338,7 +341,8 @@ class TalpaResolvePrice(APIView):
 
 class TalpaResolveRightOfPurchase(APIView):
     @swagger_auto_schema(
-        operation_description="Used as an webhook by Talpa in order to send an order notification.",
+        operation_description="Used as an webhook by Talpa in order "
+        "to send an order notification.",
         request_body=TalpaPayloadSerializer,
         responses={
             200: openapi.Response(
@@ -349,7 +353,8 @@ class TalpaResolveRightOfPurchase(APIView):
     )
     def post(self, request):
         logger.info(
-            f"Data received for resolve right of purchase = {json.dumps(request.data, default=str)}"
+            f"Data received for resolve right of purchase = "
+            f"{json.dumps(request.data, default=str)}"
         )
         order_item_data = request.data.get("orderItem")
         if not order_item_data:
@@ -386,14 +391,16 @@ class TalpaResolveRightOfPurchase(APIView):
             #     permit.vehicle.registration_number, permit
             # )
             # is_user_of_vehicle = customer.is_user_of_vehicle(vehicle)
-            # has_valid_driving_licence = customer.has_valid_driving_licence_for_vehicle(
+            # has_valid_driving_licence
+            #  = customer.has_valid_driving_licence_for_vehicle(
             #     vehicle
             # )
 
             # Temporarily disable DVV checks
             # customer = permit.customer
             # address = permit.address
-            # primary_address, other_address = get_addresses(customer.national_id_number)
+            # primary_address, other_address
+            #  = get_addresses(customer.national_id_number)
             # if not primary_address and not other_address:
             #     raise AddressError("No address found for customer")
             # if not address:
@@ -414,11 +421,13 @@ class TalpaResolveRightOfPurchase(APIView):
             # ) or is_same_address(other_address, permit_address)
             # if has_valid_address:
             #     logger.info(
-            #         f"Customer address matches with permit address for permit: {permit_id}"
+            #         f"Customer address matches with permit address
+            #         for permit: {permit_id}"
             #     )
             # else:
             #     logger.warning(
-            #         f"Customer address does not match with permit address, permit: {permit_id} will not be renewed"
+            #         f"Customer address does not match with permit address,
+            #         permit: {permit_id} will not be renewed"
             #     )
 
             order_item = OrderItem.objects.get(talpa_order_item_id=order_item_id)
@@ -480,7 +489,8 @@ class PaymentView(APIView):
 
         if event_type == "PAYMENT_PAID":
             logger.info(
-                f"Payment paid event received for order: {talpa_order_id}. Processing payment ..."
+                f"Payment paid event received for order: {talpa_order_id}. "
+                f"Processing payment ..."
             )
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
@@ -518,7 +528,8 @@ class PaymentView(APIView):
                         permit.save()
                         send_permit_email(PermitEmailType.UPDATED, permit)
                     logger.info(
-                        f"Permit {permit.pk} vehicle changed to: {permit.vehicle.registration_number}"
+                        f"Permit {permit.pk} vehicle changed to: "
+                        f"{permit.vehicle.registration_number}"
                     )
 
                 if order.type == OrderType.ADDRESS_CHANGED:
@@ -556,7 +567,8 @@ class PaymentView(APIView):
                 sync_with_parkkihubi(permit)
             logger.info(
                 f"{order} with talpa_order_id: {talpa_order_id} is confirmed \
-                        and order permits are set to VALID. Permit contract type is {contract_type}"
+                        and order permits are set to VALID. "
+                f"Permit contract type is {contract_type}"
             )
             return Response({"message": "Payment received"}, status=200)
         else:
@@ -603,7 +615,8 @@ class OrderView(APIView):
                         status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
                     )
                     logger.info(
-                        f"{order} is cancelled and order permits are set to CANCELLED-status"
+                        f"{order} is cancelled and order permits "
+                        f"are set to CANCELLED-status"
                     )
                 elif ext_requests := order.get_pending_permit_extension_requests():
                     for ext_request in ext_requests:
@@ -615,7 +628,8 @@ class OrderView(APIView):
                     order.status = OrderStatus.CANCELLED
                     order.save()
                     logger.info(
-                        f"{order} is cancelled and permit extensions set to CANCELLED-status"
+                        f"{order} is cancelled and permit extensions "
+                        f"set to CANCELLED-status"
                     )
 
             except Order.DoesNotExist:
@@ -640,14 +654,16 @@ class OrderView(APIView):
                 )
             if Order.objects.filter(talpa_order_id=talpa_order_id).exists():
                 return ok_response(
-                    f"Subscription {talpa_subscription_id} already renewed with order {talpa_order_id}"
+                    f"Subscription {talpa_subscription_id} already "
+                    f"renewed with order {talpa_order_id}"
                 )
             order_item = subscription.order_items.first()
             permit = order_item.permit
 
             if not permit or not permit.customer or not permit.customer.user:
                 return bad_request_response(
-                    f"Permit {permit} or customer {permit.customer} or user {permit.customer.user} is missing"
+                    f"Permit {permit} or customer {permit.customer} or "
+                    f"user {permit.customer.user} is missing"
                 )
 
             if permit.contract_type != ContractType.OPEN_ENDED:
@@ -719,7 +735,8 @@ class OrderView(APIView):
                 end_time=end_time,
             )
             logger.info(
-                f"{subscription} is renewed and new order {order} is created with order item {order_item}"
+                f"{subscription} is renewed and new order {order} "
+                f"is created with order item {order_item}"
             )
             return Response({"message": "Subscription renewal completed"}, status=200)
         else:
@@ -745,7 +762,8 @@ class SubscriptionView(APIView):
         if wait_buffer and wait_buffer > 0:
             time.sleep(wait_buffer)
         logger.info(
-            f"Subscription event received. Data = {json.dumps(request.data, default=str)}"
+            f"Subscription event received. "
+            f"Data = {json.dumps(request.data, default=str)}"
         )
         talpa_order_id = request.data.get("orderId")
         talpa_order_item_id = request.data.get("orderItemId")
@@ -820,7 +838,8 @@ class SubscriptionView(APIView):
             order_item = order_item_qs.first()
             if not order_item:
                 return not_found_response(
-                    f"Order item for order {order.talpa_order_id} and permit {permit_id} not found"
+                    f"Order item for order {order.talpa_order_id} "
+                    f"and permit {permit_id} not found"
                 )
 
             permit = order_item.permit
@@ -840,7 +859,8 @@ class SubscriptionView(APIView):
             order_item.subscription = subscription
             order_item.save()
             logger.info(
-                f"Subscription {subscription} created and order item {order_item} updated"
+                f"Subscription {subscription} created and "
+                f"order item {order_item} updated"
             )
             return Response({"message": "Subscription created"}, status=200)
         elif event_type == "SUBSCRIPTION_CANCELLED":
@@ -863,7 +883,8 @@ class SubscriptionView(APIView):
             permit = order_item.permit
             if permit.status == ParkingPermitStatus.CLOSED:
                 return ok_response(
-                    f"Subscription {talpa_subscription_id} permit {permit.id} is already closed"
+                    f"Subscription {talpa_subscription_id} permit "
+                    f"{permit.id} is already closed"
                 )
             CustomerPermit(permit.customer_id).end(
                 [permit.id],
@@ -874,7 +895,8 @@ class SubscriptionView(APIView):
                 force_end=True,
             )
             logger.info(
-                f"Subscription {talpa_subscription_id} cancelled and permit ended after current period"
+                f"Subscription {talpa_subscription_id} cancelled and "
+                f"permit ended after current period"
             )
             return Response(
                 {"message": f"Subscription {talpa_subscription_id} cancelled"},
@@ -1008,7 +1030,7 @@ def pdf_export(request):
     if not pdf:
         return HttpResponseNotFound()
 
-    filename = f'{form.cleaned_data["data_type"]}_{form.cleaned_data["object_id"]}'
+    filename = f"{form.cleaned_data['data_type']}_{form.cleaned_data['object_id']}"
     response = HttpResponse(
         content_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},

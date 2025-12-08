@@ -20,8 +20,8 @@ from django.utils.translation import gettext_noop
 from helsinki_gdpr.models import SerializableMixin
 
 from ..exceptions import (
-    DuplicatePermit,
-    PermitCanNotBeEnded,
+    DuplicatePermitError,
+    PermitCanNotBeEndedError,
     TemporaryVehicleValidationError,
 )
 from ..utils import (
@@ -448,7 +448,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def current_period_range(self):
-
         # Workaround for invalid ranges in ParkingPermitEvent.validity_period
         # NOTE:
         # - permit end time is allowed to be None for historical reasons,
@@ -616,7 +615,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # as those statuses will never break the constraint
         check_for_duplicates = self.status in non_duplicable_statuses
         if check_for_duplicates and duplicate_query.exists():
-            raise DuplicatePermit(_("Permit for a given vehicle already exist."))
+            raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
 
         return super().save(*args, **kwargs)
 
@@ -893,9 +892,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             .exclude(id=self.id)
             .exists()
         ):
-            raise PermitCanNotBeEnded(
+            raise PermitCanNotBeEndedError(
                 _(
-                    "Cannot close primary vehicle permit if an active secondary vehicle permit exists"
+                    "Cannot close primary vehicle permit if "
+                    "an active secondary vehicle permit exists"
                 )
             )
 
@@ -937,7 +937,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         unused_order_items = self.get_unused_order_items_for_all_orders()
 
-        for order_item, quantity, date_range in unused_order_items:
+        for order_item, quantity, _date_range in unused_order_items:
             vat = order_item.vat
             if vat not in totals_per_vat:
                 totals_per_vat[vat] = {
@@ -957,7 +957,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         unused_order_items = self.get_unused_order_items()
 
-        for order_item, quantity, date_range in unused_order_items:
+        for order_item, quantity, _date_range in unused_order_items:
             total += order_item.payment_unit_price * quantity
         return total
 
@@ -970,11 +970,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         times against the permit.
 
         Parses input strings. If start time less than current time, should be same as
-        current time. If end time less than start time + 1 hour, should be start time + 1 hour.
+        current time. If end time less than start time + 1 hour,
+        should be start time + 1 hour.
 
         Start and end times should be returned in local time zone.
 
-        If start time is less than the permit start time, will raise a TemporaryVehicleValidationError.
+        If start time is less than the permit start time,
+        will raise a TemporaryVehicleValidationError.
         """
 
         now = timezone.localtime()
@@ -1011,13 +1013,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     ):
         """Add a new temporary vehicle, creating an event and updating Parkkihubi.
 
-        If `check_limit` is `True` and limit is exceeded, will raise a TemporaryVehicleValidationError.
+        If `check_limit` is `True` and limit is exceeded,
+        will raise a TemporaryVehicleValidationError.
 
         """
         if check_limit and self.is_temporary_vehicle_limit_exceeded(user):
             raise TemporaryVehicleValidationError(
                 _(
-                    "Can not have more than 2 temporary vehicles in 365 days from first one."
+                    "Can not have more than 2 temporary vehicles "
+                    "in 365 days from first one."
                 )
             )
 

@@ -18,8 +18,8 @@ from parking_permits.admin_resolvers import (
 )
 from parking_permits.exceptions import (
     AddressError,
-    ObjectNotFound,
-    PermitCanNotBeExtended,
+    ObjectNotFoundError,
+    PermitCanNotBeExtendedError,
     TraficomFetchVehicleError,
 )
 from parking_permits.models import ParkingPermitExtensionRequest
@@ -275,7 +275,7 @@ def test_resolve_extend_parking_permit_invalid(info, mock_jwt):
     )
 
     with mock_jwt:
-        with pytest.raises(PermitCanNotBeExtended):
+        with pytest.raises(PermitCanNotBeExtendedError):
             resolve_extend_parking_permit(None, info, str(permit.pk), 3)
 
     assert ParkingPermitExtensionRequest.objects.count() == 0
@@ -416,7 +416,7 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_is_not_found(
         power_type={"identifier": "banana"},
     )
 
-    with pytest.raises(ObjectNotFound) as exc_info:
+    with pytest.raises(ObjectNotFoundError) as exc_info:
         update_or_create_vehicle(vehicle_info)
     assert "Vehicle power type not found" in str(exc_info.value)
 

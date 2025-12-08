@@ -523,7 +523,7 @@ class OrderSearchFormSortTestCase(TestCase):
 
     def test_sort_by_permit(self):
         # Create orders, store them in a list and change their order.
-        orders = [OrderFactory() for _ in range(0, 5)]
+        orders = [OrderFactory() for _ in range(5)]
         orders[2], orders[4] = orders[4], orders[2]
 
         # Create the parking permits and store their IDs. This is the expected order of the order search as well.
