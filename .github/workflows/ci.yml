@@ -1,81 +1,18 @@
-name: Continuous Integration
-
+name: CI
 on:
   push:
-    branches: [ develop, main ]
+    branches: [ main ]
   pull_request:
-    branches: [ develop, main ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    environment: test
-    strategy:
-      matrix:
-        python: [ "3.11" ]
-    env:
-      DEBUG: True
-      DATABASE_URL: postgis://postgres:postgres@localhost/parking-permits
-      DJANGO_SECRET_KEY: test-secret
-      DJANGO_SETTINGS_MODULE: project.settings_test
-    services:
-        postgres:
-            image: postgis/postgis:14-3.5
-            env:
-                POSTGRES_HOST_AUTH_METHOD: trust
-            options: >-
-                --health-cmd pg_isready
-                --health-interval 10s
-                --health-timeout 5s
-                --health-retries 5
-            ports:
-                - 5432:5432
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python }}
-          cache: pip
-
-      - name: Install required Ubuntu packages
-        run: |
-          sudo apt-get update
-          sudo apt-get install gdal-bin
-
-      - name: Install PyPI dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
-
-      - name: Run Python side code neatness tests
-        run: |
-          flake8
-          black --check .
-          isort . -c
-
-      - name: Run pytest code functionality tests
-        env:
-          TALPA_API_KEY: ${{ secrets.TALPA_API_KEY }}
-          TALPA_MERCHANT_EXPERIENCE_API: ${{ vars.TALPA_MERCHANT_EXPERIENCE_API }}
-        run: |
-          pytest -ra -vvv --cov=.
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
-
-      # Without this workaround Sonar reports a warning about an incorrect source path
-      - name: Override coverage report source path for Sonar
-        run: sed -i 's@'$GITHUB_WORKSPACE'@/github/workspace/@g' coverage.xml
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  common:
+    uses: City-of-Helsinki/.github/.github/workflows/ci-django-api.yml@main
+    secrets: inherit
+    with:
+      python-version: 3.12
+      postgres-major-version: 17
+      use-postgis: true
+    extra-commands: |
+        echo 'SECRET_KEY=topsecret123' >> .env
