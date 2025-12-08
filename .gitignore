@@ -270,3 +270,4 @@ Temporary Items
 .idea
 
 # End of https://www.toptal.com/developers/gitignore/api/python,django,macos,vscode
+data/mailpit.db
