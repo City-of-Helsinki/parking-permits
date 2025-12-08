@@ -2,10 +2,6 @@
 
 set -e
 
-if [[ "$WAIT_FOR_IT_ADDRESS" ]]; then
-    ./wait-for-it.sh $WAIT_FOR_IT_ADDRESS --timeout=30
-fi
-
 if [[ "$APPLY_MIGRATIONS" = "True" ]]; then
   echo "Applying migrations..."
   python /app/manage.py migrate --noinput
@@ -25,7 +21,7 @@ fi
 
 if [[ "$UPDATE_TRANSLATIONS" = "True" ]]; then
     echo "Updating translations..."
-    python /app/manage.py compilemessages -l fi
+    python /app/manage.py compilemessages -l 'fi'
 fi
 
 if [[ "$SEND_MAIL" = "True" && "$DEBUG" = "False" ]]; then
