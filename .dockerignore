@@ -20,4 +20,3 @@
 !gunicorn.conf.py
 !manage.py
 !requirements*
-!wait-for-it.sh
