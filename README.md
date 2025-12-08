@@ -38,8 +38,8 @@ Then you can run docker image with:
 - pyenv-virtualenvwrapper
 
 ```
-pyenv install -v 3.11.9
-pyenv virtualenv 3.11.9 parking_permits
+pyenv install -v 3.12.9
+pyenv virtualenv 3.12.9 parking_permits
 pyenv local parking_permits
 pyenv virtualenvwrapper
 ```
