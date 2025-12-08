@@ -1,18 +1,32 @@
-minimum_pre_commit_version: 4.2.0 # You MUST keep this version in sync with the version in requirements-dev.in
+# Keep tool versions in sync with the versions in requirements-dev.txt
 default_language_version:
-  python: python3.11
+    python: python3
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit, manual]
 repos:
-  - repo: https://github.com/psf/black
-    rev: 25.1.0 # You MUST keep this version in sync with the version in requirements-dev.in
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
-      - id: black
-
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.2.0 # You MUST keep this version in sync with the version in requirements-dev.in
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.4
     hooks:
-      - id: flake8
-
-  - repo: https://github.com/pycqa/isort
-    rev: 6.0.1 # You MUST keep this version in sync with the version in requirements-dev.in
+      # Run the linter.
+      - id: ruff
+        args: [ "--fix" ]
+      # Run the formatter.
+      - id: ruff-format
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.22.0
     hooks:
-      - id: isort
+      - id: commitlint
+        stages: [commit-msg, manual]
+        additional_dependencies: ["@commitlint/config-conventional"]
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
