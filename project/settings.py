@@ -139,6 +139,7 @@ INSTALLED_APPS = [
     "django_crontab",
     "encrypted_fields",
     "mailer",
+    "logger_extra",
     "resilient_logger",
 ]
 
@@ -291,11 +292,9 @@ LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
-        "verbose": {
-            "format": "%(levelname)s %(asctime)s %(module)s %(process)d "
-            "%(thread)d %(message)s"
-        },
-        "simple": {"format": "%(levelname)s %(asctime)s %(message)s"},
+        "json": {
+            "()": "logger_extra.formatter.JSONFormatter",
+        }
     },
     "handlers": {
         "db_log": {
@@ -303,12 +302,13 @@ LOGGING = {
             "class": "django_db_logger.db_log_handler.DatabaseLogHandler",
         },
         "console": {
+            "level": "INFO",
             "class": "logging.StreamHandler",
-            "formatter": "simple",
+            "formatter": "json",
         },
         "audit_log": {
-            "class": "audit_logger.db_log_handler.AuditLogHandler",
             "level": "DEBUG",
+            "class": "audit_logger.db_log_handler.AuditLogHandler",
         },
     },
     "loggers": {
