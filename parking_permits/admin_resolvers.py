@@ -690,14 +690,13 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     address_changed = False
     previous_address_identifier = None
     if permit.address:
-        previous_address_identifier = "%s %s" % (
-            permit.address.street_name,
-            permit.address.street_number,
+        previous_address_identifier = (
+            f"{permit.address.street_name} {permit.address.street_number}"
         )
     customer_info = permit_info.get("customer")
     primary_address_info = customer_info.get("primary_address")
     if primary_address_info:
-        address_identifier = "%s %s" % (
+        address_identifier = "{} {}".format(
             primary_address_info.get("street_name"),
             primary_address_info.get("street_number"),
         )
@@ -705,7 +704,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
             address_changed = True
     other_address_info = customer_info.get("other_address")
     if other_address_info:
-        address_identifier = "%s %s" % (
+        address_identifier = "{} {}".format(
             other_address_info.get("street_name"),
             other_address_info.get("street_number"),
         )

@@ -1,6 +1,5 @@
 import decimal
 import logging
-import typing
 
 from dateutil.parser import isoparse, parse
 from django.conf import settings
@@ -507,11 +506,11 @@ class CustomerPermit:
             pass
         return primary, secondary
 
-    def _get_permit(self, permit_id) -> typing.Tuple[ParkingPermit, bool]:
+    def _get_permit(self, permit_id) -> tuple[ParkingPermit, bool]:
         permit = self.customer_permit_query.get(id=permit_id)
         return permit, permit.primary_vehicle
 
-    def _toggle_primary_permit(self) -> typing.List[ParkingPermit]:
+    def _toggle_primary_permit(self) -> list[ParkingPermit]:
         primary, secondary = self._get_primary_and_secondary_permit()
         if not secondary:
             return [primary]

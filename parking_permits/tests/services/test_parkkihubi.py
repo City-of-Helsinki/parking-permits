@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from datetime import timezone as tz
+from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 
 import pytest
@@ -17,7 +16,7 @@ from parking_permits.tests.models.test_product import MockResponse
 class TestParkkihubi:
     @pytest.fixture()
     def frozen_time(self):
-        with freeze_time(datetime(2024, 3, 15, 0, 0, tzinfo=tz.utc)):
+        with freeze_time(datetime(2024, 3, 15, 0, 0, tzinfo=UTC)):
             yield
 
     @pytest.fixture()
@@ -139,15 +138,15 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 }
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -173,25 +172,25 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
                 {
-                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 21, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 21, 0, 0, tzinfo=UTC),
                     "registration_number": "IOL-897",
                 },
                 {
-                    "start_time": datetime(2024, 3, 21, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 21, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -216,15 +215,15 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -259,35 +258,35 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
                 {
-                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 21, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 21, 0, 0, tzinfo=UTC),
                     "registration_number": "IOL-897",
                 },
                 {
-                    "start_time": datetime(2024, 3, 21, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 25, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 21, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 25, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
                 {
-                    "start_time": datetime(2024, 3, 25, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 27, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 25, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 27, 0, 0, tzinfo=UTC),
                     "registration_number": "KYZ-555",
                 },
                 {
-                    "start_time": datetime(2024, 3, 27, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 27, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -322,30 +321,30 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
                 {
-                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 18, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 12, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 18, 0, 0, tzinfo=UTC),
                     "registration_number": "IOL-897",
                 },
                 {
-                    "start_time": datetime(2024, 3, 18, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 3, 23, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 18, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 3, 23, 0, 0, tzinfo=UTC),
                     "registration_number": "KYZ-555",
                 },
                 {
-                    "start_time": datetime(2024, 3, 23, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 3, 23, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -373,20 +372,20 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 2, 19, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 2, 19, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 },
                 {
-                    "start_time": datetime(2024, 2, 19, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 19, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "IOL-897",
                 },
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],
@@ -413,15 +412,15 @@ class TestParkkihubi:
             "properties": {"permit_type": "RESIDENT"},
             "subjects": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "registration_number": "KEO-432",
                 }
             ],
             "areas": [
                 {
-                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=tz.utc),
-                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=tz.utc),
+                    "start_time": datetime(2024, 2, 14, 0, 0, tzinfo=UTC),
+                    "end_time": datetime(2024, 4, 14, 0, 0, tzinfo=UTC),
                     "area": "Zone A",
                 }
             ],

@@ -76,7 +76,7 @@ class TestSubscriptionTestCase(TestCase):
 
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 4, 30, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 4, 30, 10, 00, 0, tzinfo=datetime.UTC
         )
         permit_end_time = permit_start_time + relativedelta(months=1)
         permit = ParkingPermitFactory(

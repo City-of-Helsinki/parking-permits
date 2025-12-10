@@ -38,7 +38,7 @@ class ParkingZoneImporter(WfsImporter):
     def import_parking_zones(self):
         parking_zone_dicts = self.download_and_parse()
         count = self._save_parking_zones(parking_zone_dicts)
-        logger.info("Created or updated {} parking zones".format(count))
+        logger.info(f"Created or updated {count} parking zones")
 
     @transaction.atomic
     def _save_parking_zones(self, parking_zone_dicts):

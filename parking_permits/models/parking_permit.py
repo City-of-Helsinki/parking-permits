@@ -3,7 +3,6 @@ import logging
 import operator
 from datetime import datetime
 from decimal import Decimal
-from typing import Tuple
 
 from dateutil.parser import isoparse
 from dateutil.relativedelta import relativedelta
@@ -965,7 +964,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         self,
         start_time: str,
         end_time: str,
-    ) -> Tuple[datetime, datetime]:
+    ) -> tuple[datetime, datetime]:
         """Returns start and and end times for a temporary vehicle, checking
         times against the permit.
 

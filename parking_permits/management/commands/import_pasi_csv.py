@@ -5,7 +5,7 @@ import traceback
 import zoneinfo
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, NoReturn, Optional
+from typing import Literal, NoReturn
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -86,9 +86,9 @@ class PasiResidentPermit:
     _address_line: str = dataclasses.field(init=False, default=None)
     _start_dt: datetime = dataclasses.field(init=False, default=None)
     _end_dt: datetime = dataclasses.field(init=False, default=None)
-    _street_name: Optional[str] = dataclasses.field(init=False, default=None)
-    _street_number: Optional[str] = dataclasses.field(init=False, default=None)
-    _apartment: Optional[str] = dataclasses.field(init=False, default=None)
+    _street_name: str | None = dataclasses.field(init=False, default=None)
+    _street_number: str | None = dataclasses.field(init=False, default=None)
+    _apartment: str | None = dataclasses.field(init=False, default=None)
 
     @address_line.setter
     def address_line(self, val):
@@ -192,7 +192,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         encoding = options["encoding"]
-        with open(options["source_file"], mode="r", encoding=encoding) as f:
+        with open(options["source_file"], encoding=encoding) as f:
             filename = f.name.split("/")[-1]
             reader = PasiCsvReader(f)
             for idx, pasi_permit in enumerate(reader, start=2):

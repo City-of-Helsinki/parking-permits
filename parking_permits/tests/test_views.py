@@ -1,7 +1,6 @@
 import datetime
 import json
 import zoneinfo
-from datetime import timezone as dt_tz
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -171,10 +170,10 @@ class PaymentViewTestCase(APITestCase):
     def test_payment_view_should_update_renewal_order_and_permit_status(self):
         permit_id = "80000001"
         permit_start_time = datetime.datetime(
-            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+            2023, 9, 12, 13, 46, 0, tzinfo=datetime.UTC
         )
         permit_end_time = datetime.datetime(
-            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+            2023, 10, 11, 23, 59, 0, tzinfo=datetime.UTC
         )
         permit = ParkingPermitFactory(
             id=permit_id,
@@ -200,9 +199,7 @@ class PaymentViewTestCase(APITestCase):
         self.assertEqual(permit.start_time, permit_start_time)
         self.assertEqual(
             permit.end_time,
-            datetime.datetime(
-                2023, 11, 11, 21, 59, 59, 999999, tzinfo=datetime.timezone.utc
-            ),
+            datetime.datetime(2023, 11, 11, 21, 59, 59, 999999, tzinfo=datetime.UTC),
         )
 
 
@@ -979,10 +976,10 @@ class ResolveRightOfPurchaseViewTestCase(APITestCase):
         )
         mock_get_person_info.return_value = self.get_person_info(customer)
         permit_start_time = datetime.datetime(
-            2023, 9, 12, 13, 46, 0, tzinfo=datetime.timezone.utc
+            2023, 9, 12, 13, 46, 0, tzinfo=datetime.UTC
         )
         permit_end_time = datetime.datetime(
-            2023, 10, 11, 23, 59, 0, tzinfo=datetime.timezone.utc
+            2023, 10, 11, 23, 59, 0, tzinfo=datetime.UTC
         )
         permit = ParkingPermitFactory(
             id="80000163",
@@ -1232,11 +1229,9 @@ class OrderViewTestCase(APITestCase):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2024, 3, 7, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1274,11 +1269,9 @@ class OrderViewTestCase(APITestCase):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2024, 3, 7, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1316,11 +1309,9 @@ class OrderViewTestCase(APITestCase):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2024, 3, 7, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1358,11 +1349,9 @@ class OrderViewTestCase(APITestCase):
         talpa_existing_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2024, 2, 8, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 2, 8, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2024, 3, 7, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2024, 3, 7, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.CLOSED,
             customer=customer,
@@ -1405,11 +1394,9 @@ class OrderViewTestCase(APITestCase):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 4, 30, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 4, 30, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1473,7 +1460,7 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         self.assertEqual(
             permit.end_time,
-            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.UTC),
         )
         order_item = order.order_items.first()
         self.assertAlmostEqual(order_item.vat, Decimal(0.255), delta=Decimal("0.01"))
@@ -1485,11 +1472,9 @@ class OrderViewTestCase(APITestCase):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 4, 30, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 4, 30, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1549,7 +1534,7 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         self.assertEqual(
             permit.end_time,
-            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.UTC),
         )
 
 
@@ -1735,11 +1720,9 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 5, 29, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 5, 29, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2023, 6, 28, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2023, 6, 28, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1812,11 +1795,9 @@ class SubscriptionViewTestCase(APITestCase):
             emission_type=EmissionType.WLTP,
         )
         permit_start_time = datetime.datetime(
-            2024, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2024, 3, 16, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2024, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2024, 7, 15, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1900,11 +1881,9 @@ class SubscriptionViewTestCase(APITestCase):
             emission_type=EmissionType.WLTP,
         )
         permit_start_time = datetime.datetime(
-            2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 3, 16, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2023, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2023, 7, 15, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -1976,11 +1955,9 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
         permit_start_time = datetime.datetime(
-            2023, 3, 16, 10, 00, 0, tzinfo=datetime.timezone.utc
+            2023, 3, 16, 10, 00, 0, tzinfo=datetime.UTC
         )
-        permit_end_time = datetime.datetime(
-            2023, 7, 15, 23, 59, 0, tzinfo=datetime.timezone.utc
-        )
+        permit_end_time = datetime.datetime(2023, 7, 15, 23, 59, 0, tzinfo=datetime.UTC)
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
             customer=customer,
@@ -2052,7 +2029,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         ParkingPermitFactory(
             customer=customer,
             status=ParkingPermitStatus.CLOSED,
-            end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
+            end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=datetime.UTC)),
         )
         return customer
 
@@ -2160,7 +2137,9 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             ParkingPermitFactory(
                 customer=customer,
                 status=ParkingPermitStatus.CLOSED,
-                end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
+                end_time=tz.localtime(
+                    datetime.datetime(2020, 2, 1, tzinfo=datetime.UTC)
+                ),
             )
 
         with freeze_time(datetime.datetime(2022, 1, 15)):
@@ -2182,7 +2161,9 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             ParkingPermitFactory(
                 customer=customer,
                 status=ParkingPermitStatus.CLOSED,
-                end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=dt_tz.utc)),
+                end_time=tz.localtime(
+                    datetime.datetime(2020, 2, 1, tzinfo=datetime.UTC)
+                ),
             )
 
         with freeze_time(datetime.datetime(2022, 3, 1)):

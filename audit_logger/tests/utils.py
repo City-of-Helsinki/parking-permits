@@ -24,7 +24,7 @@ def make_mock_model(name: str = "MockModel"):
         _id_count = count(1)
 
         def __init__(self, *args, **kwargs):
-            super(_Model, self).__init__(*args, spec=_BaseModel, **kwargs)
+            super().__init__(*args, spec=_BaseModel, **kwargs)
 
             if kwargs.get("id"):
                 _Model._id_count = count(kwargs.get("id"))

@@ -39,10 +39,10 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            "--start_date", type=str, default="%s-01-01" % datetime.now().year
+            "--start_date", type=str, default=f"{datetime.now().year}-01-01"
         )
         parser.add_argument(
-            "--end_date", type=str, default="%s-12-31" % datetime.now().year
+            "--end_date", type=str, default=f"{datetime.now().year}-12-31"
         )
         parser.add_argument(
             "--price_increment_factor_old_zone", type=float, default=1.0

@@ -32,11 +32,11 @@ def _format_datetime(dt, default=""):
 
 
 def _format_percentage(value, default=""):
-    return "%.2f" % value if value else default
+    return f"{value:.2f}" if value else default
 
 
 def _format_price(value):
-    return "%.2f" % value
+    return f"{value:.2f}"
 
 
 def _get_permit_row(permit):

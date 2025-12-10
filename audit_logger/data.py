@@ -2,7 +2,7 @@ import datetime
 import enum
 import json
 from dataclasses import Field, asdict, dataclass, field, fields, replace
-from typing import Any, Optional, Type, Union
+from typing import Any
 
 from django.db import models
 from django.utils import timezone
@@ -20,7 +20,7 @@ class ModelWithId:
     Defines a model instance with a class and an id.
     """
 
-    model: Type[models.Model]
+    model: type[models.Model]
     id: Any
 
 
@@ -43,7 +43,7 @@ class AuditMessageEncoder(json.JSONEncoder):
 class AuditMessage:
     message: str = ""
     actor: models.Model = None
-    target: Optional[Union[str, models.Model, ModelWithId]] = None
+    target: str | models.Model | ModelWithId | None = None
     operation: enums.Operation = None
     status: enums.Status = None
     reason: enums.Reason = None
@@ -51,8 +51,8 @@ class AuditMessage:
     audit_type: enums.AuditType = enums.AuditType.AUDIT
     origin: str = ""
     version: str = "v1"
-    extra: Optional[dict] = None
-    log_level: Optional[int] = None
+    extra: dict | None = None
+    log_level: int | None = None
 
     # "Do not touch" params
     date_time: datetime.datetime = field(init=False, default_factory=timezone.now)
@@ -92,4 +92,4 @@ class AuditMessage:
 
     def __str__(self):
         s = AuditMessageEncoder().encode(self.asdict())
-        return "%s >>> %s" % (self.message, s)
+        return f"{self.message} >>> {s}"

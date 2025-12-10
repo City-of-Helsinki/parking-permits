@@ -1,5 +1,4 @@
-from datetime import datetime, timedelta
-from datetime import timezone as dt_tz
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -478,55 +477,55 @@ class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
         self.customer = CustomerFactory(first_name="Firstname A", last_name="")
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 5, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 4, 5, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 6, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 4, 6, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 7, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 4, 7, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 30, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 3, 30, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 13, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 4, 13, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 4, 12, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 4, 12, tzinfo=UTC),
             status=ParkingPermitStatus.VALID,
             contract_type=ContractType.OPEN_ENDED,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=UTC),
             status=ParkingPermitStatus.CLOSED,
             contract_type=ContractType.FIXED_PERIOD,
         )
         ParkingPermitFactory(
             customer=self.customer,
-            end_time=datetime(2023, 3, 31, tzinfo=dt_tz.utc),
+            end_time=datetime(2023, 3, 31, tzinfo=UTC),
             status=ParkingPermitStatus.CLOSED,
             contract_type=ContractType.OPEN_ENDED,
         )

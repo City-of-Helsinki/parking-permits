@@ -281,7 +281,7 @@ class OrderSearchForm(SearchFormBase):
 
     def order_queryset(self, qs):
         permit = ParkingPermit.objects.filter(orders=OuterRef("pk"))
-        return super(OrderSearchForm, self).order_queryset(
+        return super().order_queryset(
             qs.annotate(
                 _permit_parking_zone_name=Subquery(
                     permit.values("parking_zone__name")[:1]
