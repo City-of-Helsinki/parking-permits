@@ -26,3 +26,4 @@ numpy                                  # scientific computing
 python-dateutil                        # date utilities
 urllib3                                # http client
 django-mailer                          # better email backend
+django-logger-extra                    # extra logging features

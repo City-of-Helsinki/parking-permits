@@ -317,6 +317,7 @@ django==5.2.9 \
     #   django-db-logger
     #   django-extensions
     #   django-helusers
+    #   django-logger-extra
     #   django-mailer
     #   django-resilient-logger
     #   django-searchable-encrypted-fields
@@ -349,6 +350,10 @@ django-helusers==0.14.4 \
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
+django-logger-extra==1.1.0 \
+    --hash=sha256:bc9450ead1e87aad1866210657d1a9f8efe9e21bfea9b53618d9fd0c829f1179 \
+    --hash=sha256:f44ab408c812474163a21b13a7acba48407ba52b128260370e8f4ccb2ecab89b
+    # via -r requirements.in
 django-mailer==2.3.2 \
     --hash=sha256:6ea0cbec09f57eb91376780a5f20ab7a834b942435a575e92e8e021f7838d78f \
     --hash=sha256:c7ef5ad63d5484246908bd1ce583c22837c66c1a7b593c9b816f4ead2421c995
