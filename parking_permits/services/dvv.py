@@ -1,7 +1,7 @@
 import base64
 import json
 import logging
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 import requests
 from django.conf import settings
@@ -24,17 +24,17 @@ class DvvAddressInfo(TypedDict, total=False):
     city: str
     city_sv: str
     postal_code: str
-    zone: Optional[ParkingZone]
-    location: Optional[Any]
+    zone: ParkingZone | None
+    location: Any | None
 
 
 class DvvPersonInfo(TypedDict, total=False):
     national_id_number: str
     first_name: str
     last_name: str
-    primary_address: Optional[DvvAddressInfo]
+    primary_address: DvvAddressInfo | None
     primary_address_apartment: str
-    other_address: Optional[DvvAddressInfo]
+    other_address: DvvAddressInfo | None
     other_address_apartment: str
     phone_number: str
     email: str
@@ -82,7 +82,7 @@ def is_same_address(address, other_address):
     )
 
 
-def _extract_address_data(address) -> Optional[DvvAddressInfo]:
+def _extract_address_data(address) -> DvvAddressInfo | None:
     return (
         {
             "street_name": address.get("street_name"),
@@ -140,7 +140,7 @@ def is_valid_address(address):
     return address_valid and is_valid_city(address["PostitoimipaikkaS"])
 
 
-def get_person_info(national_id_number) -> Optional[DvvPersonInfo]:
+def get_person_info(national_id_number) -> DvvPersonInfo | None:
     logger.info(f"Retrieving person info with national_id_number: {national_id_number}")
     data = get_request_data(national_id_number)
     headers = get_request_headers()

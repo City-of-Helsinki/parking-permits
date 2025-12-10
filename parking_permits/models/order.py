@@ -444,7 +444,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     payment_type = models.CharField(
         _("Payment type"),
         max_length=50,
-        choices=OrderPaymentType.choices,
+        choices=OrderPaymentType,
         default=OrderPaymentType.CASHIER_PAYMENT,
     )
     customer = models.ForeignKey(
@@ -456,7 +456,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     status = models.CharField(
         _("Order status"),
         max_length=50,
-        choices=OrderStatus.choices,
+        choices=OrderStatus,
         default=OrderStatus.DRAFT,
     )
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
@@ -473,7 +473,7 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
     type = models.CharField(
         _("Order type"),
         max_length=50,
-        choices=OrderType.choices,
+        choices=OrderType,
         default=OrderType.CREATED,
     )
     objects = OrderManager()
@@ -650,13 +650,11 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
     talpa_subscription_id = models.UUIDField(
         _("Talpa subscription id"), unique=True, editable=False, null=True, blank=True
     )
-    status = models.CharField(
-        _("Status"), max_length=20, choices=SubscriptionStatus.choices
-    )
+    status = models.CharField(_("Status"), max_length=20, choices=SubscriptionStatus)
     cancel_reason = models.CharField(
         _("Cancel reason"),
         max_length=20,
-        choices=SubscriptionCancelReason.choices,
+        choices=SubscriptionCancelReason,
         null=True,
         blank=True,
     )

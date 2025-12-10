@@ -2,11 +2,11 @@ import calendar
 import copy
 import zoneinfo
 from collections import OrderedDict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable, Iterator
 from datetime import datetime, timedelta
 from decimal import ROUND_UP, Decimal
 from itertools import chain
-from typing import Any, Iterable, Iterator, Optional, Union
+from typing import Any, Optional
 
 from ariadne import convert_camel_case_to_snake
 from dateutil.relativedelta import relativedelta
@@ -20,7 +20,7 @@ HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
 
 PERMIT_END_TIME_SHIFT_TOLERANCE = relativedelta(days=5)
 
-Currency = Optional[Union[str, float, Decimal]]
+Currency = Optional[str | float | Decimal]  # noqa: UP045
 
 
 # forward-compatible implementation of itertools.pairwise() from py3.10
@@ -72,9 +72,8 @@ class DefaultOrderedDict(OrderedDict):
         return type(self)(self.default_factory, copy.deepcopy(self.items()))
 
     def __repr__(self):
-        return "OrderedDefaultDict(%s, %s)" % (
-            self.default_factory,
-            OrderedDict.__repr__(self),
+        return (
+            f"OrderedDefaultDict({self.default_factory},{OrderedDict.__repr__(self)})"
         )
 
 
@@ -428,7 +427,7 @@ def quantize(value) -> Decimal:
 
 
 def format_currency(value) -> str:
-    return "{:0.2f}".format(value)
+    return f"{value:0.2f}"
 
 
 def round_up(value) -> str:

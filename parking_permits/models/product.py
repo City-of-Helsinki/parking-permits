@@ -153,14 +153,14 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
     type = models.CharField(
         _("Type"),
         max_length=20,
-        choices=ProductType.choices,
+        choices=ProductType,
         default=ProductType.RESIDENT,
     )
     start_date = models.DateField(_("Start date"))
     end_date = models.DateField(_("End date"))
     unit_price = models.DecimalField(_("Unit price"), max_digits=6, decimal_places=2)
     unit = models.CharField(
-        _("Unit"), max_length=50, choices=Unit.choices, default=Unit.MONTHLY
+        _("Unit"), max_length=50, choices=Unit, default=Unit.MONTHLY
     )
     vat = models.DecimalField(_("VAT"), max_digits=6, decimal_places=4)
     low_emission_discount = models.DecimalField(
@@ -246,7 +246,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "price_gross": pricing.format_gross(),
             "price_net": pricing.format_net(),
             "price_vat": pricing.format_vat(),
-            "vat_percentage": "%.2f" % self.vat_percentage,
+            "vat_percentage": f"{self.vat_percentage:.2f}",
         }
 
     def get_merchant_id(self):

@@ -233,7 +233,7 @@ class TalpaOrderManager:
 
     @classmethod
     def round_int(cls, v):
-        return "{:0.0f}".format(np.round(v))
+        return f"{np.round(v):0.0f}"
 
     @classmethod
     def round_up(cls, v):

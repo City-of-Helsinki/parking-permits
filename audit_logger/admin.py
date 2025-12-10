@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from .models import AuditLog
 
 
+@admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
     list_display = ("colored_msg", "operation", "status", "create_datetime_format")
     list_display_links = ("colored_msg",)
@@ -20,6 +21,7 @@ class AuditLogAdmin(admin.ModelAdmin):
         "traceback_format",
     )
 
+    @admin.display(description="Message")
     def colored_msg(self, instance):
         if instance.level in [logging.NOTSET, logging.INFO]:
             color = "green"
@@ -33,40 +35,33 @@ class AuditLogAdmin(admin.ModelAdmin):
             msg=instance.message["message"],
         )
 
-    colored_msg.short_description = "Message"
-
+    @admin.display(description="Created at")
     def create_datetime_format(self, instance):
         return instance.created_at.strftime("%Y-%m-%d %X")
 
-    create_datetime_format.short_description = "Created at"
-
+    @admin.display(description="Message")
     def message_format(self, instance):
         return format_html(
             "<pre>{msg}</pre>",
             msg=json.dumps(instance.message, indent=4, sort_keys=True),
         )
 
-    message_format.short_description = "Message"
-
+    @admin.display(description="Traceback")
     def traceback_format(self, instance):
         return format_html(
             "<pre>{traceback}</pre>",
             traceback=instance.trace or "",
         )
 
-    traceback_format.short_description = "Traceback"
-
+    @admin.display(description="Status")
     def status(self, instance):
         status = instance.message.get("status", None)
         return status or "-"
 
-    status.short_description = "Status"
-
+    @admin.display(description="Operation")
     def operation(self, instance):
         operation = instance.message.get("operation", None)
         return operation or "-"
-
-    operation.short_description = "Operation"
 
     def has_change_permission(self, request, obj=None):
         return False
@@ -76,6 +71,3 @@ class AuditLogAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
-
-
-admin.site.register(AuditLog, AuditLogAdmin)

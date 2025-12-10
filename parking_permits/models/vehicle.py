@@ -69,10 +69,7 @@ class VehiclePowerType(models.Model):
         verbose_name_plural = _("Vehicle power types")
 
     def __str__(self):
-        return "Identifier: %s, Name: %s" % (
-            self.identifier,
-            self.name,
-        )
+        return f"Identifier: {self.identifier}, Name: {self.name}"
 
     @property
     def is_electric(self):
@@ -97,10 +94,10 @@ class LowEmissionCriteria(TimestampedModelMixin):
         verbose_name_plural = _("Low-emission criterias")
 
     def __str__(self):
-        return "NEDC: %s, WLTP: %s, EURO: %s" % (
-            self.nedc_max_emission_limit,
-            self.wltp_max_emission_limit,
-            self.euro_min_class_limit,
+        return (
+            f"NEDC: {self.nedc_max_emission_limit}, "
+            f"WLTP: {self.wltp_max_emission_limit}, "
+            f"EURO: {self.euro_min_class_limit}"
         )
 
 
@@ -171,7 +168,7 @@ class Vehicle(TimestampedModelMixin):
 
     def save(self, *args, **kwargs):
         self._is_low_emission = self.is_low_emission
-        super(Vehicle, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     @property
     def is_low_emission(self):
@@ -187,10 +184,10 @@ class Vehicle(TimestampedModelMixin):
         return f"{_('Vehicle')}: {str(self)}"
 
     def __str__(self):
-        vehicle_str = "%s" % self.registration_number or ""
+        vehicle_str = f"{self.registration_number}" or ""
         if self.manufacturer:
-            vehicle_str += " (%s" % self.manufacturer
+            vehicle_str += f" ({self.manufacturer}"
             if self.model:
-                vehicle_str += ", %s" % self.model
+                vehicle_str += f", {self.model}"
             vehicle_str += ")"
         return vehicle_str

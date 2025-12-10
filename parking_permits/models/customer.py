@@ -114,11 +114,11 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         verbose_name_plural = _("Customers")
 
     def __str__(self):
-        return "%s" % self.national_id_number
+        return f"{self.national_id_number}"
 
     @property
     def full_name(self):
-        return "%s %s" % (self.first_name, self.last_name)
+        return f"{self.first_name} {self.last_name}"
 
     @full_name.setter
     def full_name(self, value):
@@ -272,5 +272,5 @@ def generate_ssn():
             match = re.search(r"\d+", latest_generated_ssn)
             if match:
                 latest_generated_ssn_number = int(match.group()) + 1
-                return "XX-%06d" % (latest_generated_ssn_number,)
+                return f"XX-{latest_generated_ssn_number:06d}"
     return "XX-000001"

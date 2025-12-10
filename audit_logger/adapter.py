@@ -1,7 +1,7 @@
 import copy
 import functools
 import logging
-from typing import Callable, Union
+from collections.abc import Callable
 
 from audit_logger.data import AuditMessage
 from audit_logger.enums import Status
@@ -48,7 +48,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         autoactor: Callable = MISSING,
         autotarget: Callable = MISSING,
         autostatus: bool = MISSING,
-        add_kwarg: Union[bool, str] = MISSING,
+        add_kwarg: bool | str = MISSING,
         kwarg_name: str = MISSING,
         post_process: Callable = MISSING,
     ):

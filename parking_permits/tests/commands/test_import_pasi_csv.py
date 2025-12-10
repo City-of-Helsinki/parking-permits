@@ -55,7 +55,7 @@ def pasi_resident_permit():
 @pytest.fixture
 def pasi_permits_csv():
     filepath = os.path.join(os.path.dirname(__file__), "data", "example_permits.csv")
-    with open(filepath, "r", encoding="utf-8-sig") as f:
+    with open(filepath, encoding="utf-8-sig") as f:
         yield f
 
 

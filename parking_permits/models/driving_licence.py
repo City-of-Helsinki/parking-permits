@@ -22,4 +22,4 @@ class DrivingLicence(TimestampedModelMixin):
         verbose_name_plural = _("Driving licences")
 
     def __str__(self):
-        return "%s, active: %s" % (self.customer, self.active)
+        return f"{self.customer}, active: {self.active}"

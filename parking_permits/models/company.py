@@ -21,4 +21,4 @@ class Company(TimestampedModelMixin):
         verbose_name_plural = _("Companies")
 
     def __str__(self):
-        return "%s" % self.name
+        return f"{self.name}"

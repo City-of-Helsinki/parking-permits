@@ -27,23 +27,31 @@ class PermitEmailType:
 SUBJECT_PREFIX = _("Parking permits")
 
 permit_email_subjects = {
-    PermitEmailType.CREATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("New parking permit has been created for you")),
-    PermitEmailType.UPDATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
-    PermitEmailType.ENDED: "%s: %s" % (SUBJECT_PREFIX, _("Your order has ended")),
-    PermitEmailType.EXTENDED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your parking permit has been extended")),
-    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Temporary vehicle attached to your permit")),
-    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your parking permit information has been updated")),
-    PermitEmailType.EXPIRATION_REMIND: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your parking permit will expire soon")),
-    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("The vehicle is entitled to a discount")),
-    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Vehicle discount right expired")),
+    PermitEmailType.CREATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("New parking permit has been created for you")
+    ),
+    PermitEmailType.UPDATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your parking permit information has been updated")
+    ),
+    PermitEmailType.ENDED: "{}: {}".format(SUBJECT_PREFIX, _("Your order has ended")),
+    PermitEmailType.EXTENDED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your parking permit has been extended")
+    ),
+    PermitEmailType.TEMP_VEHICLE_ACTIVATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Temporary vehicle attached to your permit")
+    ),
+    PermitEmailType.TEMP_VEHICLE_DEACTIVATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your parking permit information has been updated")
+    ),
+    PermitEmailType.EXPIRATION_REMIND: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your parking permit will expire soon")
+    ),
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("The vehicle is entitled to a discount")
+    ),
+    PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Vehicle discount right expired")
+    ),
 }
 
 permit_email_templates = {
@@ -113,10 +121,12 @@ class RefundEmailType:
 
 
 refund_email_subjects = {
-    RefundEmailType.CREATED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your refund has been registered")),
-    RefundEmailType.ACCEPTED: "%s: %s"
-    % (SUBJECT_PREFIX, _("Your refund has been accepted")),
+    RefundEmailType.CREATED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your refund has been registered")
+    ),
+    RefundEmailType.ACCEPTED: "{}: {}".format(
+        SUBJECT_PREFIX, _("Your refund has been accepted")
+    ),
 }
 
 

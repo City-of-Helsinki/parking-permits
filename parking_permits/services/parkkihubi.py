@@ -2,7 +2,7 @@ import collections
 import json
 import logging
 from datetime import datetime
-from typing import Dict, List, Literal
+from typing import Literal
 
 import requests
 from django.conf import settings
@@ -66,7 +66,7 @@ class Subject:
     def __lt__(self, other) -> bool:
         return self.start_time < other.start_time
 
-    def to_json(self) -> Dict:
+    def to_json(self) -> dict:
         return {
             "start_time": self.start_time,
             "end_time": self.end_time,
@@ -106,13 +106,13 @@ class Parkkihubi:
 
         self.handle_response(response, 200, "update")
 
-    def get_headers(self) -> Dict[str, str]:
+    def get_headers(self) -> dict[str, str]:
         return {
             "Authorization": f"ApiKey {settings.PARKKIHUBI_TOKEN}",
             "Content-Type": "application/json",
         }
 
-    def get_payload(self) -> Dict:
+    def get_payload(self) -> dict:
         subjects = self.get_subjects()
 
         return {
@@ -133,7 +133,7 @@ class Parkkihubi:
     def get_payload_data(self) -> str:
         return json.dumps(self.get_payload(), cls=DjangoJSONEncoder)
 
-    def get_subjects(self) -> List[Subject]:
+    def get_subjects(self) -> list[Subject]:
         start_time = self.permit.start_time
         end_time = self.permit.end_time or get_end_time(self.permit.start_time, 1)
         registration_number = self.permit.vehicle.registration_number

@@ -1,7 +1,6 @@
 import logging
 import ssl
 import xml.etree.ElementTree as ET  # noqa: N817
-from typing import Optional
 
 import requests
 from django.conf import settings
@@ -405,7 +404,7 @@ class Traficom:
     headers = {"Content-type": "application/xml"}
 
     def fetch_vehicle_details(
-        self, registration_number: str, permit: Optional[ParkingPermit] = None
+        self, registration_number: str, permit: ParkingPermit | None = None
     ) -> Vehicle:
         if settings.TRAFICOM_USE_LEGACY_VEHICLE_FETCH:
             synchronizer_class = TraficomVehicleDetailsLegacySynchronizer

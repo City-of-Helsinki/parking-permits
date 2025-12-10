@@ -38,4 +38,4 @@ class ParkingZoneFactory(factory.django.DjangoModelFactory):
         model = ParkingZone
 
     location = factory.LazyFunction(generate_multi_polygon)
-    name = factory.Sequence(lambda n: "zone_%d" % (n + 1))
+    name = factory.Sequence(lambda n: f"zone_{n + 1:d}")

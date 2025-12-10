@@ -1,5 +1,4 @@
 from decimal import Decimal
-from typing import Optional
 
 from parking_permits.models import ParkingPermit, Refund, Subscription
 from parking_permits.models.order import Order, SubscriptionCancelReason
@@ -20,9 +19,9 @@ from .services.parkkihubi import sync_with_parkkihubi
 
 
 def end_permits(
-    user: Optional[User],
+    user: User | None,
     *permits: ParkingPermit,
-    iban: Optional[str] = None,
+    iban: str | None = None,
     end_type: ParkingPermitEndType,
     **kwargs,
 ) -> None:
@@ -55,9 +54,9 @@ def end_permits(
 
 
 def create_permit_refunds(
-    user: Optional[User],
+    user: User | None,
     *permits: ParkingPermit,
-    iban: Optional[str],
+    iban: str | None,
 ) -> list[Refund]:
     """Creates VAT-based summary refunds from the permits provided.
 
@@ -115,13 +114,13 @@ def create_permit_refunds(
 
 
 def create_refund(
-    user: Optional[User],
+    user: User | None,
     permits: list[ParkingPermit],
     orders: list[Order],
     amount: Decimal,
-    iban: Optional[str],
+    iban: str | None,
     vat: Decimal = DEFAULT_VAT,
-    description: Optional[str] = "",
+    description: str | None = "",
 ) -> Refund:
     """
     Creates refund for permits and create relevant events.
@@ -152,11 +151,11 @@ def create_refund(
 
 
 def end_permit(
-    user: Optional[User],
+    user: User | None,
     permit: ParkingPermit,
     end_type: ParkingPermitEndType,
     *,
-    iban: Optional[str] = None,
+    iban: str | None = None,
     subscription_cancel_reason: SubscriptionCancelReason = SubscriptionCancelReason.USER_CANCELLED,  # noqa: E501
     cancel_from_talpa: bool = True,
     force_end: bool = False,

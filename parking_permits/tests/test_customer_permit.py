@@ -1,5 +1,4 @@
-from datetime import date, datetime, timedelta
-from datetime import timezone as dt_tz
+from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock
 
 from dateutil.relativedelta import relativedelta
@@ -554,7 +553,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         utc_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         data = {
             "start_type": FROM,
-            "start_time": after_3_days.astimezone(dt_tz.utc).strftime(utc_format),
+            "start_time": after_3_days.astimezone(UTC).strftime(utc_format),
         }
         permits = CustomerPermit(self.cus_a.id).update(data)
         for permit in permits:
@@ -566,7 +565,7 @@ class UpdateCustomerPermitTestCase(TestCase):
         utc_format = "%Y-%m-%dT%H:%M:%S.%fZ"
         data = {
             "start_type": FROM,
-            "start_time": after_3_weeks.astimezone(dt_tz.utc).strftime(utc_format),
+            "start_time": after_3_weeks.astimezone(UTC).strftime(utc_format),
         }
         permits = CustomerPermit(self.cus_a.id).update(data)
         time_after_2_weeks = get_end_time(next_day(), 2)
