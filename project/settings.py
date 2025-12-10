@@ -155,6 +155,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "logger_extra.middleware.XRequestIdMiddleware",
 ]
 
 FIELD_ENCRYPTION_KEYS = [env("FIELD_ENCRYPTION_KEYS")]
@@ -291,6 +292,11 @@ MAX_ALLOWED_USER_PERMIT = 2
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {
+        "context": {
+            "()": "logger_extra.filter.LoggerContextFilter",
+        }
+    },
     "formatters": {
         "json": {
             "()": "logger_extra.formatter.JSONFormatter",
@@ -305,6 +311,7 @@ LOGGING = {
             "level": "INFO",
             "class": "logging.StreamHandler",
             "formatter": "json",
+            "filters": ["context"],
         },
         "audit_log": {
             "level": "DEBUG",
