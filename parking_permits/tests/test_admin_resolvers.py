@@ -425,7 +425,9 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_is_not_found(
 @override_settings(
     TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False
 )
-@mock.patch("requests.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml")))
+@mock.patch(
+    "requests.Session.post", return_value=MockResponse(get_mock_xml("vehicle_ok.xml"))
+)
 def test_admin_vehicle_lookup_success(info, mock_jwt):
     # Data from mock XML file
     customer_nin_number = "290200A905H"
@@ -455,7 +457,7 @@ def test_admin_vehicle_lookup_success(info, mock_jwt):
     TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True
 )
 @mock.patch(
-    "requests.post",
+    "requests.Session.post",
     return_value=MockResponse(get_mock_xml("vehicle_ok.xml", use_legacy_mock_xml=True)),
 )
 def test_admin_vehicle_lookup_success_on_legacy_api(info, mock_jwt):
@@ -487,7 +489,7 @@ def test_admin_vehicle_lookup_success_on_legacy_api(info, mock_jwt):
     TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=False
 )
 @mock.patch(
-    "requests.post",
+    "requests.Session.post",
     return_value=MockResponse(get_mock_xml("vehicle_ok.xml")),
 )
 def test_admin_vehicle_lookup_fails_for_non_owner(info, mock_jwt):
@@ -514,7 +516,7 @@ def test_admin_vehicle_lookup_fails_for_non_owner(info, mock_jwt):
     TRAFICOM_MOCK=False, TRAFICOM_CHECK=True, TRAFICOM_USE_LEGACY_VEHICLE_FETCH=True
 )
 @mock.patch(
-    "requests.post",
+    "requests.Session.post",
     return_value=MockResponse(get_mock_xml("vehicle_ok.xml", use_legacy_mock_xml=True)),
 )
 def test_admin_vehicle_lookup_fails_for_non_owner_on_legacy_api(info, mock_jwt):

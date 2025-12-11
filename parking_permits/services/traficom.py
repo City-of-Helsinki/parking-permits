@@ -7,6 +7,7 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
+from requests.adapters import HTTPAdapter
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models.driving_class import DrivingClass
@@ -84,6 +85,20 @@ VEHICLE_SUB_CLASS_MAPPER = {
     "919": VehicleClass.L6eBP,
     "920": VehicleClass.L6eBU,
 }
+
+
+# Used to disable host name-verification.
+class SSLAdapter(HTTPAdapter):
+    def init_poolmanager(self, *args, **kwargs):
+        context = ssl.create_default_context()  # NOSONAR(S5527)
+        # No SAN-validation
+        context.check_hostname = False
+
+        # Enforce certificate verification
+        context.verify_mode = ssl.CERT_REQUIRED
+
+        kwargs["ssl_context"] = context
+        return super().init_poolmanager(*args, **kwargs)
 
 
 class TraficomVehicleDetailsSynchronizer:
@@ -531,6 +546,29 @@ class Traficom:
         """
         return payload
 
+    def _request(
+        self,
+        url: str,
+        *,
+        payload: str,
+        headers: dict[str, str],
+        verify_ssl: bool = settings.TRAFICOM_VERIFY_SSL,
+    ) -> requests.Response:
+        session = requests.Session()
+
+        if verify_ssl:
+            # SSL-check
+            adapter = SSLAdapter()
+            session.mount("https://", adapter)
+
+        response = session.post(
+            url,
+            payload,
+            headers=headers,
+            verify=verify_ssl,
+        )
+        return response
+
     def _fetch_info_by_ssn(self, hetu):
         query_payload = f"<hetu>{hetu}</hetu>"
         payload = self._build_payload(
@@ -538,11 +576,11 @@ class Traficom:
             query_payload=query_payload,
         )
 
-        response = requests.post(
+        response = self._request(
             self.url,
-            data=payload,
+            payload=payload,
             headers=self.headers,
-            verify=settings.TRAFICOM_VERIFY_SSL,
+            verify_ssl=settings.TRAFICOM_VERIFY_SSL,
         )
         return response
 
@@ -560,11 +598,11 @@ class Traficom:
             query_payload=query_payload,
         )
 
-        response = requests.post(
+        response = self._request(
             self.url,
-            data=payload,
+            payload=payload,
             headers=self.headers,
-            verify=settings.TRAFICOM_VERIFY_SSL,
+            verify_ssl=settings.TRAFICOM_VERIFY_SSL,
         )
         return response
 
