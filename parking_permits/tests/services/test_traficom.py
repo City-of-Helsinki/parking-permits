@@ -71,7 +71,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_ok.xml",
@@ -90,7 +90,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_lower_case(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_ok.xml",
@@ -109,7 +109,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_spaces(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_ok.xml",
@@ -128,7 +128,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_108_licence_a_a1_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3_subclass_108_licence_A_A1_A2.xml",
@@ -161,7 +161,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_109_licence_a_a1_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3_subclass_109_licence_A_A1_A2.xml",
@@ -194,7 +194,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_109_licence_a_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3_subclass_109_licence_A_A2.xml",
@@ -227,7 +227,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_109_licence_a(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3_subclass_109_licence_A.xml",
@@ -260,7 +260,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_111_licence_a(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3_subclass_111_licence_A.xml",
@@ -293,7 +293,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_108_licence_a_a1_a3(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_108_licence_A_A1_A3.xml",
@@ -326,7 +326,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_109_licence_a_a1_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_109_licence_A_A1_A2.xml",
@@ -359,7 +359,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_109_licence_a_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_109_licence_A_A2.xml",
@@ -392,7 +392,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_109_licence_a(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_109_licence_A.xml",
@@ -425,7 +425,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_111_licence_a_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_111_licence_A_A2.xml",
@@ -458,7 +458,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_900_licence_a_a1_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_900_licence_A_A1_A2.xml",
@@ -491,7 +491,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_905_licence_a_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_905_licence_A_A2.xml",
@@ -524,7 +524,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_906_licence_a(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_906_licence_A.xml",
@@ -557,7 +557,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_907_licence_a_a1_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_907_licence_A_A1_A2.xml",
@@ -590,7 +590,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_908_licence_a_a2(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_908_licence_A_A2.xml",
@@ -623,7 +623,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_909_licence_a(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_909_licence_A.xml",
@@ -656,7 +656,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_909_licence_a_without_power(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_909_licence_A_without_power.xml",
@@ -689,7 +689,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_subclass_909_licence_a_missing_field(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_subclass_909_licence_A_missing_field.xml",
@@ -722,7 +722,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3e_no_subclass_or_power(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_L3e_no_subclass_or_power.xml",
@@ -756,7 +756,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_aoa_2(self):
         # Special chars in registration number
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "special_cases/AOA-2.xml",
@@ -774,7 +774,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_aoa_3(self):
         # Special chars in registration number
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "special_cases/AOA-3.xml",
@@ -792,7 +792,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_abc_12(self):
         # No valid registration
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "special_cases/ABC-12.xml",
@@ -810,7 +810,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_lai_1(self):
         # Regular valid test
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "special_cases/LAI-1.xml",
@@ -827,7 +827,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_moi_10(self):
         # Person has a non-disclosure statement
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "special_cases/MOI-10.xml",
@@ -844,7 +844,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_too_heavy.xml",
@@ -862,7 +862,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @freeze_time(datetime.datetime(2024, 6, 1))
     def test_fetch_vehicle_without_emissions(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_without_emissions.xml",
@@ -887,7 +887,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_wltp(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_wltp.xml",
@@ -905,7 +905,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_nedc(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_nedc.xml",
@@ -923,7 +923,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_nedc_and_wltp(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_nedc_and_wltp.xml",
@@ -948,7 +948,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_nedc_and_wltp_no_criteria(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_nedc_and_wltp.xml",
@@ -967,7 +967,7 @@ class TestTraficomVehicleFetch(TestTraficom):
         vehicle = VehicleFactory(registration_number="BCI-707")
 
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_ok.xml",
@@ -980,7 +980,9 @@ class TestTraficomVehicleFetch(TestTraficom):
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_traficom_api_error(self):
-        with mock.patch("requests.post", return_value=MockResponse(status_code=500)):
+        with mock.patch(
+            "requests.Session.post", return_value=MockResponse(status_code=500)
+        ):
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
@@ -990,7 +992,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_vehicle_not_found(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_not_found.xml",
@@ -1007,7 +1009,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_unsupported_vehicle_class(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "unsupported_vehicle.xml",
@@ -1024,7 +1026,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_vehicle_decommissioned(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "decommissioned_vehicle.xml",
@@ -1041,7 +1043,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db(self):
         VehicleFactory(registration_number="BCI-707")
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
             mock_traficom.assert_not_called()
@@ -1050,7 +1052,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_from_db_if_permit_bypass_true(self):
         VehicleFactory(registration_number="BCI-707")
         permit = ParkingPermitFactory(bypass_traficom_validation=True)
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             vehicle = self.traficom.fetch_vehicle_details("BCI-707", permit)
             self.assertEqual(vehicle.registration_number, "BCI-707")
             mock_traficom.assert_not_called()
@@ -1059,7 +1061,7 @@ class TestTraficomVehicleFetch(TestTraficom):
     def test_fetch_vehicle_from_db_if_permit_bypass_false(self):
         permit = ParkingPermitFactory(bypass_traficom_validation=False)
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_ok.xml",
@@ -1073,7 +1075,7 @@ class TestTraficomVehicleFetch(TestTraficom):
 
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_vehicle_from_db_not_found(self):
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_vehicle_details,
@@ -1117,7 +1119,7 @@ class TestTraficomVehicleFetch(TestTraficom):
         licence_ce.driving_classes.add(driving_class_ce)
 
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(
                 get_mock_xml(
                     "vehicle_C1.xml",
@@ -1168,7 +1170,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_valid_licence(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("licence_ok.xml")),
         ):
             result = self.traficom.fetch_driving_licence_details(self.hetu)
@@ -1178,7 +1180,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_invalid_licence(self):
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("invalid_licence.xml")),
         ):
             self.assertRaises(
@@ -1198,7 +1200,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
         driving_class = DrivingClass.objects.create(identifier="A")
         licence.driving_classes.add(driving_class)
 
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             result = self.traficom.fetch_driving_licence_details(self.hetu)
             self.assertEqual(result["issue_date"], licence.start_date)
             self.assertEqual(result["driving_classes"].count(), 1)
@@ -1218,7 +1220,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
         driving_class = DrivingClass.objects.create(identifier="A")
         licence.driving_classes.add(driving_class)
 
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             result = self.traficom.fetch_driving_licence_details(self.hetu, permit)
             self.assertEqual(result["issue_date"], licence.start_date)
             self.assertEqual(result["driving_classes"].count(), 1)
@@ -1231,7 +1233,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
             customer=customer, bypass_traficom_validation=False
         )
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("licence_ok.xml")),
         ) as mock_traficom:
             result = self.traficom.fetch_driving_licence_details(self.hetu, permit)
@@ -1241,7 +1243,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
 
     @override_settings(TRAFICOM_MOCK=True)
     def test_fetch_licence_from_db_not_found(self):
-        with mock.patch("requests.post") as mock_traficom:
+        with mock.patch("requests.Session.post") as mock_traficom:
             self.assertRaises(
                 TraficomFetchVehicleError,
                 self.traficom.fetch_driving_licence_details,
@@ -1255,7 +1257,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
         customer = CustomerFactory(national_id_number=self.hetu)
 
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("licence_C.xml")),
         ):
             expected_licences = ["C", "C1", "C1E", "CE"]
@@ -1271,7 +1273,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
         customer = CustomerFactory(national_id_number=self.hetu)
 
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("licence_D.xml")),
         ):
             expected_licences = ["D", "D1", "D1E", "DE"]
@@ -1287,7 +1289,7 @@ class TestTraficomDrivingLicenceFetch(TestTraficom):
         customer = CustomerFactory(national_id_number=self.hetu)
 
         with mock.patch(
-            "requests.post",
+            "requests.Session.post",
             return_value=MockResponse(get_mock_xml("licence_B.xml")),
         ):
             expected_licences = ["B", "BE", "B/96"]
