@@ -40,7 +40,7 @@ FROM appbase AS production
 # ==============================
 COPY . .
 
-RUN DJANGO_SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
+RUN SECRET_KEY="only-used-for-collectstatic" DATABASE_URL="sqlite:///" \
     python manage.py collectstatic --noinput && \
     python manage.py compilemessages
 

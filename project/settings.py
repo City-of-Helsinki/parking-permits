@@ -14,7 +14,7 @@ GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
 env = environ.Env(
     DEBUG=(bool, False),
     DEBUG_MAILPIT=(bool, False),
-    DJANGO_SECRET_KEY=(str, ""),
+    SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi", "https://*.hel.ninja"]),
@@ -104,7 +104,7 @@ if path.exists(".env"):
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = env("DEBUG")
-SECRET_KEY = env("DJANGO_SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
