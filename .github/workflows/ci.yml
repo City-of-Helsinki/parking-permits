@@ -14,5 +14,5 @@ jobs:
       python-version: 3.12
       postgres-major-version: 17
       use-postgis: true
-    extra-commands: |
+      extra-commands: |
         echo 'SECRET_KEY=topsecret123' >> .env
