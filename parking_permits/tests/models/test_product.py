@@ -65,20 +65,32 @@ class TestProduct(TestCase):
             self.assertEqual(self.product.name, f"{_('Parking zone')} A")
 
     @patch(
+        "requests.get",
+        return_value=MockResponse(200, {"0": {"merchantId": uuid.uuid4()}}),
+    )
+    @patch(
         "requests.post",
         return_value=MockResponse(201, {"productId": uuid.uuid4()}),
     )
     def test_should_save_talpa_product_id_when_creating_talpa_product_successfully(
-        self, mock_post
+        self, mock_post, mock_get
     ):
         self.product.create_talpa_product()
+        mock_get.assert_called_once()
         mock_post.assert_called_once()
         self.assertIsNotNone(self.product.talpa_product_id)
 
+    @patch(
+        "requests.get",
+        return_value=MockResponse(200, {"0": {"merchantId": uuid.uuid4()}}),
+    )
     @patch("requests.post", return_value=MockResponse(401))
-    def test_should_raise_error_when_creating_talpa_product_failed(self, mock_post):
+    def test_should_raise_error_when_creating_talpa_product_failed(
+        self, mock_post, mock_get
+    ):
         with self.assertRaises(CreateTalpaProductError):
             self.product.create_talpa_product()
+            mock_get.assert_called_once()
             mock_post.assert_called_once()
 
     def test_get_modified_unit_price_return_modified_price(self):
