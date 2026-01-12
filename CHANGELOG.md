@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.10.0...parking-permits-v1.11.0) (2026-01-12)
+
+
+### Features
+
+* Add Traficom basic vehicle query support ([acf10bc](https://github.com/City-of-Helsinki/parking-permits/commit/acf10bcb96d03599bac4c82a8628e4812cc34e1f))
+* Calculate daily permit count snapshots ([95b8ed7](https://github.com/City-of-Helsinki/parking-permits/commit/95b8ed73acba2bb4a342958f791383f21cb8f085))
+* Change gunicorn logging format to json ([b3f2ba9](https://github.com/City-of-Helsinki/parking-permits/commit/b3f2ba99c0c0c50f650024aa54a2a47b44d4ddee))
+* Change logging format to json ([cd4bf7f](https://github.com/City-of-Helsinki/parking-permits/commit/cd4bf7f641728ed6ac85bf44e52454f3ad316863))
+* Enable request id logging ([d97acaf](https://github.com/City-of-Helsinki/parking-permits/commit/d97acaf4dade47f131fe45cfa31fcf9b6dd792db))
+* Introduce PermitCountSnapshot-model ([c90635e](https://github.com/City-of-Helsinki/parking-permits/commit/c90635ed0ecadf02b57c349e8fa0d24e44e53d0a))
+* Management command for daily permit counts ([c4104d6](https://github.com/City-of-Helsinki/parking-permits/commit/c4104d65a5987c10c2cc10514bd29a7881265a66))
+* PermitCountSnapshotView-endpoint ([a5d2517](https://github.com/City-of-Helsinki/parking-permits/commit/a5d251753b226f3293ecf37fb2492b268316f638))
+* Reintroduce Traficom legacy-API ([4ac588f](https://github.com/City-of-Helsinki/parking-permits/commit/4ac588faf99388ecde7e6f5883798900295ccc28))
+* Select fetch-vehicle API by setting ([43d4be8](https://github.com/City-of-Helsinki/parking-permits/commit/43d4be8c70407f01de66c1341a393776a7e5cd80))
+* Use django-resilient-logger with audit logs ([104c091](https://github.com/City-of-Helsinki/parking-permits/commit/104c0911db0d305a0cb7855de7a71174f360ff97))
+
+
+### Bug Fixes
+
+* Change DJANGO_SECRET_KEY to SECRET_KEY ([0980de9](https://github.com/City-of-Helsinki/parking-permits/commit/0980de9acc5fa2e604142f6eeac3a57bbde18a21))
+* Ensure zero-count permit count snapshots ([0789921](https://github.com/City-of-Helsinki/parking-permits/commit/0789921177febae14fcfa89f7bde49de9be2bced))
+* Fix indentation in CI-config ([d8779d7](https://github.com/City-of-Helsinki/parking-permits/commit/d8779d74eaac2503feba3663cd844b8b73d5a190))
+* Fix Traficom-mock dependent resolver-tests ([8ec0cb6](https://github.com/City-of-Helsinki/parking-permits/commit/8ec0cb6876843f36e7a66369b8f1c026da8401e4))
+* Traficom SSL-fixes ([6f4c4ef](https://github.com/City-of-Helsinki/parking-permits/commit/6f4c4ef8fc4a6f3a229c847b3a86d329c3fa409d))
+* Use legacy Traficom-API by default ([559a16c](https://github.com/City-of-Helsinki/parking-permits/commit/559a16c7ca9b78b54f25df29f1049b352a276993))
+
+
+### Dependencies
+
+* Add django-logger-extra ([0d5ee96](https://github.com/City-of-Helsinki/parking-permits/commit/0d5ee965bcdbe511ac91a89927952c34e140da8a))
+* Bump urllib3 from 2.5.0 to 2.6.0 ([1a1adbb](https://github.com/City-of-Helsinki/parking-permits/commit/1a1adbb3751be0ebfc013791a3e8a3df7555d645))
+* Update requirements ([6a58773](https://github.com/City-of-Helsinki/parking-permits/commit/6a5877319b801d30a8a94797dd7fed81f44b4abd))
+
+
+### Documentation
+
+* Update readme ([0f5d110](https://github.com/City-of-Helsinki/parking-permits/commit/0f5d110efa9bf31f682dc62d58fc3eaadc114277))
+
 ## [1.10.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.9.1...parking-permits-v1.10.0) (2025-11-12)
 
 
