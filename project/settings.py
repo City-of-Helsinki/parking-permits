@@ -320,7 +320,7 @@ LOGGING = {
     },
     "loggers": {
         "db": {"handlers": ["db_log"], "level": "DEBUG"},
-        "django": {"handlers": ["console"], "level": "INFO"},
+        "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "helusers": {"handlers": ["console"], "level": "DEBUG"},
         "audit": {"handlers": ["audit_log"], "level": "DEBUG"},
     },
