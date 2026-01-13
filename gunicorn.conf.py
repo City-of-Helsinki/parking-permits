@@ -1,5 +1,4 @@
 # https://docs.gunicorn.org/en/stable/settings.html
-from logger_extra.extras.gunicorn import JsonErrorFormatter, JsonFormatter
 
 wsgi_app = "project.wsgi"
 bind = "0.0.0.0:8888"
@@ -15,10 +14,12 @@ logconfig_dict = {
     },
     "formatters": {
         "json": {
-            "()": JsonFormatter,
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(name)s %(levelname)s %(message)s",
         },
         "json_error": {
-            "()": JsonErrorFormatter,
+            "()": "pythonjsonlogger.jsonlogger.JsonFormatter",
+            "format": "%(asctime)s %(name)s %(levelname)s %(message)s",
         },
     },
     "handlers": {
