@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.2](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.11.1...parking-permits-v1.11.2) (2026-01-13)
+
+
+### Bug Fixes
+
+* Prevent log propagation from all loggers ([24b6213](https://github.com/City-of-Helsinki/parking-permits/commit/24b621338b20071fe28b0c8d24e276867db1f4d5))
+
+
+### Dependencies
+
+* Bump authlib from 1.6.5 to 1.6.6 ([b949b3f](https://github.com/City-of-Helsinki/parking-permits/commit/b949b3f015756b563132558465d41d02f51ed5c2))
+* Bump urllib3 from 2.6.0 to 2.6.3 ([8649511](https://github.com/City-of-Helsinki/parking-permits/commit/864951128e4cf0e272c8822bf4017419a4f3dcd9))
+
 ## [1.11.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.11.0...parking-permits-v1.11.1) (2026-01-13)
 
 
