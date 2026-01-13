@@ -319,10 +319,10 @@ LOGGING = {
         },
     },
     "loggers": {
-        "db": {"handlers": ["db_log"], "level": "DEBUG"},
+        "db": {"handlers": ["db_log"], "level": "DEBUG", "propagate": False},
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "helusers": {"handlers": ["console"], "level": "DEBUG"},
-        "audit": {"handlers": ["audit_log"], "level": "DEBUG"},
+        "helusers": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
+        "audit": {"handlers": ["audit_log"], "level": "DEBUG", "propagate": False},
     },
 }
 
