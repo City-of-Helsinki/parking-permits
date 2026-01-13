@@ -350,9 +350,9 @@ django-helusers==0.14.4 \
     # via
     #   -r requirements.in
     #   helsinki-profile-gdpr-api
-django-logger-extra==1.1.0 \
-    --hash=sha256:bc9450ead1e87aad1866210657d1a9f8efe9e21bfea9b53618d9fd0c829f1179 \
-    --hash=sha256:f44ab408c812474163a21b13a7acba48407ba52b128260370e8f4ccb2ecab89b
+django-logger-extra==1.1.1 \
+    --hash=sha256:111532cc8d9f57175e2ba36ef4c303f5ef95f80200290472619de65809063ccf \
+    --hash=sha256:8404f1f4d5aaf84af05fdaef6dc1094c1181347c90f3245075e47e001e72de71
     # via -r requirements.in
 django-mailer==2.3.2 \
     --hash=sha256:6ea0cbec09f57eb91376780a5f20ab7a834b942435a575e92e8e021f7838d78f \
