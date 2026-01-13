@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.11.0...parking-permits-v1.11.1) (2026-01-13)
+
+
+### Bug Fixes
+
+* Prevent django messages propagation ([fed3085](https://github.com/City-of-Helsinki/parking-permits/commit/fed30857b3249161e7a2f65fdab7f89a8920c3a3))
+* Utilize python-json-logger formatters ([dc2cca1](https://github.com/City-of-Helsinki/parking-permits/commit/dc2cca1201d2b1b5c60e6577dd2dceca3806811f))
+
+
+### Dependencies
+
+* Add python-json-logger ([e365a3c](https://github.com/City-of-Helsinki/parking-permits/commit/e365a3c654b56a8c5017de78ad7a49fcc34a662c))
+* Bump django-logger-extra ([fad4c97](https://github.com/City-of-Helsinki/parking-permits/commit/fad4c97a8af0744e41221ac585163dc60b5195cc))
+
+
+### Reverts
+
+* Add python-json-logger ([c146523](https://github.com/City-of-Helsinki/parking-permits/commit/c146523c452e3e59dd0b1f38a52043458864a104))
+* Utilize python-json-logger formatters ([81da60c](https://github.com/City-of-Helsinki/parking-permits/commit/81da60c901a70e339ab273481f9f2efe483bb484))
+
 ## [1.11.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.10.0...parking-permits-v1.11.0) (2026-01-12)
 
 
