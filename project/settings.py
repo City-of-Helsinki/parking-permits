@@ -391,8 +391,8 @@ RESILIENT_LOGGER = {
     ],
     "batch_limit": 5000,
     "chunk_size": 500,
-    "submit_unsent_entries": False,  # Change this after PR review
-    "clear_sent_entries": False,  # Change this after PR review
+    "submit_unsent_entries": True,
+    "clear_sent_entries": True,
 }
 
 # Debug
