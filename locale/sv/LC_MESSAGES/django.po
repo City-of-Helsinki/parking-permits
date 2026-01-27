@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-13 23:16+0300\n"
+"POT-Creation-Date: 2026-01-30 10:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,9 +68,6 @@ msgstr "Kundsökningsfel"
 
 msgid "Owner/holder data of a vehicle could not be verified"
 msgstr "Ägar/innehavaruppgifter av fordon kunde inte verifieras"
-
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Kunden har inte ett giltigt körkort för detta fordon"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Kund utan adresssäkerhetsförbud måste ha en adress vald"
@@ -208,9 +205,6 @@ msgstr "Du kan ha maximalt %(max_allowed_permit)s tillstånd."
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Du kan endast köpa tillstånd för adressen %(primary_address)s."
 
-msgid "Source: Transport register, Traficom"
-msgstr "Källä: Trafik- och transportregistret, Traficom"
-
 msgid "Forbidden"
 msgstr "Förbjuden"
 
@@ -339,9 +333,6 @@ msgstr "Återbetalning"
 
 msgid "Refund ID"
 msgstr "Återbetalning ID"
-
-msgid "incl. VAT"
-msgstr "inkl. MOMS"
 
 msgid "Extra info"
 msgstr "Ytterligare uppgifter"
@@ -861,6 +852,33 @@ msgstr "Accepterad"
 msgid "Accepted by"
 msgstr "Acceptor"
 
+msgid "Permit count"
+msgstr "Antal tillstånd"
+
+msgid "Date"
+msgstr "Datum"
+
+msgid "Parking zone name"
+msgstr "Namn på parkeringsområde"
+
+msgid "Parking zone description"
+msgstr "Deskription för parkeringsområde"
+
+msgid "Parking zone description sv"
+msgstr "Deskription för parkeringsområde (sv)"
+
+msgid "Low-emission"
+msgstr "Lågemission"
+
+msgid "Primary vehicle"
+msgstr "Primär fordon"
+
+msgid "Permit count snapshot"
+msgstr "Ögonblicksbild av antal tillstånd"
+
+msgid "Permit count snapshots"
+msgstr "Ögonblicksbilder av antal tillstånd"
+
 msgid "Temporary vehicle"
 msgstr "Tillfällig fordon"
 
@@ -1002,6 +1020,9 @@ msgstr "Inga aktiva tillstånd för kunden"
 msgid "Permit not found"
 msgstr "Tillstånd hittades inte"
 
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Kunden har inte ett giltigt körkort för detta fordon"
+
 msgid "Conflict parking zones for active permits"
 msgstr "Konflict för parkering zoner och aktiva tillståndet"
 
@@ -1052,6 +1073,9 @@ msgstr ""
 "Ej stödd fordonsklass %(vehicle_class)s för registreringsskylt "
 "%(registration_number)s"
 
+msgid "This person has a non-disclosure statement"
+msgstr "Denna person har ett sekretessavtal"
+
 #, python-format
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Fordonet %(registration_number)s är avställd"
@@ -1060,9 +1084,6 @@ msgstr "Fordonet %(registration_number)s är avställd"
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
 msgstr ""
 "Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
-
-msgid "This person has a non-disclosure statement"
-msgstr "Denna person har ett sekretessavtal"
 
 msgid "The person has no driving licence"
 msgstr "Personen har inget körkort"
@@ -1100,6 +1121,9 @@ msgstr ""
 "* Parkeringpermit är i kraft från den valda startdatum, när betalningen är "
 "godkännt"
 
+msgid "Source: Transport register, Traficom"
+msgstr "Källä: Trafik- och transportregistret, Traficom"
+
 msgid "Parking permit expiration date"
 msgstr "Tillståndet upphör att gälla"
 
@@ -1115,6 +1139,12 @@ msgid ""
 msgstr ""
 "Detta meddelande har skickats automatiskt från systemet. Svara inte på detta "
 "meddelande eftersom svar inte kommer att behandlas."
+
+msgid "What do you think about this service?"
+msgstr "Vad tycker du om den här tjänsten?"
+
+msgid "Give us your feedback!"
+msgstr "Ge oss din feedback!"
 
 msgid "Parking permit terms of usage"
 msgstr "Användarvillkor för parkeringstillstånd"
@@ -1134,7 +1164,8 @@ msgstr "Ditt parkeringstillstånd går ut vid"
 msgid ""
 "You can renew your permit by logging in to the service and selecting 'Extend "
 "parking permit'."
-msgstr "Du kan förnya ditt tillstånd genom att logga in på tjänsten och välja "
+msgstr ""
+"Du kan förnya ditt tillstånd genom att logga in på tjänsten och välja "
 "'Förläng parkeringstillstånd'."
 
 msgid "Thank you for your order!"
@@ -1174,6 +1205,9 @@ msgstr ""
 
 msgid "Total refundable amount"
 msgstr "Totalt återbetalningsbart belopp"
+
+msgid "incl. VAT"
+msgstr "inkl. MOMS"
 
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "
