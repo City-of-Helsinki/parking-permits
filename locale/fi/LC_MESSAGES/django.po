@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-13 23:16+0300\n"
+"POT-Creation-Date: 2026-01-30 10:36+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -68,9 +68,6 @@ msgstr "Asiakkaan hakuvirhe"
 
 msgid "Owner/holder data of a vehicle could not be verified"
 msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan"
-
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
 
 msgid "Customer without address security ban must have one address selected"
 msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
@@ -212,9 +209,6 @@ msgstr ""
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle %(primary_address)s."
 
-msgid "Source: Transport register, Traficom"
-msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
-
 msgid "Forbidden"
 msgstr "Lupa evätty"
 
@@ -343,9 +337,6 @@ msgstr "Palautukset"
 
 msgid "Refund ID"
 msgstr "Palautusnumero"
-
-msgid "incl. VAT"
-msgstr "sis. ALV"
 
 msgid "Extra info"
 msgstr "Lisätiedot"
@@ -863,6 +854,33 @@ msgstr "Hyväksytty"
 msgid "Accepted by"
 msgstr "Hyväksyjä"
 
+msgid "Permit count"
+msgstr "Pysäköintitunnusten lukumäärä"
+
+msgid "Date"
+msgstr "Päivämäärä"
+
+msgid "Parking zone name"
+msgstr "Pysäköintialue"
+
+msgid "Parking zone description"
+msgstr "Pysäköintialueen nimi"
+
+msgid "Parking zone description sv"
+msgstr "Pysäköintialueen nimi (sv)"
+
+msgid "Low-emission"
+msgstr "Vähäpäästöinen"
+
+msgid "Primary vehicle"
+msgstr "Pääasiallinen ajoneuvo"
+
+msgid "Permit count snapshot"
+msgstr "Tunnusmäärän historiakirjaus"
+
+msgid "Permit count snapshots"
+msgstr "Tunnusmäärien historiakirjaukset"
+
 msgid "Temporary vehicle"
 msgstr "Väliaikainen ajoneuvo"
 
@@ -1004,6 +1022,9 @@ msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 msgid "Permit not found"
 msgstr "Pysäköintitunnusta ei löytynyt"
 
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
+
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
 
@@ -1053,6 +1074,9 @@ msgstr ""
 "Ajoneuvoluokkaa %(vehicle_class)s ei tueta rekisteritunnukselle "
 "%(registration_number)s"
 
+msgid "This person has a non-disclosure statement"
+msgstr "Tällä henkilöllä on tietojenluovutuskielto"
+
 #, python-format
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
@@ -1060,9 +1084,6 @@ msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
 #, python-format
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
 msgstr "Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan"
-
-msgid "This person has a non-disclosure statement"
-msgstr "Tällä henkilöllä on tietojenluovutuskielto"
 
 msgid "The person has no driving licence"
 msgstr "Henkilölle ei löydy ajokorttia"
@@ -1100,6 +1121,9 @@ msgstr ""
 "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun "
 "maksusuoritus on hyväksytty"
 
+msgid "Source: Transport register, Traficom"
+msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
+
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
 
@@ -1115,6 +1139,12 @@ msgid ""
 msgstr ""
 "Tämä viesti on lähetetty järjestelmästä automaattisesti. Älä vastaa tähän "
 "viestiin, sillä vastauksia ei käsitellä."
+
+msgid "What do you think about this service?"
+msgstr "Mitä mieltä olet tästä palvelusta?"
+
+msgid "Give us your feedback!"
+msgstr "Anna meille palautetta! "
 
 msgid "Parking permit terms of usage"
 msgstr "Pysäköintitunnuksen ehdot"
@@ -1171,6 +1201,9 @@ msgstr ""
 
 msgid "Total refundable amount"
 msgstr "Palautettava summa yhteensä"
+
+msgid "incl. VAT"
+msgstr "sis. ALV"
 
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "
