@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-05-13 23:16+0300\n"
+"POT-Creation-Date: 2026-01-27 13:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,72 +18,91 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+#: audit_logger/models.py:10
 msgid "NotSet"
 msgstr "Ei asetettu"
 
+#: audit_logger/models.py:11
 msgid "Info"
 msgstr "Info"
 
+#: audit_logger/models.py:12
 msgid "Warning"
 msgstr "Varoitus"
 
+#: audit_logger/models.py:13
 msgid "Debug"
 msgstr "Debug"
 
+#: audit_logger/models.py:14
 msgid "Error"
 msgstr "Virhe"
 
+#: audit_logger/models.py:15
 msgid "Fatal"
 msgstr "Virhe"
 
+#: audit_logger/models.py:26
 msgid "Logger name"
 msgstr "Lokin nimi"
 
+#: audit_logger/models.py:31
 msgid "Logging level"
 msgstr "Lokitaso"
 
+#: audit_logger/models.py:33
 msgid "Is sent"
 msgstr "Lähetetty"
 
+#: audit_logger/models.py:34
 msgid "Message"
 msgstr "Viesti"
 
+#: audit_logger/models.py:35 parking_permits/exporters.py:174
 msgid "Created at"
 msgstr "Luotu"
 
+#: parking_permits/admin_resolvers.py:175
 msgid "Permit search error"
 msgstr "Tunnuksen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:249
 msgid "No parking zone found for the location"
 msgstr "Pysäköintialuetta ei löytynyt tälle sijainnille"
 
+#: parking_permits/admin_resolvers.py:251
 msgid "Multiple parking zones found for the location"
 msgstr "Useita pysäköintialueita löytyi tälle sijainnille"
 
+#: parking_permits/admin_resolvers.py:273
 msgid "Customer not found"
 msgstr "Asiakasta ei löytynyt"
 
+#: parking_permits/admin_resolvers.py:291
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:318 parking_permits/resolvers.py:427
 msgid "Owner/holder data of a vehicle could not be verified"
 msgstr "Omistajuutta/haltijuutta ei pystytty todentamaan"
 
-msgid "Customer does not have a valid driving licence for this vehicle"
-msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
-
+#: parking_permits/admin_resolvers.py:367
 msgid "Customer without address security ban must have one address selected"
 msgstr "Ei-turvakieltoasiakkaalla tulee olla osoite valittuna"
 
+#: parking_permits/admin_resolvers.py:401
 msgid "Vehicle power type not found"
 msgstr "Ajoneuvon käyttövoimatyyppiä ei löytynyt"
 
+#: parking_permits/admin_resolvers.py:448
 msgid "Permit address does not have a valid zone"
 msgstr "Tunnuksen osoitteella ei ole sopivaa aluetta"
 
+#: parking_permits/admin_resolvers.py:485
 msgid "Cannot create more than 2 permits"
 msgstr "Asukaspysäköintitunnusten maksimimäärä on 2 kpl per asiakas"
 
+#: parking_permits/admin_resolvers.py:490
 msgid ""
 "Creating a fixed-period permit is not allowed when the first permit is open-"
 "ended"
@@ -91,12 +110,16 @@ msgstr ""
 "Määräaikaisen tunnuksen luonti ei ole mahdollista, jos asiakkaalla on jo "
 "voimassa oleva jatkuvaveloitteinen tunnus"
 
+#: parking_permits/admin_resolvers.py:503
+#: parking_permits/admin_resolvers.py:779
 msgid "Vehicle registration number is mandatory for the permit"
 msgstr "Ajoneuvon rekisterinumero on pakollinen tieto"
 
+#: parking_permits/admin_resolvers.py:511
 msgid "User already has a valid permit for the given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
+#: parking_permits/admin_resolvers.py:539
 #, python-format
 msgid ""
 "Cannot create permit. User already has a valid existing permit in other "
@@ -105,6 +128,7 @@ msgstr ""
 "Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus "
 "toisessa osoitteessa %(address)s."
 
+#: parking_permits/admin_resolvers.py:555
 #, python-format
 msgid ""
 "Cannot create permit. User already has a valid existing permit in zone "
@@ -113,19 +137,26 @@ msgstr ""
 "Tunnusta ei voitu luoda. Asiakkaalla on jo voimassaoleva pysäköintitunnus "
 "alueella %(parking_zone)s."
 
+#: parking_permits/admin_resolvers.py:688
+#: parking_permits/admin_resolvers.py:756
 msgid "Parking permit not found"
 msgstr "Pysäköintitunnusta ei löytynyt"
 
+#: parking_permits/admin_resolvers.py:728
+#: parking_permits/admin_resolvers.py:769
 msgid "Cannot change the customer of the permit"
 msgstr "Asiakasta ei voitu vaihtaa tälle pysäköintitunnukselle"
 
+#: parking_permits/admin_resolvers.py:766
 msgid "Customer national id number is mandatory for the permit"
 msgstr "Asiakkaan henkilötunnus on pakollinen tieto"
 
+#: parking_permits/admin_resolvers.py:790
 msgid "User already has a valid other permit for the given vehicle."
 msgstr ""
 "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
+#: parking_permits/admin_resolvers.py:816
 msgid ""
 "Changing address for different type (fixed-period / open-ended) permits is "
 "not allowed"
@@ -133,50 +164,69 @@ msgstr ""
 "Tunnuksen osoitteen vaihto ei ole sallittua, jos tunnusten tyyppi on eriävä "
 "(määräaikainen / jatkuvaveloitteinen)"
 
+#: parking_permits/admin_resolvers.py:991 parking_permits/customer_permit.py:85
 msgid "You cannot extend this permit."
 msgstr "Et voi ostaa lisäaikaa tälle pysäköintitunnukselle."
 
+#: parking_permits/admin_resolvers.py:1040
 msgid "Primary permit cannot be ended if customer has two permits"
 msgstr ""
 "Ensisijaista tunnusta ei voi päättää, jos asiakkaalla on kaksi tunnusta"
 
+#: parking_permits/admin_resolvers.py:1063
 msgid "Product search error"
 msgstr "Tuotteen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:1159
 msgid "Refund search error"
 msgstr "Palautteen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:1210
+#: parking_permits/admin_resolvers.py:1221
 msgid "Refund not found"
 msgstr "Palautetta ei löytynyt"
 
+#: parking_permits/admin_resolvers.py:1250
 msgid "Order search error"
 msgstr "Tilauksen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:1268
 msgid "Address search error"
 msgstr "Osoitteen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:1296
+#: parking_permits/admin_resolvers.py:1327
 msgid "This address is already in use"
 msgstr "Tämä osoite on jo käytössä"
 
+#: parking_permits/admin_resolvers.py:1404
 msgid "Announcement search error"
 msgstr "Ilmoituksen hakuvirhe"
 
+#: parking_permits/admin_resolvers.py:1415
 msgid "Announcement not found"
 msgstr "Ilmoitusta ei löytynyt"
 
+#: parking_permits/admin_resolvers.py:1471
 msgid "There's already a valid permit for a given vehicle."
 msgstr ""
 "Asiakkaalla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
+#: parking_permits/customer_permit.py:88
 msgid "Month count exceeds maximum"
 msgstr "Kuukausimäärä ylittää sallitun määrän"
 
+#: parking_permits/customer_permit.py:111
 msgid "You already have a valid permit for a given vehicle."
 msgstr "Sinulla on jo voimassa oleva pysäköintitunnus kyseiselle ajoneuvolle."
 
+#: parking_permits/customer_permit.py:204
+#: parking_permits/models/parking_permit.py:617
+#: parking_permits/resolvers.py:492
 msgid "Permit for a given vehicle already exist."
 msgstr "Kyseisellä ajoneuvolla on jo pysäköintitunnus."
 
+#: parking_permits/customer_permit.py:225
 msgid ""
 "Owner/holder data of a vehicle could not be verified. Please check with "
 "Traficom for data transfer restrictions."
@@ -184,514 +234,752 @@ msgstr ""
 "Omistajuutta/haltijuutta ei pystytty todentamaan. Tarkistathan Traficomilta "
 "tiedonluovutuskiellot."
 
+#: parking_permits/customer_permit.py:235 parking_permits/resolvers.py:433
 msgid "Customer does not have a valid driving licence"
 msgstr "Puutteelliset ajokorttitiedot"
 
+#: parking_permits/customer_permit.py:268
+#: parking_permits/tests/test_customer_permit.py:413
 msgid "Non draft permit can not be deleted"
 msgstr "Pysäköintitunnusta ei voida poistaa"
 
+#: parking_permits/customer_permit.py:319
+#: parking_permits/tests/test_customer_permit.py:634
 msgid "Contract type is required"
 msgstr "Sopimustyyppi on pakollinen"
 
+#: parking_permits/customer_permit.py:329
+#: parking_permits/tests/test_customer_permit.py:614
 #, python-format
 msgid "Only %(fixed_period)s is allowed"
 msgstr "Vain %(fixed_period)s on sallittu"
 
+#: parking_permits/customer_permit.py:338
+#: parking_permits/tests/test_customer_permit.py:629
 msgid "This is not a draft permit and can not be edited"
 msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"
 
+#: parking_permits/customer_permit.py:465
+#: parking_permits/tests/test_customer_permit.py:350
+#: parking_permits/tests/test_customer_permit.py:507
+#: parking_permits/tests/test_customer_permit.py:514
 msgid "Invalid user address."
 msgstr "Epäkelpo asiakkaan osoite"
 
+#: parking_permits/customer_permit.py:472
 #, python-format
 msgid "You can have a max of %(max_allowed_permit)s permits."
 msgstr ""
 "Sinulla voi olla enimmillään %(max_allowed_permit)s pysäköintitunnusta."
 
+#: parking_permits/customer_permit.py:483
+#: parking_permits/tests/test_customer_permit.py:537
 #, python-format
 msgid "You can buy permit only for address %(primary_address)s."
 msgstr "Voit ostaa pysäköintitunnuksen vain osoitteelle %(primary_address)s."
 
-msgid "Source: Transport register, Traficom"
-msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
-
+#: parking_permits/error_formatter.py:24
 msgid "Forbidden"
 msgstr "Lupa evätty"
 
+#: parking_permits/error_formatter.py:25
 msgid "Internal Server Error"
 msgstr "Sisäinen virhe"
 
+#: parking_permits/exporters.py:65 parking_permits/exporters.py:357
 msgid "Primary permit"
 msgstr "1. tunnus"
 
+#: parking_permits/exporters.py:65 parking_permits/exporters.py:357
 msgid "Secondary permit"
 msgstr "2. tunnus"
 
+#: parking_permits/exporters.py:91 parking_permits/models/order.py:155
 msgid "Online payment"
 msgstr "Verkkomaksu"
 
+#: parking_permits/exporters.py:93 parking_permits/models/order.py:156
 msgid "Cashier payment"
 msgstr "Kassamaksu"
 
+#: parking_permits/exporters.py:134 parking_permits/exporters.py:170
+#: parking_permits/models/parking_zone.py:20
+#: parking_permits/models/refund.py:18 parking_permits/models/vehicle.py:64
 msgid "Name"
 msgstr "Nimi"
 
+#: parking_permits/exporters.py:135 parking_permits/models/customer.py:44
+#: parking_permits/models/vehicle.py:106
 msgid "National identification number"
 msgstr "Henkilötunnus"
 
+#: parking_permits/exporters.py:136 parking_permits/exporters.py:149
+#: parking_permits/models/vehicle.py:135
 msgid "Registration number"
 msgstr "Rekisteritunnus"
 
+#: parking_permits/exporters.py:137
 msgid "Temporary registration number"
 msgstr "Väliaikainen rekisteritunnus"
 
+#: parking_permits/exporters.py:138 parking_permits/models/customer.py:52
 msgid "Primary address"
 msgstr "Vakituinen osoite"
 
+#: parking_permits/exporters.py:139 parking_permits/models/customer.py:66
 msgid "Other address"
 msgstr "Tilapäinen osoite"
 
+#: parking_permits/exporters.py:140 parking_permits/exporters.py:150
+#: parking_permits/exporters.py:160 parking_permits/exporters.py:276
+#: parking_permits/templates/emails/_permit_info.html:7
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:15
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:15
 msgid "Area"
 msgstr "Alue"
 
+#: parking_permits/exporters.py:141 parking_permits/exporters.py:151
+#: parking_permits/models/order.py:800
+#: parking_permits/models/parking_permit.py:149
+#: parking_permits/models/temporary_vehicle.py:16
 msgid "Start time"
 msgstr "Alkuaika"
 
+#: parking_permits/exporters.py:142 parking_permits/exporters.py:152
+#: parking_permits/models/order.py:801
+#: parking_permits/models/parking_permit.py:150
+#: parking_permits/models/temporary_vehicle.py:17
 msgid "End time"
 msgstr "Loppuaika"
 
+#: parking_permits/exporters.py:143
 msgid "Permit order"
 msgstr "Järjestys"
 
+#: parking_permits/exporters.py:144 parking_permits/exporters.py:153
+#: parking_permits/exporters.py:173 parking_permits/exporters.py:316
+#: parking_permits/models/order.py:653
+#: parking_permits/models/parking_permit.py:144
+#: parking_permits/models/refund.py:34
 msgid "Status"
 msgstr "Tila"
 
+#: parking_permits/exporters.py:157 parking_permits/exporters.py:255
+#: parking_permits/models/parking_permit.py:231
+#: parking_permits/services/mail.py:27
+#: parking_permits/templates/emails/base.html:128
+#: parking_permits/templates/emails/base.html:147
+#: parking_permits/templates/emails/base_multilingual.html:128
+#: parking_permits/templates/emails/base_multilingual.html:171
 msgid "Parking permits"
 msgstr "Pysäköintitunnukset"
 
+#: parking_permits/exporters.py:158
 msgid "Registration numbers"
 msgstr "Rekisteritunnukset"
 
+#: parking_permits/exporters.py:159 parking_permits/exporters.py:274
+#: parking_permits/exporters.py:312 parking_permits/models/customer.py:113
+#: parking_permits/models/driving_licence.py:11
+#: parking_permits/models/order.py:452
+#: parking_permits/models/parking_permit.py:104
 msgid "Customer"
 msgstr "Asiakas"
 
+#: parking_permits/exporters.py:161 parking_permits/exporters.py:275
+#: parking_permits/models/address.py:46 parking_permits/models/company.py:13
+#: parking_permits/models/order.py:466
+#: parking_permits/models/parking_permit.py:187
+#: parking_permits/templates/emails/_permit_info.html:6
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:14
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:14
 msgid "Address"
 msgstr "Osoite"
 
+#: parking_permits/exporters.py:162
 msgid "Permit type"
 msgstr "Tunnustyyppi"
 
+#: parking_permits/exporters.py:163
 msgid "Order number"
 msgstr "Tilausnumero"
 
+#: parking_permits/exporters.py:164 parking_permits/exporters.py:324
 msgid "Order payment type"
 msgstr "Maksutapa"
 
+#: parking_permits/exporters.py:165 parking_permits/models/order.py:462
 msgid "Paid time"
 msgstr "Maksuaika"
 
+#: parking_permits/exporters.py:166 parking_permits/exporters.py:171
+#: parking_permits/exporters.py:313 parking_permits/models/refund.py:30
 msgid "Amount"
 msgstr "Määrä"
 
+#: parking_permits/exporters.py:172 parking_permits/exporters.py:315
 msgid "IBAN"
 msgstr "IBAN-tilinumero"
 
+#: parking_permits/exporters.py:178
 msgid "Product type"
 msgstr "Tuotteen tyyppi"
 
+#: parking_permits/exporters.py:179 parking_permits/models/order.py:468
+#: parking_permits/models/parking_permit.py:125
+#: parking_permits/models/parking_zone.py:28
 msgid "Parking zone"
 msgstr "Pysäköintialue"
 
+#: parking_permits/exporters.py:180
 msgid "Price"
 msgstr "Hinta"
 
+#: parking_permits/exporters.py:181 parking_permits/models/product.py:167
 msgid "Low emission discount"
 msgstr "Päästöalennus"
 
+#: parking_permits/exporters.py:182 parking_permits/models/order.py:798
+#: parking_permits/models/product.py:165 parking_permits/models/refund.py:48
 msgid "VAT"
 msgstr "ALV"
 
+#: parking_permits/exporters.py:183 parking_permits/exporters.py:280
+#: parking_permits/templates/emails/_permit_info.html:10
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:18
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:18
 msgid "Validity period"
 msgstr "Voimassaoloaika"
 
+#: parking_permits/exporters.py:184
 msgid "Modified at"
 msgstr "Muokattu"
 
+#: parking_permits/exporters.py:185 parking_permits/models/mixins.py:25
 msgid "Modified by"
 msgstr "Muokkaaja"
 
+#: parking_permits/exporters.py:206 parking_permits/exporters.py:235
+#: parking_permits/templates/emails/base.html:156
+#: parking_permits/templates/emails/base_multilingual.html:180
 msgid "City of Helsinki"
 msgstr "Helsingin kaupunki"
 
+#: parking_permits/exporters.py:207 parking_permits/exporters.py:237
 msgid "Personal data - Digital and population data services agency"
 msgstr "Henkilötiedot - Digi- ja väestötietovirasto"
 
+#: parking_permits/exporters.py:273
 msgid "Permit ID"
 msgstr "Tunniste"
 
+#: parking_permits/exporters.py:277
+#: parking_permits/models/parking_permit.py:110
+#: parking_permits/models/temporary_vehicle.py:13
+#: parking_permits/models/vehicle.py:166
+#: parking_permits/templates/emails/_permit_info.html:8
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:16
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:16
 msgid "Vehicle"
 msgstr "Ajoneuvo"
 
+#: parking_permits/exporters.py:279
+#: parking_permits/models/parking_permit.py:138
+#: parking_permits/models/product.py:154
 msgid "Type"
 msgstr "Tyyppi"
 
+#: parking_permits/exporters.py:286 parking_permits/models/parking_permit.py:47
 msgid "Resident permit"
 msgstr "Asukastunnus"
 
+#: parking_permits/exporters.py:299 parking_permits/models/refund.py:52
 msgid "Refunds"
 msgstr "Palautukset"
 
+#: parking_permits/exporters.py:311
 msgid "Refund ID"
 msgstr "Palautusnumero"
 
-msgid "incl. VAT"
-msgstr "sis. ALV"
-
+#: parking_permits/exporters.py:317
 msgid "Extra info"
 msgstr "Lisätiedot"
 
+#: parking_permits/exporters.py:323
 msgid "Order ID"
 msgstr "Tilausnumero"
 
+#: parking_permits/exporters.py:325
 msgid "Order payment time"
 msgstr "Maksuaika"
 
+#: parking_permits/exporters.py:330 parking_permits/models/refund.py:51
 msgid "Refund"
 msgstr "Palautus"
 
+#: parking_permits/exporters.py:343
+#: parking_permits/templates/emails/_permit_info.html:3
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:11
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:11
 msgid "Order info"
 msgstr "Tilauksen tiedot"
 
+#: parking_permits/models/address.py:16
 msgid "Street name"
 msgstr "Kadunnimi"
 
+#: parking_permits/models/address.py:17
 msgid "Street name sv"
 msgstr "Kadunnimi (sv)"
 
+#: parking_permits/models/address.py:18
 msgid "Street number"
 msgstr "Kadunnumero"
 
+#: parking_permits/models/address.py:19
 msgid "City"
 msgstr "Postitoimipaikka"
 
+#: parking_permits/models/address.py:20
 msgid "City sv"
 msgstr "Postitoimipaikka (sv)"
 
+#: parking_permits/models/address.py:21
 msgid "Postal code"
 msgstr "Postinumero"
 
+#: parking_permits/models/address.py:23
 msgid "Location (2D)"
 msgstr "Sijainti (2D)"
 
+#: parking_permits/models/address.py:25
+#: parking_permits/models/driving_licence.py:16
+#: parking_permits/models/product.py:159 parking_permits/models/vehicle.py:89
 msgid "Start date"
 msgstr "Alkupäivä"
 
+#: parking_permits/models/address.py:26
+#: parking_permits/models/driving_licence.py:17
+#: parking_permits/models/product.py:160 parking_permits/models/vehicle.py:90
 msgid "End date"
 msgstr "Loppupäivä"
 
+#: parking_permits/models/address.py:29 parking_permits/models/customer.py:88
 msgid "Zone"
 msgstr "Alue"
 
+#: parking_permits/models/address.py:47
 msgid "Addresses"
 msgstr "Osoitteet"
 
+#: parking_permits/models/announcement.py:9
 msgid "Subject (EN)"
 msgstr "Otsikko (EN)"
 
+#: parking_permits/models/announcement.py:10
 msgid "Content (EN)"
 msgstr "Sisältö (EN)"
 
+#: parking_permits/models/announcement.py:11
 msgid "Subject (FI)"
 msgstr "Otsikko (FI)"
 
+#: parking_permits/models/announcement.py:12
 msgid "Content (FI)"
 msgstr "Sisältö (FI)"
 
+#: parking_permits/models/announcement.py:13
 msgid "Subject (SV)"
 msgstr "Otsikko (SV)"
 
+#: parking_permits/models/announcement.py:14
 msgid "Content (SV)"
 msgstr "Sisältö (SV)"
 
+#: parking_permits/models/announcement.py:16
 msgid "Emails handled"
 msgstr "Sähköpostit käsitelty"
 
+#: parking_permits/models/company.py:10
 msgid "Company name"
 msgstr "Yrityksen nimi"
 
+#: parking_permits/models/company.py:11
 msgid "Business Id"
 msgstr "Y-tunnus"
 
+#: parking_permits/models/company.py:16
 msgid "Company owner"
 msgstr "Yrityksen omistaja"
 
+#: parking_permits/models/company.py:20 parking_permits/models/product.py:26
 msgid "Company"
 msgstr "Yritys"
 
+#: parking_permits/models/company.py:21
 msgid "Companies"
 msgstr "Yritykset"
 
+#: parking_permits/models/customer.py:24
 msgid "Finnish"
 msgstr "Suomi"
 
+#: parking_permits/models/customer.py:25
 msgid "Swedish"
 msgstr "Ruotsi"
 
+#: parking_permits/models/customer.py:26
 msgid "English"
 msgstr "Englanti"
 
+#: parking_permits/models/customer.py:31
 msgid "Source system"
 msgstr "Lähdejärjestelmä"
 
+#: parking_permits/models/customer.py:33
 msgid "Source id"
 msgstr "Lähdejärjestelmän tunniste"
 
+#: parking_permits/models/customer.py:41
 msgid "First name"
 msgstr "Etunimi"
 
+#: parking_permits/models/customer.py:42
 msgid "Last name"
 msgstr "Sukunimi"
 
+#: parking_permits/models/customer.py:59
 msgid "Primary address apartment"
 msgstr "Vakituisen osoitteen huoneisto"
 
+#: parking_permits/models/customer.py:62
 msgid "Primary address apartment (sv)"
 msgstr "Vakituisen osoitteen huoneisto (sv)"
 
+#: parking_permits/models/customer.py:73
 msgid "Other address apartment"
 msgstr "Tilapäisen osoitteen huoneisto"
 
+#: parking_permits/models/customer.py:76
 msgid "Other address apartment (sv)"
 msgstr "Tilapäisen osoitteen huoneisto (sv)"
 
+#: parking_permits/models/customer.py:78
 msgid "Email"
 msgstr "Sähköposti"
 
+#: parking_permits/models/customer.py:80
 msgid "Phone number"
 msgstr "Puhelinnumero"
 
+#: parking_permits/models/customer.py:82
 msgid "Address security ban"
 msgstr "Turvakielto"
 
+#: parking_permits/models/customer.py:84
 msgid "Driver's license checked"
 msgstr "Ajokortti"
 
+#: parking_permits/models/customer.py:94
 msgid "Language"
 msgstr "Kieli"
 
+#: parking_permits/models/customer.py:114
 msgid "Customers"
 msgstr "Asiakkaat"
 
+#: parking_permits/models/driving_class.py:76
+#: parking_permits/models/vehicle.py:65
 msgid "Identifier"
 msgstr "Tunniste"
 
+#: parking_permits/models/driving_class.py:79
 msgid "Driving class"
 msgstr "Ajoneuvoluokka"
 
+#: parking_permits/models/driving_class.py:80
 msgid "Driving classes"
 msgstr "Ajoneuvoluokat"
 
+#: parking_permits/models/driving_licence.py:21
 msgid "Driving licence"
 msgstr "Ajokortti"
 
+#: parking_permits/models/driving_licence.py:22
 msgid "Driving licences"
 msgstr "Ajokortit"
 
+#: parking_permits/models/mixins.py:7
 msgid "Time created"
 msgstr "Luonti-aikaleima"
 
+#: parking_permits/models/mixins.py:8
 msgid "Time modified"
 msgstr "Muokattu-aikaleima"
 
+#: parking_permits/models/mixins.py:17
+#: parking_permits/models/temporary_vehicle.py:21
 msgid "Created by"
 msgstr "Luotu"
 
+#: parking_permits/models/order.py:160
+#: parking_permits/models/parking_permit.py:68
 msgid "Draft"
 msgstr "Luonnos"
 
+#: parking_permits/models/order.py:161 parking_permits/models/order.py:639
 msgid "Confirmed"
 msgstr "Vahvistettu"
 
+#: parking_permits/models/order.py:162 parking_permits/models/order.py:640
+#: parking_permits/models/parking_permit.py:72
+#: parking_permits/models/permit_extension_request.py:32
 msgid "Cancelled"
 msgstr "Peruutettu"
 
+#: parking_permits/models/order.py:166
+#: parking_permits/models/parking_permit.py:1169
 msgid "Created"
 msgstr "Luotu"
 
+#: parking_permits/models/order.py:167
 msgid "Vehicle changed"
 msgstr "Ajoneuvo vaihtunut"
 
+#: parking_permits/models/order.py:168
 msgid "Address changed"
 msgstr "Osoite vaihtunut"
 
+#: parking_permits/models/order.py:169
 msgid "Subscription renewed"
 msgstr "Sopimus uusittu"
 
+#: parking_permits/models/order.py:430
 msgid "Talpa order id"
 msgstr "Talpan tilauksen tunniste"
 
+#: parking_permits/models/order.py:432
 msgid "Talpa checkout url"
 msgstr "Talpan checkoutin url"
 
+#: parking_permits/models/order.py:434
 msgid "Talpa logged in checkout url"
 msgstr "Talpan sisäänkirjautuneen checkoutin url"
 
+#: parking_permits/models/order.py:436
 msgid "Talpa receipt_url"
 msgstr "Talpan kuitin url"
 
+#: parking_permits/models/order.py:438
 msgid "Talpa update card url"
 msgstr "Talpan kortin päivityksen url"
 
+#: parking_permits/models/order.py:441
 msgid "Talpa last valid purchase time"
 msgstr "Talpan viimeisin voimassa oleva ostoaika"
 
+#: parking_permits/models/order.py:445
 msgid "Payment type"
 msgstr "Maksutapa"
 
+#: parking_permits/models/order.py:457
 msgid "Order status"
 msgstr "Tilauksen tila"
 
+#: parking_permits/models/order.py:464
 msgid "permits"
 msgstr "Pysäköintitunnukset"
 
+#: parking_permits/models/order.py:471 parking_permits/models/vehicle.py:167
 msgid "Vehicles"
 msgstr "Ajoneuvot"
 
+#: parking_permits/models/order.py:474
 msgid "Order type"
 msgstr "Tilaustyyppi"
 
+#: parking_permits/models/order.py:488 parking_permits/models/order.py:773
 msgid "Order"
 msgstr "Tilaus"
 
+#: parking_permits/models/order.py:489 parking_permits/models/refund.py:21
 msgid "Orders"
 msgstr "Tilaukset"
 
+#: parking_permits/models/order.py:644
 msgid "Renewal failed"
 msgstr "Tunnuksen uusiminen epäonnistui"
 
+#: parking_permits/models/order.py:645
 msgid "User cancelled"
 msgstr "Käyttäjän peruuttama"
 
+#: parking_permits/models/order.py:646
 msgid "Permit expired"
 msgstr "Tunnus vanhentunut"
 
+#: parking_permits/models/order.py:651
 msgid "Talpa subscription id"
 msgstr "Talpan jatkuvaveloitteisen sopimuksen tunniste"
 
+#: parking_permits/models/order.py:655
 msgid "Cancel reason"
 msgstr "Peruutussyy"
 
+#: parking_permits/models/order.py:665 parking_permits/models/order.py:779
 msgid "Subscription"
 msgstr "Sopimus"
 
+#: parking_permits/models/order.py:666
 msgid "Subscriptions"
 msgstr "Sopimukset"
 
+#: parking_permits/models/order.py:769
 msgid "Talpa order item id"
 msgstr "Talpan tilausrivin tunniste"
 
+#: parking_permits/models/order.py:786 parking_permits/models/product.py:189
 msgid "Product"
 msgstr "Tuote"
 
+#: parking_permits/models/order.py:790
+#: parking_permits/models/parking_permit.py:230
 msgid "Parking permit"
 msgstr "Pysäköintitunnus"
 
+#: parking_permits/models/order.py:794 parking_permits/models/product.py:161
 msgid "Unit price"
 msgstr "Tuotteen hinta"
 
+#: parking_permits/models/order.py:796
 msgid "Payment unit price"
 msgstr "Maksun hinta"
 
+#: parking_permits/models/order.py:799
 msgid "Quantity"
 msgstr "Määrä"
 
+#: parking_permits/models/order.py:802
 msgid "Is refunded"
 msgstr "Palautettu"
 
+#: parking_permits/models/order.py:814
 msgid "Order item"
 msgstr "Tilausrivi"
 
+#: parking_permits/models/order.py:815
 msgid "Order items"
 msgstr "Tilausrivit"
 
+#: parking_permits/models/parking_permit.py:48
 msgid "Company permit"
 msgstr "Yrityspysäköintitunnus"
 
+#: parking_permits/models/parking_permit.py:52
 msgid "Fixed period"
 msgstr "Määräaikainen"
 
+#: parking_permits/models/parking_permit.py:53
 msgid "Open ended"
 msgstr "Jatkuvaveloitteinen"
 
+#: parking_permits/models/parking_permit.py:57
+#: parking_permits/models/parking_permit.py:62
 msgid "Immediately"
 msgstr "Heti"
 
+#: parking_permits/models/parking_permit.py:58
 msgid "From"
 msgstr "Alkaen"
 
+#: parking_permits/models/parking_permit.py:63
 msgid "After current period"
 msgstr "Nykyisen jakson jälkeen"
 
+#: parking_permits/models/parking_permit.py:64
 msgid "Previous day end"
 msgstr "Edellisen päivän loppu"
 
+#: parking_permits/models/parking_permit.py:69
 msgid "Preliminary"
 msgstr "Alustava"
 
+#: parking_permits/models/parking_permit.py:70
 msgid "Payment in progress"
 msgstr "Maksussa"
 
+#: parking_permits/models/parking_permit.py:71
 msgid "Valid"
 msgstr "Voimassa"
 
+#: parking_permits/models/parking_permit.py:73
 msgid "Closed"
 msgstr "Suljettu"
 
+#: parking_permits/models/parking_permit.py:116
 msgid "Next vehicle"
 msgstr "Tuleva ajoneuvo"
 
+#: parking_permits/models/parking_permit.py:131
 msgid "Next parking zone"
 msgstr "Tuleva pysäköintialue"
 
+#: parking_permits/models/parking_permit.py:154
 msgid "Bypass Traficom validation"
 msgstr "Ohita Traficom-tarkistus"
 
+#: parking_permits/models/parking_permit.py:159
 msgid "Vehicle changed date"
 msgstr "Ajoneuvon tietojen muutospäivä"
 
+#: parking_permits/models/parking_permit.py:163
 msgid "Address changed date"
 msgstr "Osoitteen vaihdon muutospäivä"
 
+#: parking_permits/models/parking_permit.py:166
+#: parking_permits/models/reporting.py:33
 msgid "Contract type"
 msgstr "Sopimustyyppi"
 
+#: parking_permits/models/parking_permit.py:172
 msgid "Start type"
 msgstr "Alkamistyyppi"
 
+#: parking_permits/models/parking_permit.py:178
 msgid "End type"
 msgstr "Loppumistyyppi"
 
+#: parking_permits/models/parking_permit.py:183
 msgid "Month count"
 msgstr "Kuukaudet (lkm)"
 
+#: parking_permits/models/parking_permit.py:184
+#: parking_permits/models/parking_zone.py:21
+#: parking_permits/models/refund.py:39
 msgid "Description"
 msgstr "Kuvaus"
 
+#: parking_permits/models/parking_permit.py:194
 msgid "Address apartment"
 msgstr "Osoiteen huoneisto"
 
+#: parking_permits/models/parking_permit.py:197
 msgid "Address apartment (sv)"
 msgstr "Osoiteen huoneisto (sv)"
 
+#: parking_permits/models/parking_permit.py:201
 msgid "Next address"
 msgstr "Tuleva osoite"
 
+#: parking_permits/models/parking_permit.py:208
 msgid "Next address apartment"
 msgstr "Tulevan osoitteen huoneisto"
 
+#: parking_permits/models/parking_permit.py:211
 msgid "Next address apartment (sv)"
 msgstr "Tulevan osoitteen huoneisto (sv)"
 
+#: parking_permits/models/parking_permit.py:896
 msgid ""
 "Cannot close primary vehicle permit if an active secondary vehicle permit "
 "exists"
@@ -699,347 +987,522 @@ msgstr ""
 "Ensisijaista ajoneuvoa sisältävää tunnusta ei voida sulkea, koska "
 "toissijainen ajoneuvo löytyy"
 
+#: parking_permits/models/parking_permit.py:987
 msgid "Temporary vehicle start time has to be after permit start time"
 msgstr ""
 "Tilapäisen ajoneuvon alkamisaika tulee olla tunnuksen alkamisajan jälkeinen"
 
+#: parking_permits/models/parking_permit.py:1022
 msgid "Can not have more than 2 temporary vehicles in 365 days from first one."
 msgstr ""
 "Tilapäisten ajoneuvojen lukumäärä on rajoitettu kahteen 365 päivän aikana."
 
+#: parking_permits/models/parking_permit.py:1170
 msgid "Updated"
 msgstr "Päivitetty"
 
+#: parking_permits/models/parking_permit.py:1171
 msgid "Renewed"
 msgstr "Uusittu"
 
+#: parking_permits/models/parking_permit.py:1172
 msgid "Ended"
 msgstr "Päättynyt"
 
+#: parking_permits/models/parking_permit.py:1197
 msgid "Event type"
 msgstr "Tapahtumatyyppi"
 
+#: parking_permits/models/parking_permit.py:1226
 #, python-format
 msgid "Permit extension #%(ext_request_id)s created by admin"
 msgstr "Admin luonut tunnuksen jatkon #%(ext_request_id)s"
 
+#: parking_permits/models/parking_permit.py:1241
 #, python-format
 msgid "Permit extension #%(ext_request_id)s created by customer"
 msgstr "Asiakas luonut tunnuksen jatkon #%(ext_request_id)s"
 
+#: parking_permits/models/parking_permit.py:1255
 #, python-format
 msgid "Permit extension #%(ext_request_id)s approved"
 msgstr "Tunnuksen jatko #%(ext_request_id)s hyväksytty"
 
+#: parking_permits/models/parking_permit.py:1268
 #, python-format
 msgid "Permit extension #%(ext_request_id)s cancelled"
 msgstr "Tunnuksen jatko #%(ext_request_id)s peruutettu"
 
+#: parking_permits/models/parking_permit.py:1281
 #, python-format
 msgid "Permit #%(permit_id)s created"
 msgstr "Tunnus #%(permit_id)s luotu"
 
+#: parking_permits/models/parking_permit.py:1293
 #, python-format
 msgid "Permit #%(permit_id)s draft created"
 msgstr "Tunnuksen #%(permit_id)s luonnos luotu"
 
+#: parking_permits/models/parking_permit.py:1304
 #, python-format
 msgid "Permit #%(permit_id)s draft updated"
 msgstr "Tunnuksen #%(permit_id)s luonnos päivitetty"
 
+#: parking_permits/models/parking_permit.py:1317
 #, python-format
 msgid "Permit #%(permit_id)s updated"
 msgstr "Tunnus #%(permit_id)s päivitetty"
 
+#: parking_permits/models/parking_permit.py:1332
 #, python-format
 msgid "Permit #%(permit_id)s ended"
 msgstr "Tunnus #%(permit_id)s päättynyt"
 
+#: parking_permits/models/parking_permit.py:1384
 #, python-format
 msgid "Refund #%(refund_id)s created"
 msgstr "Palautus #%(refund_id)s luotu"
 
+#: parking_permits/models/parking_permit.py:1398
 #, python-format
 msgid "Temporary vehicle #%(temp_vehicle_reg_number)s added to permit"
 msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s liitetty tunnukseen"
 
+#: parking_permits/models/parking_permit.py:1415
 #, python-format
 msgid "Temporary vehicle #%(temp_vehicle_reg_number)s removed from permit"
 msgstr "Tilapäinen ajoneuvo #%(temp_vehicle_reg_number)s poistettu tunnuksesta"
 
+#: parking_permits/models/parking_zone.py:22
 msgid "Description sv"
 msgstr "Kuvaus (sv)"
 
+#: parking_permits/models/parking_zone.py:23
 msgid "Area (2D)"
 msgstr "Alue (2D)"
 
+#: parking_permits/models/parking_zone.py:29
 msgid "Parking zones"
 msgstr "Pysäköintialueet"
 
+#: parking_permits/models/permit_extension_request.py:30
 msgid "Pending"
 msgstr "Avoin"
 
+#: parking_permits/models/permit_extension_request.py:31
 msgid "Approved"
 msgstr "Hyväksytty"
 
+#: parking_permits/models/product.py:27
 msgid "Resident"
 msgstr "Asukas"
 
+#: parking_permits/models/product.py:31
 msgid "Monthly"
 msgstr "Kuukausittainen"
 
+#: parking_permits/models/product.py:32
 msgid "Pieces"
 msgstr "Osat"
 
+#: parking_permits/models/product.py:36
 msgid "Active from"
 msgstr "Voimassa alkaen"
 
+#: parking_permits/models/product.py:38
 msgid "Company code"
 msgstr "Yrityskoodi"
 
+#: parking_permits/models/product.py:40
 msgid "VAT code"
 msgstr "ALV-koodi"
 
+#: parking_permits/models/product.py:42
 msgid "Internal order"
 msgstr "Sisäinen tilaus"
 
+#: parking_permits/models/product.py:45
 msgid "Profit center"
 msgstr "Kustannuspaikka"
 
+#: parking_permits/models/product.py:48
 msgid "Balance profit center"
 msgstr "Tulosyksikkö"
 
+#: parking_permits/models/product.py:50
 msgid "Project"
 msgstr "Projekti"
 
+#: parking_permits/models/product.py:52
 msgid "Operation area"
 msgstr "Toiminta-alue"
 
+#: parking_permits/models/product.py:55
 msgid "Main ledger account"
 msgstr "Pääkirjan tili"
 
+#: parking_permits/models/product.py:59 parking_permits/models/product.py:171
 msgid "Accounting"
 msgstr "Kirjanpito"
 
+#: parking_permits/models/product.py:60
 msgid "Accountings"
 msgstr "Kirjanpidot"
 
+#: parking_permits/models/product.py:83 parking_permits/models/product.py:88
+#: parking_permits/models/product.py:109 parking_permits/models/product.py:116
 msgid "Product catalog error, please report to admin"
 msgstr "Tuotetietojen virhe, raportoi ylläpitäjälle"
 
+#: parking_permits/models/product.py:141
 msgid "Talpa product id"
 msgstr "Talpan tuotteen tunniste"
 
+#: parking_permits/models/product.py:149
 msgid "zone"
 msgstr "alue"
 
+#: parking_permits/models/product.py:163
 msgid "Unit"
 msgstr "Yksikkö"
 
+#: parking_permits/models/product.py:179
 msgid "Next accounting"
 msgstr "Seuraava kirjanpito"
 
+#: parking_permits/models/product.py:190
 msgid "Products"
 msgstr "Tuotteet"
 
+#: parking_permits/models/refund.py:11
 msgid "Open"
 msgstr "Avoin"
 
+#: parking_permits/models/refund.py:12
 msgid "Request for approval"
 msgstr "Hyväksyttävänä"
 
+#: parking_permits/models/refund.py:13
 msgid "Accepted"
 msgstr "Hyväksytty"
 
+#: parking_permits/models/refund.py:14
 msgid "Rejected"
 msgstr "Hylätty"
 
+#: parking_permits/models/refund.py:26
 msgid "Permits"
 msgstr "Pysäköintitunnukset"
 
+#: parking_permits/models/refund.py:40
 msgid "Accepted at"
 msgstr "Hyväksytty"
 
+#: parking_permits/models/refund.py:43
 msgid "Accepted by"
 msgstr "Hyväksyjä"
 
+#: parking_permits/models/reporting.py:20
+#, fuzzy
+#| msgid "Permit not found"
+msgid "Permit count"
+msgstr "Pysäköintitunnusta ei löytynyt"
+
+#: parking_permits/models/reporting.py:22
+msgid "Date"
+msgstr ""
+
+#: parking_permits/models/reporting.py:24
+#, fuzzy
+#| msgid "Parking zone"
+msgid "Parking zone name"
+msgstr "Pysäköintialue"
+
+#: parking_permits/models/reporting.py:25
+#, fuzzy
+#| msgid "Parking zones"
+msgid "Parking zone description"
+msgstr "Pysäköintialueet"
+
+#: parking_permits/models/reporting.py:26
+#, fuzzy
+#| msgid "Parking zones"
+msgid "Parking zone description sv"
+msgstr "Pysäköintialueet"
+
+#: parking_permits/models/reporting.py:28
+#, fuzzy
+#| msgid "Low-emission criteria"
+msgid "Low-emission"
+msgstr "Päästökriteeri"
+
+#: parking_permits/models/reporting.py:30
+#, fuzzy
+#| msgid "Temporary vehicle"
+msgid "Primary vehicle"
+msgstr "Väliaikainen ajoneuvo"
+
+#: parking_permits/models/reporting.py:39
+msgid "Permit count snapshot"
+msgstr ""
+
+#: parking_permits/models/reporting.py:40
+msgid "Permit count snapshots"
+msgstr ""
+
+#: parking_permits/models/temporary_vehicle.py:29
 msgid "Temporary vehicle"
 msgstr "Väliaikainen ajoneuvo"
 
+#: parking_permits/models/temporary_vehicle.py:30
 msgid "Temporary vehicles"
 msgstr "Väliaikaiset ajoneuvot"
 
+#: parking_permits/models/vehicle.py:10
 msgid "M1"
 msgstr "M1"
 
+#: parking_permits/models/vehicle.py:11
 msgid "M1G"
 msgstr "M1G"
 
+#: parking_permits/models/vehicle.py:12
 msgid "M2"
 msgstr "M2"
 
+#: parking_permits/models/vehicle.py:13
 msgid "M2G"
 msgstr "M2G"
 
+#: parking_permits/models/vehicle.py:14
 msgid "N1"
 msgstr "N1"
 
+#: parking_permits/models/vehicle.py:15
 msgid "N1G"
 msgstr "N1G"
 
+#: parking_permits/models/vehicle.py:16
 msgid "N2"
 msgstr "N2"
 
+#: parking_permits/models/vehicle.py:17
 msgid "N2G"
 msgstr "N2G"
 
+#: parking_permits/models/vehicle.py:18
 msgid "L3e-A1"
 msgstr "L3e-A1"
 
+#: parking_permits/models/vehicle.py:19
 msgid "L3e-A2"
 msgstr "L3e-A2"
 
+#: parking_permits/models/vehicle.py:20
 msgid "L3e-A3"
 msgstr "L3e-A3"
 
+#: parking_permits/models/vehicle.py:21
 msgid "L4e"
 msgstr "L4e"
 
+#: parking_permits/models/vehicle.py:22
 msgid "L5e-A"
 msgstr "L5e-A"
 
+#: parking_permits/models/vehicle.py:23
 msgid "L5e-B"
 msgstr "L5e-B"
 
+#: parking_permits/models/vehicle.py:24
 msgid "L6e-A"
 msgstr "L6e-A"
 
+#: parking_permits/models/vehicle.py:25
 msgid "L6e-B"
 msgstr "L6e-B"
 
+#: parking_permits/models/vehicle.py:26
 msgid "L6e-BP"
 msgstr "L6e-BP"
 
+#: parking_permits/models/vehicle.py:27
 msgid "L6e-BU"
 msgstr "L6e-BU"
 
+#: parking_permits/models/vehicle.py:31
 msgid "NEDC"
 msgstr "NEDC"
 
+#: parking_permits/models/vehicle.py:32
 msgid "WLTP"
 msgstr "WLTP"
 
+#: parking_permits/models/vehicle.py:68
 msgid "Vehicle power type"
 msgstr "Ajoneuvon käyttövoima"
 
+#: parking_permits/models/vehicle.py:69
 msgid "Vehicle power types"
 msgstr "Ajoneuvon käyttövoimat"
 
+#: parking_permits/models/vehicle.py:81
 msgid "NEDC maximum emission limit"
 msgstr "NEDC maksimipäästöraja"
 
+#: parking_permits/models/vehicle.py:84
 msgid "WLTP maximum emission limit"
 msgstr "WLTP maksimipäästöraja"
 
+#: parking_permits/models/vehicle.py:87
 msgid "Euro minimum class limit"
 msgstr "Euro-miniluokitus"
 
+#: parking_permits/models/vehicle.py:93
 msgid "Low-emission criteria"
 msgstr "Päästökriteeri"
 
+#: parking_permits/models/vehicle.py:94
 msgid "Low-emission criterias"
 msgstr "Päästökriteerit"
 
+#: parking_permits/models/vehicle.py:114
 msgid "Vehicle user"
 msgstr "Ajoneuvon käyttäjä"
 
+#: parking_permits/models/vehicle.py:115 parking_permits/models/vehicle.py:156
 msgid "Vehicle users"
 msgstr "Ajoneuvon käyttäjät"
 
+#: parking_permits/models/vehicle.py:124
 msgid "power_type"
 msgstr "Käyttövoima"
 
+#: parking_permits/models/vehicle.py:129
 msgid "VehicleClass"
 msgstr "Ajoneuvoluokka"
 
+#: parking_permits/models/vehicle.py:131
 msgid "Manufacturer"
 msgstr "Merkki"
 
+#: parking_permits/models/vehicle.py:132
 msgid "Model"
 msgstr "Malli"
 
+#: parking_permits/models/vehicle.py:137
 msgid "Total weigh of vehicle"
 msgstr "Kokonaispaino"
 
+#: parking_permits/models/vehicle.py:138
 msgid "Euro class"
 msgstr "Euro-luokitus"
 
+#: parking_permits/models/vehicle.py:139
 msgid "Emission"
 msgstr "Päästöt"
 
+#: parking_permits/models/vehicle.py:143
 msgid "Emission type"
 msgstr "Päästötyyppi"
 
+#: parking_permits/models/vehicle.py:148
 msgid "Serial number"
 msgstr "Sarjanumero"
 
+#: parking_permits/models/vehicle.py:150
 msgid "Last inspection date"
 msgstr "Viimeisin katsastuspäivä"
 
+#: parking_permits/models/vehicle.py:153
 msgid "Update from traficom on"
 msgstr "Päivitetty Traficomista"
 
+#: parking_permits/models/vehicle.py:160
 msgid "Traficom Restrictions"
 msgstr "Traficom-rajoitukset"
 
+#: parking_permits/resolvers.py:240 parking_permits/services/kami.py:190
 msgid "Not a valid customer address"
 msgstr "Epäkelpo asiakkaan osoite"
 
+#: parking_permits/resolvers.py:246
 msgid "Address not found"
 msgstr "Osoitetta ei löytynyt"
 
+#: parking_permits/resolvers.py:261 parking_permits/resolvers.py:660
 msgid "No active permits for the customer"
 msgstr "Asiakkaalla ei ole aktiivisia tunnuksia"
 
+#: parking_permits/resolvers.py:288
 msgid "Permit not found"
 msgstr "Pysäköintitunnusta ei löytynyt"
 
+#: parking_permits/resolvers.py:606
+msgid "Customer does not have a valid driving licence for this vehicle"
+msgstr "Puutteelliset ajokorttitiedot tälle ajoneuvolle"
+
+#: parking_permits/resolvers.py:671
 msgid "Conflict parking zones for active permits"
 msgstr "Pysäköintialueiden ja aktiivisten tunnusten konfliktitilanne"
 
+#: parking_permits/services/dvv.py:68
 msgid "Person not found"
 msgstr "Henkilöä ei löytynyt"
 
+#: parking_permits/services/mail.py:31
+#: parking_permits/templates/emails/permit_created.html:4
 msgid "New parking permit has been created for you"
 msgstr "Sinulle on luotu pysäköintitunnus"
 
+#: parking_permits/services/mail.py:34 parking_permits/services/mail.py:44
+#: parking_permits/templates/emails/permit_updated.html:4
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:4
 msgid "Your parking permit information has been updated"
 msgstr "Pysäköintitunnuksen tiedot on päivitetty"
 
+#: parking_permits/services/mail.py:36
+#: parking_permits/templates/emails/permit_ended.html:4
 msgid "Your order has ended"
 msgstr "Tilauksesi päättyi"
 
+#: parking_permits/services/mail.py:38
+#: parking_permits/templates/emails/permit_extended.html:4
 msgid "Your parking permit has been extended"
 msgstr "Pysäköintitunnuksesi voimassaoloaikaa on pidennetty"
 
+#: parking_permits/services/mail.py:41
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:4
 msgid "Temporary vehicle attached to your permit"
 msgstr "Tilapäinen ajoneuvo liitetty tunnukseen"
 
+#: parking_permits/services/mail.py:47
+#: parking_permits/templates/emails/expiration_remind.html:4
 msgid "Your parking permit will expire soon"
 msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy pian"
 
+#: parking_permits/services/mail.py:50
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:7
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:12
 msgid "The vehicle is entitled to a discount"
 msgstr "Ajoneuvo oikeutettu alennukseen"
 
+#: parking_permits/services/mail.py:53
 msgid "Vehicle discount right expired"
 msgstr "Ajoneuvon alennusoikeus päättynyt"
 
+#: parking_permits/services/mail.py:125
+#: parking_permits/templates/emails/refund_created.html:4
 msgid "Your refund has been registered"
 msgstr "Palautus otettu käsittelyyn"
 
+#: parking_permits/services/mail.py:128
+#: parking_permits/templates/emails/refund_accepted.html:4
 msgid "Your refund has been accepted"
 msgstr "Palautus on hyväksytty"
 
+#: parking_permits/services/traficom.py:119
+#: parking_permits/services/traficom.py:496
 #, python-format
 msgid ""
 "Could not find vehicle detail with given %(registration_number)s "
@@ -1047,52 +1510,67 @@ msgid ""
 msgstr ""
 "Rekisteritunnukselle %(registration_number)s ei löytynyt ajoneuvon tietoja"
 
+#: parking_permits/services/traficom.py:141
 #, python-format
 msgid "Unsupported vehicle class %(vehicle_class)s for %(registration_number)s"
 msgstr ""
 "Ajoneuvoluokkaa %(vehicle_class)s ei tueta rekisteritunnukselle "
 "%(registration_number)s"
 
+#: parking_permits/services/traficom.py:332
+msgid "This person has a non-disclosure statement"
+msgstr "Tällä henkilöllä on tietojenluovutuskielto"
+
+#: parking_permits/services/traficom.py:346
 #, python-format
 msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
 
+#: parking_permits/services/traficom.py:370
 #, python-format
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
 msgstr "Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan"
 
-msgid "This person has a non-disclosure statement"
-msgstr "Tällä henkilöllä on tietojenluovutuskielto"
-
+#: parking_permits/services/traficom.py:465
+#: parking_permits/services/traficom.py:507
 msgid "The person has no driving licence"
 msgstr "Henkilölle ei löydy ajokorttia"
 
+#: parking_permits/services/traficom.py:470
 msgid "No valid driving licence"
 msgstr "Voimassaolevaa ajo-oikeutta ei löydy"
 
+#: parking_permits/services/traficom.py:619
 msgid "Failed to fetch data from traficom"
 msgstr "Tietojen haku Traficomilta epäonnistui"
 
+#: parking_permits/talpa/order.py:61
 msgid "pcm"
 msgstr "kk"
 
+#: parking_permits/talpa/order.py:94
 #, python-format
 msgid "Fixed period, extension %(month)d months"
 msgstr "Määräaikainen, jatkoaika %(month)d kk"
 
+#: parking_permits/talpa/order.py:98
 #, python-format
 msgid "Fixed period %(month)d months"
 msgstr "Määräaikainen %(month)d kk"
 
+#: parking_permits/talpa/order.py:102
 msgid "Open ended 1 month"
 msgstr "Jatkuvaveloitteinen 1 kk"
 
+#: parking_permits/talpa/order.py:112
 msgid "Parking permit type"
 msgstr "Pysäköintitunnuksen tyyppi"
 
+#: parking_permits/talpa/order.py:119
 msgid "Parking permit start date*"
 msgstr "Pysäköintitunnuksen alkamispäivä*"
 
+#: parking_permits/talpa/order.py:128
 msgid ""
 "* Parking permit is valid from the start date of your choice, once the "
 "payment has been accepted"
@@ -1100,15 +1578,26 @@ msgstr ""
 "* Tunnus on voimassa valitsemastasi alkamispäivästä lähtien, kun "
 "maksusuoritus on hyväksytty"
 
+#: parking_permits/talpa/order.py:137
+msgid "Source: Transport register, Traficom"
+msgstr "Lähde: Liikenneasioidenrekisteri, Traficom"
+
+#: parking_permits/talpa/order.py:153
 msgid "Parking permit expiration date"
 msgstr "Pysäköintitunnuksen päättymispäivä"
 
+#: parking_permits/talpa/order.py:155
 msgid "Parking permit period expiration date"
 msgstr "Pysäköintitunnuksen jakson päättymispäivä"
 
+#: parking_permits/talpa/order.py:291
 msgid "Failed to create the order"
 msgstr "Tilauksen luonti epäonnistui"
 
+#: parking_permits/templates/emails/base.html:134
+#: parking_permits/templates/emails/base_multilingual.html:135
+#: parking_permits/templates/emails/base_multilingual.html:146
+#: parking_permits/templates/emails/base_multilingual.html:157
 msgid ""
 "This message has been sent automatically from the system. Please do not "
 "reply to this message as replies will not be processed."
@@ -1116,21 +1605,41 @@ msgstr ""
 "Tämä viesti on lähetetty järjestelmästä automaattisesti. Älä vastaa tähän "
 "viestiin, sillä vastauksia ei käsitellä."
 
+#: parking_permits/templates/emails/base.html:142
+#: parking_permits/templates/emails/base_multilingual.html:166
+msgid "What do you think about this service?"
+msgstr "Mitä mieltä olet tästä palvelusta?"
+
+#: parking_permits/templates/emails/base.html:144
+#: parking_permits/templates/emails/base_multilingual.html:168
+msgid "Give us your feedback!"
+msgstr "Anna meille palautetta! "
+
+#: parking_permits/templates/emails/base.html:149
+#: parking_permits/templates/emails/base_multilingual.html:173
 msgid "Parking permit terms of usage"
 msgstr "Pysäköintitunnuksen ehdot"
 
+#: parking_permits/templates/emails/base.html:150
+#: parking_permits/templates/emails/base_multilingual.html:174
 msgid "Support"
 msgstr "Tuki"
 
+#: parking_permits/templates/emails/base.html:151
+#: parking_permits/templates/emails/base_multilingual.html:175
 msgid "Feedback"
 msgstr "Palaute"
 
+#: parking_permits/templates/emails/base.html:152
+#: parking_permits/templates/emails/base_multilingual.html:176
 msgid "Customer service contact info"
 msgstr "Asiakaspalvelu ja yhteystiedot"
 
+#: parking_permits/templates/emails/expiration_remind.html:8
 msgid "Your parking permit expires at"
 msgstr "Pysäköintitunnuksesi voimassaoloaika päättyy"
 
+#: parking_permits/templates/emails/expiration_remind.html:9
 msgid ""
 "You can renew your permit by logging in to the service and selecting 'Extend "
 "parking permit'."
@@ -1138,9 +1647,13 @@ msgstr ""
 "Voit uusia tunnuksen kirjautumalla palveluun ja valitsemalla 'Jatka "
 "pysäköintitunnuksen voimassaoloa'."
 
+#: parking_permits/templates/emails/permit_created.html:8
 msgid "Thank you for your order!"
 msgstr "Kiitos tilauksestasi!"
 
+#: parking_permits/templates/emails/permit_created.html:9
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:21
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:21
 msgid ""
 "The parking permit is electronic and parking permit enforcers will identify "
 "permit validity based on your vehicle licence plate number."
@@ -1148,13 +1661,17 @@ msgstr ""
 "Pysäköintitunnus on sähköinen ja pysäköinninvalvonta tunnistaa voimassa "
 "olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
 
+#: parking_permits/templates/emails/permit_ended.html:8
 msgid "Your parking permit validity period has ended at"
 msgstr "Pysäköintitunnuksesi voimassaoloaika päättyi"
 
+#: parking_permits/templates/emails/permit_ended.html:9
 msgid ""
 "If you want to continue permit usage, you will need to make a new order."
 msgstr "Mikäli haluat jatkaa tunnuksen käyttöä tulee sinun tehdä uusi tilaus."
 
+#: parking_permits/templates/emails/permit_extended.html:8
+#: parking_permits/templates/emails/permit_updated.html:8
 msgid ""
 "Thank you for your order! The parking permit is electronic and parking "
 "permit enforcers will identify permit validity based on your vehicle licence "
@@ -1163,15 +1680,24 @@ msgstr ""
 "Kiitos tilauksestasi! Pysäköintitunnus on sähköinen ja pysäköinninvalvonta "
 "tunnistaa voimassa olevan tunnuksen ajoneuvosi rekisterinumeron perusteella."
 
+#: parking_permits/templates/emails/refund_accepted.html:8
 msgid ""
 "Your refund has been accepted and will appear on the account you reported "
 "within about a week"
 msgstr ""
 "Palautus on hyväksytty ja näkyy ilmoittamallasi tilillä noin viikon kuluessa."
 
+#: parking_permits/templates/emails/refund_accepted.html:12
+#: parking_permits/templates/emails/refund_created.html:12
 msgid "Total refundable amount"
 msgstr "Palautettava summa yhteensä"
 
+#: parking_permits/templates/emails/refund_accepted.html:13
+#: parking_permits/templates/emails/refund_created.html:13
+msgid "incl. VAT"
+msgstr "sis. ALV"
+
+#: parking_permits/templates/emails/refund_created.html:8
 msgid ""
 "You are entitled to a refund and it has been registered. You will receive a "
 "separate notification when the return has been approved."
@@ -1179,34 +1705,50 @@ msgstr ""
 "Olet oikeutettu palautukseen ja se on otettu käsittelyyn. Saat erillisen "
 "ilmoituksen, kun palautus on hyväksytty."
 
+#: parking_permits/templates/emails/temporary_vehicle_activated.html:8
 msgid "Temporary vehicle information has been updated to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty tilapäisen ajoneuvon tiedot."
 
+#: parking_permits/templates/emails/temporary_vehicle_deactivated.html:8
 msgid "Original vehicle has been restored to your permit."
 msgstr "Pysäköintitunnukseen on päivitetty alkuperäisen ajoneuvon tiedot."
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:15
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:15
 msgid "THIS MESSAGE HAS BEEN SENT AUTOMATICALLY, DO NOT REPLY"
 msgstr "TÄMÄ ON AUTOMAATTISESTI LÄHETETTY VIESTI, ÄLÄ VASTAA TÄHÄN"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:17
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:17
 msgid "Dear partner!"
 msgstr "Hyvä yhteistyökumppani!"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:19
 msgid "A low-emission vehicle parking benefit has been added to the vehicle."
 msgstr ""
 "Ohessa ajoneuvo, jolle on myönnetty vähäpäästöisen auton pysäköintietuus."
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:23
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:23
 msgid "With kind regards"
 msgstr "Ystävällisin terveisin"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:24
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:24
 msgid "Urban environmental service"
 msgstr "Kaupunkiympäristön asiakaspalvelu"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_activated.html:25
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:25
 msgid "Tel. 09-310 22111"
 msgstr "Puh. 09-310 22111"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:7
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:12
 msgid "This vehicle is no longer subject to a discount"
 msgstr "Ajoneuvolta on poistettu oikeus alennukseen"
 
+#: parking_permits/templates/emails/vehicle_low_emission_discount_deactivated.html:19
 msgid ""
 "A low-emission vehicle parking benefit has been removed from the vehicle."
 msgstr ""
