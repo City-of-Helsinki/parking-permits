@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.12.0...parking-permits-v1.12.1) (2026-01-29)
+
+
+### Dependencies
+
+* Bump wheel from 0.45.1 to 0.46.2 ([619240f](https://github.com/City-of-Helsinki/parking-permits/commit/619240fd8bf7e1ff1d8d04bea53856402b68d17d))
+
 ## [1.12.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.11.2...parking-permits-v1.12.0) (2026-01-21)
 
 
