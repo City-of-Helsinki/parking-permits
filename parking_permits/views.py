@@ -956,10 +956,10 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
         if not customer:
             logger.info(f"Customer {customer} not found")
             return Response(status=204)
-        if not customer.can_be_deleted:
-            logger.info(f"Customer {customer} cannot be deleted.")
+        if not customer.can_be_anonymized:
+            logger.info(f"Customer {customer} cannot be anonymized.")
             return Response(status=403)
-        customer.delete_all_data()
+        customer.anonymize_all_data()
 
     def delete(self, request, *args, **kwargs):
         dry_run_serializer = DryRunSerializer(data=request.data)
