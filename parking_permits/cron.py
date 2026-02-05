@@ -95,16 +95,16 @@ def automatic_expiration_remind_notification_of_permits():
 
 
 def automatic_remove_obsolete_customer_data():
-    db_logger.info("Automatically removing obsolete customer data started...")
-    qs = Customer.objects.all()
+    db_logger.info("Automatic anonymization of obsolete customer data started...")
+    qs = Customer.objects.filter(is_anonymized=False)
     count = 0
     for customer in qs:
-        if customer.can_be_deleted:
-            customer.delete_all_data()
+        if customer.can_be_anonymized:
+            customer.anonymize_all_data()
             count += 1
     db_logger.info(
-        "Automatically removing obsolete customer data completed. "
-        f"{count} customers are removed."
+        "Automatic anonymization of obsolete customer data completed. "
+        f"{count} customers are anonymized."
     )
 
 

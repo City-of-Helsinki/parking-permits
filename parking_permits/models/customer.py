@@ -6,6 +6,8 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
+from django.db import transaction
+from django.db.models import Q
 from django.db.models.functions import Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -15,7 +17,9 @@ from ..services.traficom import Traficom
 from .common import SourceSystem
 from .driving_licence import DrivingLicence
 from .mixins import TimestampedModelMixin
-from .parking_permit import ParkingPermit, ParkingPermitStatus
+from .parking_permit import ParkingPermit, ParkingPermitEvent, ParkingPermitStatus
+from .refund import Refund
+from .vehicle import VehicleUser
 
 logger = logging.getLogger("db")
 
@@ -218,19 +222,24 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         )
 
     @property
-    def can_be_deleted(self):
+    def can_be_anonymized(self):
         """
-        Returns True if the customer and its data can be removed
+        Returns True if the customer data can be anonymized for GDPR compliance.
 
-        This property can be used to check if the deleting is allowed
+        This property can be used to check if the anonymization is allowed
         via GDPR API triggered from Helsinki Profile or automatic
-        removal process. A customer that can be removed must satisfy
-        following conditions:
+        removal process.
 
+        Conditions:
+        - The customer is not already anonymized
         - The last modified time of the customer is more than 2 years ago
         - The customer does not have any valid permits
         - The latest permit must be ended and modified more than 2 years ago
+        - The customer must not have any active subscriptions
         """
+        if self.is_anonymized:
+            return False
+
         now = timezone.now()
         time_delta = relativedelta(years=2)
         if self.modified_at + time_delta > now:
@@ -252,16 +261,120 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         except ParkingPermit.DoesNotExist:
             pass
 
+        # Avoid circular imports
+        from parking_permits.models.order import OrderItem, SubscriptionStatus
+
+        has_active_subscriptions = OrderItem.objects.filter(
+            order__customer_id=self.id,
+            subscription__isnull=False,
+            subscription__status=SubscriptionStatus.CONFIRMED,
+        ).exists()
+
+        if has_active_subscriptions:
+            return False
+
         return True
 
-    def delete_all_data(self):
-        """Delete all customer related data"""
+    def anonymize_all_data(self):
+        """Anonymize all customer related data for GDPR compliance.
 
-        self.permits.all().delete()
-        self.orders.all().delete()
-        if self.user:
-            self.user.delete()
-        self.delete()
+        Uses bulk operations to minimize database queries.
+        """
+
+        with transaction.atomic():
+            # Collect vehicle IDs, these are needed for
+            # VehicleUser-removal which in turn needs the
+            # pre-anonymization national_id_number to allow removing
+            # only those VehicleUsers that are linked to the customer.
+            vehicle_ids = set(
+                self.permits.exclude(vehicle__isnull=True).values_list(
+                    "vehicle_id", flat=True
+                )
+            )
+            vehicle_ids.update(
+                self.permits.exclude(next_vehicle__isnull=True).values_list(
+                    "next_vehicle_id", flat=True
+                )
+            )
+
+            # Delete VehicleUsers which are linked to these vehicles
+            # and match the customers national_id_number
+            if vehicle_ids:
+                VehicleUser.objects.filter(
+                    vehicles__id__in=vehicle_ids,
+                    national_id_number=self.national_id_number,
+                ).delete()
+
+            # Anonymize Customer fields
+            self.first_name = "Anonymized"
+            self.last_name = "Customer"
+            self.national_id_number = f"XX-ANON-{self.pk:06d}"
+            self.email = ""
+            self.phone_number = ""
+            self.primary_address_apartment = ""
+            self.primary_address_apartment_sv = ""
+            self.other_address_apartment = ""
+            self.other_address_apartment_sv = ""
+            self.source_id = ""
+            self.is_anonymized = True
+            self.save()
+
+            # Anonymize permits
+            self.permits.update(
+                address_apartment="",
+                address_apartment_sv="",
+                next_address_apartment="",
+                next_address_apartment_sv="",
+                description="",
+            )
+
+            # Anonymize orders
+            self.orders.update(
+                address_text="",
+                talpa_checkout_url="",
+                talpa_logged_in_checkout_url="",
+                talpa_receipt_url="",
+                talpa_update_card_url="",
+            )
+
+            # Anonymize refunds linked to permits/orders
+            (
+                Refund.objects.filter(
+                    Q(permits__customer=self) | Q(orders__customer=self)
+                )
+                .distinct("id")
+                .update(name="", iban="", description="")
+            )
+
+            # Delete DrivingLicence (contains no statistical value)
+            DrivingLicence.objects.filter(customer=self).delete()
+
+            # Anonymize User if exists
+            if self.user:
+                self.user.first_name = ""
+                self.user.last_name = ""
+                self.user.email = f"anonymized-{self.pk}@anonymized.invalid"
+                self.user.username = f"anonymized-{self.pk}"
+                self.user.save()
+
+            # Clear Order.vehicles ArrayField (denormalized registration numbers)
+            self.orders.update(vehicles=[])
+
+            # Prevent ciruclar import
+            from .company import Company
+
+            # Anonymize Company if customer is owner
+            Company.objects.filter(company_owner=self).update(
+                name=f"Anonymized Company {self.pk}", business_id=f"ANON-{self.pk:07d}"
+            )
+
+            # Clear ParkingPermitEvent.context where it may contain PII
+            # The 'changes' key in context may contain customer field values
+            # We clear context entirely for this customer's permit events
+            # to be safe - IDs are still in the message field
+            ParkingPermitEvent.objects.filter(parking_permit__customer=self).update(
+                context={}
+            )
 
     @property
     def active_permits(self):
