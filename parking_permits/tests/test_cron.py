@@ -466,7 +466,7 @@ class AutomaticRemoveObsoleteCustomerDataTestCase(TestCase):
 
         with freeze_time(datetime(2022, 1, 15)):
             automatic_remove_obsolete_customer_data()
-            qs = Customer.objects.all()
+            qs = Customer.objects.filter(is_anonymized=False)
             self.assertNotIn(customer_1, qs)
             self.assertIn(customer_2, qs)
             self.assertIn(customer_3, qs)
