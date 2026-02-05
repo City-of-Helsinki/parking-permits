@@ -97,6 +97,14 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         default=Languages.FINNISH,
     )
 
+    is_anonymized = models.BooleanField(
+        _("Is anonymized"),
+        default=False,
+        help_text=_(
+            "Indicates if customer data has been anonymized for GDPR compliance"
+        ),
+    )
+
     serialize_fields = (
         {"name": "first_name"},
         {"name": "last_name"},
