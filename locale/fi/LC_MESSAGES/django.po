@@ -477,10 +477,10 @@ msgid "Identifier"
 msgstr "Tunniste"
 
 msgid "Driving class"
-msgstr "Ajoneuvoluokka"
+msgstr "Ajokorttiluokka"
 
 msgid "Driving classes"
-msgstr "Ajoneuvoluokat"
+msgstr "Ajokorttiluokat"
 
 msgid "Driving licence"
 msgstr "Ajokortti"
