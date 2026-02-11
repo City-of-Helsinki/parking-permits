@@ -34,7 +34,11 @@ from parking_permits.models.reporting import PermitCountSnapshot
 from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import OrderValidationError, SubscriptionValidationError
+from .exceptions import (
+    CustomerCannotBeAnonymizedError,
+    OrderValidationError,
+    SubscriptionValidationError,
+)
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -956,10 +960,11 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
         if not customer:
             logger.info(f"Customer {customer} not found")
             return Response(status=204)
-        if not customer.can_be_anonymized:
+        try:
+            customer.anonymize_all_data()
+        except CustomerCannotBeAnonymizedError:
             logger.info(f"Customer {customer} cannot be anonymized.")
             return Response(status=403)
-        customer.anonymize_all_data()
 
     def delete(self, request, *args, **kwargs):
         dry_run_serializer = DryRunSerializer(data=request.data)

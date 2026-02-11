@@ -6,6 +6,7 @@ from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
 
+from parking_permits.exceptions import CustomerCannotBeAnonymizedError
 from parking_permits.models.company import Company
 from parking_permits.models.driving_class import DrivingClass
 from parking_permits.models.driving_licence import DrivingLicence
@@ -150,98 +151,99 @@ class AnonymizeAllUserDataTestCase(TestCase):
     )
 
     def setUp(self):
-        self.primary_address = AddressFactory()
-        self.other_address = AddressFactory()
+        with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
+            self.primary_address = AddressFactory()
+            self.other_address = AddressFactory()
 
-        self.customer = CustomerFactory(
-            primary_address=self.primary_address,
-            other_address=self.other_address,
-        )
+            self.customer = CustomerFactory(
+                primary_address=self.primary_address,
+                other_address=self.other_address,
+            )
 
-        self.company = Company.objects.create(
-            name="Oy Firma Ab",
-            business_id="1234567-8",
-            company_owner=self.customer,
-            address=AddressFactory(),
-        )
+            self.company = Company.objects.create(
+                name="Oy Firma Ab",
+                business_id="1234567-8",
+                company_owner=self.customer,
+                address=AddressFactory(),
+            )
 
-        self.vehicle = VehicleFactory()
-        self.vehicle_user = VehicleUser.objects.create(
-            national_id_number=self.customer.national_id_number
-        )
-        self.vehicle.users.add(self.vehicle_user)
+            self.vehicle = VehicleFactory()
+            self.vehicle_user = VehicleUser.objects.create(
+                national_id_number=self.customer.national_id_number
+            )
+            self.vehicle.users.add(self.vehicle_user)
 
-        driving_class = DrivingClass.objects.create(identifier="M1")
-        self.driving_licence = DrivingLicence.objects.create(
-            customer=self.customer,
-            active=True,
-            start_date=date(1990, 1, 1),
-        )
-        self.driving_licence.driving_classes.add(driving_class)
+            driving_class = DrivingClass.objects.create(identifier="M1")
+            self.driving_licence = DrivingLicence.objects.create(
+                customer=self.customer,
+                active=True,
+                start_date=date(1990, 1, 1),
+            )
+            self.driving_licence.driving_classes.add(driving_class)
 
-        self.another_customer = CustomerFactory()
+            self.another_customer = CustomerFactory()
 
-        self.another_driving_licence = DrivingLicence.objects.create(
-            customer=self.another_customer,
-            active=True,
-            start_date=date(1980, 1, 1),
-        )
-        self.another_driving_licence.driving_classes.add(driving_class)
+            self.another_driving_licence = DrivingLicence.objects.create(
+                customer=self.another_customer,
+                active=True,
+                start_date=date(1980, 1, 1),
+            )
+            self.another_driving_licence.driving_classes.add(driving_class)
 
-        self.unrelated_vehicle_user = VehicleUser.objects.create(
-            national_id_number=self.another_customer.national_id_number
-        )
-        self.vehicle.users.add(self.unrelated_vehicle_user)
+            self.unrelated_vehicle_user = VehicleUser.objects.create(
+                national_id_number=self.another_customer.national_id_number
+            )
+            self.vehicle.users.add(self.unrelated_vehicle_user)
 
-        self.permit = ParkingPermitFactory(
-            customer=self.customer,
-            vehicle=self.vehicle,
-            parking_zone=self.customer.primary_address.zone,
-            address=self.customer.primary_address,
-            contract_type=ContractType.OPEN_ENDED,
-        )
+            self.permit = ParkingPermitFactory(
+                customer=self.customer,
+                vehicle=self.vehicle,
+                parking_zone=self.customer.primary_address.zone,
+                address=self.customer.primary_address,
+                contract_type=ContractType.OPEN_ENDED,
+            )
 
-        self.subscription = SubscriptionFactory(status=SubscriptionStatus.CANCELLED)
+            self.subscription = SubscriptionFactory(status=SubscriptionStatus.CANCELLED)
 
-        self.order = OrderFactory(customer=self.customer)
-        self.order.vehicles = [self.vehicle.registration_number]
-        self.order.save()
+            self.order = OrderFactory(customer=self.customer)
+            self.order.vehicles = [self.vehicle.registration_number]
+            self.order.save()
 
-        unit_price = Decimal(30)
-        product = ProductFactory(
-            unit_price=unit_price,
-        )
-        self.order_item = OrderItemFactory(
-            order=self.order,
-            permit=self.permit,
-            product=product,
-            subscription=self.subscription,
-        )
+            unit_price = Decimal(30)
+            product = ProductFactory(
+                unit_price=unit_price,
+            )
+            self.order_item = OrderItemFactory(
+                order=self.order,
+                permit=self.permit,
+                product=product,
+                subscription=self.subscription,
+            )
 
-        self.another_vehicle = VehicleFactory()
-        self.another_vehicle.users.add(self.vehicle_user)
+            self.another_vehicle = VehicleFactory()
+            self.another_vehicle.users.add(self.vehicle_user)
 
-        self.refunded_permit = ParkingPermitFactory(
-            customer=self.customer,
-            vehicle=self.another_vehicle,
-            parking_zone=self.customer.primary_address.zone,
-            address=self.customer.primary_address,
-        )
+            self.refunded_permit = ParkingPermitFactory(
+                customer=self.customer,
+                vehicle=self.another_vehicle,
+                parking_zone=self.customer.primary_address.zone,
+                address=self.customer.primary_address,
+            )
 
-        self.refunded_order = OrderFactory(
-            customer=self.customer,
-        )
-        self.refund = RefundFactory(
-            amount=100,
-            vat=Decimal(0.24),
-            name="Refund name",
-            description="Refund description",
-        )
-        self.refund.orders.add(self.refunded_order)
+            self.refunded_order = OrderFactory(
+                customer=self.customer,
+            )
+            self.refund = RefundFactory(
+                amount=100,
+                vat=Decimal(0.24),
+                name="Refund name",
+                description="Refund description",
+            )
+            self.refund.orders.add(self.refunded_order)
 
-        self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
-            permit=self.refunded_permit
-        )
+            self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
+                permit=self.refunded_permit
+            )
 
     def refresh_test_objects(self):
         self.customer.refresh_from_db()
@@ -544,3 +546,12 @@ class AnonymizeAllUserDataTestCase(TestCase):
             refund.vat, pytest.approx(pre_anon_refund_data["vat"], Decimal(0.01))
         )
         self.assertEqual(refund.accepted_at, pre_anon_refund_data["accepted_at"])
+
+
+class TestCannotAnonymizeCustomerErrorTestCase(TestCase):
+    def test_anonymizing_unanonymizable_customer_raises_exception(self):
+        customer = CustomerFactory()
+        # Should be unable to anonymize the customer at least due to
+        # too new modified-timestamp.
+        with self.assertRaises(CustomerCannotBeAnonymizedError):
+            customer.anonymize_all_data()
