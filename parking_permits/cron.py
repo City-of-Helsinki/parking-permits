@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
+from parking_permits.exceptions import CustomerCannotBeAnonymizedError
 from parking_permits.models import (
     Announcement,
     Customer,
@@ -99,9 +100,12 @@ def automatic_remove_obsolete_customer_data():
     qs = Customer.objects.filter(is_anonymized=False)
     count = 0
     for customer in qs:
-        if customer.can_be_anonymized:
+        try:
             customer.anonymize_all_data()
-            count += 1
+        except CustomerCannotBeAnonymizedError:
+            continue
+        count += 1
+
     db_logger.info(
         "Automatic anonymization of obsolete customer data completed. "
         f"{count} customers are anonymized."

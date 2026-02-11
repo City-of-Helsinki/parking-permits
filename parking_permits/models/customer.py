@@ -13,6 +13,8 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
+from parking_permits.exceptions import CustomerCannotBeAnonymizedError
+
 from ..services.traficom import Traficom
 from .common import SourceSystem
 from .driving_licence import DrivingLicence
@@ -280,6 +282,9 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
         Uses bulk operations to minimize database queries.
         """
+
+        if not self.can_be_anonymized:
+            raise CustomerCannotBeAnonymizedError
 
         with transaction.atomic():
             # Collect vehicle IDs, these are needed for
