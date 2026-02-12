@@ -252,6 +252,27 @@ class AnonymizeAllUserDataTestCase(TestCase):
                 )
                 self.refund.orders.add(self.refunded_order)
 
+                if self.create_multiple_refunds:
+                    self.another_refund_vehicle = VehicleFactory()
+
+                    self.another_refunded_permit = ParkingPermitFactory(
+                        customer=self.customer,
+                        vehicle=self.another_refund_vehicle,
+                        parking_zone=self.customer.primary_address.zone,
+                        address=self.customer.primary_address,
+                    )
+
+                    self.another_refunded_order = OrderFactory(
+                        customer=self.customer,
+                    )
+                    self.another_refund = RefundFactory(
+                        amount=100,
+                        vat=Decimal(0.24),
+                        name="Another refund name",
+                        description="Another refund description",
+                    )
+                    self.another_refund.orders.add(self.another_refunded_order)
+
                 self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
                     permit=self.refunded_permit
                 )
@@ -286,6 +307,12 @@ class AnonymizeAllUserDataTestCase(TestCase):
             self.refunded_permit.refresh_from_db()
             self.refund.refresh_from_db()
             self.permit_event.refresh_from_db()
+
+            if self.create_multiple_refunds:
+                self.another_refund_vehicle.refresh_from_db()
+                self.another_refunded_permit.refresh_from_db()
+                self.another_refunded_order.refresh_from_db()
+                self.another_refund.refresh_from_db()
 
     def _create_pre_anon_snapshot(self, object, fields: tuple[str]):
         # Naive helper for creating pre-anon-data dicts.
@@ -344,6 +371,26 @@ class AnonymizeAllUserDataTestCase(TestCase):
             pre_anon_data["another_vehicle"] = self._create_pre_anon_snapshot(
                 self.another_vehicle, self.vehicle_statistic_fields
             )
+
+            if self.create_multiple_refunds:
+                pre_anon_data["another_refund_vehicle"] = (
+                    self._create_pre_anon_snapshot(
+                        self.another_refund_vehicle, self.vehicle_statistic_fields
+                    )
+                )
+                pre_anon_data["another_refunded_permit"] = (
+                    self._create_pre_anon_snapshot(
+                        self.another_refunded_permit, self.permit_statistic_fields
+                    )
+                )
+                pre_anon_data["another_refund"] = self._create_pre_anon_snapshot(
+                    self.another_refund, self.refund_statistic_fields
+                )
+                pre_anon_data["another_refunded_order"] = (
+                    self._create_pre_anon_snapshot(
+                        self.another_refunded_order, self.order_statistic_fields
+                    )
+                )
 
         return pre_anon_data
 
@@ -413,7 +460,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
             )
 
             self.assert_anonymization_preserves_refund_statistical_data(
-                pre_anon_refund_data=pre_anon_data["refund"]
+                refund=self.refund, pre_anon_refund_data=pre_anon_data["refund"]
             )
 
             self.assert_anonymization_preserves_subscription_statistical_data(
@@ -424,6 +471,24 @@ class AnonymizeAllUserDataTestCase(TestCase):
                 vehicle=self.another_vehicle,
                 pre_anon_vehicle_data=pre_anon_data["another_vehicle"],
             )
+
+            if self.create_multiple_refunds:
+                self.assert_anonymization_preserves_vehicle_statistical_data(
+                    vehicle=self.another_refund_vehicle,
+                    pre_anon_vehicle_data=pre_anon_data["another_refund_vehicle"],
+                )
+                self.assert_anonymization_preserves_permit_statistical_data(
+                    permit=self.another_refunded_permit,
+                    pre_anon_permit_data=pre_anon_data["another_refunded_permit"],
+                )
+                self.assert_anonymization_preserves_order_statistical_data(
+                    order=self.another_refunded_order,
+                    pre_anon_order_data=pre_anon_data["another_refunded_order"],
+                )
+                self.assert_anonymization_preserves_refund_statistical_data(
+                    refund=self.another_refund,
+                    pre_anon_refund_data=pre_anon_data["another_refund"],
+                )
 
     def assert_anonymized_customer_gdpr_fields(self):
         customer = self.customer
@@ -581,9 +646,8 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(address.city, pre_anon_address_data["city"])
 
     def assert_anonymization_preserves_refund_statistical_data(
-        self, *, pre_anon_refund_data
+        self, *, refund, pre_anon_refund_data
     ):
-        refund = self.refund
         self.assertEqual(
             refund.amount, pytest.approx(pre_anon_refund_data["amount"], Decimal(0.01))
         )
@@ -599,12 +663,18 @@ class AnonymizeAllUserDataTestCase(TestCase):
         create_company: bool = True,
         create_user: bool = True,
         create_permits: bool = True,
+        create_multiple_refunds: bool = False,
     ):
         # DRY-helper for shared test logic.
+
+        if create_multiple_refunds and not create_permits:
+            # This combination of flags is not supported
+            raise ValueError
 
         self.create_company = create_company
         self.create_user = create_user
         self.create_permits = create_permits
+        self.create_multiple_refunds = create_multiple_refunds
 
         self._generate_test_objects()
 
@@ -640,6 +710,20 @@ class AnonymizeAllUserDataTestCase(TestCase):
     def test_anonymize_customer_data_without_permits_and_user_and_company(self):
         self._run_core_logic(
             create_permits=False, create_user=False, create_company=False
+        )
+
+    def test_anonymize_customer_data_multi_refund(self):
+        self._run_core_logic(create_multiple_refunds=True)
+
+    def test_anonymize_customer_data_without_user_multi_refund(self):
+        self._run_core_logic(create_user=False, create_multiple_refunds=True)
+
+    def test_anonymize_customer_data_without_company_multi_refund(self):
+        self._run_core_logic(create_company=False, create_multiple_refunds=True)
+
+    def test_anonymize_customer_data_without_user_and_company_multi_refund(self):
+        self._run_core_logic(
+            create_user=False, create_company=False, create_multiple_refunds=True
         )
 
 
