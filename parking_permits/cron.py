@@ -97,9 +97,22 @@ def automatic_expiration_remind_notification_of_permits():
 
 def automatic_remove_obsolete_customer_data():
     db_logger.info("Automatic anonymization of obsolete customer data started...")
-    qs = Customer.objects.filter(is_anonymized=False)
+
+    # Pre-filter candidates at database level to reduce Python iteration
+    # Exclude customers with valid permits and those modified recently
+    now = tz.localdate(tz.now())
+    cutoff_time = now - relativedelta(years=2)
+
+    candidates = (
+        Customer.objects.filter(is_anonymized=False, modified_at__lt=cutoff_time)
+        .exclude(permits__status=ParkingPermitStatus.VALID)
+        .prefetch_related(
+            "permits"  # Prefetch for can_be_anonymized check
+        )
+    )
+
     count = 0
-    for customer in qs:
+    for customer in candidates:
         try:
             customer.anonymize_all_data()
         except CustomerCannotBeAnonymizedError:
