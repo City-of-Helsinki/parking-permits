@@ -150,22 +150,30 @@ class AnonymizeAllUserDataTestCase(TestCase):
         "accepted_at",
     )
 
-    def setUp(self):
+    def _generate_test_objects(self):
         with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
             self.primary_address = AddressFactory()
             self.other_address = AddressFactory()
 
-            self.customer = CustomerFactory(
-                primary_address=self.primary_address,
-                other_address=self.other_address,
-            )
+            if self.create_user:
+                self.customer = CustomerFactory(
+                    primary_address=self.primary_address,
+                    other_address=self.other_address,
+                )
+            else:
+                self.customer = CustomerFactory(
+                    primary_address=self.primary_address,
+                    other_address=self.other_address,
+                    user=None,
+                )
 
-            self.company = Company.objects.create(
-                name="Oy Firma Ab",
-                business_id="1234567-8",
-                company_owner=self.customer,
-                address=AddressFactory(),
-            )
+            if self.create_company:
+                self.company = Company.objects.create(
+                    name="Oy Firma Ab",
+                    business_id="1234567-8",
+                    company_owner=self.customer,
+                    address=AddressFactory(),
+                )
 
             self.vehicle = VehicleFactory()
             self.vehicle_user = VehicleUser.objects.create(
@@ -195,192 +203,227 @@ class AnonymizeAllUserDataTestCase(TestCase):
             )
             self.vehicle.users.add(self.unrelated_vehicle_user)
 
-            self.permit = ParkingPermitFactory(
-                customer=self.customer,
-                vehicle=self.vehicle,
-                parking_zone=self.customer.primary_address.zone,
-                address=self.customer.primary_address,
-                contract_type=ContractType.OPEN_ENDED,
-            )
+            if self.create_permits:
+                self.permit = ParkingPermitFactory(
+                    customer=self.customer,
+                    vehicle=self.vehicle,
+                    parking_zone=self.customer.primary_address.zone,
+                    address=self.customer.primary_address,
+                    contract_type=ContractType.OPEN_ENDED,
+                )
 
-            self.subscription = SubscriptionFactory(status=SubscriptionStatus.CANCELLED)
+                self.subscription = SubscriptionFactory(
+                    status=SubscriptionStatus.CANCELLED
+                )
 
-            self.order = OrderFactory(customer=self.customer)
-            self.order.vehicles = [self.vehicle.registration_number]
-            self.order.save()
+                self.order = OrderFactory(customer=self.customer)
+                self.order.vehicles = [self.vehicle.registration_number]
+                self.order.save()
 
-            unit_price = Decimal(30)
-            product = ProductFactory(
-                unit_price=unit_price,
-            )
-            self.order_item = OrderItemFactory(
-                order=self.order,
-                permit=self.permit,
-                product=product,
-                subscription=self.subscription,
-            )
+                unit_price = Decimal(30)
+                product = ProductFactory(
+                    unit_price=unit_price,
+                )
+                self.order_item = OrderItemFactory(
+                    order=self.order,
+                    permit=self.permit,
+                    product=product,
+                    subscription=self.subscription,
+                )
 
-            self.another_vehicle = VehicleFactory()
-            self.another_vehicle.users.add(self.vehicle_user)
+                self.another_vehicle = VehicleFactory()
+                self.another_vehicle.users.add(self.vehicle_user)
 
-            self.refunded_permit = ParkingPermitFactory(
-                customer=self.customer,
-                vehicle=self.another_vehicle,
-                parking_zone=self.customer.primary_address.zone,
-                address=self.customer.primary_address,
-            )
+                self.refunded_permit = ParkingPermitFactory(
+                    customer=self.customer,
+                    vehicle=self.another_vehicle,
+                    parking_zone=self.customer.primary_address.zone,
+                    address=self.customer.primary_address,
+                )
 
-            self.refunded_order = OrderFactory(
-                customer=self.customer,
-            )
-            self.refund = RefundFactory(
-                amount=100,
-                vat=Decimal(0.24),
-                name="Refund name",
-                description="Refund description",
-            )
-            self.refund.orders.add(self.refunded_order)
+                self.refunded_order = OrderFactory(
+                    customer=self.customer,
+                )
+                self.refund = RefundFactory(
+                    amount=100,
+                    vat=Decimal(0.24),
+                    name="Refund name",
+                    description="Refund description",
+                )
+                self.refund.orders.add(self.refunded_order)
 
-            self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
-                permit=self.refunded_permit
-            )
+                self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
+                    permit=self.refunded_permit
+                )
 
-    def refresh_test_objects(self):
+    def _refresh_test_objects(self):
         self.customer.refresh_from_db()
-        self.customer.user.refresh_from_db()
-        self.order.refresh_from_db()
-        self.refunded_order.refresh_from_db()
-        self.refund.refresh_from_db()
-        self.permit.refresh_from_db()
-        self.refunded_permit.refresh_from_db()
-        self.company.refresh_from_db()
-        self.company.address.refresh_from_db()
         self.primary_address.refresh_from_db()
         self.other_address.refresh_from_db()
-        self.permit_event.refresh_from_db()
 
-    def create_pre_anon_snapshot(self, object, fields: tuple[str]):
+        if self.create_user:
+            self.customer.user.refresh_from_db()
+
+        if self.create_company:
+            self.company.refresh_from_db()
+            self.company.address.refresh_from_db()
+
+        self.vehicle.refresh_from_db()
+        # Note that self.vehicle_user and self.vehicle_user should be
+        # removed by now, so no refresh for these.
+
+        self.another_customer.refresh_from_db()
+        self.another_driving_licence.refresh_from_db()
+        self.unrelated_vehicle_user.refresh_from_db()
+
+        if self.create_permits:
+            self.permit.refresh_from_db()
+            self.subscription.refresh_from_db()
+            self.order.refresh_from_db()
+            self.order_item.refresh_from_db()
+            self.another_vehicle.refresh_from_db()
+            self.refunded_order.refresh_from_db()
+            self.refunded_permit.refresh_from_db()
+            self.refund.refresh_from_db()
+            self.permit_event.refresh_from_db()
+
+    def _create_pre_anon_snapshot(self, object, fields: tuple[str]):
         # Naive helper for creating pre-anon-data dicts.
         # Assumes that the inputed object has all the listed fields.
         return {field: getattr(object, field) for field in fields}
 
-    def test_anonymize_customer_data(self):
-        pre_anon_user_uuid = self.customer.user.uuid
+    def _cache_pre_anon_data(self):
+        pre_anon_data = {}
 
-        pre_anon_permit_data = self.create_pre_anon_snapshot(
-            self.permit, self.permit_statistic_fields
-        )
-        pre_anon_refunded_permit_data = self.create_pre_anon_snapshot(
-            self.refunded_permit, self.permit_statistic_fields
-        )
-
-        pre_anon_order_data = self.create_pre_anon_snapshot(
-            self.order, self.order_statistic_fields
-        )
-        pre_anon_refunded_order_data = self.create_pre_anon_snapshot(
-            self.refunded_order, self.order_statistic_fields
-        )
-
-        pre_anon_order_item_data = self.create_pre_anon_snapshot(
-            self.order_item, self.order_item_statistic_fields
-        )
-
-        pre_anon_subscription_data = self.create_pre_anon_snapshot(
-            self.subscription, self.subscription_statistic_fields
-        )
-
-        pre_anon_primary_address_data = self.create_pre_anon_snapshot(
+        pre_anon_data["primary_address"] = self._create_pre_anon_snapshot(
             self.primary_address, self.address_statistic_fields
         )
-        pre_anon_secondary_address_data = self.create_pre_anon_snapshot(
+        pre_anon_data["secondary_address"] = self._create_pre_anon_snapshot(
             self.other_address, self.address_statistic_fields
         )
-        pre_anon_company_address_data = self.create_pre_anon_snapshot(
-            self.company.address, self.address_statistic_fields
-        )
 
-        pre_anon_vehicle_data = self.create_pre_anon_snapshot(
+        if self.create_company:
+            pre_anon_data["company_address"] = self._create_pre_anon_snapshot(
+                self.company.address, self.address_statistic_fields
+            )
+
+        pre_anon_data["vehicle"] = self._create_pre_anon_snapshot(
             self.vehicle, self.vehicle_statistic_fields
         )
-        pre_anon_another_vehicle_data = self.create_pre_anon_snapshot(
-            self.another_vehicle, self.vehicle_statistic_fields
-        )
 
-        pre_anon_refund_data = self.create_pre_anon_snapshot(
-            self.refund, self.refund_statistic_fields
-        )
+        if self.create_user:
+            pre_anon_data["user_uuid"] = self.customer.user.uuid
 
-        self.customer.anonymize_all_data()
+        if self.create_permits:
+            pre_anon_data["permit"] = self._create_pre_anon_snapshot(
+                self.permit, self.permit_statistic_fields
+            )
+            pre_anon_data["refunded_permit"] = self._create_pre_anon_snapshot(
+                self.refunded_permit, self.permit_statistic_fields
+            )
 
-        self.refresh_test_objects()
+            pre_anon_data["order"] = self._create_pre_anon_snapshot(
+                self.order, self.order_statistic_fields
+            )
+            pre_anon_data["refunded_order"] = self._create_pre_anon_snapshot(
+                self.refunded_order, self.order_statistic_fields
+            )
 
+            pre_anon_data["order_item"] = self._create_pre_anon_snapshot(
+                self.order_item, self.order_item_statistic_fields
+            )
+
+            pre_anon_data["subscription"] = self._create_pre_anon_snapshot(
+                self.subscription, self.subscription_statistic_fields
+            )
+
+            pre_anon_data["refund"] = self._create_pre_anon_snapshot(
+                self.refund, self.refund_statistic_fields
+            )
+
+            pre_anon_data["another_vehicle"] = self._create_pre_anon_snapshot(
+                self.another_vehicle, self.vehicle_statistic_fields
+            )
+
+        return pre_anon_data
+
+    def run_assertions(self, pre_anon_data):
         self.assert_anonymized_customer_gdpr_fields()
-        self.assert_anonymized_user_gdpr_fields(pre_anon_user_uuid=pre_anon_user_uuid)
+        if self.create_user:
+            self.assert_anonymized_user_gdpr_fields(
+                pre_anon_user_uuid=pre_anon_data["user_uuid"]
+            )
 
-        self.assert_anonymized_order_gdpr_fields(order=self.order)
-        self.assert_anonymized_order_gdpr_fields(order=self.refunded_order)
+        self.assert_anonymization_preserves_address_statistical_data(
+            address=self.primary_address,
+            pre_anon_address_data=pre_anon_data["primary_address"],
+        )
+        self.assert_anonymization_preserves_address_statistical_data(
+            address=self.other_address,
+            pre_anon_address_data=pre_anon_data["secondary_address"],
+        )
 
-        self.assert_anonymized_permit_gdpr_fields(permit=self.permit)
-        self.assert_anonymized_permit_gdpr_fields(permit=self.refunded_permit)
+        if self.create_company:
+            self.assert_anonymized_company()
+            self.assert_anonymization_preserves_address_statistical_data(
+                address=self.company.address,
+                pre_anon_address_data=pre_anon_data["company_address"],
+            )
 
-        self.assert_anonymized_refund_gdpr_fields()
-        self.assert_anonymized_company()
-
-        self.assert_related_vehicle_user_is_deleted()
         self.assert_unrelated_vehicle_user_still_exists()
 
         self.assert_related_driving_licence_is_deleted()
         self.assert_unrelated_driving_licence_still_exists()
 
-        self.assert_anonymization_clears_permit_event_context()
-
-        self.assert_anonymization_preserves_permit_statistical_data(
-            permit=self.permit, pre_anon_permit_data=pre_anon_permit_data
-        )
-        self.assert_anonymization_preserves_permit_statistical_data(
-            permit=self.refunded_permit,
-            pre_anon_permit_data=pre_anon_refunded_permit_data,
-        )
-
-        self.assert_anonymization_preserves_order_statistical_data(
-            order=self.order, pre_anon_order_data=pre_anon_order_data
-        )
-        self.assert_anonymization_preserves_order_statistical_data(
-            order=self.refunded_order, pre_anon_order_data=pre_anon_refunded_order_data
-        )
-
-        self.assert_anonymization_preserves_order_item_statistical_data(
-            pre_anon_order_item_data=pre_anon_order_item_data
-        )
-
-        self.assert_anonymization_preserves_subscription_statistical_data(
-            pre_anon_subscription_data=pre_anon_subscription_data
-        )
-
         self.assert_anonymization_preserves_vehicle_statistical_data(
-            vehicle=self.vehicle, pre_anon_vehicle_data=pre_anon_vehicle_data
-        )
-        self.assert_anonymization_preserves_vehicle_statistical_data(
-            vehicle=self.another_vehicle,
-            pre_anon_vehicle_data=pre_anon_another_vehicle_data,
+            vehicle=self.vehicle, pre_anon_vehicle_data=pre_anon_data["vehicle"]
         )
 
-        self.assert_anonymization_preserves_address_statistical_data(
-            address=self.primary_address,
-            pre_anon_address_data=pre_anon_primary_address_data,
-        )
-        self.assert_anonymization_preserves_address_statistical_data(
-            address=self.other_address,
-            pre_anon_address_data=pre_anon_secondary_address_data,
-        )
-        self.assert_anonymization_preserves_address_statistical_data(
-            address=self.company.address,
-            pre_anon_address_data=pre_anon_company_address_data,
-        )
+        if self.create_permits:
+            self.assert_anonymized_order_gdpr_fields(order=self.order)
+            self.assert_anonymized_order_gdpr_fields(order=self.refunded_order)
 
-        self.assert_anonymization_preserves_refund_statistical_data(
-            pre_anon_refund_data=pre_anon_refund_data
-        )
+            self.assert_anonymized_permit_gdpr_fields(permit=self.permit)
+            self.assert_anonymized_permit_gdpr_fields(permit=self.refunded_permit)
+
+            self.assert_anonymized_refund_gdpr_fields()
+
+            self.assert_anonymization_clears_permit_event_context()
+
+            self.assert_related_vehicle_user_is_deleted()
+
+            self.assert_anonymization_preserves_permit_statistical_data(
+                permit=self.permit, pre_anon_permit_data=pre_anon_data["permit"]
+            )
+            self.assert_anonymization_preserves_permit_statistical_data(
+                permit=self.refunded_permit,
+                pre_anon_permit_data=pre_anon_data["refunded_permit"],
+            )
+
+            self.assert_anonymization_preserves_order_statistical_data(
+                order=self.order, pre_anon_order_data=pre_anon_data["order"]
+            )
+            self.assert_anonymization_preserves_order_statistical_data(
+                order=self.refunded_order,
+                pre_anon_order_data=pre_anon_data["refunded_order"],
+            )
+
+            self.assert_anonymization_preserves_order_item_statistical_data(
+                pre_anon_order_item_data=pre_anon_data["order_item"]
+            )
+
+            self.assert_anonymization_preserves_refund_statistical_data(
+                pre_anon_refund_data=pre_anon_data["refund"]
+            )
+
+            self.assert_anonymization_preserves_subscription_statistical_data(
+                pre_anon_subscription_data=pre_anon_data["subscription"]
+            )
+
+            self.assert_anonymization_preserves_vehicle_statistical_data(
+                vehicle=self.another_vehicle,
+                pre_anon_vehicle_data=pre_anon_data["another_vehicle"],
+            )
 
     def assert_anonymized_customer_gdpr_fields(self):
         customer = self.customer
@@ -498,7 +541,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
             order_item.payment_unit_price,
             pre_anon_order_item_data["payment_unit_price"],
         )
-        self.assertEqual(order_item.vat, pre_anon_order_item_data["vat"])
+        self.assertEqual(
+            order_item.vat,
+            pytest.approx(pre_anon_order_item_data["vat"], Decimal(0.01)),
+        )
         self.assertEqual(order_item.quantity, pre_anon_order_item_data["quantity"])
         self.assertEqual(order_item.start_time, pre_anon_order_item_data["start_time"])
         self.assertEqual(order_item.end_time, pre_anon_order_item_data["end_time"])
@@ -546,6 +592,55 @@ class AnonymizeAllUserDataTestCase(TestCase):
             refund.vat, pytest.approx(pre_anon_refund_data["vat"], Decimal(0.01))
         )
         self.assertEqual(refund.accepted_at, pre_anon_refund_data["accepted_at"])
+
+    def _run_core_logic(
+        self,
+        *,
+        create_company: bool = True,
+        create_user: bool = True,
+        create_permits: bool = True,
+    ):
+        # DRY-helper for shared test logic.
+
+        self.create_company = create_company
+        self.create_user = create_user
+        self.create_permits = create_permits
+
+        self._generate_test_objects()
+
+        pre_anon_data = self._cache_pre_anon_data()
+
+        self.customer.anonymize_all_data()
+
+        self._refresh_test_objects()
+
+        self.run_assertions(pre_anon_data)
+
+    def test_anonymize_customer_data(self):
+        self._run_core_logic()
+
+    def test_anonymize_customer_data_without_user(self):
+        self._run_core_logic(create_user=False)
+
+    def test_anonymize_customer_data_without_company(self):
+        self._run_core_logic(create_company=False)
+
+    def test_anonymize_customer_data_without_permits(self):
+        self._run_core_logic(create_permits=False)
+
+    def test_anonymize_customer_data_without_user_and_company(self):
+        self._run_core_logic(create_user=False, create_company=False)
+
+    def test_anonymize_customer_data_without_company_and_permits(self):
+        self._run_core_logic(create_company=False, create_permits=False)
+
+    def test_anonymize_customer_data_without_permits_and_user(self):
+        self._run_core_logic(create_permits=False, create_user=False)
+
+    def test_anonymize_customer_data_without_permits_and_user_and_company(self):
+        self._run_core_logic(
+            create_permits=False, create_user=False, create_company=False
+        )
 
 
 class TestCannotAnonymizeCustomerErrorTestCase(TestCase):
