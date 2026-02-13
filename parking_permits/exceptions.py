@@ -120,3 +120,7 @@ class TemporaryVehicleValidationError(ParkingPermitBaseError):
 
 class DeletionNotAllowedError(ParkingPermitBaseError):
     pass
+
+
+class CustomerCannotBeAnonymizedError(ParkingPermitBaseError):
+    pass

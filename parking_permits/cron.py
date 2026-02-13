@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
+from parking_permits.exceptions import CustomerCannotBeAnonymizedError
 from parking_permits.models import (
     Announcement,
     Customer,
@@ -95,16 +96,33 @@ def automatic_expiration_remind_notification_of_permits():
 
 
 def automatic_remove_obsolete_customer_data():
-    db_logger.info("Automatically removing obsolete customer data started...")
-    qs = Customer.objects.all()
+    db_logger.info("Automatic anonymization of obsolete customer data started...")
+
+    # Pre-filter candidates at database level to reduce Python iteration
+    # Exclude customers with valid permits and those modified recently
+    now = tz.localdate(tz.now())
+    cutoff_time = now - relativedelta(years=2)
+
+    candidates = (
+        Customer.objects.filter(is_anonymized=False, modified_at__lt=cutoff_time)
+        .exclude(permits__status=ParkingPermitStatus.VALID)
+        .prefetch_related(
+            "permits"  # Prefetch for can_be_anonymized check
+        )
+        .distinct()
+    )
+
     count = 0
-    for customer in qs:
-        if customer.can_be_deleted:
-            customer.delete_all_data()
-            count += 1
+    for customer in candidates:
+        try:
+            customer.anonymize_all_data()
+        except CustomerCannotBeAnonymizedError:
+            continue
+        count += 1
+
     db_logger.info(
-        "Automatically removing obsolete customer data completed. "
-        f"{count} customers are removed."
+        "Automatic anonymization of obsolete customer data completed. "
+        f"{count} customers are anonymized."
     )
 
 
