@@ -1,7 +1,7 @@
 import logging
 
 from dateutil.relativedelta import relativedelta
-from django.db.models import Q
+from django.db.models import Exists, Max, OuterRef, Q
 from django.utils import timezone as tz
 
 from parking_permits.customer_permit import CustomerPermit
@@ -106,8 +106,19 @@ def automatic_remove_obsolete_customer_data():
     candidates = (
         Customer.objects.filter(is_anonymized=False, modified_at__lt=cutoff_time)
         .exclude(permits__status=ParkingPermitStatus.VALID)
-        .prefetch_related(
-            "permits"  # Prefetch for can_be_anonymized check
+        .annotate(
+            prefetched_has_valid_permits=(
+                Exists(Customer.valid_permits(OuterRef("id")))
+            ),
+            prefetched_has_active_subscriptions=(
+                Exists(Customer.active_subscription_order_items(OuterRef("id")))
+            ),
+            prefetched_latest_permit_modified_at=Max("permits__modified_at"),
+            prefetched_latest_permit_end_time=Max("permits__end_time"),
+        )
+        .select_related(
+            "user",
+            "driving_licence",
         )
     )
 

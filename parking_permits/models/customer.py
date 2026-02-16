@@ -7,7 +7,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
 from django.db import transaction
-from django.db.models import Q
 from django.db.models.functions import Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -130,6 +129,41 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     def __str__(self):
         return f"{self.national_id_number}"
 
+    # NOTE about the static methods below:
+    # - These are intended as DRY-helpers for larger queries
+    # which may use these in annotate()-statements.
+    # - customer_id_expression is intended to be either an
+    # usual customer id OR an OuterRef-expression inside a subquery
+    # referring to the customer-id field in its parent query.
+    # - this is to keep practically identical queries maintainable
+    # from one place. Queries are needed in multiple cases, as
+    # the code ultimately using these has to check for the
+    # presence of the prefetch-attributes and may need to fall back
+    # to a "default" queryset.
+    # - the above reason is also the reason for these being static
+    # methods.
+
+    @staticmethod
+    def active_subscription_order_items(customer_id_expression):
+        # Used as a base queryset to detect whether
+        # the customer has any active subscriptions.
+        # Exists()-check is done in the caller, see the note above.
+        # Avoid circular imports.
+        from parking_permits.models.order import OrderItem, SubscriptionStatus
+
+        return OrderItem.objects.filter(
+            order__customer_id=customer_id_expression,
+            subscription__isnull=False,
+            subscription__status=SubscriptionStatus.CONFIRMED,
+        )
+
+    @staticmethod
+    def valid_permits(customer_id_expression):
+        return ParkingPermit.objects.filter(
+            status=ParkingPermitStatus.VALID,
+            customer_id=customer_id_expression,
+        )
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
@@ -247,31 +281,39 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         if self.modified_at + time_delta > now:
             return False
 
-        has_valid_permits = self.permits.filter(
-            status=ParkingPermitStatus.VALID
-        ).exists()
+        has_valid_permits = (
+            self.prefetched_has_valid_permits
+            if hasattr(self, "prefetched_has_valid_permits")
+            else Customer.valid_permits(self.id).exists()
+        )
         if has_valid_permits:
             return False
 
         try:
-            latest_modified_at = self.permits.latest("modified_at").modified_at
-            latest_end_time = self.permits.latest("end_time").end_time
+            latest_modified_at = (
+                self.prefetched_latest_permit_modified_at
+                if hasattr(self, "prefetched_latest_permit_modified_at")
+                else self.permits.latest("modified_at").modified_at
+            )
+            latest_end_time = (
+                self.prefetched_latest_permit_end_time
+                if hasattr(self, "prefetched_latest_permit_end_time")
+                else self.permits.latest("end_time").end_time
+            )
             times = [latest_modified_at, latest_end_time]
-            latest_time = max([time for time in times if time])
-            if latest_time + time_delta > now:
-                return False
+            times = [time for time in times if time]
+            if times:
+                latest_time = max(times)
+                if latest_time + time_delta > now:
+                    return False
         except ParkingPermit.DoesNotExist:
             pass
 
-        # Avoid circular imports
-        from parking_permits.models.order import OrderItem, SubscriptionStatus
-
-        has_active_subscriptions = OrderItem.objects.filter(
-            order__customer_id=self.id,
-            subscription__isnull=False,
-            subscription__status=SubscriptionStatus.CONFIRMED,
-        ).exists()
-
+        has_active_subscriptions = (
+            self.prefetched_has_active_subscriptions
+            if hasattr(self, "prefetched_has_active_subscriptions")
+            else Customer.active_subscription_order_items(self.id).exists()
+        )
         if has_active_subscriptions:
             return False
 
@@ -287,28 +329,26 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             raise CustomerCannotBeAnonymizedError
 
         with transaction.atomic():
-            # Collect vehicle IDs, these are needed for
+            # Collect vehicles, these are needed for
             # VehicleUser-removal which in turn needs the
             # pre-anonymization national_id_number to allow removing
             # only those VehicleUsers that are linked to the customer.
-            vehicle_ids = set(
-                self.permits.exclude(vehicle__isnull=True).values_list(
-                    "vehicle_id", flat=True
-                )
-            )
-            vehicle_ids.update(
-                self.permits.exclude(next_vehicle__isnull=True).values_list(
+            vehicle_ids_linked_to_permits = self.permits.values_list(
+                "vehicle_id", flat=True
+            ).union(
+                self.permits.filter(next_vehicle_id__isnull=False).values_list(
                     "next_vehicle_id", flat=True
                 )
             )
 
             # Delete VehicleUsers which are linked to these vehicles
-            # and match the customers national_id_number
-            if vehicle_ids:
-                VehicleUser.objects.filter(
-                    vehicles__id__in=vehicle_ids,
-                    national_id_number=self.national_id_number,
-                ).delete()
+            # and match the customers national_id_number.
+            # Note that if vehicle_ids_linked_to_permits is empty,
+            # then delete() is ran against an empty queryset => no-op.
+            VehicleUser.objects.filter(
+                vehicles__in=vehicle_ids_linked_to_permits,
+                national_id_number=self.national_id_number,
+            ).delete()
 
             # Anonymize Customer fields
             self.first_name = "Anonymized"
@@ -343,16 +383,30 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             )
 
             # Anonymize refunds linked to permits/orders
-            (
-                Refund.objects.filter(
-                    Q(permits__customer=self) | Q(orders__customer=self)
-                )
-                .distinct("id")
-                .update(name="", iban="", description="")
+            order_refunds = Refund.objects.filter(
+                orders__in=self.orders.values_list("id", flat=True)
+            )
+            permit_refunds = Refund.objects.filter(
+                permits__in=self.permits.values_list("id", flat=True)
+            )
+            linked_refunds = order_refunds.union(permit_refunds)
+
+            refunds_to_update = []
+            for refund in linked_refunds:
+                refund.name = ""
+                refund.iban = ""
+                refund.description = ""
+                refunds_to_update.append(refund)
+
+            Refund.objects.bulk_update(
+                refunds_to_update,
+                fields=["name", "iban", "description"],
+                batch_size=5000,
             )
 
             # Delete DrivingLicence (contains no statistical value)
-            DrivingLicence.objects.filter(customer=self).delete()
+            if hasattr(self, "driving_licence"):
+                self.driving_licence.delete()
 
             # Anonymize User if exists
             if self.user:
@@ -365,11 +419,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             # Clear Order.vehicles ArrayField (denormalized registration numbers)
             self.orders.update(vehicles=[])
 
-            # Prevent ciruclar import
-            from .company import Company
-
             # Anonymize Company if customer is owner
-            Company.objects.filter(company_owner=self).update(
+            self.company_set.update(
                 name=f"Anonymized Company {self.pk}", business_id=f"ANON-{self.pk:07d}"
             )
 
@@ -377,9 +428,11 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             # The 'changes' key in context may contain customer field values
             # We clear context entirely for this customer's permit events
             # to be safe - IDs are still in the message field
-            ParkingPermitEvent.objects.filter(parking_permit__customer=self).update(
-                context={}
+            permit_events = ParkingPermitEvent.objects.filter(
+                parking_permit_id__in=self.permits.values_list("id", flat=True)
             )
+
+            permit_events.update(context={})
 
     @property
     def active_permits(self):
