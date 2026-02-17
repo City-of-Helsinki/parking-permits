@@ -727,6 +727,11 @@ class AnonymizeAllUserDataTestCase(TestCase):
             create_user=False, create_company=False, create_multiple_refunds=True
         )
 
+    def test_anonymizing_already_anonymized_customer_raises_exception(self):
+        self._run_core_logic()
+        with self.assertRaises(CustomerCannotBeAnonymizedError):
+            self.customer.anonymize_all_data()
+
 
 class TestCannotAnonymizeCustomerErrorTestCase(TestCase):
     def test_anonymizing_unanonymizable_customer_raises_exception(self):
