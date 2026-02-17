@@ -251,6 +251,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
                     description="Refund description",
                 )
                 self.refund.orders.add(self.refunded_order)
+                self.refund.permits.add(self.refunded_permit)
 
                 if self.create_multiple_refunds:
                     self.another_refund_vehicle = VehicleFactory()
