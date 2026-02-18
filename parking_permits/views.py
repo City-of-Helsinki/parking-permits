@@ -962,17 +962,20 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
             return Response(status=204)
         try:
             customer.anonymize_all_data()
-        except CustomerCannotBeAnonymizedError:
+        except CustomerCannotBeAnonymizedError as ex:
             logger.info(f"Customer {customer} cannot be anonymized.")
-            return Response(status=403)
+            raise ex
 
     def delete(self, request, *args, **kwargs):
         dry_run_serializer = DryRunSerializer(data=request.data)
         dry_run_serializer.is_valid(raise_exception=True)
-        with transaction.atomic():
-            self._delete()
-            if dry_run_serializer.data["dry_run"]:
-                transaction.set_rollback(True)
+        try:
+            with transaction.atomic():
+                self._delete()
+                if dry_run_serializer.data["dry_run"]:
+                    transaction.set_rollback(True)
+        except CustomerCannotBeAnonymizedError:
+            return Response(status=204)
         return Response(status=204)
 
     def is_valid_uuid(self, value):
