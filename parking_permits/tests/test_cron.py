@@ -13,6 +13,7 @@ from parking_permits.cron import (
     automatic_expiration_remind_notification_of_permits,
     automatic_remove_obsolete_customer_data,
     automatic_syncing_of_permits_to_parkkihubi,
+    get_anonymization_candidates,
     handle_announcement_emails,
 )
 from parking_permits.customer_permit import CustomerPermit
@@ -470,6 +471,16 @@ class AutomaticRemoveObsoleteCustomerDataTestCase(TestCase):
             self.assertNotIn(customer_1, qs)
             self.assertIn(customer_2, qs)
             self.assertIn(customer_3, qs)
+
+    def test_anonymization_candidate_query_does_not_match_anonymized_users(self):
+        with freeze_time(datetime(2020, 1, 1)):
+            anonymizable_customer = CustomerFactory()
+            anonymized_customer = CustomerFactory(is_anonymized=True)
+
+        with freeze_time(datetime(2022, 1, 15)):
+            candidates = get_anonymization_candidates()
+            self.assertNotIn(anonymized_customer, candidates)
+            self.assertIn(anonymizable_customer, candidates)
 
 
 class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
