@@ -482,6 +482,20 @@ class AutomaticRemoveObsoleteCustomerDataTestCase(TestCase):
             self.assertNotIn(anonymized_customer, candidates)
             self.assertIn(anonymizable_customer, candidates)
 
+    def test_anonymization_cron_skips_unanonymizable_customers_gracefully(self):
+        with freeze_time(datetime(2020, 1, 1)):
+            anonymizable_customer = CustomerFactory()
+            unanonymizable_customer = CustomerFactory()
+
+        with freeze_time(datetime(2021, 1, 1)):
+            ParkingPermitFactory(customer=unanonymizable_customer)
+
+        with freeze_time(datetime(2022, 1, 15)):
+            self.assertFalse(unanonymizable_customer.can_be_anonymized)
+            automatic_remove_obsolete_customer_data()
+            anonymizable_customer.refresh_from_db()
+            self.assertTrue(anonymizable_customer.is_anonymized)
+
 
 class AutomaticExpirationRemindPermitNotificationTestCase(TestCase):
     def setUp(self):
