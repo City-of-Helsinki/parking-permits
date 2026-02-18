@@ -88,6 +88,18 @@ class TestCustomer(TestCase):
         with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
             self.assertFalse(customer.can_be_anonymized)
 
+    def test_customer_with_cancelled_subscription_can_be_anonymized(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
+            customer = CustomerFactory()
+            subscription = SubscriptionFactory(status=SubscriptionStatus.CANCELLED)
+            order = OrderFactory(customer=customer)
+            OrderItemFactory(
+                order=order,
+                subscription=subscription,
+            )
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            self.assertTrue(customer.can_be_anonymized)
+
 
 class AnonymizeAllUserDataTestCase(TestCase):
     permit_statistic_fields = (
