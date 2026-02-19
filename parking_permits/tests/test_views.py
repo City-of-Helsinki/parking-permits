@@ -2033,15 +2033,20 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         )
         return customer
 
-    def assert_customer_deleted(self):
-        self.assertFalse(
-            Customer.objects.filter(user__uuid=self.CUSTOMER_USER_UUID).exists()
-        )
-        self.assertFalse(ParkingPermit.objects.exists())
-
-    def assert_customer_not_deleted(self):
+    def assert_customer_anonymized(self):
         self.assertTrue(
-            Customer.objects.filter(source_id=self.CUSTOMER_SOURCE_ID).exists()
+            Customer.objects.filter(
+                user__uuid=self.CUSTOMER_USER_UUID, is_anonymized=True
+            ).exists()
+        )
+        # Permit should still exist due to anonymization
+        self.assertTrue(ParkingPermit.objects.exists())
+
+    def assert_customer_not_anonymized(self):
+        self.assertTrue(
+            Customer.objects.filter(
+                source_id=self.CUSTOMER_SOURCE_ID, is_anonymized=False
+            ).exists()
         )
         self.assertTrue(ParkingPermit.objects.exists())
 
@@ -2099,7 +2104,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         self.assertEqual(response.status_code, 403)
 
     @requests_mock.Mocker()
-    def test_delete_profile_should_delete_profile_and_related_data(self, req_mock):
+    def test_delete_profile_should_anonymize_profile_and_related_data(self, req_mock):
         with freeze_time(datetime.datetime(2020, 1, 1)):
             customer = self.create_customer()
 
@@ -2111,7 +2116,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 204)
-            self.assert_customer_deleted()
+            self.assert_customer_anonymized()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_be_forbidden_when_using_wrong_scope(self, req_mock):
@@ -2126,7 +2131,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 403)
-            self.assert_customer_not_deleted()
+            self.assert_customer_not_anonymized()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_return_no_content_if_customer_cannot_be_deleted(
@@ -2150,7 +2155,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             self.client.credentials(HTTP_AUTHORIZATION=auth_header)
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 204)
-            self.assert_customer_not_deleted()
+            self.assert_customer_not_anonymized()
 
     @requests_mock.Mocker()
     def test_delete_profile_should_keep_profile_and_related_data_when_dry_run(
@@ -2177,4 +2182,4 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             for true_value in true_values:
                 response = self.client.delete(url, data={"dry_run": true_value})
                 self.assertEqual(response.status_code, 204)
-                self.assert_customer_not_deleted()
+                self.assert_customer_not_anonymized()

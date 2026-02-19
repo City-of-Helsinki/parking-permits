@@ -6,16 +6,21 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
+from django.db import transaction
 from django.db.models.functions import Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
+from parking_permits.exceptions import CustomerCannotBeAnonymizedError
+
 from ..services.traficom import Traficom
 from .common import SourceSystem
 from .driving_licence import DrivingLicence
 from .mixins import TimestampedModelMixin
-from .parking_permit import ParkingPermit, ParkingPermitStatus
+from .parking_permit import ParkingPermit, ParkingPermitEvent, ParkingPermitStatus
+from .refund import Refund
+from .vehicle import VehicleUser
 
 logger = logging.getLogger("db")
 
@@ -97,6 +102,14 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         default=Languages.FINNISH,
     )
 
+    is_anonymized = models.BooleanField(
+        _("Is anonymized"),
+        default=False,
+        help_text=_(
+            "Indicates if customer data has been anonymized for GDPR compliance"
+        ),
+    )
+
     serialize_fields = (
         {"name": "first_name"},
         {"name": "last_name"},
@@ -115,6 +128,41 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
     def __str__(self):
         return f"{self.national_id_number}"
+
+    # NOTE about the static methods below:
+    # - These are intended as DRY-helpers for larger queries
+    # which may use these in annotate()-statements.
+    # - customer_id_expression is intended to be either an
+    # usual customer id OR an OuterRef-expression inside a subquery
+    # referring to the customer-id field in its parent query.
+    # - this is to keep practically identical queries maintainable
+    # from one place. Queries are needed in multiple cases, as
+    # the code ultimately using these has to check for the
+    # presence of the prefetch-attributes and may need to fall back
+    # to a "default" queryset.
+    # - the above reason is also the reason for these being static
+    # methods.
+
+    @staticmethod
+    def active_subscription_order_items(customer_id_expression):
+        # Used as a base queryset to detect whether
+        # the customer has any active subscriptions.
+        # Exists()-check is done in the caller, see the note above.
+        # Avoid circular imports.
+        from parking_permits.models.order import OrderItem, SubscriptionStatus
+
+        return OrderItem.objects.filter(
+            order__customer_id=customer_id_expression,
+            subscription__isnull=False,
+            subscription__status=SubscriptionStatus.CONFIRMED,
+        )
+
+    @staticmethod
+    def valid_permits(customer_id_expression):
+        return ParkingPermit.objects.filter(
+            status=ParkingPermitStatus.VALID,
+            customer_id=customer_id_expression,
+        )
 
     @property
     def full_name(self):
@@ -210,50 +258,181 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         )
 
     @property
-    def can_be_deleted(self):
+    def can_be_anonymized(self):
         """
-        Returns True if the customer and its data can be removed
+        Returns True if the customer data can be anonymized for GDPR compliance.
 
-        This property can be used to check if the deleting is allowed
+        This property can be used to check if the anonymization is allowed
         via GDPR API triggered from Helsinki Profile or automatic
-        removal process. A customer that can be removed must satisfy
-        following conditions:
+        removal process.
 
+        Conditions:
+        - The customer is not already anonymized
         - The last modified time of the customer is more than 2 years ago
         - The customer does not have any valid permits
         - The latest permit must be ended and modified more than 2 years ago
+        - The customer must not have any active subscriptions
         """
+        if self.is_anonymized:
+            return False
+
         now = timezone.now()
         time_delta = relativedelta(years=2)
         if self.modified_at + time_delta > now:
             return False
 
-        has_valid_permits = self.permits.filter(
-            status=ParkingPermitStatus.VALID
-        ).exists()
+        has_valid_permits = (
+            self.prefetched_has_valid_permits
+            if hasattr(self, "prefetched_has_valid_permits")
+            else Customer.valid_permits(self.id).exists()
+        )
         if has_valid_permits:
             return False
 
         try:
-            latest_modified_at = self.permits.latest("modified_at").modified_at
-            latest_end_time = self.permits.latest("end_time").end_time
+            latest_modified_at = (
+                self.prefetched_latest_permit_modified_at
+                if hasattr(self, "prefetched_latest_permit_modified_at")
+                else self.permits.latest("modified_at").modified_at
+            )
+            latest_end_time = (
+                self.prefetched_latest_permit_end_time
+                if hasattr(self, "prefetched_latest_permit_end_time")
+                else self.permits.latest("end_time").end_time
+            )
             times = [latest_modified_at, latest_end_time]
-            latest_time = max([time for time in times if time])
-            if latest_time + time_delta > now:
-                return False
+            times = [time for time in times if time]
+            if times:
+                latest_time = max(times)
+                if latest_time + time_delta > now:
+                    return False
         except ParkingPermit.DoesNotExist:
             pass
 
+        has_active_subscriptions = (
+            self.prefetched_has_active_subscriptions
+            if hasattr(self, "prefetched_has_active_subscriptions")
+            else Customer.active_subscription_order_items(self.id).exists()
+        )
+        if has_active_subscriptions:
+            return False
+
         return True
 
-    def delete_all_data(self):
-        """Delete all customer related data"""
+    def anonymize_all_data(self):
+        """Anonymize all customer related data for GDPR compliance.
 
-        self.permits.all().delete()
-        self.orders.all().delete()
-        if self.user:
-            self.user.delete()
-        self.delete()
+        Uses bulk operations to minimize database queries.
+        """
+
+        if not self.can_be_anonymized:
+            raise CustomerCannotBeAnonymizedError
+
+        with transaction.atomic():
+            # Collect vehicles, these are needed for
+            # VehicleUser-removal which in turn needs the
+            # pre-anonymization national_id_number to allow removing
+            # only those VehicleUsers that are linked to the customer.
+            vehicle_ids_linked_to_permits = self.permits.values_list(
+                "vehicle_id", flat=True
+            ).union(
+                self.permits.filter(next_vehicle_id__isnull=False).values_list(
+                    "next_vehicle_id", flat=True
+                )
+            )
+
+            # Delete VehicleUsers which are linked to these vehicles
+            # and match the customers national_id_number.
+            # Note that if vehicle_ids_linked_to_permits is empty,
+            # then delete() is ran against an empty queryset => no-op.
+            VehicleUser.objects.filter(
+                vehicles__in=vehicle_ids_linked_to_permits,
+                national_id_number=self.national_id_number,
+            ).delete()
+
+            # Anonymize Customer fields
+            self.first_name = "Anonymized"
+            self.last_name = "Customer"
+            self.national_id_number = f"XX-ANON-{self.pk:06d}"
+            self.email = ""
+            self.phone_number = ""
+            self.primary_address_apartment = ""
+            self.primary_address_apartment_sv = ""
+            self.other_address_apartment = ""
+            self.other_address_apartment_sv = ""
+            self.source_id = ""
+            self.is_anonymized = True
+            self.save()
+
+            # Anonymize permits
+            self.permits.update(
+                address_apartment="",
+                address_apartment_sv="",
+                next_address_apartment="",
+                next_address_apartment_sv="",
+                description="",
+            )
+
+            # Anonymize orders
+            self.orders.update(
+                address_text="",
+                talpa_checkout_url="",
+                talpa_logged_in_checkout_url="",
+                talpa_receipt_url="",
+                talpa_update_card_url="",
+            )
+
+            # Anonymize refunds linked to permits/orders
+            order_refunds = Refund.objects.filter(
+                orders__in=self.orders.values_list("id", flat=True)
+            )
+            permit_refunds = Refund.objects.filter(
+                permits__in=self.permits.values_list("id", flat=True)
+            )
+            linked_refunds = order_refunds.union(permit_refunds)
+
+            refunds_to_update = []
+            for refund in linked_refunds:
+                refund.name = ""
+                refund.iban = ""
+                refund.description = ""
+                refunds_to_update.append(refund)
+
+            Refund.objects.bulk_update(
+                refunds_to_update,
+                fields=["name", "iban", "description"],
+                batch_size=5000,
+            )
+
+            # Delete DrivingLicence (contains no statistical value)
+            if hasattr(self, "driving_licence"):
+                self.driving_licence.delete()
+
+            # Anonymize User if exists
+            if self.user:
+                self.user.first_name = ""
+                self.user.last_name = ""
+                self.user.email = f"anonymized-{self.pk}@anonymized.invalid"
+                self.user.username = f"anonymized-{self.pk}"
+                self.user.save()
+
+            # Clear Order.vehicles ArrayField (denormalized registration numbers)
+            self.orders.update(vehicles=[])
+
+            # Anonymize Company if customer is owner
+            self.company_set.update(
+                name=f"Anonymized Company {self.pk}", business_id=f"ANON-{self.pk:07d}"
+            )
+
+            # Clear ParkingPermitEvent.context where it may contain PII
+            # The 'changes' key in context may contain customer field values
+            # We clear context entirely for this customer's permit events
+            # to be safe - IDs are still in the message field
+            permit_events = ParkingPermitEvent.objects.filter(
+                parking_permit_id__in=self.permits.values_list("id", flat=True)
+            )
+
+            permit_events.update(context={})
 
     @property
     def active_permits(self):
