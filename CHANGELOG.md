@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.12.0...parking-permits-v1.13.0) (2026-02-22)
+
+
+### Features
+
+* Add feedback survey-link to email templates ([245a31e](https://github.com/City-of-Helsinki/parking-permits/commit/245a31e746f37297ee2067ae5e64c58a06a2688d))
+
+
+### Bug Fixes
+
+* Adjust permit mail footer ([f32340d](https://github.com/City-of-Helsinki/parking-permits/commit/f32340dbf4e32c2c843ebca430429cb2dd5c5f9c))
+* Update translations ([0da6ddb](https://github.com/City-of-Helsinki/parking-permits/commit/0da6ddb64721abc5f0ea4a6e88941f32247b824c))
+
+
+### Dependencies
+
+* Bump cryptography from 46.0.3 to 46.0.5 ([9d24db0](https://github.com/City-of-Helsinki/parking-permits/commit/9d24db024e8e3b71ad93b7eedb9af210be444d04))
+* Bump django from 5.2.9 to 5.2.11 ([2448333](https://github.com/City-of-Helsinki/parking-permits/commit/244833360c9e7060ce00e9b02739ea4ee9e4f8e8))
+* Bump pip from 25.3 to 26.0 ([c237762](https://github.com/City-of-Helsinki/parking-permits/commit/c2377628a242e16890570f4ac554b388c62e0190))
+* Bump wheel from 0.45.1 to 0.46.2 ([619240f](https://github.com/City-of-Helsinki/parking-permits/commit/619240fd8bf7e1ff1d8d04bea53856402b68d17d))
+
 ## [1.12.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.11.2...parking-permits-v1.12.0) (2026-01-21)
 
 
