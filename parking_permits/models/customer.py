@@ -286,9 +286,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             if hasattr(self, "prefetched_has_valid_permits")
             else Customer.valid_permits(self.id).exists()
         )
-        if has_valid_permits:
-            return False
 
+        too_recent_permit_timestamps = False
         try:
             latest_modified_at = (
                 self.prefetched_latest_permit_modified_at
@@ -305,7 +304,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             if times:
                 latest_time = max(times)
                 if latest_time + time_delta > now:
-                    return False
+                    too_recent_permit_timestamps = True
         except ParkingPermit.DoesNotExist:
             pass
 
@@ -314,10 +313,16 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             if hasattr(self, "prefetched_has_active_subscriptions")
             else Customer.active_subscription_order_items(self.id).exists()
         )
-        if has_active_subscriptions:
-            return False
 
-        return True
+        can_be_anonymized = all(
+            (
+                not has_valid_permits,
+                not too_recent_permit_timestamps,
+                not has_active_subscriptions,
+            )
+        )
+
+        return can_be_anonymized
 
     def anonymize_all_data(self):
         """Anonymize all customer related data for GDPR compliance.
