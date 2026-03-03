@@ -34,7 +34,11 @@ from parking_permits.models.reporting import PermitCountSnapshot
 from .constants import Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
-from .exceptions import OrderValidationError, SubscriptionValidationError
+from .exceptions import (
+    CustomerCannotBeAnonymizedError,
+    OrderValidationError,
+    SubscriptionValidationError,
+)
 from .exporters import DataExporter, PdfExporter
 from .forms import (
     OrderSearchForm,
@@ -956,18 +960,22 @@ class ParkingPermitsGDPRAPIView(ParkingPermitGDPRAPIView):
         if not customer:
             logger.info(f"Customer {customer} not found")
             return Response(status=204)
-        if not customer.can_be_deleted:
-            logger.info(f"Customer {customer} cannot be deleted.")
-            return Response(status=403)
-        customer.delete_all_data()
+        try:
+            customer.anonymize_all_data()
+        except CustomerCannotBeAnonymizedError as ex:
+            logger.info(f"Customer {customer} cannot be anonymized.")
+            raise ex
 
     def delete(self, request, *args, **kwargs):
         dry_run_serializer = DryRunSerializer(data=request.data)
         dry_run_serializer.is_valid(raise_exception=True)
-        with transaction.atomic():
-            self._delete()
-            if dry_run_serializer.data["dry_run"]:
-                transaction.set_rollback(True)
+        try:
+            with transaction.atomic():
+                self._delete()
+                if dry_run_serializer.data["dry_run"]:
+                    transaction.set_rollback(True)
+        except CustomerCannotBeAnonymizedError:
+            return Response(status=204)
         return Response(status=204)
 
     def is_valid_uuid(self, value):
