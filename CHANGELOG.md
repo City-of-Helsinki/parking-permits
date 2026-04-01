@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.13.0...parking-permits-v1.14.0) (2026-04-01)
+
+
+### Features
+
+* Add is_anonymized-field to customer ([2170984](https://github.com/City-of-Helsinki/parking-permits/commit/2170984d0c97306f7a87a6284ff32df2be2ee4e5))
+* Anonymize customer instead of deleting ([57e5f66](https://github.com/City-of-Helsinki/parking-permits/commit/57e5f66d6384fe91db176afde337fc786d1746de))
+* Pre-filter anonymizable customers in cron ([615a3c2](https://github.com/City-of-Helsinki/parking-permits/commit/615a3c28aa15c5405f330588e048ad620b2feb33))
+
+
+### Bug Fixes
+
+* Prevent can_be_anonymized()-bypass ([977598d](https://github.com/City-of-Helsinki/parking-permits/commit/977598dba13e5eaba5cf9b9b8ecd3ead40f4bfe3))
+* Re-raise over unused return value ([43660cc](https://github.com/City-of-Helsinki/parking-permits/commit/43660ccebd52bc8a184228d01d29f6d3309c031f))
+
+
+### Dependencies
+
+* Bump authlib from 1.6.6 to 1.6.9 ([3a542c2](https://github.com/City-of-Helsinki/parking-permits/commit/3a542c2983eb90225bcd92977a6f2628b079e032))
+* Bump cryptography from 46.0.5 to 46.0.6 ([5725e38](https://github.com/City-of-Helsinki/parking-permits/commit/5725e387ae1e6d7361801a98ea1c1e39b4d57e83))
+* Bump django from 5.2.11 to 5.2.12 ([8e7ecc0](https://github.com/City-of-Helsinki/parking-permits/commit/8e7ecc0e7a431fda23e9209389da5c40f4676ac1))
+* Bump ecdsa from 0.19.1 to 0.19.2 ([9ede22d](https://github.com/City-of-Helsinki/parking-permits/commit/9ede22d6a37013bf8d2cf493e1552e54c241e680))
+* Bump pyasn1 from 0.6.2 to 0.6.3 ([ea368e1](https://github.com/City-of-Helsinki/parking-permits/commit/ea368e13b9b6f9089d3a537a9cbc0677becd28a7))
+* Bump pygments from 2.19.2 to 2.20.0 ([9909aef](https://github.com/City-of-Helsinki/parking-permits/commit/9909aef9efcc5f2d040703a9619f6f21cc877709))
+* Bump requests from 2.32.5 to 2.33.0 ([ba07dc1](https://github.com/City-of-Helsinki/parking-permits/commit/ba07dc11e272a3bd129aeccf46907d6ee6274199))
+
 ## [1.13.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.12.0...parking-permits-v1.13.0) (2026-03-02)
 
 
