@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.0...parking-permits-v1.14.1) (2026-04-22)
+
+
+### Dependencies
+
+* Bump authlib from 1.6.9 to 1.6.11 ([0028f8f](https://github.com/City-of-Helsinki/parking-permits/commit/0028f8f0dfeb8f7782d3efd7634c856851838bfe))
+* Bump cryptography from 46.0.6 to 46.0.7 ([f52005d](https://github.com/City-of-Helsinki/parking-permits/commit/f52005d2701fc1f62ea2fdfc2b3cb0945368d158))
+* Bump django from 5.2.12 to 5.2.13 ([1ad44df](https://github.com/City-of-Helsinki/parking-permits/commit/1ad44dfa9b571cfd20b6cbe28fdb7d910a2dc6e1))
+* Bump pytest from 9.0.1 to 9.0.3 ([a898beb](https://github.com/City-of-Helsinki/parking-permits/commit/a898beb7b5e3b8b402b08797f5e083a84c80c4a5))
+
 ## [1.14.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.13.0...parking-permits-v1.14.0) (2026-04-01)
 
 
