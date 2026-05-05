@@ -413,13 +413,9 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             if hasattr(self, "driving_licence"):
                 self.driving_licence.delete()
 
-            # Anonymize User if exists
+            # Delete User if exists
             if self.user:
-                self.user.first_name = ""
-                self.user.last_name = ""
-                self.user.email = f"anonymized-{self.pk}@anonymized.invalid"
-                self.user.username = f"anonymized-{self.pk}"
-                self.user.save()
+                self.user.delete()
 
             # Clear Order.vehicles ArrayField (denormalized registration numbers)
             self.orders.update(vehicles=[])

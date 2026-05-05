@@ -2,6 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 import pytest
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
@@ -28,6 +29,8 @@ from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.refund import RefundFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
+
+User = get_user_model()
 
 
 class TestCustomer(TestCase):
@@ -295,9 +298,6 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.primary_address.refresh_from_db()
         self.other_address.refresh_from_db()
 
-        if self.create_user:
-            self.customer.user.refresh_from_db()
-
         if self.create_company:
             self.company.refresh_from_db()
             self.company.address.refresh_from_db()
@@ -352,7 +352,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
         )
 
         if self.create_user:
-            pre_anon_data["user_uuid"] = self.customer.user.uuid
+            pre_anon_data["user_id"] = self.customer.user.id
 
         if self.create_permits:
             pre_anon_data["permit"] = self._create_pre_anon_snapshot(
@@ -409,10 +409,9 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
     def run_assertions(self, pre_anon_data):
         self.assert_anonymized_customer_gdpr_fields()
+
         if self.create_user:
-            self.assert_anonymized_user_gdpr_fields(
-                pre_anon_user_uuid=pre_anon_data["user_uuid"]
-            )
+            self.assert_customers_user_is_deleted(user_id=pre_anon_data["user_id"])
 
         self.assert_anonymization_preserves_address_statistical_data(
             address=self.primary_address,
@@ -517,15 +516,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(customer.source_id, "")
         self.assertEqual(customer.is_anonymized, True)
 
-    def assert_anonymized_user_gdpr_fields(self, pre_anon_user_uuid):
-        user = self.customer.user
-        self.assertEqual(user.first_name, "")
-        self.assertEqual(user.last_name, "")
-        self.assertEqual(
-            user.email, f"anonymized-{self.customer.pk}@anonymized.invalid"
-        )
-        self.assertEqual(user.username, f"anonymized-{self.customer.pk}")
-        self.assertEqual(str(user.uuid), pre_anon_user_uuid)
+    def assert_customers_user_is_deleted(self, user_id):
+        user_exists = User.objects.filter(id=user_id).exists()
+        self.assertFalse(user_exists)
+        self.assertIsNone(self.customer.user_id)
 
     def assert_anonymized_order_gdpr_fields(self, order):
         self.assertEqual(order.address_text, "")
