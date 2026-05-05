@@ -2021,22 +2021,22 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
 
     def create_customer(self):
         user = UserFactory(uuid=self.CUSTOMER_USER_UUID)
-        customer = CustomerFactory(
+        self.customer = CustomerFactory(
             user=user,
             source_system=SourceSystem.HELSINKI_PROFILE,
             source_id=self.CUSTOMER_SOURCE_ID,
         )
         ParkingPermitFactory(
-            customer=customer,
+            customer=self.customer,
             status=ParkingPermitStatus.CLOSED,
             end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=datetime.UTC)),
         )
-        return customer
+        return self.customer
 
     def assert_customer_anonymized(self):
         self.assertTrue(
             Customer.objects.filter(
-                user__uuid=self.CUSTOMER_USER_UUID, is_anonymized=True
+                id=self.customer.id, user_id=None, is_anonymized=True
             ).exists()
         )
         # Permit should still exist due to anonymization
@@ -2045,7 +2045,9 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
     def assert_customer_not_anonymized(self):
         self.assertTrue(
             Customer.objects.filter(
-                source_id=self.CUSTOMER_SOURCE_ID, is_anonymized=False
+                id=self.customer.id,
+                source_id=self.CUSTOMER_SOURCE_ID,
+                is_anonymized=False,
             ).exists()
         )
         self.assertTrue(ParkingPermit.objects.exists())
