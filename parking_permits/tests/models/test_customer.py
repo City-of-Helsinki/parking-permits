@@ -3,6 +3,7 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth import get_user_model
+from django.db.models import ProtectedError
 from django.test import TestCase
 from django.utils import timezone
 from freezegun import freeze_time
@@ -17,8 +18,10 @@ from parking_permits.models.parking_permit import (
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
+from parking_permits.models.product import Accounting
 from parking_permits.models.vehicle import VehicleUser
 from parking_permits.tests.factories.address import AddressFactory
+from parking_permits.tests.factories.announcement import AnnouncementFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
     OrderFactory,
@@ -290,7 +293,8 @@ class AnonymizeAllUserDataTestCase(TestCase):
                     self.another_refund.orders.add(self.another_refunded_order)
 
                 self.permit_event = ParkingPermitEventFactory.make_end_permit_event(
-                    permit=self.refunded_permit
+                    permit=self.refunded_permit,
+                    created_by=self.customer.user,
                 )
 
     def _refresh_test_objects(self):
@@ -746,3 +750,353 @@ class TestCannotAnonymizeCustomerErrorTestCase(TestCase):
         # too new modified-timestamp.
         with self.assertRaises(CustomerCannotBeAnonymizedError):
             customer.anonymize_all_data()
+
+
+class AnonymizeUserDeletionProtectionTestCase(TestCase):
+    """
+    Some models inherit UserStampedModelMixin (created_by/modified_by, on_delete=PROTECT),
+    which blocks naive user-deletes. Anonymization must be able to handle these cases.
+    """
+
+    def user_can_still_be_anonymized_and_deleted_helper(
+        self, *, user, related_object, user_link_field
+    ):
+        user_id = user.id
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            user.customer.anonymize_all_data()
+
+        # user should be deleted
+        self.assertFalse(User.objects.filter(pk=user_id).exists())
+        # related object should still exist with nulled user_link_field
+        related_object.refresh_from_db()
+        self.assertIsNone(getattr(related_object, user_link_field))
+
+    def test_user_with_created_order_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            order = OrderFactory(customer=customer)
+            order.created_by = user
+            order.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=order, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_order_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            order = OrderFactory(customer=customer)
+            order.modified_by = user
+            order.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=order, user_link_field="modified_by"
+        )
+
+    def test_user_with_accepted_refund_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.accepted_by = user
+            refund.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=refund, user_link_field="accepted_by"
+        )
+
+    def test_user_with_created_refund_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.created_by = user
+            refund.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=refund, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_refund_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.modified_by = user
+            refund.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=refund, user_link_field="modified_by"
+        )
+
+    def test_user_with_created_permit_event_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            permit = ParkingPermitFactory(customer=customer)
+            permit_event = ParkingPermitEventFactory.make_end_permit_event(
+                permit=permit
+            )
+            permit_event.created_by = user
+            permit_event.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=permit_event, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_permit_event_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            permit = ParkingPermitFactory(customer=customer)
+            permit_event = ParkingPermitEventFactory.make_end_permit_event(
+                permit=permit
+            )
+            permit_event.created_by = user
+            permit_event.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=permit_event, user_link_field="modified_by"
+        )
+
+    def test_user_with_created_subscription_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            subscription = SubscriptionFactory()
+            subscription.created_by = user
+            subscription.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=subscription, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_subscription_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            subscription = SubscriptionFactory()
+            subscription.modified_by = user
+            subscription.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=subscription, user_link_field="modified_by"
+        )
+
+    def test_user_with_created_product_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            product = ProductFactory()
+            product.created_by = user
+            product.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=product, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_product_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            product = ProductFactory()
+            product.created_by = user
+            product.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=product, user_link_field="modified_by"
+        )
+
+    def test_user_with_created_announcement_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            announcement = AnnouncementFactory()
+            announcement.created_by = user
+            announcement.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=announcement, user_link_field="created_by"
+        )
+
+    def test_user_with_modified_announcement_can_still_be_anonymized_and_deleted(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            announcement = AnnouncementFactory()
+            announcement.modifed_by = user
+            announcement.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=announcement, user_link_field="modified_by"
+        )
+
+    def test_user_with_created_permit_event_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            permit = ParkingPermitFactory(customer=customer)
+            event = ParkingPermitEventFactory.make_end_permit_event(permit=permit)
+            event.created_by = user
+            event.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_permit_event_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            permit = ParkingPermitFactory(customer=customer)
+            event = ParkingPermitEventFactory.make_end_permit_event(permit=permit)
+            event.modified_by = user
+            event.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_refund_accepted_by_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.accepted_by = user
+            refund.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_refund_created_by_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.created_by = user
+            refund.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_refund_modified_by_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            refund = RefundFactory()
+            refund.modified_by = user
+            refund.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_order_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            order = OrderFactory()
+            order.created_by = user
+            order.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_order_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            order = OrderFactory()
+            order.modified_by = user
+            order.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_subscription_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            subscription = SubscriptionFactory()
+            subscription.created_by = user
+            subscription.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_subscription_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            subscription = SubscriptionFactory()
+            subscription.modified_by = user
+            subscription.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_product_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            product = ProductFactory()
+            product.created_by = user
+            product.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_product_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            product = ProductFactory()
+            product.modified_by = user
+            product.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_announcement_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            announcement = AnnouncementFactory()
+            announcement.created_by = user
+            announcement.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_announcement_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            announcement = AnnouncementFactory()
+            announcement.modified_by = user
+            announcement.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_accounting_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            accounting = Accounting.objects.create()
+            accounting.created_by = user
+            accounting.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_modified_accounting_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            accounting = Accounting.objects.create()
+            accounting.modified_by = user
+            accounting.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()

@@ -13,6 +13,8 @@ from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
 from parking_permits.exceptions import CustomerCannotBeAnonymizedError
+from parking_permits.models.announcement import Announcement
+from parking_permits.models.product import Accounting, Product
 
 from ..services.traficom import Traficom
 from .common import SourceSystem
@@ -415,6 +417,30 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
             # Delete User if exists
             if self.user:
+                # Avoid circular imports
+                from parking_permits.models.order import Order, Subscription
+
+                # null relevant (protected) created_by/modified_by foreign keys
+                models_with_protected_user_reference = (
+                    Order,
+                    Subscription,
+                    Refund,
+                    ParkingPermitEvent,
+                    Product,
+                    Announcement,
+                    Accounting,
+                )
+
+                Refund.objects.filter(accepted_by=self.user).update(accepted_by=None)
+
+                for model_class in models_with_protected_user_reference:
+                    model_class.objects.filter(created_by=self.user).update(
+                        created_by=None
+                    )
+                    model_class.objects.filter(modified_by=self.user).update(
+                        modified_by=None
+                    )
+
                 self.user.delete()
 
             # Clear Order.vehicles ArrayField (denormalized registration numbers)
