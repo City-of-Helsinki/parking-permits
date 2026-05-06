@@ -1100,3 +1100,33 @@ class AnonymizeUserDeletionProtectionTestCase(TestCase):
 
         with self.assertRaises(ProtectedError):
             user.delete()
+
+
+class AnonymizeNullSsnTestCase(TestCase):
+    def test_null_ssn_does_not_delete_unrelated_null_ssn_vehicle_users(self):
+        """A customer with null national_id_number must not delete VehicleUser
+        rows that also have null national_id_number (those belong to other people)."""
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory(national_id_number=None)
+            permit_vehicle = VehicleFactory()
+            ParkingPermitFactory(customer=customer, vehicle=permit_vehicle)
+
+            # Unrelated vehicle user with null ssn, attached to the same vehicle
+            unrelated_vehicle_user_without_ssn = VehicleUser.objects.create(
+                national_id_number=None
+            )
+            permit_vehicle.users.add(unrelated_vehicle_user_without_ssn)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        unrelated_vehicle_user_exists = VehicleUser.objects.filter(
+            id=unrelated_vehicle_user_without_ssn.id
+        ).exists()
+
+        self.assertTrue(
+            unrelated_vehicle_user_exists,
+            "Unrelated VehicleUser with null SSN should not be deleted",
+        )
+        customer.refresh_from_db()
+        self.assertEqual(customer.national_id_number, f"XX-ANON-{customer.pk:06d}")
