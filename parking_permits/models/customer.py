@@ -326,6 +326,32 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
         return can_be_anonymized
 
+    def _remove_vehicle_users_related_by_national_id_number(self):
+        # Remove VehicleUsers related to national_id_number
+        # if national_id_number is not null
+        if self.national_id_number is None:
+            return
+        # Collect vehicles, these are needed for
+        # VehicleUser-removal which in turn needs the
+        # pre-anonymization national_id_number to allow removing
+        # only those VehicleUsers that are linked to the customer.
+        vehicle_ids_linked_to_permits = self.permits.values_list(
+            "vehicle_id", flat=True
+        ).union(
+            self.permits.filter(next_vehicle_id__isnull=False).values_list(
+                "next_vehicle_id", flat=True
+            )
+        )
+
+        # Delete VehicleUsers which are linked to these vehicles
+        # and match the customers national_id_number.
+        # Note that if vehicle_ids_linked_to_permits is empty,
+        # then delete() is ran against an empty queryset => no-op.
+        VehicleUser.objects.filter(
+            vehicles__in=vehicle_ids_linked_to_permits,
+            national_id_number=self.national_id_number,
+        ).delete()
+
     def anonymize_all_data(self):
         """Anonymize all customer related data for GDPR compliance.
 
@@ -336,26 +362,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             raise CustomerCannotBeAnonymizedError
 
         with transaction.atomic():
-            # Collect vehicles, these are needed for
-            # VehicleUser-removal which in turn needs the
-            # pre-anonymization national_id_number to allow removing
-            # only those VehicleUsers that are linked to the customer.
-            vehicle_ids_linked_to_permits = self.permits.values_list(
-                "vehicle_id", flat=True
-            ).union(
-                self.permits.filter(next_vehicle_id__isnull=False).values_list(
-                    "next_vehicle_id", flat=True
-                )
-            )
-
-            # Delete VehicleUsers which are linked to these vehicles
-            # and match the customers national_id_number.
-            # Note that if vehicle_ids_linked_to_permits is empty,
-            # then delete() is ran against an empty queryset => no-op.
-            VehicleUser.objects.filter(
-                vehicles__in=vehicle_ids_linked_to_permits,
-                national_id_number=self.national_id_number,
-            ).delete()
+            # Ran first due to needing pre-anonymization national_id_number
+            self._remove_vehicle_users_related_by_national_id_number()
 
             # Anonymize Customer fields
             self.first_name = "Anonymized"
