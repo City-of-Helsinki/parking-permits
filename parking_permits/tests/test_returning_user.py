@@ -114,3 +114,50 @@ class ReturningUserAfterAnonymizationTestCase(TestCase):
         self.assertNotEqual(new_customer.pk, old_customer.pk)
         self.assertTrue(old_customer.is_anonymized)
         self.assertFalse(new_customer.is_anonymized)
+
+    @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
+    @patch("parking_permits.resolvers.get_addresses")
+    @patch("parking_permits.resolvers.HelsinkiProfile")
+    def test_returning_user_with_identical_uuid(
+        self,
+        mock_helsinki_profile,
+        mock_get_addresses,
+        mock_authenticate,
+    ):
+        mock_get_addresses.return_value = ({}, {})
+
+        with freezegun.freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            old_customer = CustomerFactory(national_id_number=self.REAL_SSN)
+
+        with freezegun.freeze_time(
+            timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))
+        ):
+            old_uuid = old_customer.user.uuid
+            old_customer.anonymize_all_data()
+
+        old_customer.refresh_from_db()
+        self.assertIsNone(old_customer.user_id)
+
+        new_user = UserFactory(uuid=old_uuid)
+
+        mock_helsinki_profile.return_value.get_customer.return_value = {
+            "source_system": "HELSINKI_PROFILE",
+            "source_id": "src",
+            "first_name": "A",
+            "last_name": "B",
+            "email": "a@b.c",
+            "phone_number": "1",
+            "national_id_number": self.REAL_SSN,
+        }
+
+        mock_authenticate.return_value = UserAuthorization(new_user, {})
+        request = RequestFactory().post("/")
+        request.user = new_user
+        info = _make_mock_info(request)
+
+        new_customer = resolve_user_profile(None, info, audit_msg=AuditMsg("test"))
+
+        old_customer.refresh_from_db()
+        self.assertNotEqual(new_customer.pk, old_customer.pk)
+        self.assertTrue(old_customer.is_anonymized)
+        self.assertFalse(new_customer.is_anonymized)
