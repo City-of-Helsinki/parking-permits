@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -10,15 +11,19 @@ from freezegun import freeze_time
 
 from parking_permits.exceptions import CustomerCannotBeAnonymizedError
 from parking_permits.models.company import Company
+from parking_permits.models.customer import Customer
 from parking_permits.models.driving_class import DrivingClass
 from parking_permits.models.driving_licence import DrivingLicence
-from parking_permits.models.order import SubscriptionStatus
+from parking_permits.models.order import Order, SubscriptionStatus
 from parking_permits.models.parking_permit import (
     ContractType,
+    ParkingPermit,
+    ParkingPermitEvent,
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
 from parking_permits.models.product import Accounting
+from parking_permits.models.refund import Refund
 from parking_permits.models.vehicle import VehicleUser
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
@@ -1130,3 +1135,185 @@ class AnonymizeNullSsnTestCase(TestCase):
         )
         customer.refresh_from_db()
         self.assertEqual(customer.national_id_number, f"XX-ANON-{customer.pk:06d}")
+
+
+class AnonymizeAtomicityTestCase(TestCase):
+    def snapshot_object_data(
+        self,
+        customer,
+        company,
+        permit,
+        user,
+        order,
+        order_refund,
+        permit_refund,
+        permit_event,
+        driving_licence,
+    ):
+        return {
+            "customer": {
+                "id": customer.id,
+                "first_name": customer.first_name,
+                "last_name": customer.last_name,
+                "national_id_number": customer.national_id_number,
+                "email": customer.email,
+                "phone_number": customer.phone_number,
+                "primary_address_apartment": customer.primary_address_apartment,
+                "primary_address_apartment_sv": customer.primary_address_apartment_sv,
+                "other_address_apartment": customer.other_address_apartment,
+                "other_address_apartment_sv": customer.other_address_apartment_sv,
+                "source_id": customer.source_id,
+                "is_anonymized": customer.is_anonymized,
+            },
+            "company": {
+                "id": company.id,
+                "name": company.name,
+                "business_id": company.business_id,
+            },
+            "permit": {
+                "id": permit.id,
+                "address_apartment": permit.address_apartment,
+                "address_apartment_sv": permit.address_apartment_sv,
+                "next_address_apartment": permit.next_address_apartment,
+                "next_address_apartment_sv": permit.next_address_apartment_sv,
+                "description": permit.description,
+            },
+            "user": {
+                "id": user.id,
+                "email": user.email,
+                "username": user.username,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_staff": user.is_staff,
+                "is_admin": user.is_active,
+                "date_joined": user.date_joined,
+                "uuid": str(user.uuid),
+            },
+            "order": {
+                "id": order.id,
+                "address_text": order.address_text,
+                "talpa_checkout_url": order.talpa_checkout_url,
+                "talpa_logged_in_checkout_url": order.talpa_logged_in_checkout_url,
+                "talpa_receipt_url": order.talpa_receipt_url,
+                "talpa_update_card_url": order.talpa_update_card_url,
+            },
+            "order_refund": {
+                "id": order_refund.id,
+                "name": order_refund.name,
+                "iban": order_refund.iban,
+                "description": order_refund.description,
+            },
+            "permit_refund": {
+                "id": permit_refund.id,
+                "name": permit_refund.name,
+                "iban": permit_refund.iban,
+                "description": permit_refund.description,
+            },
+            "permit_event": {
+                "id": permit_event.id,
+                "context": permit_event.context,
+            },
+            "driving_licence": {
+                "id": driving_licence.id,
+                "customer_id": driving_licence.customer_id,
+                "start_date": driving_licence.start_date,
+                "end_date": driving_licence.end_date,
+                "active": driving_licence.active,
+            },
+        }
+
+    def snapshot_object_counts(self):
+        return {
+            "customer": Customer.objects.count(),
+            "company": Company.objects.count(),
+            "permit": ParkingPermit.objects.count(),
+            "user": User.objects.count(),
+            "order": Order.objects.count(),
+            "refund": Refund.objects.count(),
+            "event": ParkingPermitEvent.objects.count(),
+            "driving_licence": DrivingLicence.objects.count(),
+        }
+
+    def test_failure_mid_anonymization_rolls_back_all_changes(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory(first_name="Original", email="real@x.fi")
+            company = Company.objects.create(
+                name="Oy Firma Ab",
+                business_id="1234567-8",
+                company_owner=customer,
+                address=AddressFactory(),
+            )
+            permit = ParkingPermitFactory(customer=customer, description="real desc")
+            user = customer.user
+            order = OrderFactory(customer=customer)
+            order_refund = RefundFactory()
+            order_refund.orders.add(order)
+            permit_refund = RefundFactory()
+            order_refund.permits.add(permit)
+            driving_licence = DrivingLicence.objects.create(
+                customer=customer,
+                start_date=date(1990, 1, 1),
+                active=True,
+            )
+            permit_event = ParkingPermitEventFactory.make_end_permit_event(
+                permit=permit
+            )
+
+        original_data = self.snapshot_object_data(
+            customer,
+            company,
+            permit,
+            user,
+            order,
+            order_refund,
+            permit_refund,
+            permit_event,
+            driving_licence,
+        )
+
+        original_counts = self.snapshot_object_counts()
+
+        # Force a failure on the very last step (clearing permit event contexts)
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            with patch(
+                "parking_permits.models.customer.ParkingPermitEvent.objects.filter"
+            ) as mock_filter:
+                mock_qs = mock_filter.return_value
+                mock_qs.update.side_effect = RuntimeError("boom")
+                with self.assertRaises(RuntimeError):
+                    customer.anonymize_all_data()
+
+        # Refresh data "manually", do NOT use refresh_from_db() as it can be wonky after rollbacked transactions.
+        customer = Customer.objects.get(id=original_data["customer"]["id"])
+        company = Company.objects.get(id=original_data["company"]["id"])
+        permit = ParkingPermit.objects.get(id=original_data["permit"]["id"])
+        user = User.objects.get(id=original_data["user"]["id"])
+        order = Order.objects.get(id=original_data["order"]["id"])
+        order_refund = Refund.objects.get(id=original_data["order_refund"]["id"])
+        permit_refund = Refund.objects.get(id=original_data["permit_refund"]["id"])
+        driving_licence = DrivingLicence.objects.get(
+            id=original_data["driving_licence"]["id"]
+        )
+        permit_event = ParkingPermitEvent.objects.get(
+            id=original_data["permit_event"]["id"]
+        )
+
+        new_data = self.snapshot_object_data(
+            customer,
+            company,
+            permit,
+            user,
+            order,
+            order_refund,
+            permit_refund,
+            permit_event,
+            driving_licence,
+        )
+
+        for key in original_data.keys():
+            self.assertEqual(original_data[key], new_data[key])
+
+        new_counts = self.snapshot_object_counts()
+
+        for key in original_counts.keys():
+            self.assertEqual(original_counts[key], new_counts[key])
