@@ -2026,8 +2026,12 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             source_system=SourceSystem.HELSINKI_PROFILE,
             source_id=self.CUSTOMER_SOURCE_ID,
         )
+        self.vehicle = VehicleFactory(
+            serial_number="12345", registration_number="ABC-123"
+        )
         ParkingPermitFactory(
             customer=self.customer,
+            vehicle=self.vehicle,
             status=ParkingPermitStatus.CLOSED,
             end_time=tz.localtime(datetime.datetime(2020, 2, 1, tzinfo=datetime.UTC)),
         )
@@ -2042,6 +2046,21 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
         # Permit should still exist due to anonymization
         self.assertTrue(ParkingPermit.objects.exists())
 
+        self.vehicle.refresh_from_db()
+        expected_registration_number_prefix = "ANON-VEH-"
+        anonymized_identifier_length = 8
+        amount_to_pad = anonymized_identifier_length - len(str(self.vehicle.pk))
+
+        components = (
+            expected_registration_number_prefix,
+            amount_to_pad * "0",
+            str(self.vehicle.pk),
+        )
+
+        expected_registration_number = "".join(components)
+        self.assertEqual(self.vehicle.serial_number, "")
+        self.assertEqual(self.vehicle.registration_number, expected_registration_number)
+
     def assert_customer_not_anonymized(self):
         self.assertTrue(
             Customer.objects.filter(
@@ -2051,6 +2070,9 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             ).exists()
         )
         self.assertTrue(ParkingPermit.objects.exists())
+        self.vehicle.refresh_from_db()
+        self.assertEqual(self.vehicle.serial_number, "12345")
+        self.assertEqual(self.vehicle.registration_number, "ABC-123")
 
     def get_auth_header(self, user, scopes, req_mock):
         audience = api_token_auth_settings.AUDIENCE
