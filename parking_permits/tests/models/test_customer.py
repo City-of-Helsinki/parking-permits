@@ -160,10 +160,11 @@ class AnonymizeAllUserDataTestCase(TestCase):
         "vehicle_class",
         "manufacturer",
         "model",
-        "registration_number",
         "emission",
         "emission_type",
         "euro_class",
+        "weight",
+        "consent_low_emission_accepted",
     )
 
     refund_statistic_fields = (
@@ -443,6 +444,9 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assert_related_driving_licence_is_deleted()
         self.assert_unrelated_driving_licence_still_exists()
 
+        if self.create_permits:
+            self.assert_anonymized_vehicle(vehicle=self.vehicle)
+
         self.assert_anonymization_preserves_vehicle_statistical_data(
             vehicle=self.vehicle, pre_anon_vehicle_data=pre_anon_data["vehicle"]
         )
@@ -488,12 +492,14 @@ class AnonymizeAllUserDataTestCase(TestCase):
                 pre_anon_subscription_data=pre_anon_data["subscription"]
             )
 
+            self.assert_anonymized_vehicle(vehicle=self.another_vehicle)
             self.assert_anonymization_preserves_vehicle_statistical_data(
                 vehicle=self.another_vehicle,
                 pre_anon_vehicle_data=pre_anon_data["another_vehicle"],
             )
 
             if self.create_multiple_refunds:
+                self.assert_anonymized_vehicle(vehicle=self.another_refund_vehicle)
                 self.assert_anonymization_preserves_vehicle_statistical_data(
                     vehicle=self.another_refund_vehicle,
                     pre_anon_vehicle_data=pre_anon_data["another_refund_vehicle"],
@@ -556,6 +562,22 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
         self.assertEqual(company.name, f"Anonymized Company {self.customer.pk}")
         self.assertEqual(company.business_id, f"ANON-{self.customer.pk:07d}")
+
+    def assert_anonymized_vehicle(self, vehicle):
+        expected_registration_number_prefix = "ANON-VEH-"
+        anonymized_identifier_length = 8
+        amount_to_pad = anonymized_identifier_length - len(str(vehicle.pk))
+
+        components = (
+            expected_registration_number_prefix,
+            amount_to_pad * "0",
+            str(vehicle.pk),
+        )
+
+        expected_registration_number = "".join(components)
+
+        self.assertEqual(vehicle.registration_number, expected_registration_number)
+        self.assertEqual(vehicle.serial_number, "")
 
     def assert_related_driving_licence_is_deleted(self):
         licence_exists = DrivingLicence.objects.filter(
@@ -646,9 +668,6 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(vehicle.vehicle_class, pre_anon_vehicle_data["vehicle_class"])
         self.assertEqual(vehicle.manufacturer, pre_anon_vehicle_data["manufacturer"])
         self.assertEqual(vehicle.model, pre_anon_vehicle_data["model"])
-        self.assertEqual(
-            vehicle.registration_number, pre_anon_vehicle_data["registration_number"]
-        )
         self.assertEqual(vehicle.emission, pre_anon_vehicle_data["emission"])
         self.assertEqual(vehicle.emission_type, pre_anon_vehicle_data["emission_type"])
         self.assertEqual(vehicle.euro_class, pre_anon_vehicle_data["euro_class"])
