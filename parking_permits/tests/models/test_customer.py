@@ -36,7 +36,10 @@ from parking_permits.tests.factories.order import (
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.refund import RefundFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
+    VehicleFactory,
+)
 
 User = get_user_model()
 
@@ -951,7 +954,7 @@ class AnonymizeUserDeletionProtectionTestCase(TestCase):
             customer = CustomerFactory()
             user = customer.user
             announcement = AnnouncementFactory()
-            announcement.modifed_by = user
+            announcement.Modifed_by = user
             announcement.save()
 
         self.user_can_still_be_anonymized_and_deleted_helper(
@@ -1336,3 +1339,467 @@ class AnonymizeAtomicityTestCase(TestCase):
 
         for key in original_counts.keys():
             self.assertEqual(original_counts[key], new_counts[key])
+
+
+class AnonymizeVehicleTestCase(TestCase):
+    def assert_anonymized_vehicle(self, vehicle):
+        expected_registration_number_prefix = "ANON-VEH-"
+        anonymized_identifier_length = 8
+        amount_to_pad = anonymized_identifier_length - len(str(vehicle.pk))
+
+        components = (
+            expected_registration_number_prefix,
+            amount_to_pad * "0",
+            str(vehicle.pk),
+        )
+
+        expected_registration_number = "".join(components)
+        self.assertEqual(vehicle.registration_number, expected_registration_number)
+        self.assertEqual(vehicle.serial_number, "")
+
+    def assert_vehicle_not_anonymized(
+        self, vehicle, pre_anon_registration_number, pre_anon_serial_number
+    ):
+        self.assertEqual(vehicle.registration_number, pre_anon_registration_number)
+        self.assertEqual(vehicle.serial_number, pre_anon_serial_number)
+
+    def test_exclusively_used_vehicle_is_anonymized(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            ParkingPermitFactory(customer=customer, vehicle=vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(vehicle)
+
+    def test_exclusively_used_next_vehicle_is_anonymized(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            vehicle_pre_anon_registration_number = vehicle.registration_number
+            vehicle_pre_anon_serial_number = vehicle.serial_number
+            next_vehicle = VehicleFactory()
+            ParkingPermitFactory(
+                customer=customer, vehicle=vehicle, next_vehicle=next_vehicle
+            )
+            ParkingPermitFactory(customer=another_customer, vehicle=vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        next_vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(next_vehicle)
+        vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            vehicle,
+            vehicle_pre_anon_registration_number,
+            vehicle_pre_anon_serial_number,
+        )
+
+    def test_exclusively_used_temp_vehicle_is_anonymized(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            vehicle_pre_anon_registration_number = vehicle.registration_number
+            vehicle_pre_anon_serial_number = vehicle.serial_number
+            temp_vehicle = VehicleFactory()
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=temp_vehicle)
+            permit = ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+            )
+            permit.temp_vehicles.add(temp_vehicle_instance)
+            permit.save()
+            ParkingPermitFactory(customer=another_customer, vehicle=vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        temp_vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(temp_vehicle)
+        vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            vehicle,
+            vehicle_pre_anon_registration_number,
+            vehicle_pre_anon_serial_number,
+        )
+
+    def test_shared_vehicle_is_not_anonymized(self):
+        # two customers have the vehicle as their main vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            vehicle_pre_anon_registration_number = vehicle.registration_number
+            vehicle_pre_anon_serial_number = vehicle.serial_number
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+            )
+            ParkingPermitFactory(customer=another_customer, vehicle=vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            vehicle,
+            vehicle_pre_anon_registration_number,
+            vehicle_pre_anon_serial_number,
+        )
+
+    def test_vehicle_shared_as_next_vehicle_is_not_anonymized(self):
+        # customer has the vehicle as main vehicle, another customer has it as next vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            next_vehicle = VehicleFactory()
+            next_vehicle_pre_anon_registration_number = next_vehicle.registration_number
+            next_vehicle_pre_anon_serial_number = next_vehicle.serial_number
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+                next_vehicle=next_vehicle,
+            )
+            ParkingPermitFactory(customer=another_customer, next_vehicle=next_vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        next_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            next_vehicle,
+            next_vehicle_pre_anon_registration_number,
+            next_vehicle_pre_anon_serial_number,
+        )
+
+    def test_vehicle_shared_as_temp_vehicle_is_not_anonymized(self):
+        # customer has the vehicle as main vehicle, another customer has it as temp vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            shared_vehicle = VehicleFactory()
+            shared_vehicle_pre_anon_registration_number = (
+                shared_vehicle.registration_number
+            )
+            shared_vehicle_pre_anon_serial_number = shared_vehicle.serial_number
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=shared_vehicle)
+            another_vehicle = VehicleFactory()
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=shared_vehicle,
+            )
+            another_permit = ParkingPermitFactory(
+                customer=another_customer, vehicle=another_vehicle
+            )
+            another_permit.temp_vehicles.add(temp_vehicle_instance)
+            another_permit.save()
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            shared_vehicle,
+            shared_vehicle_pre_anon_registration_number,
+            shared_vehicle_pre_anon_serial_number,
+        )
+
+    def test_shared_next_vehicle_is_not_anonymized(self):
+        # two customers have the vehicle as their next vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            next_vehicle = VehicleFactory()
+            next_vehicle_pre_anon_registration_number = next_vehicle.registration_number
+            next_vehicle_pre_anon_serial_number = next_vehicle.serial_number
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+                next_vehicle=next_vehicle,
+            )
+            ParkingPermitFactory(
+                customer=another_customer,
+                vehicle=vehicle,
+                next_vehicle=next_vehicle,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        next_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            next_vehicle,
+            next_vehicle_pre_anon_registration_number,
+            next_vehicle_pre_anon_serial_number,
+        )
+
+    def test_next_vehicle_shared_as_vehicle_is_not_anonymized(self):
+        # two customers have the vehicle as their next vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            shared_vehicle = VehicleFactory()
+            shared_vehicle_pre_anon_registration_number = (
+                shared_vehicle.registration_number
+            )
+            shared_vehicle_pre_anon_serial_number = shared_vehicle.serial_number
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=shared_vehicle)
+            permit = ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+                next_vehicle=shared_vehicle,
+            )
+            permit.temp_vehicles.add(temp_vehicle_instance)
+            permit.save()
+            ParkingPermitFactory(
+                customer=another_customer,
+                vehicle=shared_vehicle,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            shared_vehicle,
+            shared_vehicle_pre_anon_registration_number,
+            shared_vehicle_pre_anon_serial_number,
+        )
+
+    def test_next_vehicle_shared_as_temp_vehicle_is_not_anonymized(self):
+        # customer has the vehicle as next vehicle, another customer has it as temp vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            another_vehicle = VehicleFactory()
+            shared_vehicle = VehicleFactory()
+            shared_vehicle_pre_anon_registration_number = (
+                shared_vehicle.registration_number
+            )
+            shared_vehicle_pre_anon_serial_number = shared_vehicle.serial_number
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=shared_vehicle)
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+                next_vehicle=shared_vehicle,
+            )
+            another_permit = ParkingPermitFactory(
+                customer=another_customer,
+                vehicle=another_vehicle,
+            )
+            another_permit.temp_vehicles.add(temp_vehicle_instance)
+            another_permit.save()
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            shared_vehicle,
+            shared_vehicle_pre_anon_registration_number,
+            shared_vehicle_pre_anon_serial_number,
+        )
+
+    def test_shared_temp_vehicle_is_not_anonymized(self):
+        # two customers have the vehicle as their temp vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            temp_vehicle = VehicleFactory()
+            temp_vehicle_pre_anon_registration_number = temp_vehicle.registration_number
+            temp_vehicle_pre_anon_serial_number = temp_vehicle.serial_number
+            # ParkingPermit.add_temporary_vehicle() always creates a new TemporaryVehicle instance,
+            # so we need two of them to have the same temp vehicle shared between two permits.
+            temp_vehicle_instance_1 = TemporaryVehicleFactory(vehicle=temp_vehicle)
+            temp_vehicle_instance_2 = TemporaryVehicleFactory(vehicle=temp_vehicle)
+            permit = ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+            )
+            permit.temp_vehicles.add(temp_vehicle_instance_1)
+            permit.save()
+            another_permit = ParkingPermitFactory(
+                customer=another_customer, vehicle=vehicle
+            )
+            another_permit.temp_vehicles.add(temp_vehicle_instance_2)
+            another_permit.save()
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        temp_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            temp_vehicle,
+            temp_vehicle_pre_anon_registration_number,
+            temp_vehicle_pre_anon_serial_number,
+        )
+
+    def test_temp_vehicle_shared_as_vehicle_is_not_anonymized(self):
+        # customer has the vehicle as temp vehicle, another customer has it as main vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            shared_vehicle = VehicleFactory()
+            shared_vehicle_pre_anon_registration_number = (
+                shared_vehicle.registration_number
+            )
+            shared_vehicle_pre_anon_serial_number = shared_vehicle.serial_number
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=shared_vehicle)
+            permit = ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+            )
+            permit.temp_vehicles.add(temp_vehicle_instance)
+            permit.save()
+            ParkingPermitFactory(
+                customer=another_customer,
+                vehicle=shared_vehicle,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            shared_vehicle,
+            shared_vehicle_pre_anon_registration_number,
+            shared_vehicle_pre_anon_serial_number,
+        )
+
+    def test_temp_vehicle_shared_as_next_vehicle_is_not_anonymized(self):
+        # customer has the vehicle as temp vehicle, another customer has it as next vehicle
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            another_vehicle = VehicleFactory()
+            shared_vehicle = VehicleFactory()
+            shared_vehicle_pre_anon_registration_number = (
+                shared_vehicle.registration_number
+            )
+            shared_vehicle_pre_anon_serial_number = shared_vehicle.serial_number
+            temp_vehicle_instance = TemporaryVehicleFactory(vehicle=shared_vehicle)
+            permit = ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+            )
+            permit.temp_vehicles.add(temp_vehicle_instance)
+            permit.save()
+            ParkingPermitFactory(
+                customer=another_customer,
+                vehicle=another_vehicle,
+                next_vehicle=shared_vehicle,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_vehicle_not_anonymized(
+            shared_vehicle,
+            shared_vehicle_pre_anon_registration_number,
+            shared_vehicle_pre_anon_serial_number,
+        )
+
+    def test_another_anonymized_customer_does_not_prevent_vehicle_anonymization(self):
+        # Customer B is already anonymized and shares a vehicle with Customer A.
+        # When anonymizing Customer A, the vehicle should be anonymized because
+        # Customer B (already anonymized) should not count as an active user of the vehicle.
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            already_anonymized_customer = CustomerFactory(is_anonymized=True)
+            shared_vehicle = VehicleFactory()
+            ParkingPermitFactory(customer=customer, vehicle=shared_vehicle)
+            ParkingPermitFactory(
+                customer=already_anonymized_customer, vehicle=shared_vehicle
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2024, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        shared_vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(shared_vehicle)
+
+    def test_both_vehicle_and_next_vehicle_are_anonymized(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            next_vehicle = VehicleFactory()
+            ParkingPermitFactory(
+                customer=customer,
+                vehicle=vehicle,
+                next_vehicle=next_vehicle,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        vehicle.refresh_from_db()
+        next_vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(vehicle)
+        self.assert_anonymized_vehicle(next_vehicle)
+
+    def test_sequentially_anonymized_customer_vehicles_have_distinct_reg_numbers(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+            another_vehicle = VehicleFactory()
+            ParkingPermitFactory(customer=customer, vehicle=vehicle)
+            ParkingPermitFactory(customer=another_customer, vehicle=another_vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+            another_customer.anonymize_all_data()
+
+        vehicle.refresh_from_db()
+        another_vehicle.refresh_from_db()
+        self.assert_anonymized_vehicle(vehicle)
+        self.assert_anonymized_vehicle(another_vehicle)
+        self.assertNotEqual(
+            vehicle.registration_number,
+            another_vehicle.registration_number,
+        )
+
+    def test_anonymization_retains_vehicle_user_of_another_customer(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            another_customer = CustomerFactory()
+            vehicle = VehicleFactory()
+
+            # Create vehicle users for both customers
+            customer_vehicle_user = VehicleUser.objects.create(
+                national_id_number=customer.national_id_number
+            )
+            another_customer_vehicle_user = VehicleUser.objects.create(
+                national_id_number=another_customer.national_id_number
+            )
+            vehicle.users.add(customer_vehicle_user)
+            vehicle.users.add(another_customer_vehicle_user)
+
+            ParkingPermitFactory(customer=customer, vehicle=vehicle)
+            ParkingPermitFactory(customer=another_customer, vehicle=vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        # Customer's vehicle user should be deleted
+        self.assertFalse(
+            VehicleUser.objects.filter(id=customer_vehicle_user.id).exists()
+        )
+        # Another customer's vehicle user should still exist
+        self.assertTrue(
+            VehicleUser.objects.filter(id=another_customer_vehicle_user.id).exists()
+        )
