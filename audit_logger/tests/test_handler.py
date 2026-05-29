@@ -2,7 +2,7 @@ import logging
 
 import pytest
 from resilient_logger.models import ResilientLogEntry
-from resilient_logger.sources import ResilientLogSource
+from resilient_logger.sources.resilient_log_source_entry import ResilientLogSourceEntry
 
 from audit_logger import enums
 from audit_logger.data import AuditMessage
@@ -73,7 +73,7 @@ def test_should_create_audit_log_from_record(make_audit_msg):
 
     assert len(ResilientLogEntry.objects.all()) == 1
     assert (
-        ResilientLogSource(ResilientLogEntry.objects.first()).get_document()
+        ResilientLogSourceEntry(ResilientLogEntry.objects.first()).get_document()
         == created_document
     )
     assert "ZeroDivisionError" in created_document["audit_event"]["extra"]["trace"]
