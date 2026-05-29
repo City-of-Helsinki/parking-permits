@@ -10,8 +10,6 @@ from ariadne import (
     QueryType,
     ScalarType,
     UnionType,
-    convert_kwargs_to_snake_case,
-    snake_case_fallback_resolvers,
 )
 from dateutil.parser import isoparse
 from django.conf import settings
@@ -125,7 +123,6 @@ schema_bindables = [
     query,
     mutation,
     PermitDetail,
-    snake_case_fallback_resolvers,
     parking_permit_event_gfk,
     datetime_range_scalar,
 ]
@@ -196,7 +193,6 @@ def resolve_gfk_type(obj, *_):
 
 @query.field("permits")
 @is_preparators
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin searched for permits.",
@@ -210,7 +206,6 @@ def resolve_permits(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("limitedPermits")
 @is_inspectors
-@convert_kwargs_to_snake_case
 def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=None):
     # add user role to search params
     search_params.update({"user_role": ParkingPermitGroups.INSPECTORS})
@@ -219,7 +214,6 @@ def resolve_limited_permits(obj, info, page_input, order_by=None, search_params=
 
 @query.field("permitDetail")
 @is_preparators
-@convert_kwargs_to_snake_case
 def resolve_permit_detail(obj, info, permit_id):
     return ParkingPermit.objects.get(id=permit_id)
 
@@ -233,14 +227,12 @@ def resolve_permit_detail_history(permit, info):
 
 @query.field("zones")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_zones(obj, info):
     return ParkingZone.objects.all().order_by("name")
 
 
 @query.field("zoneByLocation")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_zone_by_location(obj, info, location):
     _location = Point(*location, srid=settings.SRID)
     try:
@@ -253,7 +245,6 @@ def resolve_zone_by_location(obj, info, location):
 
 @query.field("customer")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_customer(obj, info, **data):
     query_params = data.get("query")
     customer = None
@@ -277,7 +268,6 @@ def resolve_customer(obj, info, **data):
 
 @query.field("customers")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
@@ -294,7 +284,6 @@ def resolve_customers(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("vehicle")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin retrieved vehicle.",
@@ -455,14 +444,12 @@ def extract_street_number(input):
 
 
 @query.field("addressSearch")
-@convert_kwargs_to_snake_case
 def resolve_address_search(obj, info, search_input):
     return kami.search_address(search_text=search_input)
 
 
 @mutation.field("createResidentPermit")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin created resident permit.",
@@ -639,7 +626,6 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
 
 @query.field("permitPrices")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["zone"])
@@ -679,7 +665,6 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
 
 @query.field("permitPriceChangeList")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     try:
@@ -738,7 +723,6 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
 
 @mutation.field("updateResidentPermit")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin updated resident permit.",
@@ -952,7 +936,6 @@ def calculate_total_price_change(
 
 @query.field("getExtendedPriceList")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
     """Returns the updated price list for additional months on a fixed period permit."""
 
@@ -965,7 +948,6 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
 
 @mutation.field("extendPermit")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin extended resident permit.",
@@ -1019,7 +1001,6 @@ def resolve_extend_parking_permit(
 
 @mutation.field("endPermit")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin ended resident permit.",
@@ -1051,7 +1032,6 @@ def resolve_end_permit(
 
 @query.field("products")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_products(obj, info, page_input, order_by=None):
     form_data = {**page_input}
     if order_by:
@@ -1066,14 +1046,12 @@ def resolve_products(obj, info, page_input, order_by=None):
 
 @query.field("product")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_product(obj, info, product_id):
     return Product.objects.get(id=product_id)
 
 
 @mutation.field("updateProduct")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_product(obj, info, product_id, product):
     request = info.context["request"]
@@ -1101,7 +1079,6 @@ def resolve_update_product(obj, info, product_id, product):
 
 @mutation.field("deleteProduct")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_product(obj, info, product_id):
     product = Product.objects.get(id=product_id)
@@ -1111,7 +1088,6 @@ def resolve_delete_product(obj, info, product_id):
 
 @mutation.field("createProduct")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_product(obj, info, product):
     request = info.context["request"]
@@ -1138,7 +1114,6 @@ def resolve_create_product(obj, info, product):
 
 @query.field("refunds")
 @is_preparators
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin searched for refunds.",
@@ -1162,7 +1137,6 @@ def resolve_refunds(obj, info, page_input, order_by=None, search_params=None):
 
 @mutation.field("requestForApproval")
 @is_sanctions
-@convert_kwargs_to_snake_case
 def resolve_request_for_approval(obj, info, ids):
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.OPEN)
     qs.update(status=RefundStatus.REQUEST_FOR_APPROVAL)
@@ -1181,7 +1155,6 @@ def resolve_request_for_approval(obj, info, ids):
 
 @mutation.field("acceptRefunds")
 @is_sanctions_and_refunds
-@convert_kwargs_to_snake_case
 def resolve_accept_refunds(obj, info, ids):
     request = info.context["request"]
     qs = Refund.objects.filter(id__in=ids, status=RefundStatus.REQUEST_FOR_APPROVAL)
@@ -1202,7 +1175,6 @@ def resolve_accept_refunds(obj, info, ids):
 
 @query.field("refund")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_refund(obj, info, refund_id):
     try:
         return Refund.objects.get(id=refund_id)
@@ -1212,7 +1184,6 @@ def resolve_refund(obj, info, refund_id):
 
 @mutation.field("updateRefund")
 @is_customer_service
-@convert_kwargs_to_snake_case
 def resolve_update_refund(obj, info, refund_id, refund):
     request = info.context["request"]
     try:
@@ -1229,7 +1200,6 @@ def resolve_update_refund(obj, info, refund_id, refund):
 
 @query.field("orders")
 @is_preparators
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "Admin searched for orders.",
@@ -1254,7 +1224,6 @@ def resolve_orders(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("addresses")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_addresses(obj, info, page_input, order_by=None, search_params=None):
     form_data = {**page_input}
     if order_by:
@@ -1271,14 +1240,12 @@ def resolve_addresses(obj, info, page_input, order_by=None, search_params=None):
 
 @query.field("address")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_address(obj, info, address_id):
     return Address.objects.get(id=address_id)
 
 
 @mutation.field("updateAddress")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_address(obj, info, address_id, address):
     location = Point(*address["location"], srid=settings.SRID)
@@ -1299,7 +1266,6 @@ def resolve_update_address(obj, info, address_id, address):
 
 @mutation.field("deleteAddress")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_address(obj, info, address_id):
     address = Address.objects.get(id=address_id)
@@ -1309,7 +1275,6 @@ def resolve_delete_address(obj, info, address_id):
 
 @mutation.field("createAddress")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_address(obj, info, address):
     location = Point(*address["location"], srid=settings.SRID)
@@ -1330,7 +1295,6 @@ def resolve_create_address(obj, info, address):
 
 @query.field("lowEmissionCriteria")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
     form_data = {**page_input}
     if order_by:
@@ -1345,14 +1309,12 @@ def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
 
 @query.field("lowEmissionCriterion")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_low_emission_criterion(obj, info, criterion_id):
     return LowEmissionCriteria.objects.get(id=criterion_id)
 
 
 @mutation.field("updateLowEmissionCriterion")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
     _criterion = LowEmissionCriteria.objects.get(id=criterion_id)
@@ -1367,7 +1329,6 @@ def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
 
 @mutation.field("deleteLowEmissionCriterion")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_delete_low_emission_criterion(obj, info, criterion_id):
     criterion = LowEmissionCriteria.objects.get(id=criterion_id)
@@ -1377,7 +1338,6 @@ def resolve_delete_low_emission_criterion(obj, info, criterion_id):
 
 @mutation.field("createLowEmissionCriterion")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_low_emission_criterion(obj, info, criterion):
     LowEmissionCriteria.objects.create(
@@ -1392,7 +1352,6 @@ def resolve_create_low_emission_criterion(obj, info, criterion):
 
 @query.field("announcements")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_announcements(obj, info, page_input, order_by=None):
     form_data = {**page_input}
     if order_by:
@@ -1407,7 +1366,6 @@ def resolve_announcements(obj, info, page_input, order_by=None):
 
 @query.field("announcement")
 @is_super_admin
-@convert_kwargs_to_snake_case
 def resolve_announcement(obj, info, announcement_id):
     try:
         return Announcement.objects.get(id=announcement_id)
@@ -1431,7 +1389,6 @@ def post_create_announcement(announcement: Announcement):
 
 @mutation.field("createAnnouncement")
 @is_super_admin
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_create_announcement(obj, info, announcement):
     request = info.context["request"]
@@ -1454,7 +1411,6 @@ def resolve_create_announcement(obj, info, announcement):
 
 @mutation.field("addTemporaryVehicle")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def add_temporary_vehicle(
     obj, info, permit_id, registration_number, start_time, end_time
@@ -1514,7 +1470,6 @@ def add_temporary_vehicle(
 
 @mutation.field("removeTemporaryVehicle")
 @is_customer_service
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def remove_temporary_vehicle(obj, info, permit_id):
     permit = ParkingPermit.objects.get(id=permit_id)
