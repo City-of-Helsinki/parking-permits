@@ -95,7 +95,7 @@ class PermitsQueryTestCase(TestCase):
             "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         response_data = json.loads(response.content)
         self.assertEqual(response_data["errors"][0]["message"], "Forbidden")
 
@@ -109,7 +109,7 @@ class PermitsQueryTestCase(TestCase):
             "variables": self.default_variables,
         }
         response = self.client.post(url, data, content_type="application/json")
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 400)
         response_data = json.loads(response.content)
         self.assertEqual(response_data["errors"][0]["message"], "Forbidden")
 
