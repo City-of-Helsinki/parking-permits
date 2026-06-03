@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.2](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.1...parking-permits-v1.14.2) (2026-06-03)
+
+
+### Bug Fixes
+
+* Null protected user-links when deleting user ([160346b](https://github.com/City-of-Helsinki/parking-permits/commit/160346ba1ac39ea18da24ecdf543c5509ef23b56))
+* Remove user on anonymization ([71b10a0](https://github.com/City-of-Helsinki/parking-permits/commit/71b10a0cc8e4e11a66358f6d8eb767b7e9e61dcb))
+* Vehicleuser anonymization with null SSN ([31b4755](https://github.com/City-of-Helsinki/parking-permits/commit/31b4755261f2a6ca3a3b47db110366ab957e0463))
+
+
+### Dependencies
+
+* Bump authlib from 1.6.11 to 1.6.12 ([8550c3e](https://github.com/City-of-Helsinki/parking-permits/commit/8550c3ee847aa3834332d12241b3aa2f842d5a4a))
+* Bump django from 5.2.13 to 5.2.14 ([cb4a96b](https://github.com/City-of-Helsinki/parking-permits/commit/cb4a96b2be87ebb74a700246b3210e3f503f581d))
+* Bump pip from 26.0 to 26.1 ([9d854fc](https://github.com/City-of-Helsinki/parking-permits/commit/9d854fcabf4cfe86c9f9a2cc41121d364d8a7897))
+* Bump urllib3 from 2.6.3 to 2.7.0 ([c43ebc7](https://github.com/City-of-Helsinki/parking-permits/commit/c43ebc703b8bcdc9ecf044c4a968d7fc2b2d916b))
+
 ## [1.14.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.0...parking-permits-v1.14.1) (2026-04-22)
 
 
