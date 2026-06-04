@@ -15,6 +15,7 @@ from helsinki_gdpr.models import SerializableMixin
 from parking_permits.exceptions import CustomerCannotBeAnonymizedError
 from parking_permits.models.announcement import Announcement
 from parking_permits.models.product import Accounting, Product
+from parking_permits.models.temporary_vehicle import TemporaryVehicle
 
 from ..services.traficom import Traficom
 from .common import SourceSystem
@@ -440,6 +441,9 @@ class Customer(SerializableMixin, TimestampedModelMixin):
                 )
 
                 Refund.objects.filter(accepted_by=self.user).update(accepted_by=None)
+                TemporaryVehicle.objects.filter(created_by=self.user).update(
+                    created_by=None
+                )
 
                 for model_class in models_with_protected_user_reference:
                     model_class.objects.filter(created_by=self.user).update(
