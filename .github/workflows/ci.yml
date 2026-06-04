@@ -17,3 +17,4 @@ jobs:
       use-postgis: true
       extra-commands: |
         echo 'SECRET_KEY=topsecret123' >> .env
+        echo 'AUDIT_LOG_ENV=CI' >> .env
