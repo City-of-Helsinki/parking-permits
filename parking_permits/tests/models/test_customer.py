@@ -3,6 +3,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+from dateutil.relativedelta import relativedelta
 from django.contrib.auth import get_user_model
 from django.db.models import ProtectedError
 from django.test import TestCase
@@ -24,6 +25,7 @@ from parking_permits.models.parking_permit import (
 )
 from parking_permits.models.product import Accounting
 from parking_permits.models.refund import Refund
+from parking_permits.models.temporary_vehicle import TemporaryVehicle
 from parking_permits.models.vehicle import VehicleUser
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
@@ -939,6 +941,23 @@ class AnonymizeUserDeletionProtectionTestCase(TestCase):
             user=user, related_object=announcement, user_link_field="modified_by"
         )
 
+    def test_user_with_created_temporary_vehicle_can_still_be_anonymized_and_deleted(
+        self,
+    ):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            temporary_vehicle = TemporaryVehicle.objects.create(
+                vehicle=VehicleFactory(),
+                end_time=timezone.now() + relativedelta(days=1),
+            )
+            temporary_vehicle.created_by = user
+            temporary_vehicle.save()
+
+        self.user_can_still_be_anonymized_and_deleted_helper(
+            user=user, related_object=temporary_vehicle, user_link_field="created_by"
+        )
+
     def test_user_with_created_permit_event_blocks_naive_delete(self):
         with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
             customer = CustomerFactory()
@@ -1102,6 +1121,20 @@ class AnonymizeUserDeletionProtectionTestCase(TestCase):
             accounting = Accounting.objects.create()
             accounting.modified_by = user
             accounting.save()
+
+        with self.assertRaises(ProtectedError):
+            user.delete()
+
+    def test_user_with_created_temporary_vehicle_blocks_naive_delete(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            customer = CustomerFactory()
+            user = customer.user
+            temporary_vehicle = TemporaryVehicle.objects.create(
+                vehicle=VehicleFactory(),
+                end_time=timezone.now() + relativedelta(days=1),
+            )
+            temporary_vehicle.created_by = user
+            temporary_vehicle.save()
 
         with self.assertRaises(ProtectedError):
             user.delete()
