@@ -520,8 +520,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(customer.national_id_number, f"XX-ANON-{customer.pk:06d}")
         self.assertEqual(customer.email, "")
         self.assertEqual(customer.phone_number, "")
+        self.assertIsNone(customer.primary_address)
         self.assertEqual(customer.primary_address_apartment, "")
         self.assertEqual(customer.primary_address_apartment_sv, "")
+        self.assertIsNone(customer.other_address)
         self.assertEqual(customer.other_address_apartment, "")
         self.assertEqual(customer.other_address_apartment_sv, "")
         self.assertEqual(customer.source_id, "")
@@ -541,8 +543,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(order.vehicles, [])
 
     def assert_anonymized_permit_gdpr_fields(self, permit):
+        self.assertIsNone(permit.address)
         self.assertEqual(permit.address_apartment, "")
         self.assertEqual(permit.address_apartment_sv, "")
+        self.assertIsNone(permit.next_address)
         self.assertEqual(permit.next_address_apartment, "")
         self.assertEqual(permit.next_address_apartment_sv, "")
         self.assertEqual(permit.description, "")
