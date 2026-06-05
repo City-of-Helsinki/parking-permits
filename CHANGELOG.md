@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.3](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.2...parking-permits-v1.14.3) (2026-06-05)
+
+
+### Bug Fixes
+
+* Null tmp vehicle user-link when deleting user ([e6ea91f](https://github.com/City-of-Helsinki/parking-permits/commit/e6ea91f1fd7db9e6aead76c337ae158bcac4977f))
+
 ## [1.14.2](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.1...parking-permits-v1.14.2) (2026-06-03)
 
 
