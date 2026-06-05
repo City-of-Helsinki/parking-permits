@@ -7,12 +7,13 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
 from django.db import transaction
-from django.db.models.functions import Length
+from django.db.models.functions import Cast, Concat, Length
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
 
 from parking_permits.exceptions import CustomerCannotBeAnonymizedError
+from parking_permits.models.address import Address
 from parking_permits.models.announcement import Announcement
 from parking_permits.models.product import Accounting, Product
 from parking_permits.models.temporary_vehicle import TemporaryVehicle
@@ -353,6 +354,79 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             national_id_number=self.national_id_number,
         ).delete()
 
+    def _anonymize_exclusively_owned_addresses(self):
+        # NOTE: this function only anonymizes data on address-objects
+        # themselves, it does not alter address-related fields on the
+        # Customer or ParkingPermit objects.
+        own_address_ids = (
+            self.permits.values_list("address_id", flat=True)
+            .union(
+                self.permits.filter(next_address_id__isnull=False).values_list(
+                    "next_address_id", flat=True
+                )
+            )
+            .union(
+                Customer.objects.filter(
+                    pk=self.pk, primary_address_id__isnull=False
+                ).values_list("primary_address_id", flat=True)
+            )
+            .union(
+                Customer.objects.filter(
+                    pk=self.pk, other_address_id__isnull=False
+                ).values_list("other_address_id", flat=True)
+            )
+        )
+
+        shared_address_ids = (
+            ParkingPermit.objects.filter(
+                address_id__in=own_address_ids,
+                customer__is_anonymized=False,
+            )
+            .exclude(customer_id=self.pk)
+            .values_list("address_id", flat=True)
+            .union(
+                ParkingPermit.objects.filter(
+                    next_address_id__in=own_address_ids,
+                    customer__is_anonymized=False,
+                )
+                .exclude(customer_id=self.pk)
+                .values_list("next_address_id", flat=True)
+            )
+            .union(
+                Customer.objects.filter(
+                    primary_address_id__in=own_address_ids,
+                    is_anonymized=False,
+                )
+                .exclude(id=self.pk)
+                .values_list("primary_address_id", flat=True)
+            )
+            .union(
+                Customer.objects.filter(
+                    other_address_id__in=own_address_ids,
+                    is_anonymized=False,
+                )
+                .exclude(id=self.pk)
+                .values_list("other_address_id", flat=True)
+            )
+        )
+
+        Address.objects.filter(id__in=own_address_ids).exclude(
+            id__in=shared_address_ids
+        ).update(
+            street_name=Concat(
+                models.Value("ANONYMIZED-"),
+                Cast("id", output_field=models.CharField()),
+            ),
+            street_name_sv="ANONYMIZED",
+            street_number=Concat(
+                models.Value("ANONYMIZED-"),
+                Cast("id", output_field=models.CharField()),
+            ),
+            city="ANONYMIZED",
+            city_sv="ANONYMIZED",
+            postal_code="ANON",
+        )
+
     def anonymize_all_data(self):
         """Anonymize all customer related data for GDPR compliance.
 
@@ -365,6 +439,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         with transaction.atomic():
             # Ran first due to needing pre-anonymization national_id_number
             self._remove_vehicle_users_related_by_national_id_number()
+
+            self._anonymize_exclusively_owned_addresses()
 
             # Anonymize Customer fields
             self.first_name = "Anonymized"
