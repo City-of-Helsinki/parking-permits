@@ -9,10 +9,22 @@ from django.utils.translation import gettext_lazy as _
 
 from parking_permits.exceptions import ObjectNotFoundError
 from parking_permits.models import Customer, ParkingZone
-from parking_permits.services.kami import get_address_details, parse_street_data
+from parking_permits.services.kami import get_address_details
 from parking_permits.utils import is_valid_city
 
 logger = logging.getLogger("db")
+
+
+DATA_GROUP_PERSON_NAME = "HENKILON_NIMI"
+DATA_GROUP_PERMANENT_ADDRESS = "VAKINAINEN_KOTIMAINEN_OSOITE"
+DATA_GROUP_TEMPORARY_ADDRESS = "TILAPAINEN_KOTIMAINEN_OSOITE"
+DATA_GROUP_ADDRESS_SECURITY_BAN = "TURVAKIELTO"
+DEFAULT_REQUEST_DATA_GROUPS = [
+    DATA_GROUP_PERSON_NAME,
+    DATA_GROUP_PERMANENT_ADDRESS,
+    DATA_GROUP_TEMPORARY_ADDRESS,
+    DATA_GROUP_ADDRESS_SECURITY_BAN,
+]
 
 
 class DvvAddressInfo(TypedDict, total=False):
@@ -49,14 +61,21 @@ def get_auth_token():
 
 def get_request_headers():
     token = get_auth_token()
-    return {"Authorization": f"Basic {token}"}
-
-
-def get_request_data(hetu):
     return {
-        "Henkilotunnus": hetu,
-        "SoSoNimi": settings.DVV_SOSONIMI,
-        "Loppukayttaja": settings.DVV_LOPPUKAYTTAJA,
+        "accept": "application/json",
+        "Authorization": f"Basic {token}",
+        "Content-Type": "application/json",
+    }
+
+
+def get_request_data(national_id_numbers, data_groups=None):
+    if not isinstance(national_id_numbers, list):
+        national_id_numbers = [national_id_numbers]
+    if data_groups is None:
+        data_groups = DEFAULT_REQUEST_DATA_GROUPS
+    return {
+        "hetulista": national_id_numbers,
+        "tietoryhmat": data_groups,
     }
 
 
@@ -100,21 +119,51 @@ def _extract_address_data(address) -> DvvAddressInfo | None:
     )
 
 
-def format_address(address_data) -> DvvAddressInfo:
-    # DVV combines the street name, street number and apartment
-    # building number together in a single string. We only need
-    # to use the street name and street number
-
-    street_name, street_number, apartment = parse_street_data(
-        address_data["LahiosoiteS"]
-    )
-
-    if swedish_address := address_data.get("LahiosoiteR"):
-        street_name_sv, __, apartment_sv = parse_street_data(swedish_address)
+def _build_apartment_string(address_data: dict) -> str:
+    letter = address_data.get("huoneistokirjain", "")
+    number = address_data.get("huoneistonumero", "")
+    # "000" means no apartment number
+    if number and number != "000":
+        number = str(int(number))  # strip leading zeros
     else:
-        street_name_sv, apartment_sv = "", ""
+        number = ""
+    suffix = address_data.get("jakokirjain", "")
+    return f"{letter}{number}{suffix}".strip()
+
+
+def format_address(address_data) -> DvvAddressInfo:
+    street_name = ""
+    if address_data.get("katunimi", {}).get("fi") is not None:
+        street_name = address_data["katunimi"]["fi"]
+
+    street_name_sv = ""
+    if address_data.get("katunimi", {}).get("sv") is not None:
+        street_name_sv = address_data["katunimi"]["sv"]
+
+    street_number = ""
+    if address_data.get("katunumero") is not None:
+        street_number = address_data["katunumero"]
+
+    # Note that DVV returns city names in uppercase, capitalize()
+    # makes all but the first letter lowercase.
+    city = ""
+    if address_data.get("postitoimipaikka", {}).get("fi") is not None:
+        city = address_data["postitoimipaikka"]["fi"].capitalize()
+
+    city_sv = ""
+    if address_data.get("postitoimipaikka", {}).get("sv") is not None:
+        city_sv = address_data["postitoimipaikka"]["sv"].capitalize()
+
+    postal_code = ""
+    if address_data.get("postinumero") is not None:
+        postal_code = address_data["postinumero"]
 
     address_detail = get_address_details(street_name, street_number)
+
+    # New DVV-API does not differentiate between finnish and swedish
+    # apartment data as they're provided in separate fields from the
+    # address in contrast to the old API.
+    apartment = apartment_sv = _build_apartment_string(address_data)
 
     try:
         zone = ParkingZone.objects.get_for_location(address_detail["location"])
@@ -128,16 +177,62 @@ def format_address(address_data) -> DvvAddressInfo:
         "street_number": street_number,
         "apartment": apartment,
         "apartment_sv": apartment_sv,
-        "city": address_data["PostitoimipaikkaS"],
-        "city_sv": address_data["PostitoimipaikkaR"],
-        "postal_code": address_data["Postinumero"],
+        "city": city,
+        "city_sv": city_sv,
+        "postal_code": postal_code,
         "zone": zone,
     }
 
 
 def is_valid_address(address):
-    address_valid = address and address["LahiosoiteS"] and address["PostitoimipaikkaS"]
-    return address_valid and is_valid_city(address["PostitoimipaikkaS"])
+    address_valid = (
+        address
+        and address.get("katunimi", {}).get("fi")
+        and address.get("postitoimipaikka", {}).get("fi")
+    )
+    return address_valid and is_valid_city(
+        address.get("postitoimipaikka", {}).get("fi")
+    )
+
+
+def get_person_data_by_data_groups(
+    response_data, *, force_single_person=True
+) -> dict[str, Any] | list[dict[str, Any]] | None:
+    """
+    Helper method for parsing data groups from DVV-response, which
+    the API returns as a list of dicts with the name of the data group
+    under 'tietoryhma'-key.
+
+    Noteworthily, some of the data groups specified in the request
+    payload may NOT be included in the response.
+    """
+
+    if "perustiedot" not in response_data:
+        logger.error("Expected 'perustiedot' in DVV response")
+        return None
+
+    if len(response_data["perustiedot"]) == 0:
+        logger.error("Expected at least one person info in DVV response")
+        return None
+
+    if force_single_person and len(response_data.get("perustiedot", [])) > 1:
+        raise ValueError("Expected exactly one person info in DVV response")
+
+    person_data_from_response = response_data["perustiedot"]
+
+    person_data = []
+    for data_for_person in person_data_from_response:
+        person_info = {}
+        for response_data_group in data_for_person["tietoryhmat"]:
+            data_group_name = response_data_group["tietoryhma"]
+            person_info[data_group_name] = {
+                key: value
+                for key, value in response_data_group.items()
+                if key != "tietoryhma"
+            }
+        person_data.append(person_info)
+
+    return person_data[0] if force_single_person else person_data
 
 
 def get_person_info(national_id_number) -> DvvPersonInfo | None:
@@ -146,8 +241,9 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
     headers = get_request_headers()
     response = requests.post(
         settings.DVV_PERSONAL_INFO_URL,
-        json.dumps(data, default=str),
+        data=json.dumps(data, default=str),
         headers=headers,
+        verify=settings.DVV_VERIFY_SSL,
     )
     if not response.ok:
         logger.error(
@@ -156,30 +252,49 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
         return None
 
     response_data = response.json()
+
+    if "perustiedot" not in response_data:
+        logger.error("Expected 'perustiedot' in DVV response")
+        return None
+
     # DVV does not return a 404 code if the given hetu
     # is not found, so we need to check the response
     # content
-    person_info = response_data.get("Henkilo")
+    if not len(response_data["perustiedot"]):
+        logger.error("Expected at least one person info in DVV response")
+        return None
+
+    person_info = get_person_data_by_data_groups(response_data)
     if not person_info:
         logger.error(f"Person info not found: {national_id_number}")
         return None
 
-    last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
-    first_name = person_info["NykyisetEtunimet"]["Etunimet"]
+    person_name_info = person_info.get(DATA_GROUP_PERSON_NAME)
+    first_name = last_name = ""
+    if person_name_info:
+        first_name = person_name_info["etunimi"]
+        last_name = person_name_info["sukunimi"]
 
     primary_address, primary_apartment = None, ""
-    permanent_address = person_info["VakinainenKotimainenLahiosoite"]
+    permanent_address = person_info.get(DATA_GROUP_PERMANENT_ADDRESS)
 
     if is_valid_address(permanent_address):
         primary_address = format_address(permanent_address)
         primary_apartment = primary_address.get("apartment", "")
 
     other_address, other_apartment = None, ""
-    temporary_address = person_info["TilapainenKotimainenLahiosoite"]
+    temporary_address = person_info.get(DATA_GROUP_TEMPORARY_ADDRESS)
 
     if is_valid_address(temporary_address):
         other_address = format_address(temporary_address)
         other_apartment = other_address.get("apartment", "")
+
+    # Based on the test cases of the muutokset-API (changes), it seems
+    # like perustiedot-API only returns the address security ban info
+    # in the response if the ban is active.
+    address_security_ban = person_info.get(DATA_GROUP_ADDRESS_SECURITY_BAN, {}).get(
+        "turvakieltoAktiivinen", False
+    )
 
     customer = Customer.objects.filter(national_id_number=national_id_number).first()
 
@@ -195,7 +310,7 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
         "other_address_apartment": other_apartment,
         "phone_number": "",
         "email": "",
-        "address_security_ban": False,
+        "address_security_ban": address_security_ban,
         "driver_license_checked": False,
         "active_permits": active_permits,
     }
