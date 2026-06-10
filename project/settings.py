@@ -74,9 +74,8 @@ env = environ.Env(
     DVV_PERSONAL_INFO_URL=(str, ""),
     DVV_USERNAME=(str, ""),
     DVV_PASSWORD=(str, ""),
-    DVV_SOSONIMI=(str, ""),
-    DVV_LOPPUKAYTTAJA=(str, ""),
     DVV_UPDATE_USER_PROFILE_DATA=(bool, True),
+    DVV_VERIFY_SSL=(bool, True),
     EMAIL_USE_TLS=(bool, False),
     EMAIL_HOST=(str, "localhost"),
     EMAIL_HOST_USER=(str, ""),
@@ -347,9 +346,8 @@ GDPR_API_DELETE_SCOPE = env("GDPR_API_DELETE_SCOPE")
 DVV_PERSONAL_INFO_URL = env("DVV_PERSONAL_INFO_URL")
 DVV_USERNAME = env("DVV_USERNAME")
 DVV_PASSWORD = env("DVV_PASSWORD")
-DVV_SOSONIMI = env("DVV_SOSONIMI")
-DVV_LOPPUKAYTTAJA = env("DVV_LOPPUKAYTTAJA")
 DVV_UPDATE_USER_PROFILE_DATA = env("DVV_UPDATE_USER_PROFILE_DATA")
+DVV_VERIFY_SSL = env("DVV_VERIFY_SSL") if DEBUG else True
 
 # Email configuration
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
