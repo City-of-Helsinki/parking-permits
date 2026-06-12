@@ -43,6 +43,16 @@ from parking_permits.tests.factories.vehicle import VehicleFactory
 User = get_user_model()
 
 
+class AssertAnonymiedAddressMixin:
+    def assert_anonymized_address(self, address):
+        self.assertEqual(address.street_name, f"ANONYMIZED-{address.pk}")
+        self.assertEqual(address.street_name_sv, "ANONYMIZED")
+        self.assertEqual(address.street_number, f"ANONYMIZED-{address.pk}")
+        self.assertEqual(address.postal_code, "ANON")
+        self.assertEqual(address.city, "ANONYMIZED")
+        self.assertEqual(address.city_sv, "ANONYMIZED")
+
+
 class TestCustomer(TestCase):
     def test_anonymized_customer_cannot_be_anonymized(self):
         with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
@@ -114,7 +124,7 @@ class TestCustomer(TestCase):
             self.assertTrue(customer.can_be_anonymized)
 
 
-class AnonymizeAllUserDataTestCase(TestCase):
+class AnonymizeAllUserDataTestCase(TestCase, AssertAnonymiedAddressMixin):
     permit_statistic_fields = (
         "parking_zone",
         "next_parking_zone",
@@ -424,14 +434,8 @@ class AnonymizeAllUserDataTestCase(TestCase):
         if self.create_user:
             self.assert_customers_user_is_deleted(user_id=pre_anon_data["user_id"])
 
-        self.assert_anonymization_preserves_address_statistical_data(
-            address=self.primary_address,
-            pre_anon_address_data=pre_anon_data["primary_address"],
-        )
-        self.assert_anonymization_preserves_address_statistical_data(
-            address=self.other_address,
-            pre_anon_address_data=pre_anon_data["secondary_address"],
-        )
+        self.assert_anonymized_address(self.primary_address)
+        self.assert_anonymized_address(self.other_address)
 
         if self.create_company:
             self.assert_anonymized_company()
@@ -1350,3 +1354,208 @@ class AnonymizeAtomicityTestCase(TestCase):
 
         for key in original_counts.keys():
             self.assertEqual(original_counts[key], new_counts[key])
+
+
+class AnonymizeAddressTestCase(TestCase, AssertAnonymiedAddressMixin):
+    def assert_address_not_anonymized(self, address, pre_anon_address_data):
+        self.assertEqual(address.street_name, pre_anon_address_data["street_name"])
+        self.assertEqual(
+            address.street_name_sv, pre_anon_address_data["street_name_sv"]
+        )
+        self.assertEqual(address.street_number, pre_anon_address_data["street_number"])
+        self.assertEqual(address.postal_code, pre_anon_address_data["postal_code"])
+        self.assertEqual(address.city, pre_anon_address_data["city"])
+        self.assertEqual(address.city_sv, pre_anon_address_data["city_sv"])
+
+    def _snapshot_address_data(self, address):
+        return {
+            "street_name": address.street_name,
+            "street_name_sv": address.street_name_sv,
+            "street_number": address.street_number,
+            "postal_code": address.postal_code,
+            "city": address.city,
+            "city_sv": address.city_sv,
+        }
+
+    def _give_address_ownership(self, customer, address, *, pathway: str):
+        # Attaches `address` to `customer` via one of the four ownership
+        # pathways recognised by Customer._anonymize_exclusively_owned_addresses().
+        if pathway == "permit_address":
+            ParkingPermitFactory(
+                customer=customer,
+                address=address,
+                status=ParkingPermitStatus.CLOSED,
+            )
+        elif pathway == "permit_next_address":
+            ParkingPermitFactory(
+                customer=customer,
+                next_address=address,
+                status=ParkingPermitStatus.CLOSED,
+            )
+        elif pathway == "primary_address":
+            customer.primary_address = address
+            customer.save()
+        elif pathway == "other_address":
+            customer.other_address = address
+            customer.save()
+        else:
+            raise ValueError(f"Unknown address ownership pathway: {pathway}")
+
+    def _assert_exclusive_address_is_anonymized(self, *, pathway: str):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            address = AddressFactory()
+            customer = CustomerFactory()
+            self._give_address_ownership(customer, address, pathway=pathway)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        address.refresh_from_db()
+        self.assert_anonymized_address(address)
+
+    def _assert_shared_address_survives_anonymization(
+        self, *, anonymized_pathway: str, active_pathway: str
+    ):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            shared_address = AddressFactory()
+
+            customer_to_anonymize = CustomerFactory()
+            self._give_address_ownership(
+                customer_to_anonymize, shared_address, pathway=anonymized_pathway
+            )
+
+            another_active_customer = CustomerFactory()
+            self._give_address_ownership(
+                another_active_customer, shared_address, pathway=active_pathway
+            )
+
+        pre_anon_address_data = self._snapshot_address_data(shared_address)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer_to_anonymize.anonymize_all_data()
+
+        shared_address.refresh_from_db()
+        self.assert_address_not_anonymized(shared_address, pre_anon_address_data)
+
+    def test_exclusively_used_permit_address_is_anonymized(self):
+        self._assert_exclusive_address_is_anonymized(pathway="permit_address")
+
+    def test_exclusively_used_primary_address_is_anonymized(self):
+        self._assert_exclusive_address_is_anonymized(pathway="primary_address")
+
+    def test_exclusively_used_other_address_is_anonymized(self):
+        self._assert_exclusive_address_is_anonymized(pathway="other_address")
+
+    def test_exclusively_used_next_address_is_anonymized(self):
+        self._assert_exclusive_address_is_anonymized(pathway="permit_next_address")
+
+    # Cross-pathway sharing: customer A holds an address via one pathway while
+    # a still-active customer B holds the same address via another pathway.
+    # After A is anonymized (but not B), the shared address must remain intact.
+    # The diagonal cases (same pathway for both) cover plain shared ownership,
+    # e.g. two customers sharing one primary address.
+
+    def test_permit_address_shared_as_permit_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_address", active_pathway="permit_address"
+        )
+
+    def test_permit_address_shared_as_permit_next_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_address", active_pathway="permit_next_address"
+        )
+
+    def test_permit_address_shared_as_primary_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_address", active_pathway="primary_address"
+        )
+
+    def test_permit_address_shared_as_other_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_address", active_pathway="other_address"
+        )
+
+    def test_permit_next_address_shared_as_permit_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_next_address", active_pathway="permit_address"
+        )
+
+    def test_permit_next_address_shared_as_permit_next_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_next_address",
+            active_pathway="permit_next_address",
+        )
+
+    def test_permit_next_address_shared_as_primary_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_next_address", active_pathway="primary_address"
+        )
+
+    def test_permit_next_address_shared_as_other_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="permit_next_address", active_pathway="other_address"
+        )
+
+    def test_primary_address_shared_as_permit_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="primary_address", active_pathway="permit_address"
+        )
+
+    def test_primary_address_shared_as_permit_next_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="primary_address", active_pathway="permit_next_address"
+        )
+
+    def test_primary_address_shared_as_primary_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="primary_address", active_pathway="primary_address"
+        )
+
+    def test_primary_address_shared_as_other_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="primary_address", active_pathway="other_address"
+        )
+
+    def test_other_address_shared_as_permit_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="other_address", active_pathway="permit_address"
+        )
+
+    def test_other_address_shared_as_permit_next_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="other_address", active_pathway="permit_next_address"
+        )
+
+    def test_other_address_shared_as_primary_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="other_address", active_pathway="primary_address"
+        )
+
+    def test_other_address_shared_as_other_address_is_not_anonymized(self):
+        self._assert_shared_address_survives_anonymization(
+            anonymized_pathway="other_address", active_pathway="other_address"
+        )
+
+    def test_another_anonymized_customer_does_not_prevent_address_anonymization(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 1, 1))):
+            shared_address = AddressFactory()
+
+            already_anonymized_customer = CustomerFactory(is_anonymized=True)
+            ParkingPermitFactory(
+                customer=already_anonymized_customer,
+                address=shared_address,
+                status=ParkingPermitStatus.CLOSED,
+            )
+
+            customer_to_anonymize = CustomerFactory()
+            ParkingPermitFactory(
+                customer=customer_to_anonymize,
+                address=shared_address,
+                status=ParkingPermitStatus.CLOSED,
+            )
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer_to_anonymize.anonymize_all_data()
+
+        shared_address.refresh_from_db()
+        self.assert_anonymized_address(shared_address)
