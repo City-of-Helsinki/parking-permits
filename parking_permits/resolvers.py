@@ -5,9 +5,7 @@ from decimal import Decimal
 from ariadne import (
     MutationType,
     QueryType,
-    convert_kwargs_to_snake_case,
     load_schema_from_path,
-    snake_case_fallback_resolvers,
 )
 from ariadne.contrib.federation import FederatedObjectType
 from django.conf import settings
@@ -72,7 +70,7 @@ mutation = MutationType()
 address_node = FederatedObjectType("AddressNode")
 profile_node = FederatedObjectType("ProfileNode")
 
-schema_bindables = [query, mutation, address_node, snake_case_fallback_resolvers]
+schema_bindables = [query, mutation, address_node]
 
 ACTIVE_PERMIT_STATUSES = [
     ParkingPermitStatus.DRAFT,
@@ -86,7 +84,6 @@ def is_valid_address(address):
 
 @query.field("getPermits")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User retrieved parking permits.",
@@ -248,7 +245,6 @@ def validate_customer_address(customer, address_id):
 
 @query.field("getUpdateAddressPriceChanges")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @transaction.atomic
 def resolve_get_update_address_price_changes(_obj, info, address_id):
     customer = info.context["request"].user.customer
@@ -275,7 +271,6 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
 
 @query.field("getExtendedPriceList")
 @is_authenticated
-@convert_kwargs_to_snake_case
 def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
     """Returns the updated price list for additional months on a fixed period permit."""
 
@@ -292,7 +287,6 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
 
 @mutation.field("deleteParkingPermit")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User deleted parking permit.",
@@ -310,7 +304,6 @@ def resolve_delete_parking_permit(_obj, info, permit_id, audit_msg: AuditMsg = N
 
 @mutation.field("createParkingPermit")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User created parking permit.",
@@ -326,7 +319,6 @@ def resolve_create_parking_permit(_obj, info, address_id, registration):
 
 @mutation.field("extendParkingPermit")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User extended parking permit.",
@@ -361,7 +353,6 @@ def resolve_extend_parking_permit(
 
 @mutation.field("updateParkingPermit")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User updated parking permit.",
@@ -385,7 +376,6 @@ def resolve_update_parking_permit(
 
 @mutation.field("endParkingPermit")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User ended parking permits.",
@@ -408,7 +398,6 @@ def resolve_end_permit(
 
 @mutation.field("getVehicleInformation")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User retrieved vehicle information.",
@@ -437,7 +426,6 @@ def resolve_get_vehicle_information(_obj, info, registration):
 
 @mutation.field("updatePermitVehicle")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User changed parking permit's vehicle.",
@@ -577,7 +565,6 @@ def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
 
 @mutation.field("addTemporaryVehicle")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User added a temporary vehicle for a permit.",
@@ -613,7 +600,6 @@ def resolve_add_temporary_vehicle(
 
 @mutation.field("removeTemporaryVehicle")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User removed a temporary vehicle for a permit.",
@@ -631,7 +617,6 @@ def resolve_remove_temporary_vehicle(_obj, info, permit_id, audit_msg: AuditMsg 
 
 @mutation.field("changeAddress")
 @is_authenticated
-@convert_kwargs_to_snake_case
 @audit_logger.autolog(
     AuditMsg(
         "User changed address.",
