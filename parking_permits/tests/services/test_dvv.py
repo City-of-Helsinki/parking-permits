@@ -102,6 +102,25 @@ class GetPersonInfoTestCase(TestCase):
         self.assertEqual(customer["primary_address"]["city"], "Helsinki")
         self.assertEqual(customer["primary_address_apartment"], "A6")
 
+    @patch("parking_permits.services.dvv.get_address_details")
+    @patch("requests.post")
+    def test_get_customer_info_with_empty_address_data(
+        self, mock_post, mock_get_address_details
+    ):
+        mock_post.return_value = self.MockResponse(
+            data=self.get_mock_info_empty_addresses()
+        )
+        mock_get_address_details.side_effect = AssertionError(
+            "get_address_details should not be called for empty address data"
+        )
+        customer = get_person_info("12345")
+        self.assertEqual(customer["first_name"], "Ossi")
+        self.assertEqual(customer["last_name"], "Oksanen")
+        self.assertEqual(customer["primary_address"], None)
+        self.assertEqual(customer["primary_address_apartment"], "")
+        self.assertEqual(customer["other_address"], None)
+        self.assertEqual(customer["other_address_apartment"], "")
+
     def get_mock_info(self, **kwargs):
         return {
             "Henkilo": {
@@ -120,6 +139,29 @@ class GetPersonInfoTestCase(TestCase):
                     "LahiosoiteR": "Handkrem 6 B7",
                     "PostitoimipaikkaR": "Helsingfors",
                     "Postinumero": "10001",
+                },
+            },
+            **kwargs,
+        }
+
+    def get_mock_info_empty_addresses(self, **kwargs):
+        return {
+            "Henkilo": {
+                "NykyinenSukunimi": {"Sukunimi": "Oksanen"},
+                "NykyisetEtunimet": {"Etunimet": "Ossi"},
+                "VakinainenKotimainenLahiosoite": {
+                    "LahiosoiteS": "",
+                    "PostitoimipaikkaS": "",
+                    "LahiosoiteR": "",
+                    "PostitoimipaikkaR": "",
+                    "Postinumero": "",
+                },
+                "TilapainenKotimainenLahiosoite": {
+                    "LahiosoiteS": "",
+                    "PostitoimipaikkaS": "",
+                    "LahiosoiteR": "",
+                    "PostitoimipaikkaR": "",
+                    "Postinumero": "",
                 },
             },
             **kwargs,
