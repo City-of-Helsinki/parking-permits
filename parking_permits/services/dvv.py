@@ -49,7 +49,10 @@ def get_auth_token():
 
 def get_request_headers():
     token = get_auth_token()
-    return {"Authorization": f"Basic {token}"}
+    return {
+        "Authorization": f"Basic {token}",
+        "Content-Type": "application/json",
+    }
 
 
 def get_request_data(hetu):
