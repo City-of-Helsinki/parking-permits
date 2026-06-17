@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.4](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.3...parking-permits-v1.14.4) (2026-06-17)
+
+
+### Bug Fixes
+
+* Add Content-Type header to DVV-queries ([d47abde](https://github.com/City-of-Helsinki/parking-permits/commit/d47abde92f8358b1d50f45b712abd077993cea61))
+
+
+### Dependencies
+
+* Bump cryptography from 46.0.7 to 48.0.1 ([94c52b5](https://github.com/City-of-Helsinki/parking-permits/commit/94c52b5e9609beef88ffb254d73a61fb31ca79d9))
+
 ## [1.14.3](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.2...parking-permits-v1.14.3) (2026-06-05)
 
 
