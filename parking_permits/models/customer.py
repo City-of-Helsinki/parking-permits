@@ -7,7 +7,8 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.gis.db import models
 from django.db import transaction
-from django.db.models.functions import Length
+from django.db.models import CharField, Value
+from django.db.models.functions import Cast, Concat, Length, LPad
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from helsinki_gdpr.models import SerializableMixin
@@ -23,7 +24,7 @@ from .driving_licence import DrivingLicence
 from .mixins import TimestampedModelMixin
 from .parking_permit import ParkingPermit, ParkingPermitEvent, ParkingPermitStatus
 from .refund import Refund
-from .vehicle import VehicleUser
+from .vehicle import Vehicle, VehicleUser
 
 logger = logging.getLogger("db")
 
@@ -353,6 +354,61 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             national_id_number=self.national_id_number,
         ).delete()
 
+    def _anonymize_exclusively_owned_vehicles(self):
+        own_vehicle_ids = (
+            self.permits.values_list("vehicle_id", flat=True)
+            .union(
+                self.permits.filter(next_vehicle_id__isnull=False).values_list(
+                    "next_vehicle_id", flat=True
+                )
+            )
+            .union(
+                TemporaryVehicle.objects.filter(
+                    parkingpermit__customer_id=self.id,
+                ).values_list("vehicle_id", flat=True)
+            )
+        )
+
+        # NOTE: permits of anonymized customers do NOT contribute towards
+        #  a vehicle being "shared".
+        shared_vehicle_ids = (
+            ParkingPermit.objects.filter(
+                vehicle_id__in=own_vehicle_ids,
+                customer__is_anonymized=False,
+            )
+            .exclude(customer_id=self.pk)
+            .values_list("vehicle_id", flat=True)
+            .union(
+                ParkingPermit.objects.filter(
+                    next_vehicle_id__in=own_vehicle_ids,
+                    customer__is_anonymized=False,
+                )
+                .exclude(customer_id=self.pk)
+                .values_list("next_vehicle_id", flat=True)
+            )
+            .union(
+                TemporaryVehicle.objects.filter(
+                    vehicle_id__in=own_vehicle_ids,
+                    parkingpermit__customer__is_anonymized=False,
+                )
+                .exclude(parkingpermit__customer_id=self.pk)
+                .values_list("vehicle_id", flat=True)
+            )
+        )
+
+        # Note that update() bypasses save() which in turn means bypassing the
+        # recomputation of _is_low_emission-property - this is intentional
+        # and desired behavior.
+        Vehicle.objects.filter(id__in=own_vehicle_ids).exclude(
+            id__in=shared_vehicle_ids
+        ).update(
+            registration_number=Concat(
+                Value("ANON-VEH-"),
+                LPad(Cast("id", output_field=CharField()), 8, Value("0")),
+            ),
+            serial_number=Value(""),
+        )
+
     def anonymize_all_data(self):
         """Anonymize all customer related data for GDPR compliance.
 
@@ -365,6 +421,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         with transaction.atomic():
             # Ran first due to needing pre-anonymization national_id_number
             self._remove_vehicle_users_related_by_national_id_number()
+
+            self._anonymize_exclusively_owned_vehicles()
 
             # Anonymize Customer fields
             self.first_name = "Anonymized"
