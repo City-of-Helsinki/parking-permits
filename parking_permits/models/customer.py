@@ -462,9 +462,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             # Clear Order.vehicles ArrayField (denormalized registration numbers)
             self.orders.update(vehicles=[])
 
-            # Anonymize Company if customer is owner
+            # Anonymize Company if customer is owner. This will also null the
+            # address-foreign key.
             self.company_set.update(
-                name=f"Anonymized Company {self.pk}", business_id=f"ANON-{self.pk:07d}"
+                name=f"Anonymized Company {self.pk}",
+                business_id=f"ANON-{self.pk:07d}",
+                address=None,
             )
 
             # Clear ParkingPermitEvent.context where it may contain PII
