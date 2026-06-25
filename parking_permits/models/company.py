@@ -10,7 +10,11 @@ class Company(TimestampedModelMixin):
     name = models.CharField(_("Company name"), max_length=128)
     business_id = models.CharField(_("Business Id"), max_length=32)
     address = models.ForeignKey(
-        Address, verbose_name=_("Address"), on_delete=models.PROTECT
+        Address,
+        verbose_name=_("Address"),
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
     )
     company_owner = models.ForeignKey(
         Customer, verbose_name=_("Company owner"), on_delete=models.PROTECT

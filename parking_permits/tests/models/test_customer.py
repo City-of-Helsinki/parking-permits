@@ -193,11 +193,12 @@ class AnonymizeAllUserDataTestCase(TestCase):
                 )
 
             if self.create_company:
+                self.company_address = AddressFactory()
                 self.company = Company.objects.create(
                     name="Oy Firma Ab",
                     business_id="1234567-8",
                     company_owner=self.customer,
-                    address=AddressFactory(),
+                    address=self.company_address,
                 )
 
             self.vehicle = VehicleFactory()
@@ -311,7 +312,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
         if self.create_company:
             self.company.refresh_from_db()
-            self.company.address.refresh_from_db()
+            self.company_address.refresh_from_db()
 
         self.vehicle.refresh_from_db()
         # Note that self.vehicle_user and self.vehicle_user should be
@@ -355,7 +356,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
         if self.create_company:
             pre_anon_data["company_address"] = self._create_pre_anon_snapshot(
-                self.company.address, self.address_statistic_fields
+                self.company_address, self.address_statistic_fields
             )
 
         pre_anon_data["vehicle"] = self._create_pre_anon_snapshot(
@@ -436,7 +437,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
         if self.create_company:
             self.assert_anonymized_company()
             self.assert_anonymization_preserves_address_statistical_data(
-                address=self.company.address,
+                address=self.company_address,
                 pre_anon_address_data=pre_anon_data["company_address"],
             )
 
@@ -520,8 +521,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(customer.national_id_number, f"XX-ANON-{customer.pk:06d}")
         self.assertEqual(customer.email, "")
         self.assertEqual(customer.phone_number, "")
+        self.assertIsNone(customer.primary_address)
         self.assertEqual(customer.primary_address_apartment, "")
         self.assertEqual(customer.primary_address_apartment_sv, "")
+        self.assertIsNone(customer.other_address)
         self.assertEqual(customer.other_address_apartment, "")
         self.assertEqual(customer.other_address_apartment_sv, "")
         self.assertEqual(customer.source_id, "")
@@ -541,8 +544,10 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(order.vehicles, [])
 
     def assert_anonymized_permit_gdpr_fields(self, permit):
+        self.assertIsNone(permit.address)
         self.assertEqual(permit.address_apartment, "")
         self.assertEqual(permit.address_apartment_sv, "")
+        self.assertIsNone(permit.next_address)
         self.assertEqual(permit.next_address_apartment, "")
         self.assertEqual(permit.next_address_apartment_sv, "")
         self.assertEqual(permit.description, "")
@@ -558,6 +563,7 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
         self.assertEqual(company.name, f"Anonymized Company {self.customer.pk}")
         self.assertEqual(company.business_id, f"ANON-{self.customer.pk:07d}")
+        self.assertIsNone(company.address)
 
     def assert_related_driving_licence_is_deleted(self):
         licence_exists = DrivingLicence.objects.filter(

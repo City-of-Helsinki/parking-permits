@@ -372,8 +372,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             self.national_id_number = f"XX-ANON-{self.pk:06d}"
             self.email = ""
             self.phone_number = ""
+            self.primary_address = None
             self.primary_address_apartment = ""
             self.primary_address_apartment_sv = ""
+            self.other_address = None
             self.other_address_apartment = ""
             self.other_address_apartment_sv = ""
             self.source_id = ""
@@ -382,8 +384,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
             # Anonymize permits
             self.permits.update(
+                address=None,
                 address_apartment="",
                 address_apartment_sv="",
+                next_address=None,
                 next_address_apartment="",
                 next_address_apartment_sv="",
                 description="",
@@ -458,9 +462,12 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             # Clear Order.vehicles ArrayField (denormalized registration numbers)
             self.orders.update(vehicles=[])
 
-            # Anonymize Company if customer is owner
+            # Anonymize Company if customer is owner. This will also null the
+            # address-foreign key.
             self.company_set.update(
-                name=f"Anonymized Company {self.pk}", business_id=f"ANON-{self.pk:07d}"
+                name=f"Anonymized Company {self.pk}",
+                business_id=f"ANON-{self.pk:07d}",
+                address=None,
             )
 
             # Clear ParkingPermitEvent.context where it may contain PII
