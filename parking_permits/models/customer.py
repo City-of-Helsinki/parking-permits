@@ -336,11 +336,17 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         # VehicleUser-removal which in turn needs the
         # pre-anonymization national_id_number to allow removing
         # only those VehicleUsers that are linked to the customer.
-        vehicle_ids_linked_to_permits = self.permits.values_list(
-            "vehicle_id", flat=True
-        ).union(
-            self.permits.filter(next_vehicle_id__isnull=False).values_list(
-                "next_vehicle_id", flat=True
+        vehicle_ids_linked_to_permits = (
+            self.permits.values_list("vehicle_id", flat=True)
+            .union(
+                self.permits.filter(next_vehicle_id__isnull=False).values_list(
+                    "next_vehicle_id", flat=True
+                )
+            )
+            .union(
+                TemporaryVehicle.objects.filter(
+                    parkingpermit__customer_id=self.id,
+                ).values_list("vehicle_id", flat=True)
             )
         )
 
