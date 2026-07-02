@@ -202,6 +202,30 @@ class PaymentViewTestCase(APITestCase):
             datetime.datetime(2023, 11, 11, 21, 59, 59, 999999, tzinfo=datetime.UTC),
         )
 
+    @override_settings(DEBUG=True)
+    def test_payment_view_should_promote_next_vehicle_on_vehicle_changed_order(self):
+        old_vehicle = VehicleFactory()
+        new_vehicle = VehicleFactory()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            contract_type=ContractType.OPEN_ENDED,
+            vehicle=old_vehicle,
+            next_vehicle=new_vehicle,
+        )
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id,
+            status=OrderStatus.DRAFT,
+            type=OrderType.VEHICLE_CHANGED,
+        )
+        order.permits.add(permit)
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        permit.refresh_from_db()
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit.vehicle_id, new_vehicle.id)
+        self.assertIsNone(permit.next_vehicle)
+
 
 class BaseResolveEndpointTestCase(APITestCase):
     talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"

@@ -10,8 +10,10 @@ from django.utils import timezone
 
 from parking_permits.admin_resolvers import (
     add_temporary_vehicle,
+    resolve_create_resident_permit,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
+    resolve_update_resident_permit,
     resolve_vehicle,
     update_or_create_customer,
     update_or_create_vehicle,
@@ -32,6 +34,7 @@ from parking_permits.tests.factories.vehicle import (
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
+from parking_permits.tests.factories.zone import ParkingZoneFactory
 from users.models import ParkingPermitGroups, User
 from users.tests.factories.user import UserFactory
 
@@ -536,3 +539,107 @@ def test_admin_vehicle_lookup_fails_for_non_owner_on_legacy_api(info, mock_jwt):
             )
 
     assert "Owner/holder data of a vehicle could not be verified" in str(exc_info.value)
+
+
+@pytest.mark.django_db()
+@mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_customer")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_customer_address")
+def test_create_resident_permit_sets_vehicle(
+    mock_customer_address_upsert,
+    mock_customer_upsert,
+    mock_vehicle_upsert,
+    info,
+    mock_jwt,
+):
+    customer = CustomerFactory()
+    vehicle = VehicleFactory()
+    zone = ParkingZoneFactory(name="A")
+
+    mock_customer_upsert.return_value = customer
+    mock_vehicle_upsert.return_value = vehicle
+    mock_customer_address_upsert.return_value = customer.primary_address
+
+    permit_input = {
+        "customer": {
+            "address_security_ban": customer.address_security_ban,
+            "national_id_number": customer.national_id_number,
+            "first_name": customer.first_name,
+            "last_name": customer.last_name,
+            "email": customer.email,
+            "phone_number": customer.phone_number,
+            "driver_license_checked": customer.driver_license_checked,
+        },
+        "vehicle": {"registration_number": "ABC-123"},
+        "zone": zone.name,
+        "start_time": "2024-01-01T00:00:00+00:00",
+        "month_count": 1,
+        "status": ParkingPermitStatus.DRAFT,
+        "description": "",
+        "address_apartment": "1A",
+        "bypass_traficom_validation": True,
+    }
+
+    with mock_jwt:
+        result = resolve_create_resident_permit(None, info, permit_input)
+
+    permit = result["permit"]
+    permit.refresh_from_db()
+    assert permit.vehicle is not None
+    assert permit.vehicle == vehicle
+
+
+@pytest.mark.django_db()
+@mock.patch("parking_permits.admin_resolvers.calculate_total_price_change")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_customer_address")
+def test_update_resident_permit_sets_new_vehicle(
+    mock_customer_address_upsert, mock_vehicle_upsert, mock_price_change, info, mock_jwt
+):
+    old_vehicle = VehicleFactory(registration_number="OLD-111")
+    new_vehicle = VehicleFactory(registration_number="NEW-222")
+    permit = ParkingPermitFactory(vehicle=old_vehicle)
+
+    mock_vehicle_upsert.return_value = new_vehicle
+    # No price delta => no order creation branch.
+    mock_price_change.return_value = None
+    mock_customer_address_upsert.return_value = permit.customer.primary_address
+
+    permit_info = {
+        "customer": {
+            "address_security_ban": permit.customer.address_security_ban,
+            "national_id_number": permit.customer.national_id_number,
+            "first_name": permit.customer.first_name,
+            "last_name": permit.customer.last_name,
+            "email": permit.customer.email,
+            "phone_number": permit.customer.phone_number,
+            "driver_license_checked": permit.customer.driver_license_checked,
+            "primary_address": {
+                "postal_code": permit.customer.primary_address.postal_code,
+                "city": permit.customer.primary_address.city,
+                "city_sv": permit.customer.primary_address.city_sv,
+                "street_name": permit.customer.primary_address.street_name,
+                "street_name_sv": permit.customer.primary_address.street_name_sv,
+                "street_number": permit.customer.primary_address.street_number,
+                "location": (
+                    permit.customer.primary_address.location.x,
+                    permit.customer.primary_address.location.y,
+                ),
+            },
+        },
+        "vehicle": {"registration_number": "NEW-222"},
+        "zone": permit.parking_zone.name,
+        "start_time": "2024-01-01T00:00:00+00:00",
+        "month_count": 1,
+        "description": "",
+        "address_apartment": "1A",
+        "bypass_traficom_validation": True,
+        "status": permit.status,
+    }
+
+    with mock_jwt:
+        resolve_update_resident_permit(None, info, permit.id, permit_info)
+
+    permit.refresh_from_db()
+    assert permit.vehicle is not None
+    assert permit.vehicle == new_vehicle

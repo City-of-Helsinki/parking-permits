@@ -337,7 +337,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         # pre-anonymization national_id_number to allow removing
         # only those VehicleUsers that are linked to the customer.
         vehicle_ids_linked_to_permits = (
-            self.permits.values_list("vehicle_id", flat=True)
+            self.permits.filter(vehicle_id__isnull=False)
+            .values_list("vehicle_id", flat=True)
             .union(
                 self.permits.filter(next_vehicle_id__isnull=False).values_list(
                     "next_vehicle_id", flat=True
@@ -397,6 +398,8 @@ class Customer(SerializableMixin, TimestampedModelMixin):
                 next_address_apartment="",
                 next_address_apartment_sv="",
                 description="",
+                vehicle=None,
+                next_vehicle=None,
             )
 
             # Anonymize orders
@@ -406,6 +409,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
                 talpa_logged_in_checkout_url="",
                 talpa_receipt_url="",
                 talpa_update_card_url="",
+                vehicles=[],
             )
 
             # Anonymize refunds linked to permits/orders
@@ -464,9 +468,6 @@ class Customer(SerializableMixin, TimestampedModelMixin):
                     )
 
                 self.user.delete()
-
-            # Clear Order.vehicles ArrayField (denormalized registration numbers)
-            self.orders.update(vehicles=[])
 
             # Anonymize Company if customer is owner. This will also null the
             # address-foreign key.

@@ -110,6 +110,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         verbose_name=_("Vehicle"),
         on_delete=models.PROTECT,
         related_name="permits",
+        null=True,
     )
     next_vehicle = models.ForeignKey(
         Vehicle,
