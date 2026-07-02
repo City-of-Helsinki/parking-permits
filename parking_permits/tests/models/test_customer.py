@@ -551,6 +551,8 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(permit.next_address_apartment, "")
         self.assertEqual(permit.next_address_apartment_sv, "")
         self.assertEqual(permit.description, "")
+        self.assertIsNone(permit.vehicle)
+        self.assertIsNone(permit.next_vehicle)
 
     def assert_anonymized_refund_gdpr_fields(self):
         refund = self.refund
@@ -582,6 +584,13 @@ class AnonymizeAllUserDataTestCase(TestCase):
             id=self.vehicle_user.id
         ).exists()
         self.assertFalse(vehicle_user_exists)
+
+    def assert_permit_vehicles_set_before_anonymization(self):
+        # Guards the nullable vehicle FK: the permit must carry its vehicle
+        # right up until anonymization actually nulls it.
+        self.permit.refresh_from_db()
+        self.assertIsNotNone(self.permit.vehicle)
+        self.assertEqual(self.permit.vehicle_id, self.vehicle.id)
 
     def assert_unrelated_vehicle_user_still_exists(self):
         vehicle_user_exists = VehicleUser.objects.filter(
@@ -702,6 +711,9 @@ class AnonymizeAllUserDataTestCase(TestCase):
 
         self._generate_test_objects()
 
+        if self.create_permits:
+            self.assert_permit_vehicles_set_before_anonymization()
+
         pre_anon_data = self._cache_pre_anon_data()
 
         self.customer.anonymize_all_data()
@@ -763,6 +775,43 @@ class TestCannotAnonymizeCustomerErrorTestCase(TestCase):
         # too new modified-timestamp.
         with self.assertRaises(CustomerCannotBeAnonymizedError):
             customer.anonymize_all_data()
+
+    def test_failed_anonymization_does_not_null_permit_vehicle(self):
+        vehicle = VehicleFactory()
+        customer = CustomerFactory()
+        # Recently modified customer => cannot be anonymized yet.
+        permit = ParkingPermitFactory(customer=customer, vehicle=vehicle)
+
+        with self.assertRaises(CustomerCannotBeAnonymizedError):
+            customer.anonymize_all_data()
+
+        permit.refresh_from_db()
+        self.assertIsNotNone(permit.vehicle)
+        self.assertEqual(permit.vehicle_id, vehicle.id)
+
+
+class VehicleDeletionProtectionTestCase(TestCase):
+    def test_deleting_permit_vehicle_is_protected(self):
+        # The vehicle FK is nullable, but must only be nulled by
+        # anonymization, not by deleting the vehicle itself.
+        vehicle = VehicleFactory()
+        permit = ParkingPermitFactory(vehicle=vehicle)
+
+        with self.assertRaises(ProtectedError):
+            vehicle.delete()
+
+        permit.refresh_from_db()
+        self.assertEqual(permit.vehicle_id, vehicle.id)
+
+    def test_deleting_permit_next_vehicle_is_protected(self):
+        next_vehicle = VehicleFactory()
+        permit = ParkingPermitFactory(next_vehicle=next_vehicle)
+
+        with self.assertRaises(ProtectedError):
+            next_vehicle.delete()
+
+        permit.refresh_from_db()
+        self.assertEqual(permit.next_vehicle_id, next_vehicle.id)
 
 
 class AnonymizeUserDeletionProtectionTestCase(TestCase):
