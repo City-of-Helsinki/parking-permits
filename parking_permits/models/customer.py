@@ -373,6 +373,18 @@ class Customer(SerializableMixin, TimestampedModelMixin):
             # Ran first due to needing pre-anonymization national_id_number
             self._remove_vehicle_users_related_by_national_id_number()
 
+            # Delete temporary vehicles linked to the customer's permits.
+            # Temp vehicles are single-permit by construction and their end
+            # time is bounded by the (now old) permit, so they are inactive.
+            # Orphaned temp vehicles are undesirable, so we delete them
+            # outright; the M2M association rows are removed via cascade.
+            # NOTE: we are assuming that a temporary vehicle is only
+            # ever linked to a single permit, which is supported by the
+            # current business logic despite the relation being M2M on
+            # the database level. (Possible TODO: migrate to a simple
+            # foreign key or figure out the reason for M2M and document it.)
+            TemporaryVehicle.objects.filter(parkingpermit__customer_id=self.id).delete()
+
             # Anonymize Customer fields
             self.first_name = "Anonymized"
             self.last_name = "Customer"
