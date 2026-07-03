@@ -38,7 +38,10 @@ from parking_permits.tests.factories.order import (
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.refund import RefundFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
+    VehicleFactory,
+)
 
 User = get_user_model()
 
@@ -1405,3 +1408,71 @@ class AnonymizeAtomicityTestCase(TestCase):
 
         for key in original_counts.keys():
             self.assertEqual(original_counts[key], new_counts[key])
+
+
+class AnonymizeTemporaryVehicleTestCase(TestCase):
+    def test_anonymization_deletes_linked_temporary_vehicles(self):
+        with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
+            customer = CustomerFactory()
+            permit = ParkingPermitFactory(customer=customer)
+            permit_id = permit.id
+            temp_vehicle = TemporaryVehicleFactory()
+            permit.temp_vehicles.add(temp_vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        self.assertTrue(ParkingPermit.objects.filter(id=permit_id).exists())
+        self.assertFalse(
+            TemporaryVehicle.objects.filter(parkingpermit__id=permit_id).exists()
+        )
+        self.assertFalse(TemporaryVehicle.objects.filter(id=temp_vehicle.id).exists())
+
+    def test_temp_vehicle_deletion_preserves_vehicle_user_cleanup_order(self):
+        # Guards the ordering: vehicle-user removal must run BEFORE temp
+        # vehicles are deleted, since it collects vehicle ids through them.
+        with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
+            customer = CustomerFactory()
+            temp_vehicle_vehicle = VehicleFactory()
+            vehicle_user = VehicleUser.objects.create(
+                national_id_number=customer.national_id_number
+            )
+            temp_vehicle_vehicle.users.add(vehicle_user)
+
+            permit = ParkingPermitFactory(customer=customer)
+            temp_vehicle = TemporaryVehicleFactory(vehicle=temp_vehicle_vehicle)
+            permit.temp_vehicles.add(temp_vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        self.assertFalse(TemporaryVehicle.objects.filter(id=temp_vehicle.id).exists())
+        # The vehicle user linked only via the temp vehicle's vehicle must
+        # still have been removed, proving cleanup ran before deletion.
+        self.assertFalse(VehicleUser.objects.filter(id=vehicle_user.id).exists())
+
+    def test_anonymization_does_not_delete_unrelated_temporary_vehicles(self):
+        # A temp vehicle linked to another customer's permit must remain
+        # untouched when anonymizing this customer.
+        with freeze_time(timezone.make_aware(datetime(2020, 12, 31))):
+            customer = CustomerFactory()
+            permit = ParkingPermitFactory(customer=customer)
+            own_temp_vehicle = TemporaryVehicleFactory()
+            permit.temp_vehicles.add(own_temp_vehicle)
+
+            other_customer = CustomerFactory()
+            other_permit = ParkingPermitFactory(customer=other_customer)
+            other_temp_vehicle = TemporaryVehicleFactory()
+            other_permit.temp_vehicles.add(other_temp_vehicle)
+
+        with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
+            customer.anonymize_all_data()
+
+        # The anonymized customer's own temp vehicle is deleted.
+        self.assertFalse(
+            TemporaryVehicle.objects.filter(id=own_temp_vehicle.id).exists()
+        )
+        # The unrelated customer's temp vehicle and its link remain.
+        self.assertTrue(
+            other_permit.temp_vehicles.filter(id=other_temp_vehicle.id).exists()
+        )
