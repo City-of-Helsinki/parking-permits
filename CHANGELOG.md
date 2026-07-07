@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.4...parking-permits-v1.15.0) (2026-07-07)
+
+
+### Features
+
+* Delete temp vehicles during anonymization ([b6fd810](https://github.com/City-of-Helsinki/parking-permits/commit/b6fd810dd642bdb82cf8cb31df03c5a3d46595e4))
+* Null address-links upon anonymization ([36a43a3](https://github.com/City-of-Helsinki/parking-permits/commit/36a43a3efca5a41a6a6d1f88e349f2ce994b488c))
+* Null company address upon anonymization ([3a51431](https://github.com/City-of-Helsinki/parking-permits/commit/3a51431c8a4308893a621d45d3f9c715a132175f))
+* Unlink permit vehicles on anonymization ([59772df](https://github.com/City-of-Helsinki/parking-permits/commit/59772df7cdf76efd3b60b1316dd7bbf4f85318d1))
+
+
+### Bug Fixes
+
+* Remove temp vehicle users on anonymization ([a842673](https://github.com/City-of-Helsinki/parking-permits/commit/a84267359e11aaa9a5b945ba8c88534455ec525b))
+
+
+### Dependencies
+
+* Update dependencies ([e344bc0](https://github.com/City-of-Helsinki/parking-permits/commit/e344bc029e80f41aff980a2bbcc818e547bb7ced))
+
 ## [1.14.4](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.3...parking-permits-v1.14.4) (2026-06-17)
 
 
