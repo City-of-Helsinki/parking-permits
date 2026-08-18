@@ -37,6 +37,7 @@ from parking_permits.tests.factories.vehicle import (
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
+from parking_permits.utils import get_end_time as get_permit_end_time
 
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
@@ -585,10 +586,19 @@ class UpdateCustomerPermitTestCase(TestCase):
         self,
     ):
         customer = CustomerFactory(first_name="Fake", last_name="")
-        ParkingPermitFactory(customer=customer, status=VALID)
+        primary_start_time = next_day()
+        ParkingPermitFactory(
+            customer=customer,
+            status=VALID,
+            start_time=primary_start_time,
+            end_time=get_end_time(primary_start_time, 12),
+        )
+        secondary_start_time = next_day()
         secondary = ParkingPermitFactory(
             customer=customer,
             primary_vehicle=False,
+            start_time=secondary_start_time,
+            end_time=get_end_time(secondary_start_time, 12),
         )
         permit_id = str(secondary.id)
         data = {"contract_type": OPEN_ENDED}
@@ -603,11 +613,21 @@ class UpdateCustomerPermitTestCase(TestCase):
 
     def test_secondary_permit_can_be_only_fixed_if_primary_is_fixed_period(self):
         customer = CustomerFactory(first_name="Customer 1", last_name="")
+        primary_start_time = next_day()
         ParkingPermitFactory(
-            customer=customer, status=VALID, contract_type=FIXED_PERIOD
+            customer=customer,
+            status=VALID,
+            contract_type=FIXED_PERIOD,
+            start_time=primary_start_time,
+            end_time=get_end_time(primary_start_time, 12),
         )
+        secondary_start_time = next_day()
         secondary = ParkingPermitFactory(
-            customer=customer, primary_vehicle=False, contract_type=FIXED_PERIOD
+            customer=customer,
+            primary_vehicle=False,
+            contract_type=FIXED_PERIOD,
+            start_time=secondary_start_time,
+            end_time=get_end_time(secondary_start_time, 12),
         )
 
         permit_id = str(secondary.id)
@@ -656,8 +676,19 @@ class UpdateCustomerPermitTestCase(TestCase):
 
     def test_second_permit_can_have_upto_12_month_if_primary_is_open_ended(self):
         customer = CustomerFactory()
-        ParkingPermitFactory(customer=customer)
-        secondary = ParkingPermitFactory(customer=customer, primary_vehicle=False)
+        primary_start_time = next_day()
+        ParkingPermitFactory(
+            customer=customer,
+            start_time=primary_start_time,
+            end_time=get_end_time(primary_start_time, 12),
+        )
+        secondary_start_time = next_day()
+        secondary = ParkingPermitFactory(
+            customer=customer,
+            primary_vehicle=False,
+            start_time=secondary_start_time,
+            end_time=get_end_time(secondary_start_time, 12),
+        )
         data = {"month_count": 12, "contract_type": FIXED_PERIOD}
         permit_id = str(secondary.id)
         CustomerPermit(customer.id).update(data, permit_id=permit_id)
@@ -683,6 +714,44 @@ class UpdateCustomerPermitTestCase(TestCase):
         CustomerPermit(customer.id).update(data, permit_id=permit_id)
         secondary.refresh_from_db()
         self.assertEqual(secondary.month_count, 5)
+
+    @freeze_time(tz.make_aware(datetime(2026, 7, 11)))
+    def test_secondary_permit_end_time_is_based_on_its_own_start_time(self):
+        # A secondary fixed-period permit bought partway through the
+        # primary's period must end based on its own start time (capped by the
+        # primary's end time), not capped by the primary permit's start time
+        # + the month count of the secondary permit.
+        customer = CustomerFactory(first_name="Regression", last_name="")
+
+        primary_start = tz.make_aware(datetime(2026, 6, 18))
+        primary_end = get_permit_end_time(primary_start, 3)  # 17.9.2026 23:59
+        ParkingPermitFactory(
+            customer=customer,
+            status=VALID,
+            primary_vehicle=True,
+            contract_type=FIXED_PERIOD,
+            month_count=3,
+            start_time=primary_start,
+            end_time=primary_end,
+        )
+
+        secondary_start = tz.make_aware(datetime(2026, 7, 13))
+        secondary = ParkingPermitFactory(
+            customer=customer,
+            status=DRAFT,
+            primary_vehicle=False,
+            contract_type=FIXED_PERIOD,
+            start_time=secondary_start,
+        )
+
+        data = {"month_count": 2, "contract_type": FIXED_PERIOD}
+        CustomerPermit(customer.id).update(data, permit_id=str(secondary.id))
+
+        secondary.refresh_from_db()
+
+        expected_end_time = get_permit_end_time(secondary_start, 2)  # 12.9.2026 23:59
+        self.assertEqual(secondary.month_count, 2)
+        self.assertEqual(secondary.end_time, expected_end_time)
 
 
 class ExtendCustomerPermitTestCase(TestCase):

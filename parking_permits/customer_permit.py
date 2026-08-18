@@ -313,7 +313,7 @@ class CustomerPermit:
             contract_type = data.get("contract_type", None)
             month_count = data.get("month_count", 1)
             primary, secondary = self._get_primary_and_secondary_permit()
-            end_time = get_end_time(primary.start_time, month_count)
+            primary_end_time = get_end_time(primary.start_time, month_count)
 
             if not contract_type:
                 raise InvalidContractTypeError(_("Contract type is required"))
@@ -348,8 +348,24 @@ class CustomerPermit:
                     month_count = self._get_month_count_for_secondary_permit(
                         contract_type, month_count
                     )
-                    sec_p_end_time = get_end_time(secondary.start_time, month_count)
-                    end_time = end_time if sec_p_end_time > end_time else sec_p_end_time
+                    secondary_permit_end_time = get_end_time(
+                        secondary.start_time, month_count
+                    )
+
+            end_time = primary_end_time
+            if permit_id and not is_primary:
+                # Cap the end date to the primary permit's end date if it is
+                # earlier than the secondary permit's calculated end date.
+                # Using get_end_time() here is more in line with the pre-bugfix
+                # logic and ensures that we do not have any trouble with any
+                # possible null end dates on the primary permit. Note that
+                # month_count is the form-inputed month count that is used to
+                # calculate the secondary permit's end time and is not
+                # necessarily equal to primary.month_count.
+                secondary_permit_max_end_time = get_end_time(
+                    primary.start_time, primary.month_count
+                )
+                end_time = min(secondary_permit_end_time, secondary_permit_max_end_time)
 
             fields_to_update.update(
                 {
