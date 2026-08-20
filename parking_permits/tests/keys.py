@@ -3,19 +3,25 @@
 This file is copied from: https://github.com/City-of-Helsinki/helsinki-profile-gdpr-api/blob/main/tests/keys.py
 """
 
-from jose import jwk
-from jose.constants import ALGORITHMS
+import jwt
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 
 def _build_key(private_pem, public_pem):
     class _Key:
-        pass
+        def __init__(self):
+            self.algorithm = None
+            self.private_key_pem = None
+            self.public_key_pem = None
+            self.public_key_jwk = None
 
     key = _Key()
-    key.jose_algorithm = ALGORITHMS.RS256
+    key.algorithm = "RS256"
     key.private_key_pem = private_pem
     key.public_key_pem = public_pem
-    key.public_key_jwk = jwk.construct(public_pem, key.jose_algorithm).to_dict()
+    key.public_key_jwk = jwt.algorithms.RSAAlgorithm.to_jwk(
+        load_pem_public_key(public_pem.encode()), as_dict=True
+    )
 
     # Ensure values are strings and not bytes
     for name in ["n", "e"]:

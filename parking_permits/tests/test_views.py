@@ -4,6 +4,7 @@ import zoneinfo
 from decimal import Decimal
 from unittest.mock import patch
 
+import jwt
 import pytest
 import requests_mock
 from dateutil.relativedelta import relativedelta
@@ -13,7 +14,6 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone as tz
 from freezegun import freeze_time
 from helusers.settings import api_token_auth_settings
-from jose import jwt
 from rest_framework.test import APITestCase
 
 from parking_permits.exceptions import TraficomFetchVehicleError
@@ -2099,7 +2099,7 @@ class ParkingPermitsGDPRAPIViewTestCase(APITestCase):
             auth_field: scopes,
         }
         encoded_jwt = jwt.encode(
-            jwt_data, key=rsa_key.private_key_pem, algorithm=rsa_key.jose_algorithm
+            jwt_data, key=rsa_key.private_key_pem, algorithm=rsa_key.algorithm
         )
 
         req_mock.get(config_url, json=configuration)
