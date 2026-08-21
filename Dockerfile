@@ -14,6 +14,8 @@ RUN dnf install -y \
     nmap-ncat \
     gettext \
     postgresql \
+    libpq-devel \
+    python3-devel \
     && pip install -U pip setuptools wheel \
     && pip install --no-cache-dir -r requirements.txt \
     && mkdir -p /srv/app/static \
