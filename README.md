@@ -32,7 +32,13 @@ Then you can run docker image with:
 
 ## Setting up local development environment with PyEnv and VirtualEnvWrapper
 
-# required packages:
+### required system packages
+
+- python3-dev
+- libpq-dev
+
+### required user packages
+
 - pyenv
 - virtualenvwrapper
 - pyenv-virtualenvwrapper

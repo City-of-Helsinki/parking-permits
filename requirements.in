@@ -6,7 +6,7 @@ django~=5.2                            # web framework itself
 djangorestframework                    # creating rest APIs
 djangorestframework-api-key            # creating and managing API keys
 gunicorn                               # application server
-psycopg2-binary                        # postgres database adapter
+psycopg[c]                             # postgres database adapter
 requests                               # http requests
 django-cors-headers                    # enabling CORS
 whitenoise                             # enabling Django to serve its own static files
