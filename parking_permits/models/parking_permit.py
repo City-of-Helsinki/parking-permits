@@ -633,6 +633,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.has_address_changed:
             return False
 
+        # Prevent extension of permits that have been set to end after
+        # the current period but have yet to end.
+        if self.end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
+            return False
+
         if is_date_restriction and timezone.localdate(
             self.end_time
         ) > timezone.localdate(timezone.now() + relativedelta(days=14)):
