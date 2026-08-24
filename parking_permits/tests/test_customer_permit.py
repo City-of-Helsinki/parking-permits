@@ -1,6 +1,7 @@
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock
 
+import pytest
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase, override_settings
@@ -20,6 +21,7 @@ from parking_permits.exceptions import (
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermit,
+    ParkingPermitEndType,
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
@@ -817,4 +819,61 @@ class ExtendCustomerPermitTestCase(TestCase):
             permit.pk,
             3,
         )
+        self.assertFalse(permit.get_pending_extension_requests().exists())
+
+    @pytest.mark.xfail(
+        reason="Bug: permits ended after current period can still be extended"
+    )
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_cannot_extend_permit_ended_after_current_period(self):
+        """Test that a permit manually ended after current period cannot be extended.
+        This is a regression test for a bug where permits ended after current period
+        could still be extended, which is not the intended behavior.
+        """
+        now = tz.now()
+        # Create permit ending in 10 days (within 14-day extension window)
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=now - timedelta(days=20),
+            end_time=now + timedelta(days=10),
+        )
+        permit.address = permit.customer.primary_address
+        permit.save()
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=360)).date(),
+        )
+        # Verify permit CAN be extended initially (within 14 days)
+        self.assertTrue(permit.can_extend_permit)
+        # Customer manually ends the permit after current period
+        CustomerPermit(permit.customer_id).end(
+            [permit.id],
+            ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+            iban="FI1234567890123456",
+        )
+        # Refresh permit from database
+        permit.refresh_from_db()
+        # Verify permit status is still VALID (not CLOSED)
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        # Verify end_type is set to AFTER_CURRENT_PERIOD
+        self.assertEqual(permit.end_type, ParkingPermitEndType.AFTER_CURRENT_PERIOD)
+        # Verify end_time is still set (to current_period_end_time)
+        self.assertIsNotNone(permit.end_time)
+        self.assertEqual(
+            permit.end_time, get_permit_end_time(permit.start_time, permit.month_count)
+        )
+        # BUG: Current implementation returns True (can extend)
+        # FIX: After fix, should return False (cannot extend)
+        self.assertFalse(permit.can_extend_permit)
+        # Verify exception is raised when trying to create extension request
+        with self.assertRaises(PermitCanNotBeExtendedError) as context:
+            CustomerPermit(permit.customer_id).create_permit_extension_request(
+                permit.pk,
+                3,
+            )
+        self.assertIn("cannot extend", str(context.exception).lower())
+        # Verify no extension request was created
         self.assertFalse(permit.get_pending_extension_requests().exists())
