@@ -1,7 +1,6 @@
 from datetime import UTC, date, datetime, timedelta
 from unittest.mock import MagicMock
 
-import pytest
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase, override_settings
@@ -821,9 +820,6 @@ class ExtendCustomerPermitTestCase(TestCase):
         )
         self.assertFalse(permit.get_pending_extension_requests().exists())
 
-    @pytest.mark.xfail(
-        reason="Bug: permits ended after current period can still be extended"
-    )
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_cannot_extend_permit_ended_after_current_period(self):
         """Test that a permit manually ended after current period cannot be extended.
@@ -865,8 +861,6 @@ class ExtendCustomerPermitTestCase(TestCase):
         self.assertEqual(
             permit.end_time, get_permit_end_time(permit.start_time, permit.month_count)
         )
-        # BUG: Current implementation returns True (can extend)
-        # FIX: After fix, should return False (cannot extend)
         self.assertFalse(permit.can_extend_permit)
         # Verify exception is raised when trying to create extension request
         with self.assertRaises(PermitCanNotBeExtendedError) as context:
