@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from decimal import Decimal
 from urllib.parse import urljoin
 
@@ -274,7 +275,11 @@ class OrderManager(SerializableMixin.SerializableManager):
         )
 
         ParkingPermitEventFactory.make_create_ext_request_order_event(
-            permit, order, start_time, end_time, created_by=kwargs.get("user", None)
+            permit,
+            order,
+            datetime.combine(start_time, datetime.min.time()),
+            datetime.combine(end_time, datetime.max.time()),
+            created_by=kwargs.get("user", None),
         )
 
         return order
