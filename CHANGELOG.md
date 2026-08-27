@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.15.0...parking-permits-v1.16.0) (2026-08-27)
+
+
+### Features
+
+* Count permits that were valid on given date ([176d5b9](https://github.com/City-of-Helsinki/parking-permits/commit/176d5b949d8659c2912d0b5f8cc8e89bd44758f8))
+
+
+### Bug Fixes
+
+* Cap secondary permit end date correctly ([398fc67](https://github.com/City-of-Helsinki/parking-permits/commit/398fc67289510eb6f1ea8ddfff91b425cd4be2b4))
+* Type coersion error ([e75de17](https://github.com/City-of-Helsinki/parking-permits/commit/e75de17f69c464a4075d377b3c353aaffd324a28))
+
+
+### Dependencies
+
+* Update dependencies ([a9bb73d](https://github.com/City-of-Helsinki/parking-permits/commit/a9bb73d3c9fe2d1fb7a0b5794eeb7b04a1532bb9))
+* Update psycopg ([55830aa](https://github.com/City-of-Helsinki/parking-permits/commit/55830aa5dff93e792c2fb7d8c45e37548beb4e32))
+
 ## [1.15.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.14.4...parking-permits-v1.15.0) (2026-07-07)
 
 
