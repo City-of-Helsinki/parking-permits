@@ -8,11 +8,13 @@ from django.utils import timezone
 
 from parking_permits.management.commands.count_valid_permits_on_date import (
     count_valid_permits,
+    count_valid_permits_by_zone,
 )
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ParkingPermitStatus
 from parking_permits.tests.factories.order import OrderFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.zone import ParkingZoneFactory
 
 SAMPLE_DATE = datetime.date(2024, 1, 15)
 RANGE_START = datetime.date(2024, 1, 10)
@@ -289,6 +291,91 @@ def test_range_excludes_never_paid_cancelled_by_default():
     assert count_valid_permits(RANGE_START, RANGE_END) == 0
 
 
+# --- Grouping by zone ----------------------------------------------------
+
+
+@pytest.mark.django_db()
+def test_count_by_zone_groups_and_totals():
+    zone_a = ParkingZoneFactory(name="Zone A")
+    zone_b = ParkingZoneFactory(name="Zone B")
+
+    # Zone A: one VALID and one CLOSED permit covering the sample date.
+    ParkingPermitFactory(
+        parking_zone=zone_a,
+        status=ParkingPermitStatus.VALID,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 6, 1),
+    )
+    ParkingPermitFactory(
+        parking_zone=zone_a,
+        status=ParkingPermitStatus.CLOSED,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 2, 1),
+    )
+
+    # Zone B: one paid CANCELLED permit (counted) and one never-paid (excluded).
+    paid_order = OrderFactory(
+        status=OrderStatus.CANCELLED, paid_time=_aware(2024, 1, 10)
+    )
+    ParkingPermitFactory(
+        parking_zone=zone_b,
+        status=ParkingPermitStatus.CANCELLED,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 2, 1),
+        orders=[paid_order],
+    )
+    unpaid_order = OrderFactory(status=OrderStatus.CANCELLED, paid_time=None)
+    ParkingPermitFactory(
+        parking_zone=zone_b,
+        status=ParkingPermitStatus.CANCELLED,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 2, 1),
+        orders=[unpaid_order],
+    )
+
+    counts = dict(count_valid_permits_by_zone(SAMPLE_DATE))
+    assert counts["Zone A"] == 2
+    assert counts["Zone B"] == 1
+
+
+@pytest.mark.django_db()
+def test_count_by_zone_counts_permit_with_multiple_paid_orders_once():
+    zone = ParkingZoneFactory(name="Zone A")
+    first_order = OrderFactory(
+        status=OrderStatus.CONFIRMED, paid_time=_aware(2024, 1, 5)
+    )
+    second_order = OrderFactory(
+        status=OrderStatus.CANCELLED, paid_time=_aware(2024, 1, 8)
+    )
+    ParkingPermitFactory(
+        parking_zone=zone,
+        status=ParkingPermitStatus.CANCELLED,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 2, 1),
+        orders=[first_order, second_order],
+    )
+    counts = dict(count_valid_permits_by_zone(SAMPLE_DATE))
+    assert counts["Zone A"] == 1
+
+
+@pytest.mark.django_db()
+def test_count_by_zone_includes_zones_with_zero_count():
+    zone_with_permit = ParkingZoneFactory(name="Zone A")
+    ParkingZoneFactory(name="Zone B")  # no permits
+
+    ParkingPermitFactory(
+        parking_zone=zone_with_permit,
+        status=ParkingPermitStatus.VALID,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 6, 1),
+    )
+
+    counts = dict(count_valid_permits_by_zone(SAMPLE_DATE))
+    assert counts["Zone A"] == 1
+    # Zone B has no permits but must still be present with a zero count.
+    assert counts["Zone B"] == 0
+
+
 # --- Command interface ---------------------------------------------------
 
 
@@ -323,3 +410,31 @@ def test_command_raises_on_end_before_start():
     with pytest.raises(CommandError) as exc_info:
         call_command("count_valid_permits_on_date", "2024-01-20", "2024-01-10")
     assert str(exc_info.value) == "end_date must not be earlier than start_date."
+
+
+@pytest.mark.django_db()
+def test_command_group_by_zone_output():
+    zone_a = ParkingZoneFactory(name="Zone A")
+    zone_b = ParkingZoneFactory(name="Zone B")
+    ParkingPermitFactory(
+        parking_zone=zone_a,
+        status=ParkingPermitStatus.VALID,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 6, 1),
+    )
+    ParkingPermitFactory(
+        parking_zone=zone_b,
+        status=ParkingPermitStatus.VALID,
+        start_time=_aware(2024, 1, 1),
+        end_time=_aware(2024, 6, 1),
+    )
+    out = StringIO()
+    call_command(
+        "count_valid_permits_on_date", "2024-01-15", "--group-by-zone", stdout=out
+    )
+    output = out.getvalue()
+    assert output.startswith("Best-effort valid permit count per zone for 2024-01-15:")
+    assert "  Zone A: 1" in output
+    assert "  Zone B: 1" in output
+    # Zones without permits contribute zero, so the grand total is unaffected.
+    assert "  Total: 2" in output
