@@ -1,10 +1,12 @@
 import datetime
+from collections import defaultdict
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from parking_permits.models.parking_permit import ParkingPermit, ParkingPermitStatus
+from parking_permits.models.parking_zone import ParkingZone
 
 
 def _range_bounds(start_date, end_date):
@@ -18,19 +20,14 @@ def _range_bounds(start_date, end_date):
     return range_start, range_end
 
 
-def count_valid_permits(start_date, end_date=None, *, include_unpaid_cancelled=False):
-    """Best-effort count of permits that were valid on any date in the given
-    inclusive range. With a single date, counts permits valid on that date.
+def _valid_and_ended_permit_querysets(
+    range_start, range_end, *, include_unpaid_cancelled
+):
+    """Build the VALID and CLOSED/CANCELLED permit querysets for the range.
 
-    There is no historical status log, so validity is inferred from the
-    permits' current status together with their start/end times and, for
-    cancelled permits, whether they were ever actually paid.
+    The two querysets filter for disjoint statuses, so a permit can appear in
+    at most one of them.
     """
-    if end_date is None:
-        end_date = start_date
-
-    range_start, range_end = _range_bounds(start_date, end_date)
-
     # Currently VALID permits that started on or before the end of the range
     # and whose (historically optional) end_time overlaps the range. If a
     # permit is still marked VALID but has an end_time before range_start
@@ -63,10 +60,58 @@ def count_valid_permits(start_date, end_date=None, *, include_unpaid_cancelled=F
             )
         )
 
-    # Note that the two querysets filter for different statuses, so
-    # there is no risk of overlap and we can just add the counts
-    # without worrying about double-counting.
+    return valid_permits, ended_permits
+
+
+def count_valid_permits(start_date, end_date=None, *, include_unpaid_cancelled=False):
+    """Best-effort count of permits that were valid on any date in the given
+    inclusive range. With a single date, counts permits valid on that date.
+
+    There is no historical status log, so validity is inferred from the
+    permits' current status together with their start/end times and, for
+    cancelled permits, whether they were ever actually paid.
+    """
+    if end_date is None:
+        end_date = start_date
+
+    range_start, range_end = _range_bounds(start_date, end_date)
+    valid_permits, ended_permits = _valid_and_ended_permit_querysets(
+        range_start, range_end, include_unpaid_cancelled=include_unpaid_cancelled
+    )
+
     return valid_permits.distinct("id").count() + ended_permits.distinct("id").count()
+
+
+def count_valid_permits_by_zone(
+    start_date, end_date=None, *, include_unpaid_cancelled=False
+):
+    """Best-effort count of valid permits grouped by parking zone name.
+
+    Returns a list of (zone_name, permit_count) tuples ordered by zone name.
+    """
+    if end_date is None:
+        end_date = start_date
+
+    range_start, range_end = _range_bounds(start_date, end_date)
+    valid_permits, ended_permits = _valid_and_ended_permit_querysets(
+        range_start, range_end, include_unpaid_cancelled=include_unpaid_cancelled
+    )
+
+    counts = defaultdict(int)
+    # Seed every zone at zero so zones with no matching permits still appear.
+    for zone_name in ParkingZone.objects.values_list("name", flat=True):
+        counts[zone_name] = 0
+
+    for queryset in valid_permits, ended_permits:
+        # distinct=True is required because the paid-order filter joins the
+        # orders relation, which can otherwise multiply a permit's rows.
+        zone_rows = queryset.values("parking_zone__name").annotate(
+            permit_count=Count("id", distinct=True)
+        )
+        for zone_row in zone_rows:
+            counts[zone_row["parking_zone__name"]] += zone_row["permit_count"]
+
+    return sorted(counts.items())
 
 
 class Command(BaseCommand):
@@ -97,6 +142,11 @@ class Command(BaseCommand):
                 "timed out and were never actually valid."
             ),
         )
+        parser.add_argument(
+            "--group-by-zone",
+            action="store_true",
+            help="Break the count down by parking zone, with a grand total.",
+        )
 
     def handle(self, *args, **options):
         start_date = options["start_date"]
@@ -105,16 +155,34 @@ class Command(BaseCommand):
         if end_date < start_date:
             raise CommandError("end_date must not be earlier than start_date.")
 
-        total = count_valid_permits(
-            start_date,
-            end_date,
-            include_unpaid_cancelled=options["include_unpaid_cancelled"],
-        )
-
         if start_date == end_date:
             period = start_date.isoformat()
         else:
             period = f"{start_date.isoformat()}..{end_date.isoformat()}"
+
+        include_unpaid_cancelled = options["include_unpaid_cancelled"]
+
+        if options["group_by_zone"]:
+            zone_counts = count_valid_permits_by_zone(
+                start_date,
+                end_date,
+                include_unpaid_cancelled=include_unpaid_cancelled,
+            )
+            grand_total = sum(count for _, count in zone_counts)
+
+            lines = [f"Best-effort valid permit count per zone for {period}:"]
+            for zone_name, count in zone_counts:
+                lines.append(f"  {zone_name}: {count}")
+            lines.append(f"  Total: {grand_total}")
+
+            self.stdout.write(self.style.SUCCESS("\n".join(lines)))
+            return
+
+        total = count_valid_permits(
+            start_date,
+            end_date,
+            include_unpaid_cancelled=include_unpaid_cancelled,
+        )
 
         self.stdout.write(
             self.style.SUCCESS(f"Best-effort valid permit count for {period}: {total}")
