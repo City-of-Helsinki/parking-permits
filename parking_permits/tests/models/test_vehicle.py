@@ -139,6 +139,23 @@ class TestIsLowEmissionVehicle(TestCase):
 
 
 class TestVehicle(TestCase):
+    def test_string_representation_intentionally_includes_registration_number(
+        self,
+    ):
+        """Unlike Customer.__str__, Vehicle.__str__ intentionally
+        keeps the registration number.
+
+        It is relied on as the customer-facing checkout/Talpa product
+        label (Vehicle.description) and is rendered directly in permit
+        and temporary-vehicle e-mail templates, so customers can see
+        their own vehicle's plate number. Do not strip it here without
+        also updating those customer-facing usages.
+        """
+        vehicle = VehicleFactory(registration_number="ABC-123")
+
+        self.assertIn("ABC-123", str(vehicle))
+        self.assertIn("ABC-123", vehicle.description)
+
     def test_should_update_is_low_emission_field_on_save(self):
         vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(name="Diesel", identifier="02"),

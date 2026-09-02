@@ -89,7 +89,7 @@ class Parkkihubi:
             headers=self.get_headers(),
         )
 
-        logger.info(f"Create parkkihubi permit, request payload: {payload}")
+        logger.info(f"Create parkkihubi permit for permit_id={self.permit.pk}")
 
         self.handle_response(response, 201, "create")
 
@@ -102,7 +102,7 @@ class Parkkihubi:
             headers=self.get_headers(),
         )
 
-        logger.info(f"Update parkkihubi permit, request payload: {payload}")
+        logger.info(f"Update parkkihubi permit for permit_id={self.permit.pk}")
 
         self.handle_response(response, 200, "update")
 
