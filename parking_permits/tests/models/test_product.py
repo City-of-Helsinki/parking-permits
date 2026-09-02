@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import translation
 from django.utils.translation import gettext_lazy as _
 
@@ -225,18 +225,126 @@ class TestProduct(TestCase):
     def test_create_talpa_accounting(self, mock_post):
         self.product.talpa_product_id = uuid.uuid4()
         self.product.save()
-        self.product.create_talpa_accounting()
+        accounting_created = self.product.create_talpa_accounting()
         mock_post.assert_called_once()
         self.assertIsNotNone(self.product.accounting)
+        self.assertTrue(accounting_created)
 
     @patch(
         "requests.post",
         return_value=MockResponse(201),
     )
     def test_create_talpa_accounting_without_product_id(self, mock_post):
-        self.product.create_talpa_accounting()
+        accounting_created = self.product.create_talpa_accounting()
         mock_post.assert_not_called()
         self.assertIsNone(self.product.accounting)
+        self.assertFalse(accounting_created)
+
+    @override_settings(
+        TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE="1234",
+        TALPA_DEFAULT_ACCOUNTING_VAT_CODE="AAA",
+        TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER="internal-order",
+        TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER="profit-center",
+        TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER="balance-profit-center",
+        TALPA_DEFAULT_ACCOUNTING_PROJECT="project",
+        TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA="operation-area",
+        TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT="main-ledger-account",
+    )
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_create_talpa_accounting_creates_new_accounting_when_no_match(
+        self, mock_post
+    ):
+        self.product.talpa_product_id = uuid.uuid4()
+        self.product.save()
+
+        self.assertEqual(Accounting.objects.count(), 0)
+        accounting_created = self.product.create_talpa_accounting()
+        mock_post.assert_called_once()
+
+        self.assertTrue(accounting_created)
+        self.assertEqual(Accounting.objects.count(), 1)
+        accounting = self.product.accounting
+        self.assertIsNotNone(accounting)
+        self.assertEqual(accounting.company_code, "1234")
+        self.assertEqual(accounting.vat_code, "AAA")
+        self.assertEqual(accounting.internal_order, "internal-order")
+        self.assertEqual(accounting.profit_center, "profit-center")
+        self.assertEqual(accounting.balance_profit_center, "balance-profit-center")
+        self.assertEqual(accounting.project, "project")
+        self.assertEqual(accounting.operation_area, "operation-area")
+        self.assertEqual(accounting.main_ledger_account, "main-ledger-account")
+
+    @override_settings(
+        TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE="1234",
+        TALPA_DEFAULT_ACCOUNTING_VAT_CODE="AAA",
+        TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER="internal-order",
+        TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER="profit-center",
+        TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER="balance-profit-center",
+        TALPA_DEFAULT_ACCOUNTING_PROJECT="project",
+        TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA="operation-area",
+        TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT="main-ledger-account",
+    )
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_create_talpa_accounting_reuses_existing_matching_accounting(
+        self, mock_post
+    ):
+        existing_accounting = Accounting.objects.create(
+            company_code="1234",
+            vat_code="AAA",
+            internal_order="internal-order",
+            profit_center="profit-center",
+            balance_profit_center="balance-profit-center",
+            project="project",
+            operation_area="operation-area",
+            main_ledger_account="main-ledger-account",
+        )
+        self.product.talpa_product_id = uuid.uuid4()
+        self.product.save()
+
+        self.assertEqual(Accounting.objects.count(), 1)
+        accounting_created = self.product.create_talpa_accounting()
+        mock_post.assert_called_once()
+
+        # no new Accounting should have been created, the matching one is reused
+        self.assertFalse(accounting_created)
+        self.assertEqual(Accounting.objects.count(), 1)
+        self.assertEqual(self.product.accounting_id, existing_accounting.pk)
+
+    @override_settings(
+        TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE="1234",
+        TALPA_DEFAULT_ACCOUNTING_VAT_CODE="AAA",
+        TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER="internal-order",
+        TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER="profit-center",
+        TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER="balance-profit-center",
+        TALPA_DEFAULT_ACCOUNTING_PROJECT="project",
+        TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA="operation-area",
+        TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT="main-ledger-account",
+    )
+    @patch(
+        "requests.post",
+        return_value=MockResponse(201),
+    )
+    def test_create_talpa_accounting_creates_new_accounting_when_values_differ(
+        self, mock_post
+    ):
+        existing_accounting = Accounting.objects.create(company_code="other-company")
+        self.product.talpa_product_id = uuid.uuid4()
+        self.product.save()
+
+        accounting_created = self.product.create_talpa_accounting()
+        mock_post.assert_called_once()
+
+        # the pre-existing accounting's company_code does not match the
+        # configured default settings values, so a new one should be created
+        self.assertTrue(accounting_created)
+        self.assertEqual(Accounting.objects.count(), 2)
+        self.assertNotEqual(self.product.accounting_id, existing_accounting.pk)
 
     @patch(
         "requests.post",

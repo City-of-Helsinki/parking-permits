@@ -1,5 +1,8 @@
 import dataclasses
 import unittest
+import uuid
+from datetime import date
+from decimal import Decimal
 from unittest import mock
 
 import pytest
@@ -10,6 +13,7 @@ from django.utils import timezone
 
 from parking_permits.admin_resolvers import (
     add_temporary_vehicle,
+    resolve_create_product,
     resolve_create_resident_permit,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
@@ -24,9 +28,9 @@ from parking_permits.exceptions import (
     PermitCanNotBeExtendedError,
     TraficomFetchVehicleError,
 )
-from parking_permits.models import ParkingPermitExtensionRequest
+from parking_permits.models import ParkingPermitExtensionRequest, Product
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
-from parking_permits.models.product import ProductType
+from parking_permits.models.product import Accounting, ProductType
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
@@ -643,3 +647,114 @@ def test_update_resident_permit_sets_new_vehicle(
     permit.refresh_from_db()
     assert permit.vehicle is not None
     assert permit.vehicle == new_vehicle
+
+
+class TalpaMockResponse:
+    reasons = {401: "Forbidden"}
+
+    def __init__(self, status_code, json_data=None):
+        self.status_code = status_code
+        self.reason = self.reasons.get(status_code)
+        self.json_data = json_data
+        self.text = "Error" if status_code != 200 else ""
+
+    def json(self):
+        return self.json_data
+
+
+def _product_input(zone_name):
+    return {
+        "type": ProductType.RESIDENT,
+        "zone": zone_name,
+        "unit_price": Decimal(30),
+        "unit": "MONTHLY",
+        "start_date": date(2024, 1, 1),
+        "end_date": date(2024, 12, 31),
+        "vat_percentage": 25.5,
+        "low_emission_discount_percentage": 50,
+    }
+
+
+@pytest.mark.django_db()
+@override_settings(
+    TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE="1234",
+    TALPA_DEFAULT_ACCOUNTING_VAT_CODE="AAA",
+    TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER="internal-order",
+    TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER="profit-center",
+    TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER="balance-profit-center",
+    TALPA_DEFAULT_ACCOUNTING_PROJECT="project",
+    TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA="operation-area",
+    TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT="main-ledger-account",
+)
+@mock.patch(
+    "requests.post",
+    return_value=TalpaMockResponse(201, {"productId": uuid.uuid4()}),
+)
+@mock.patch(
+    "requests.get",
+    return_value=TalpaMockResponse(200, {"0": {"merchantId": uuid.uuid4()}}),
+)
+def test_create_product_stamps_new_accounting(mock_get, mock_post, info, mock_jwt):
+    zone = ParkingZoneFactory(name="A")
+
+    with mock_jwt:
+        resolve_create_product(None, info, _product_input(zone.name))
+
+    product = Product.objects.get(zone=zone)
+    admin_user = info.context["request"].user
+    assert product.accounting is not None
+    assert product.accounting.created_by == admin_user
+    assert product.accounting.modified_by == admin_user
+
+
+@pytest.mark.django_db()
+@override_settings(
+    TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE="1234",
+    TALPA_DEFAULT_ACCOUNTING_VAT_CODE="AAA",
+    TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER="internal-order",
+    TALPA_DEFAULT_ACCOUNTING_PROFIT_CENTER="profit-center",
+    TALPA_DEFAULT_ACCOUNTING_BALANCE_PROFIT_CENTER="balance-profit-center",
+    TALPA_DEFAULT_ACCOUNTING_PROJECT="project",
+    TALPA_DEFAULT_ACCOUNTING_OPERATION_AREA="operation-area",
+    TALPA_DEFAULT_ACCOUNTING_MAIN_LEDGER_ACCOUNT="main-ledger-account",
+)
+@mock.patch(
+    "requests.post",
+    return_value=TalpaMockResponse(201, {"productId": uuid.uuid4()}),
+)
+@mock.patch(
+    "requests.get",
+    return_value=TalpaMockResponse(200, {"0": {"merchantId": uuid.uuid4()}}),
+)
+def test_create_product_does_not_overwrite_reused_accounting_stamps(
+    mock_get, mock_post, info, mock_jwt
+):
+    zone = ParkingZoneFactory(name="B")
+    original_creator = UserFactory()
+    # matches the overridden TALPA_DEFAULT_ACCOUNTING_* settings above, so
+    # create_talpa_accounting() will reuse this row instead of creating a
+    # new one
+    existing_accounting = Accounting.objects.create(
+        company_code="1234",
+        vat_code="AAA",
+        internal_order="internal-order",
+        profit_center="profit-center",
+        balance_profit_center="balance-profit-center",
+        project="project",
+        operation_area="operation-area",
+        main_ledger_account="main-ledger-account",
+        created_by=original_creator,
+        modified_by=original_creator,
+    )
+
+    with mock_jwt:
+        resolve_create_product(None, info, _product_input(zone.name))
+
+    product = Product.objects.get(zone=zone)
+    assert product.accounting_id == existing_accounting.pk
+
+    existing_accounting.refresh_from_db()
+    # the reused accounting's original audit provenance must be preserved,
+    # not overwritten with the admin creating the new product
+    assert existing_accounting.created_by == original_creator
+    assert existing_accounting.modified_by == original_creator

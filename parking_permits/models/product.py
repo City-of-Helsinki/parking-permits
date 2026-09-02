@@ -315,11 +315,17 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             )
 
     def create_talpa_accounting(self):
+        """Assign a Talpa accounting to this product.
+
+        Returns True if a new Accounting row was created, False if a
+        matching existing row was reused, so callers can avoid
+        overwriting the audit stamps of a reused, shared row.
+        """
         if not self.talpa_product_id:
             logger.error("Talpa product does not exist")
-            return
+            return False
 
-        self.accounting = Accounting.objects.create(
+        self.accounting, accounting_created = Accounting.objects.get_or_create(
             company_code=settings.TALPA_DEFAULT_ACCOUNTING_COMPANY_CODE,
             vat_code=settings.TALPA_DEFAULT_ACCOUNTING_VAT_CODE,
             internal_order=settings.TALPA_DEFAULT_ACCOUNTING_INTERNAL_ORDER,
@@ -367,6 +373,8 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
                 f"Cannot create Talpa product {self.talpa_product_id} accounting. "
                 f"Error: {response.status_code} {response.reason}."
             )
+
+        return accounting_created
 
     def update_talpa_accounting(self):
         if not self.talpa_product_id:
