@@ -1105,10 +1105,11 @@ def resolve_create_product(obj, info, product):
         modified_by=request.user,
     )
     product.create_talpa_product()
-    product.create_talpa_accounting()
-    product.accounting.created_by = request.user
-    product.accounting.modified_by = request.user
-    product.accounting.save()
+    accounting_created = product.create_talpa_accounting()
+    if accounting_created:
+        product.accounting.created_by = request.user
+        product.accounting.modified_by = request.user
+        product.accounting.save()
     return {"success": True}
 
 
