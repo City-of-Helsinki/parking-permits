@@ -204,8 +204,8 @@ class PaymentViewTestCase(APITestCase):
 
     @override_settings(DEBUG=True)
     def test_payment_view_should_promote_next_vehicle_on_vehicle_changed_order(self):
-        old_vehicle = VehicleFactory()
-        new_vehicle = VehicleFactory()
+        old_vehicle = VehicleFactory(registration_number="ABC-123")
+        new_vehicle = VehicleFactory(registration_number="XYZ-789")
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
             contract_type=ContractType.OPEN_ENDED,
@@ -219,12 +219,17 @@ class PaymentViewTestCase(APITestCase):
         )
         order.permits.add(permit)
         data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
-        response = self.client.post(self.url, data)
+        with self.assertLogs("db", level="INFO") as logs:
+            response = self.client.post(self.url, data)
         self.assertEqual(response.status_code, 200)
         permit.refresh_from_db()
         self.assertEqual(permit.status, ParkingPermitStatus.VALID)
         self.assertEqual(permit.vehicle_id, new_vehicle.id)
         self.assertIsNone(permit.next_vehicle)
+        log_output = "\n".join(logs.output)
+        self.assertIn(f"vehicle_id={new_vehicle.id}", log_output)
+        self.assertNotIn(new_vehicle.registration_number, log_output)
+        self.assertNotIn(old_vehicle.registration_number, log_output)
 
 
 class BaseResolveEndpointTestCase(APITestCase):

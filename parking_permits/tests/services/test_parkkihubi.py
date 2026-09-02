@@ -93,11 +93,15 @@ class TestParkkihubi:
         mock_post,
         permit,
         parkkihubi_overrides,
+        caplog,
     ):
-        Parkkihubi(permit).create()
+        with caplog.at_level("INFO", logger="db"):
+            Parkkihubi(permit).create()
         mock_post.assert_called()
         permit.refresh_from_db()
         assert permit.synced_with_parkkihubi
+        assert f"permit_id={permit.pk}" in caplog.text
+        assert "KEO-432" not in caplog.text
 
     @pytest.mark.django_db()
     @patch("requests.post", return_value=MockResponse(400))
@@ -126,6 +130,23 @@ class TestParkkihubi:
         mock_patch.assert_called()
         permit.refresh_from_db()
         assert not permit.synced_with_parkkihubi
+
+    @pytest.mark.django_db()
+    @patch("requests.patch", return_value=MockResponse(200))
+    def test_update(
+        self,
+        mock_patch,
+        permit,
+        parkkihubi_overrides,
+        caplog,
+    ):
+        with caplog.at_level("INFO", logger="db"):
+            Parkkihubi(permit).update()
+        mock_patch.assert_called()
+        permit.refresh_from_db()
+        assert permit.synced_with_parkkihubi
+        assert f"permit_id={permit.pk}" in caplog.text
+        assert "KEO-432" not in caplog.text
 
     @pytest.mark.django_db()
     def test_get_payload(self, permit, parkkihubi_overrides):

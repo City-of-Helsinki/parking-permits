@@ -532,8 +532,8 @@ class PaymentView(APIView):
                         permit.save()
                         send_permit_email(PermitEmailType.UPDATED, permit)
                     logger.info(
-                        f"Permit {permit.pk} vehicle changed to: "
-                        f"{permit.vehicle.registration_number}"
+                        f"Permit {permit.pk} vehicle changed to "
+                        f"vehicle_id={permit.vehicle.pk}"
                     )
 
                 if order.type == OrderType.ADDRESS_CHANGED:
