@@ -173,9 +173,10 @@ class CustomerPermit:
             permit.products = products
 
             if permit.has_address_changed:
+                address_id = permit.address.pk if permit.address else None
                 logger.info(
-                    f"Permit {permit.pk} address {permit.address} does not match "
-                    f"with customer's primary or other address. "
+                    f"Permit {permit.pk} address_id={address_id} does not "
+                    f"match with customer's primary or other address. "
                     f"Marking permit to end at the end of the day."
                 )
                 permit.address_changed = True

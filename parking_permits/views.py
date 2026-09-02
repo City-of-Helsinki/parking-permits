@@ -552,7 +552,8 @@ class PaymentView(APIView):
                     permit.save()
                     send_permit_email(PermitEmailType.UPDATED, permit)
                     logger.info(
-                        f"Permit {permit.pk} address changed to: {permit.address}"
+                        f"Permit {permit.pk} address changed to "
+                        f"address_id={permit.address.pk}"
                     )
 
                 if order.type == OrderType.CREATED:

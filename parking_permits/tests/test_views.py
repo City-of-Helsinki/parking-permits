@@ -231,6 +231,36 @@ class PaymentViewTestCase(APITestCase):
         self.assertNotIn(new_vehicle.registration_number, log_output)
         self.assertNotIn(old_vehicle.registration_number, log_output)
 
+    @override_settings(DEBUG=True)
+    def test_payment_view_should_log_address_id_on_address_changed_order(self):
+        old_address = AddressFactory(street_name="Vanhakatu", city="Helsinki")
+        new_address = AddressFactory(street_name="Uusikatu", city="Helsinki")
+        new_zone = ParkingZoneFactory()
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            contract_type=ContractType.OPEN_ENDED,
+            address=old_address,
+            next_address=new_address,
+            next_parking_zone=new_zone,
+        )
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id,
+            status=OrderStatus.DRAFT,
+            type=OrderType.ADDRESS_CHANGED,
+        )
+        order.permits.add(permit)
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+        with self.assertLogs("db", level="INFO") as logs:
+            response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        permit.refresh_from_db()
+        self.assertEqual(permit.status, ParkingPermitStatus.VALID)
+        self.assertEqual(permit.address_id, new_address.id)
+        log_output = "\n".join(logs.output)
+        self.assertIn(f"address_id={new_address.id}", log_output)
+        self.assertNotIn(new_address.street_name, log_output)
+        self.assertNotIn(old_address.street_name, log_output)
+
 
 class BaseResolveEndpointTestCase(APITestCase):
     talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
