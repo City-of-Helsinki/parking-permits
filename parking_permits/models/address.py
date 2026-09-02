@@ -66,4 +66,4 @@ class Address(SerializableMixin, TimestampedModelMixin):
             self.save()
             return self._zone
         except ParkingZone.DoesNotExist:
-            logger.warning(f"Cannot find parking zone for the address {self}")
+            logger.warning(f"Cannot find parking zone for address_id={self.pk}")
