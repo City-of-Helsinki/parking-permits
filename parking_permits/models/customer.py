@@ -130,7 +130,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
         verbose_name_plural = _("Customers")
 
     def __str__(self):
-        return f"{self.national_id_number}"
+        return f"Customer {self.pk}"
 
     # NOTE about the static methods below:
     # - These are intended as DRY-helpers for larger queries

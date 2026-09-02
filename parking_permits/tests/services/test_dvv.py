@@ -25,6 +25,33 @@ class GetPersonInfoTestCase(TestCase):
         customer = get_person_info("12345")
         self.assertEqual(customer, None)
 
+    @patch("requests.post")
+    def test_logs_customer_id_instead_of_national_id_number(self, mock_post):
+        national_id_number = "12345"
+        customer = CustomerFactory(national_id_number=national_id_number)
+        mock_post.return_value = self.MockResponse(
+            ok=False, text=f"response contains {national_id_number}"
+        )
+
+        with self.assertLogs("db", level="INFO") as logs:
+            get_person_info(national_id_number)
+
+        log_output = "\n".join(logs.output)
+        self.assertIn(f"customer_id={customer.id}", log_output)
+        self.assertNotIn(national_id_number, log_output)
+
+    @patch("requests.post")
+    def test_logs_unknown_customer_without_national_id_number(self, mock_post):
+        national_id_number = "12345"
+        mock_post.return_value = self.MockResponse(ok=False, text=national_id_number)
+
+        with self.assertLogs("db", level="INFO") as logs:
+            get_person_info(national_id_number)
+
+        log_output = "\n".join(logs.output)
+        self.assertIn("customer_id=unknown", log_output)
+        self.assertNotIn(national_id_number, log_output)
+
     @patch("parking_permits.services.dvv.get_address_details")
     @patch("requests.post")
     def test_get_customer_info(self, mock_post, mock_get_address_details):

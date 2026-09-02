@@ -144,7 +144,9 @@ def is_valid_address(address):
 
 
 def get_person_info(national_id_number) -> DvvPersonInfo | None:
-    logger.info(f"Retrieving person info with national_id_number: {national_id_number}")
+    customer = Customer.objects.filter(national_id_number=national_id_number).first()
+    customer_id = customer.id if customer else "unknown"
+    logger.info(f"Retrieving person info for customer_id={customer_id}")
     data = get_request_data(national_id_number)
     headers = get_request_headers()
     response = requests.post(
@@ -153,9 +155,7 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
         headers=headers,
     )
     if not response.ok:
-        logger.error(
-            f"Invalid DVV response for {national_id_number}. Response: {response.text}"
-        )
+        logger.error(f"Invalid DVV response for customer_id={customer_id}")
         return None
 
     response_data = response.json()
@@ -164,7 +164,7 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
     # content
     person_info = response_data.get("Henkilo")
     if not person_info:
-        logger.error(f"Person info not found: {national_id_number}")
+        logger.error(f"Person info not found for customer_id={customer_id}")
         return None
 
     last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
@@ -183,8 +183,6 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
     if is_valid_address(temporary_address):
         other_address = format_address(temporary_address)
         other_apartment = other_address.get("apartment", "")
-
-    customer = Customer.objects.filter(national_id_number=national_id_number).first()
 
     active_permits = customer.active_permits if customer else []
 
