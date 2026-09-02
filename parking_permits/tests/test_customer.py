@@ -5,6 +5,11 @@ from parking_permits.tests.factories.customer import CustomerFactory
 
 
 class CustomerTestCase(TestCase):
+    def test_string_representation_uses_customer_id(self):
+        customer = CustomerFactory(national_id_number="12345")
+
+        self.assertEqual(str(customer), f"Customer {customer.pk}")
+
     def test_ssn_creation_with_empty_db(self):
         ssn = generate_ssn()
         self.assertEqual(ssn, "XX-000001")
