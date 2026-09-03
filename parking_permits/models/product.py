@@ -12,7 +12,12 @@ from django.utils.translation import gettext_lazy as _
 from parking_permits.exceptions import CreateTalpaProductError, ProductCatalogError
 from parking_permits.talpa.pricing import Pricing
 
-from ..utils import diff_months_ceil, find_next_date, format_local_time
+from ..utils import (
+    diff_months_ceil,
+    find_next_date,
+    format_local_time,
+    none_to_empty_str,
+)
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 
@@ -295,7 +300,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         }
         response = requests.post(
             settings.TALPA_PRODUCT_EXPERIENCE_API,
-            data=json.dumps(data, default=str),
+            data=json.dumps(none_to_empty_str(data), default=str),
             headers=headers,
         )
         if response.status_code == 201:
@@ -358,7 +363,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
                 settings.TALPA_PRODUCT_EXPERIENCE_API,
                 f"{self.talpa_product_id}/accounting/",
             ),
-            data=json.dumps(data, default=str),
+            data=json.dumps(none_to_empty_str(data), default=str),
             headers=headers,
         )
         if response.status_code == 201:
@@ -430,7 +435,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
                 settings.TALPA_PRODUCT_EXPERIENCE_API,
                 f"{self.talpa_product_id}/accounting/",
             ),
-            data=json.dumps(data, default=str),
+            data=json.dumps(none_to_empty_str(data), default=str),
             headers=headers,
         )
         if response.status_code == 201:

@@ -438,3 +438,15 @@ def is_valid_city(city):
     if settings.HELSINKI_ADDRESS_CHECK:
         return city and city.casefold() == "helsinki"
     return True
+
+
+def none_to_empty_str(data):
+    """Recursively replace None values with empty strings.
+
+    Normalize dict values (including nested dicts) before they get serialized to JSON.
+    """
+    if isinstance(data, dict):
+        return {key: none_to_empty_str(value) for key, value in data.items()}
+    if data is None:
+        return ""
+    return data

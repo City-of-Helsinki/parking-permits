@@ -19,6 +19,7 @@ from parking_permits.utils import (
     get_last_day_of_month,
     get_model_diff,
     increment_end_time,
+    none_to_empty_str,
 )
 
 
@@ -469,3 +470,68 @@ def test_model_differ_as_context_manager():
     assert len(diff_dict.keys()) == 1
     assert "registration_number" in diff_dict
     assert diff_dict["registration_number"] == ("ABC-123", "FOO-321")
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        pytest.param(None, "", id="None becomes empty string"),
+        pytest.param("", "", id="empty string stays empty string"),
+        pytest.param("foo", "foo", id="non-empty string is unchanged"),
+        pytest.param(0, 0, id="zero is unchanged"),
+        pytest.param(False, False, id="False is unchanged"),
+        pytest.param([1, None, 2], [1, None, 2], id="list values are not touched"),
+    ],
+)
+def test_none_to_empty_str_scalar_values(value, expected):
+    assert none_to_empty_str(value) == expected
+
+
+def test_none_to_empty_str_flat_dict():
+    data = {
+        "companyCode": "1234",
+        "vatCode": None,
+        "internalOrder": "",
+        "profitCenter": 0,
+    }
+    assert none_to_empty_str(data) == {
+        "companyCode": "1234",
+        "vatCode": "",
+        "internalOrder": "",
+        "profitCenter": 0,
+    }
+
+
+def test_none_to_empty_str_nested_dict():
+    data = {
+        "activeFrom": None,
+        "nextEntity": {
+            "companyCode": None,
+            "vatCode": "ABC",
+            "deeplyNested": {
+                "project": None,
+                "operationArea": "area",
+            },
+        },
+    }
+    assert none_to_empty_str(data) == {
+        "activeFrom": "",
+        "nextEntity": {
+            "companyCode": "",
+            "vatCode": "ABC",
+            "deeplyNested": {
+                "project": "",
+                "operationArea": "area",
+            },
+        },
+    }
+
+
+def test_none_to_empty_str_does_not_mutate_input():
+    data = {"vatCode": None, "nested": {"project": None}}
+    none_to_empty_str(data)
+    assert data == {"vatCode": None, "nested": {"project": None}}
+
+
+def test_none_to_empty_str_empty_dict():
+    assert none_to_empty_str({}) == {}
