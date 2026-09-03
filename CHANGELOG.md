@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.16.0...parking-permits-v1.17.0) (2026-09-03)
+
+
+### Features
+
+* --group-by-zone flag for permit count script ([ad23f04](https://github.com/City-of-Helsinki/parking-permits/commit/ad23f04a2ad1a23d9d85fb6e9e7265d7bdc0d06d))
+
+
+### Bug Fixes
+
+* Avoid logging customer address details ([6d5324a](https://github.com/City-of-Helsinki/parking-permits/commit/6d5324a1689aa6c07e2308e03a63a9844a12bc8f))
+* Avoid logging national id number in DVV service ([e1ea60a](https://github.com/City-of-Helsinki/parking-permits/commit/e1ea60a67ff4de04c28d999a2887b9b024a0083f))
+* Avoid logging vehicle registration number ([301c123](https://github.com/City-of-Helsinki/parking-permits/commit/301c123aed673f8daf3c68016c618d65971d023e))
+* Force test environment for resilient logger config ([22dc67e](https://github.com/City-of-Helsinki/parking-permits/commit/22dc67ee1e9b1173bc6bdd30d98692214add3a20))
+* Reuse matching accounting instead of duplicating ([a67ccef](https://github.com/City-of-Helsinki/parking-permits/commit/a67ccef161ed4ebac8d65489284e83d5f7fa735b))
+
 ## [1.16.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.15.0...parking-permits-v1.16.0) (2026-08-27)
 
 
