@@ -1241,6 +1241,25 @@ class ParkingPermitTestCase(TestCase):
         self.assertTrue(permit.can_extend_permit)
 
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
+    def test_can_extend_permit_false_after_manual_end(self):
+        """Test can_extend_permit property returns False for manually ended permits."""
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=timezone.now() - timedelta(days=20),
+            end_time=timezone.now() + timedelta(days=9),
+        )
+        permit.address = permit.customer.primary_address
+        permit.save()
+        # Initially can extend (within 14 days)
+        self.assertTrue(permit.can_extend_permit)
+        # Manually end permit after current period
+        permit.end_permit(ParkingPermitEndType.AFTER_CURRENT_PERIOD)
+        # Should no longer be extendable
+        self.assertFalse(permit.can_extend_permit)
+        self.assertFalse(permit.can_admin_extend_permit)
+
+    @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_can_extend_permit_existing_other_request(self):
         permit = ParkingPermitFactory(
             status=ParkingPermitStatus.VALID,
