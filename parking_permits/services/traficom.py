@@ -213,7 +213,7 @@ class TraficomVehicleDetailsSynchronizer:
         )
         vehicle_details = {
             "registration_number": registration_number,
-            "updated_from_traficom_on": str(tz.now().date()),
+            "updated_from_traficom_on": tz.now(),
             "power_type": power_type[0],
             "vehicle_class": vehicle_class,
             "manufacturer": vehicle_manufacturer.text,
