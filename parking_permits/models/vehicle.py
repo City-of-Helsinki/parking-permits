@@ -149,7 +149,7 @@ class Vehicle(TimestampedModelMixin):
     last_inspection_date = models.DateField(
         _("Last inspection date"), null=True, blank=True
     )
-    updated_from_traficom_on = models.DateField(
+    updated_from_traficom_on = models.DateTimeField(
         _("Update from traficom on"), null=True, blank=True
     )
     users = models.ManyToManyField(
