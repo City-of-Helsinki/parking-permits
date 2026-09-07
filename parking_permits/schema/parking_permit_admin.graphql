@@ -82,6 +82,7 @@ type VehicleNode {
   emissionType: String
   powerType: VehiclePowerTypeNode
   restrictions: [String]
+  updatedFromTraficomOn: String
 }
 
 type AnnouncementNode {
