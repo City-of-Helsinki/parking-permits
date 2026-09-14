@@ -1085,7 +1085,7 @@ msgstr "Tällä henkilöllä on tietojenluovutuskielto"
 
 #, python-format
 msgid "Vehicle %(registration_number)s is decommissioned"
-msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
+msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstä poistettu"
 
 #, python-format
 msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
