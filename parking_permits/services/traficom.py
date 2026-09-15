@@ -207,10 +207,17 @@ class TraficomVehicleDetailsSynchronizer:
         restrictions = vehicle_data["restrictions"]
         user_ssns = vehicle_data["user_ssns"]
 
-        power_type = VehiclePowerType.objects.get_or_create(
-            identifier=vehicle_power_type.text,
-            defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
-        )
+        # Default to Bensin if no vehicle power type is provided
+        if vehicle_power_type is None:
+            power_type = VehiclePowerType.objects.get_or_create(
+                identifier="01", defaults={"name": "Bensin"}
+            )
+        else:
+            power_type = VehiclePowerType.objects.get_or_create(
+                identifier=vehicle_power_type.text,
+                defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
+            )
+
         vehicle_details = {
             "registration_number": registration_number,
             "updated_from_traficom_on": tz.now(),
