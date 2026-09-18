@@ -368,9 +368,12 @@ class TraficomVehicleDetailsSynchronizer:
             raise TraficomFetchVehicleError(
                 _(
                     "Vehicle's %(registration_number)s weight exceeds "
-                    "maximum allowed limit"
+                    "maximum allowed limit (%(max_weight)s kg)"
                 )
-                % {"registration_number": self.registration_number}
+                % {
+                    "registration_number": self.registration_number,
+                    "max_weight": VEHICLE_MAX_WEIGHT_KG,
+                }
             )
         return weight
 
