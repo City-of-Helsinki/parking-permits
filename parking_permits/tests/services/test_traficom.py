@@ -8,7 +8,7 @@ from freezegun import freeze_time
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models import DrivingClass, DrivingLicence
 from parking_permits.models.vehicle import EmissionType, VehicleClass
-from parking_permits.services.traficom import Traficom
+from parking_permits.services.traficom import VEHICLE_MAX_WEIGHT_KG, Traficom
 from parking_permits.tests.factories import LowEmissionCriteriaFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
@@ -852,10 +852,14 @@ class TestTraficomVehicleFetch(TestTraficom):
                 )
             ),
         ):
-            self.assertRaises(
-                TraficomFetchVehicleError,
-                self.traficom.fetch_vehicle_details,
-                "BCI-707",
+            registration_number = "BCI-707"
+            with self.assertRaises(TraficomFetchVehicleError) as context:
+                self.traficom.fetch_vehicle_details(registration_number)
+
+            self.assertEqual(
+                str(context.exception),
+                f"Vehicle's {registration_number} weight exceeds "
+                f"maximum allowed limit ({VEHICLE_MAX_WEIGHT_KG} kg)",
             )
 
     @override_settings(TRAFICOM_MOCK=False)
