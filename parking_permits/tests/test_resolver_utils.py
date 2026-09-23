@@ -1409,7 +1409,10 @@ def test_create_refund_for_real_price_change_non_electric_to_electric_vehicle():
     permit.orders.add(order)
 
     with freeze_time(datetime(2021, 4, 15)):
-        price_change_list = permit.get_price_change_list(zone, True)
+        price_change_list = permit.get_price_change_list(
+            new_zone=zone,
+            is_low_emission=True,
+        )
 
         assert len(price_change_list) == 1
         assert price_change_list[0]["previous_price"] == Decimal("20")

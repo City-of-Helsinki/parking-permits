@@ -369,11 +369,11 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         else:
             end_time = get_end_time(self.start_time, 1)
         return get_permit_prices(
-            self.parking_zone,
-            self.vehicle.is_low_emission,
-            not self.primary_vehicle,
-            self.start_time.date(),
-            end_time.date(),
+            parking_zone=self.parking_zone,
+            is_low_emission_vehicle=self.vehicle.is_low_emission,
+            is_secondary_permit=not self.primary_vehicle,
+            permit_start_date=self.start_time.date(),
+            permit_end_date=end_time.date(),
         )
 
     @property
@@ -654,7 +654,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         end_time = get_end_time(self.start_time, months)
         return max(self.start_time, end_time)
 
-    def get_price_list_for_extended_permit(self, month_count):
+    def get_price_list_for_extended_permit(self, *, month_count):
         """Returns price list when purchasing additional months on
         a fixed-period permit.
 
@@ -680,7 +680,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             start_date = min([item["start_date"] for item in items])
             end_date = max([item["end_date"] for item in items])
 
-            price = product.get_modified_unit_price(is_low_emission, is_secondary)
+            price = product.get_modified_unit_price(
+                is_low_emission=is_low_emission,
+                is_secondary=is_secondary,
+            )
 
             month_count = len(items)
             total_price = price * month_count
@@ -736,7 +739,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             if start_date > product.end_date:
                 product = next(products, None)
 
-    def get_price_change_list(self, new_zone, is_low_emission):
+    def get_price_change_list(self, *, new_zone, is_low_emission):
         """Get a list of price changes if the permit is changed
 
         Only vehicle and zone change will affect the price
@@ -759,13 +762,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             end_date = start_date + relativedelta(months=1, days=-1)
             previous_product = previous_products.get_for_date(start_date)
             previous_price = previous_product.get_modified_unit_price(
-                self.vehicle.is_low_emission,
-                is_secondary,
+                is_low_emission=self.vehicle.is_low_emission,
+                is_secondary=is_secondary,
             )
             new_product = new_products.get_for_date(start_date)
             new_price = new_product.get_modified_unit_price(
-                is_low_emission,
-                is_secondary,
+                is_low_emission=is_low_emission,
+                is_secondary=is_secondary,
             )
             diff_price = new_price - previous_price
             price_change_vat = calc_vat_price(diff_price, new_product.vat).quantize(
@@ -809,12 +812,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             price_change_list = []
             while month_start_date < end_date and previous_product and new_product:
                 previous_price = previous_product.get_modified_unit_price(
-                    self.vehicle.is_low_emission,
-                    is_secondary,
+                    is_low_emission=self.vehicle.is_low_emission,
+                    is_secondary=is_secondary,
                 )
                 new_price = new_product.get_modified_unit_price(
-                    is_low_emission,
-                    is_secondary,
+                    is_low_emission=is_low_emission,
+                    is_secondary=is_secondary,
                 )
                 diff_price = new_price - previous_price
                 if (

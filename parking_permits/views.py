@@ -326,8 +326,8 @@ class TalpaResolvePrice(APIView):
                     "subscription_id": subscription_id,
                     "user_id": user_id,
                     **product.get_talpa_pricing(
-                        permit.vehicle.is_low_emission,
-                        permit.is_secondary_vehicle,
+                        is_low_emission=permit.vehicle.is_low_emission,
+                        is_secondary=permit.is_secondary_vehicle,
                     ),
                 }
             )

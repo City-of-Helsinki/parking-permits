@@ -796,7 +796,10 @@ class ParkingZoneTestCase(TestCase):
         # starting immediately
         with freeze_time(datetime(2021, 4, 15)):
             with translation.override("fi"):
-                price_change_list = permit.get_price_change_list(self.zone_a, True)
+                price_change_list = permit.get_price_change_list(
+                    new_zone=self.zone_a,
+                    is_low_emission=True,
+                )
                 self.assertEqual(len(price_change_list), 1)
                 self.assertEqual(
                     price_change_list[0]["product"], f"{_('Parking zone')} A"
@@ -837,7 +840,10 @@ class ParkingZoneTestCase(TestCase):
         # starting immediately
         with freeze_time(datetime(2021, 4, 15)):
             with translation.override("fi"):
-                price_change_list = permit.get_price_change_list(self.zone_a, True)
+                price_change_list = permit.get_price_change_list(
+                    new_zone=self.zone_a,
+                    is_low_emission=True,
+                )
                 self.assertEqual(len(price_change_list), 1)
                 self.assertEqual(
                     price_change_list[0]["product"], f"{_('Parking zone')} A"
@@ -881,7 +887,10 @@ class ParkingZoneTestCase(TestCase):
         )
         with freeze_time(datetime(2021, 4, 15)):
             with translation.override("fi"):
-                price_change_list = permit.get_price_change_list(self.zone_b, True)
+                price_change_list = permit.get_price_change_list(
+                    new_zone=self.zone_b,
+                    is_low_emission=True,
+                )
                 self.assertEqual(len(price_change_list), 2)
                 self.assertEqual(
                     price_change_list[0]["product"], f"{_('Parking zone')} B"
@@ -949,7 +958,9 @@ class ParkingZoneTestCase(TestCase):
         )
         with freeze_time(datetime(CURRENT_YEAR, 4, 15)):
             with translation.override("fi"):
-                price_change_list = permit.get_price_change_list(self.zone_b, False)
+                price_change_list = permit.get_price_change_list(
+                    new_zone=self.zone_b, is_low_emission=False
+                )
                 self.assertEqual(len(price_change_list), 2)
                 self.assertEqual(
                     price_change_list[0]["product"], f"{_('Parking zone')} B"
@@ -1054,7 +1065,8 @@ class ParkingZoneTestCase(TestCase):
             with translation.override("fi"):
                 # switching to a non-electric vehicle removes the discount
                 price_change_list = permit.get_price_change_list(
-                    self.zone_a, is_low_emission=False
+                    new_zone=self.zone_a,
+                    is_low_emission=False,
                 )
                 self.assertEqual(len(price_change_list), 1)
                 self.assertEqual(
@@ -1102,7 +1114,8 @@ class ParkingZoneTestCase(TestCase):
 
         with freeze_time(datetime(2021, 4, 15)):
             price_change_list = permit.get_price_change_list(
-                self.zone_b, is_low_emission=True
+                new_zone=self.zone_b,
+                is_low_emission=True,
             )
 
         self.assertEqual(len(price_change_list), 1)
@@ -1152,7 +1165,10 @@ class ParkingZoneTestCase(TestCase):
         with freeze_time(datetime(2021, 4, 15)):
             # switching to an electric (low-emission) vehicle, same zone:
             # only the products' own low_emission_discount differs
-            price_change_list = permit.get_price_change_list(self.zone_a, True)
+            price_change_list = permit.get_price_change_list(
+                new_zone=self.zone_a,
+                is_low_emission=True,
+            )
 
         self.assertEqual(len(price_change_list), 2)
         self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
@@ -1277,7 +1293,7 @@ class ParkingPermitTestCase(TestCase):
             unit_price=Decimal("40.00"),
         )
 
-        price_list = list(permit.get_price_list_for_extended_permit(3))
+        price_list = list(permit.get_price_list_for_extended_permit(month_count=3))
 
         self.assertEqual(len(price_list), 2)
 
@@ -1321,7 +1337,7 @@ class ParkingPermitTestCase(TestCase):
             low_emission_discount=Decimal("0.25"),
         )
 
-        price_list = list(permit.get_price_list_for_extended_permit(3))
+        price_list = list(permit.get_price_list_for_extended_permit(month_count=3))
 
         self.assertEqual(len(price_list), 1)
         self.assertEqual(price_list[0]["unit_price"], Decimal("22.50"))

@@ -223,6 +223,7 @@ def convert_to_snake_case(d):
 
 
 def get_permit_prices(
+    *,
     parking_zone,
     is_low_emission_vehicle,
     is_secondary_permit,
@@ -248,7 +249,8 @@ def get_permit_prices(
             {
                 "original_unit_price": product.unit_price,
                 "unit_price": product.get_modified_unit_price(
-                    is_low_emission_vehicle, is_secondary_permit
+                    is_low_emission=is_low_emission_vehicle,
+                    is_secondary=is_secondary_permit,
                 ),
                 "start_date": start_date,
                 "end_date": end_date,

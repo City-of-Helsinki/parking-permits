@@ -262,7 +262,8 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
             {
                 "permit": permit,
                 "price_changes": permit.get_price_change_list(
-                    new_zone, permit.vehicle.is_low_emission
+                    new_zone=new_zone,
+                    is_low_emission=permit.vehicle.is_low_emission,
                 ),
             }
         )
@@ -282,7 +283,7 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFoundError(_("Permit not found"))
 
-    return permit.get_price_list_for_extended_permit(month_count)
+    return permit.get_price_list_for_extended_permit(month_count=month_count)
 
 
 @mutation.field("deleteParkingPermit")
@@ -456,7 +457,8 @@ def resolve_update_permit_vehicle(
     new_vehicle.save()
 
     price_change_list = permit.get_price_change_list(
-        permit.parking_zone, new_vehicle.is_low_emission
+        new_zone=permit.parking_zone,
+        is_low_emission=new_vehicle.is_low_emission,
     )
     permit_total_price_change = sum(
         [item["price_change"] * item["month_count"] for item in price_change_list]
@@ -684,7 +686,8 @@ def resolve_change_address(
         total_price_change_by_order = Counter()
         for permit in fixed_period_permits:
             price_change_list = permit.get_price_change_list(
-                new_zone, permit.vehicle.is_low_emission
+                new_zone=new_zone,
+                is_low_emission=permit.vehicle.is_low_emission,
             )
             permit_total_price_change = sum(
                 [
