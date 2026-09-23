@@ -125,6 +125,38 @@ class TestTraficomVehicleFetch(TestTraficom):
             assert vehicle.emission_type == EmissionType.NEDC
             assert vehicle.emission == 155
 
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_power_type(self):
+        # Uses a mock with a non-Bensin power type to distinguish this from the
+        # fallback default applied when the power type is missing.
+        with mock.patch(
+            "requests.Session.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_C1.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("FNI-586")
+            self.assertEqual(vehicle.power_type.identifier, "02")
+            self.assertEqual(vehicle.power_type.name, "Diesel")
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_power_type_missing_defaults_to_bensin(self):
+        with mock.patch(
+            "requests.Session.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_C1_without_power_type.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("FNI-586")
+            self.assertEqual(vehicle.power_type.identifier, "01")
+            self.assertEqual(vehicle.power_type.name, "Bensin")
+
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_108_licence_a_a1_a2(self):
         with mock.patch(
