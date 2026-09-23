@@ -8,7 +8,11 @@ from freezegun import freeze_time
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models import DrivingClass, DrivingLicence
 from parking_permits.models.vehicle import EmissionType, VehicleClass
-from parking_permits.services.traficom import VEHICLE_MAX_WEIGHT_KG, Traficom
+from parking_permits.services.traficom import (
+    POWER_TYPE_FALLBACK_NAME,
+    VEHICLE_MAX_WEIGHT_KG,
+    Traficom,
+)
 from parking_permits.tests.factories import LowEmissionCriteriaFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
@@ -156,6 +160,21 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details("FNI-586")
             self.assertEqual(vehicle.power_type.identifier, "01")
             self.assertEqual(vehicle.power_type.name, "Bensin")
+
+    @override_settings(TRAFICOM_MOCK=False)
+    def test_fetch_vehicle_power_type_not_in_mapper_defaults_to_fallback_name(self):
+        with mock.patch(
+            "requests.Session.post",
+            return_value=MockResponse(
+                get_mock_xml(
+                    "vehicle_power_type_unmapped.xml",
+                    use_legacy_mock_xml=self.use_legacy_api,
+                )
+            ),
+        ):
+            vehicle = self.traficom.fetch_vehicle_details("FNI-586")
+            self.assertEqual(vehicle.power_type.identifier, "13")
+            self.assertEqual(vehicle.power_type.name, POWER_TYPE_FALLBACK_NAME)
 
     @override_settings(TRAFICOM_MOCK=False, TRAFICOM_CHECK=True)
     def test_fetch_vehicle_l3_subclass_108_licence_a_a1_a2(self):

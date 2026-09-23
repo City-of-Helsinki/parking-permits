@@ -70,6 +70,8 @@ POWER_TYPE_MAPPER = {
     "04": "Electric",
 }
 
+POWER_TYPE_FALLBACK_NAME = "Other"
+
 VEHICLE_SUB_CLASS_MAPPER = {
     "900": VehicleClass.L3eA1,
     "905": VehicleClass.L3eA2,
@@ -215,7 +217,11 @@ class TraficomVehicleDetailsSynchronizer:
         else:
             power_type = VehiclePowerType.objects.get_or_create(
                 identifier=vehicle_power_type.text,
-                defaults={"name": POWER_TYPE_MAPPER.get(vehicle_power_type.text, None)},
+                defaults={
+                    "name": POWER_TYPE_MAPPER.get(
+                        vehicle_power_type.text, POWER_TYPE_FALLBACK_NAME
+                    )
+                },
             )
 
         vehicle_details = {
