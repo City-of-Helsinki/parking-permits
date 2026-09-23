@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -24,12 +24,17 @@ from parking_permits.models.product import Product, ProductType
 from parking_permits.models.vehicle import EmissionType
 from parking_permits.resolver_utils import (
     create_permit_refunds,
+    create_refund,
     end_permit,
     end_permits,
 )
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderItemFactory, SubscriptionFactory
+from parking_permits.tests.factories.order import (
+    OrderFactory,
+    OrderItemFactory,
+    SubscriptionFactory,
+)
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -38,6 +43,7 @@ from parking_permits.tests.factories.vehicle import (
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
+from parking_permits.utils import get_end_time
 from users.tests.factories.user import UserFactory
 
 IBAN = "12345678"
@@ -1364,6 +1370,75 @@ class TestCreateRefund:
                 order.refresh_from_db()
                 refunds = order.refunds.all()
                 assert not refunds.exists()
+
+
+@pytest.mark.django_db()
+def test_create_refund_for_real_price_change_non_electric_to_electric_vehicle():
+    """create_refund(), fed by a real (non-mocked) get_price_change_list()
+    result, produces the correct refund amount when a permit's vehicle
+    switches from non-electric (full price) to electric (discounted)."""
+    zone = ParkingZoneFactory(name="A")
+    ProductFactory(
+        zone=zone,
+        type=ProductType.RESIDENT,
+        start_date=date(2021, 1, 1),
+        end_date=date(2021, 12, 31),
+        unit_price=Decimal("20"),
+        low_emission_discount=Decimal("0.5"),
+    )
+    customer = CustomerFactory()
+    non_electric_vehicle = VehicleFactory(
+        power_type=VehiclePowerTypeFactory(identifier="00")
+    )
+
+    start_time = timezone.make_aware(datetime(2021, 1, 1))
+    end_time = get_end_time(start_time, 12)
+
+    permit = ParkingPermitFactory(
+        customer=customer,
+        parking_zone=zone,
+        vehicle=non_electric_vehicle,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        start_time=start_time,
+        end_time=end_time,
+        month_count=12,
+    )
+    order = OrderFactory(customer=customer, status=OrderStatus.CONFIRMED)
+    OrderItemFactory(order=order, permit=permit, vat=Decimal("0.255"))
+    permit.orders.add(order)
+
+    with freeze_time(datetime(2021, 4, 15)):
+        price_change_list = permit.get_price_change_list(zone, True)
+
+        assert len(price_change_list) == 1
+        assert price_change_list[0]["previous_price"] == Decimal("20")
+        assert price_change_list[0]["new_price"] == Decimal("10")
+        assert price_change_list[0]["price_change"] == Decimal("-10")
+        assert price_change_list[0]["month_count"] == 8
+        assert price_change_list[0]["start_date"] == date(2021, 5, 1)
+        assert price_change_list[0]["end_date"] == date(2021, 12, 31)
+
+        # permit started 2021-01-01, frozen "now" is 2021-04-15, so the next
+        # (unpaid) period starts 2021-05-01, leaving 8 remaining months
+        # (May-Dec) at 20 € -> 10 € (50% discount) = -10 €/month: 8 * -10 = -80 €
+        total_amount = sum(
+            item["price_change"] * item["month_count"] for item in price_change_list
+        )
+        assert total_amount == Decimal("-80")
+
+        refund = create_refund(
+            user=customer.user,
+            permits=[permit],
+            orders=[order],
+            amount=Decimal(abs(total_amount)),
+            iban=IBAN,
+            vat=price_change_list[0]["price_change_vat_percent"] / 100,
+        )
+
+    assert refund.amount == Decimal("80")
+    assert list(refund.permits.all()) == [permit]
+    assert list(refund.orders.all()) == [order]
 
 
 def _create_zone_products(zone, product_detail_list):
