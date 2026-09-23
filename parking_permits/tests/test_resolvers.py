@@ -1,11 +1,12 @@
 import dataclasses
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from unittest import mock
 
 import pytest
 from django.test import override_settings
 from django.utils import timezone
+from freezegun import freeze_time
 
 from parking_permits.exceptions import DuplicatePermitError, PermitCanNotBeExtendedError
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
@@ -20,10 +21,15 @@ from parking_permits.resolvers import (
 )
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory
+from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.tests.factories.vehicle import (
+    VehicleFactory,
+    VehiclePowerTypeFactory,
+)
+from parking_permits.tests.factories.zone import ParkingZoneFactory
+from parking_permits.utils import get_end_time
 from users.models import User
 
 
@@ -542,3 +548,154 @@ def test_resolve_extend_parking_permit_invalid(rf):
             resolve_extend_parking_permit(None, info, str(permit.pk), 3)
 
     assert ParkingPermitExtensionRequest.objects.count() == 0
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+def test_update_permit_vehicle_electric_to_non_electric_creates_payment_with_real_price_change(
+    rf,
+):
+    """Uses real product/vehicle data (not a mocked price_change_list) to
+    verify that switching from an electric (discounted) to a non-electric
+    (full price) vehicle correctly computes a price increase and creates
+    a new order rather than a refund."""
+    request = rf.post("/")
+    customer = CustomerFactory()
+    request.user = customer.user
+    info = Info(context={"request": request})
+
+    zone = ParkingZoneFactory(name="A")
+    start_time = timezone.make_aware(datetime(2021, 1, 1))
+    end_time = get_end_time(start_time, 12)
+    ProductFactory(
+        zone=zone,
+        type=ProductType.RESIDENT,
+        start_date=start_time.date(),
+        end_date=end_time.date(),
+        unit_price=Decimal("20"),
+        low_emission_discount=Decimal("0.5"),
+    )
+
+    old_vehicle = VehicleFactory(power_type=VehiclePowerTypeFactory(identifier="04"))
+    new_vehicle = VehicleFactory(power_type=VehiclePowerTypeFactory(identifier="00"))
+
+    permit = ParkingPermitFactory(
+        customer=customer,
+        parking_zone=zone,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        vehicle=old_vehicle,
+        start_time=start_time,
+        end_time=end_time,
+        month_count=12,
+    )
+
+    # create_renewal_order() looks up permit.latest_order (via
+    # get_unused_order_items) to prorate the new order, so an existing
+    # confirmed order/order item covering the permit period is required.
+    # Prices of the order reflect the pre-change, electric-discounted prices.
+    order = OrderFactory(customer=customer, status=OrderStatus.CONFIRMED)
+    OrderItemFactory(
+        order=order,
+        permit=permit,
+        unit_price=Decimal("10"),
+        payment_unit_price=Decimal("10"),
+        vat=Decimal("0.255"),
+        quantity=12,
+        start_time=start_time,
+        end_time=end_time,
+    )
+    order.permits.add(permit)
+
+    # months_used/next_period_start_time depend on "now", so only the
+    # actual price computation + resolver call needs to be frozen
+    with (
+        freeze_time("2021-04-15"),
+        _mock_jwt(request.user),
+        _mock_talpa(),
+    ):
+        response = resolve_update_permit_vehicle(
+            None, info, str(permit.pk), str(new_vehicle.pk)
+        )
+
+    assert response["checkout_url"] == "https://talpa.fi"
+    assert Order.objects.count() == 2
+    assert Refund.objects.count() == 0
+
+    permit.refresh_from_db()
+    assert permit.vehicle == old_vehicle
+    assert permit.next_vehicle == new_vehicle
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+def test_update_permit_vehicle_non_electric_to_electric_creates_refund_with_real_price_change(
+    rf,
+):
+    """Uses real product/vehicle data to verify that switching from a
+    non-electric (full price) to an electric (discounted) vehicle
+    correctly computes a price decrease and creates a refund for the
+    exact price difference."""
+    request = rf.post("/")
+    customer = CustomerFactory()
+    request.user = customer.user
+    info = Info(context={"request": request})
+
+    zone = ParkingZoneFactory(name="A")
+    start_time = timezone.make_aware(datetime(2021, 1, 1))
+    end_time = get_end_time(start_time, 12)
+    ProductFactory(
+        zone=zone,
+        type=ProductType.RESIDENT,
+        start_date=start_time.date(),
+        end_date=end_time.date(),
+        unit_price=Decimal("20"),
+        low_emission_discount=Decimal("0.5"),
+    )
+
+    old_vehicle = VehicleFactory(power_type=VehiclePowerTypeFactory(identifier="00"))
+    new_vehicle = VehicleFactory(power_type=VehiclePowerTypeFactory(identifier="04"))
+
+    permit = ParkingPermitFactory(
+        customer=customer,
+        parking_zone=zone,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        vehicle=old_vehicle,
+        start_time=start_time,
+        end_time=end_time,
+        month_count=12,
+    )
+
+    order = OrderFactory(
+        talpa_order_id="d4745a07-de99-33f8-94d6-64595f7a8bc6",
+        customer=customer,
+        status=OrderStatus.CONFIRMED,
+    )
+    order.permits.add(permit)
+    order.save()
+
+    # months_used/next_period_start_time depend on "now", so only the
+    # actual price computation + resolver call needs to be frozen
+    with (
+        freeze_time("2021-04-15"),
+        _mock_jwt(request.user),
+        _mock_talpa(),
+    ):
+        response = resolve_update_permit_vehicle(
+            None, info, str(permit.pk), str(new_vehicle.pk)
+        )
+
+    assert response["checkout_url"] is None
+    assert Order.objects.count() == 1
+    assert Refund.objects.count() == 1
+    # permit started 2021-01-01, frozen "now" is 2021-04-15, so the next
+    # (unpaid) period starts 2021-05-01, leaving 8 remaining months
+    # (May-Dec) at 20 € -> 10 € (50% discount) = -10 €/month: 8 * 10 = 80 €
+    assert Refund.objects.first().amount == pytest.approx(
+        Decimal("80.00"), Decimal("0.01")
+    )
+
+    permit.refresh_from_db()
+    assert permit.vehicle == new_vehicle
+    assert permit.next_vehicle is None

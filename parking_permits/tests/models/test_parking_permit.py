@@ -984,6 +984,191 @@ class ParkingZoneTestCase(TestCase):
                     price_change_list[1]["end_date"], date(CURRENT_YEAR, 12, 31)
                 )
 
+    def test_fixed_period_permit_prices_for_secondary_electric_vehicle_multiple_products(
+        self,
+    ):
+        zone_a_product_list = [
+            [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("20")],
+            [(date(2021, 7, 1), date(2021, 12, 31)), Decimal("30")],
+        ]
+        self._create_zone_products(self.zone_a, zone_a_product_list)
+        electric_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="04")
+        )
+
+        start_time = timezone.make_aware(datetime(2021, 1, 1))
+        end_time = get_end_time(start_time, 12)
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=electric_vehicle,
+            primary_vehicle=False,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+
+        prices = permit.permit_prices
+
+        self.assertEqual(len(prices), 2)
+        # initial price = 20, with 50% discount = 10, +50% secondary surcharge = 15
+        self.assertEqual(prices[0]["original_unit_price"], Decimal("20"))
+        self.assertEqual(prices[0]["unit_price"], Decimal("15.0"))
+        self.assertEqual(prices[0]["start_date"], date(2021, 1, 1))
+        self.assertEqual(prices[0]["end_date"], date(2021, 6, 30))
+        self.assertEqual(prices[0]["quantity"], 6)
+        # initial price = 30, with 50% discount = 15, +50% secondary surcharge = 22.5
+        self.assertEqual(prices[1]["original_unit_price"], Decimal("30"))
+        self.assertEqual(prices[1]["unit_price"], Decimal("22.5"))
+        self.assertEqual(prices[1]["start_date"], date(2021, 7, 1))
+        self.assertEqual(prices[1]["end_date"], date(2021, 12, 31))
+        self.assertEqual(prices[1]["quantity"], 6)
+
+    def test_open_ended_parking_permit_change_price_list_when_switching_electric_to_non_electric(
+        self,
+    ):
+        zone_a_product_list = [
+            [(date(2021, 1, 1), date(2021, 6, 30)), Decimal("20")],
+        ]
+        self._create_zone_products(self.zone_a, zone_a_product_list)
+        electric_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(identifier="04")
+        )
+
+        start_time = timezone.make_aware(datetime(2021, 4, 15))
+        end_time = timezone.make_aware(datetime(2021, 5, 15))
+
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=electric_vehicle,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+        with freeze_time(datetime(2021, 4, 15)):
+            with translation.override("fi"):
+                # switching to a non-electric vehicle removes the discount
+                price_change_list = permit.get_price_change_list(
+                    self.zone_a, is_low_emission=False
+                )
+                self.assertEqual(len(price_change_list), 1)
+                self.assertEqual(
+                    price_change_list[0]["product"], f"{_('Parking zone')} A"
+                )
+                self.assertEqual(price_change_list[0]["previous_price"], Decimal("10"))
+                self.assertEqual(price_change_list[0]["new_price"], Decimal("20"))
+                self.assertEqual(price_change_list[0]["price_change"], Decimal("10"))
+                self.assertEqual(
+                    price_change_list[0]["price_change_vat"], Decimal("2.0319")
+                )
+                self.assertEqual(price_change_list[0]["month_count"], 1)
+                self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 15))
+                self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 14))
+
+    def test_parking_permit_change_price_list_negative_change_uses_previous_order_vat(
+        self,
+    ):
+        zone_a_product_list = [
+            [(date(2021, 1, 1), date(2021, 12, 31)), Decimal("20")],
+        ]
+        self._create_zone_products(self.zone_a, zone_a_product_list)
+        zone_b_product_list = [
+            [(date(2021, 1, 1), date(2021, 12, 31)), Decimal("10")],
+        ]
+        self._create_zone_products(self.zone_b, zone_b_product_list)
+        high_emission_vehicle = VehicleFactory()
+
+        start_time = timezone.make_aware(datetime(2021, 1, 1))
+        end_time = get_end_time(start_time, 12)
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=high_emission_vehicle,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+
+        old_order = OrderFactory(customer=self.customer, status=OrderStatus.CONFIRMED)
+        OrderItemFactory(order=old_order, permit=permit, vat=Decimal("0.10"))
+        permit.orders.add(old_order)
+
+        with freeze_time(datetime(2021, 4, 15)):
+            price_change_list = permit.get_price_change_list(
+                self.zone_b, is_low_emission=True
+            )
+
+        self.assertEqual(len(price_change_list), 1)
+        self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
+        self.assertEqual(price_change_list[0]["new_price"], Decimal("5"))
+        self.assertEqual(price_change_list[0]["price_change"], Decimal("-15"))
+        # must use the OLD order's VAT (10%), not zone_b product's own VAT (25.5%)
+        self.assertEqual(
+            price_change_list[0]["price_change_vat_percent"], Decimal("10.0")
+        )
+        self.assertEqual(price_change_list[0]["price_change_vat"], Decimal("-1.3636"))
+
+    def test_parking_permit_change_price_list_across_products_with_different_discount_rates(
+        self,
+    ):
+        ProductFactory(
+            zone=self.zone_a,
+            type=ProductType.RESIDENT,
+            start_date=date(2021, 1, 1),
+            end_date=date(2021, 6, 30),
+            unit_price=Decimal("20"),
+            low_emission_discount=Decimal("0.5"),
+        )
+        ProductFactory(
+            zone=self.zone_a,
+            type=ProductType.RESIDENT,
+            start_date=date(2021, 7, 1),
+            end_date=date(2021, 12, 31),
+            unit_price=Decimal("20"),
+            low_emission_discount=Decimal("0.25"),
+        )
+        high_emission_vehicle = VehicleFactory()
+
+        start_time = timezone.make_aware(datetime(2021, 1, 1))
+        end_time = get_end_time(start_time, 12)
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            parking_zone=self.zone_a,
+            vehicle=high_emission_vehicle,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=12,
+        )
+
+        with freeze_time(datetime(2021, 4, 15)):
+            # switching to an electric (low-emission) vehicle, same zone:
+            # only the products' own low_emission_discount differs
+            price_change_list = permit.get_price_change_list(self.zone_a, True)
+
+        self.assertEqual(len(price_change_list), 2)
+        self.assertEqual(price_change_list[0]["previous_price"], Decimal("20"))
+        self.assertEqual(price_change_list[0]["new_price"], Decimal("10"))
+        self.assertEqual(price_change_list[0]["price_change"], Decimal("-10"))
+        self.assertEqual(price_change_list[0]["month_count"], 2)
+        self.assertEqual(price_change_list[0]["start_date"], date(2021, 5, 1))
+        self.assertEqual(price_change_list[0]["end_date"], date(2021, 6, 30))
+
+        self.assertEqual(price_change_list[1]["previous_price"], Decimal("20"))
+        self.assertEqual(price_change_list[1]["new_price"], Decimal("15"))
+        self.assertEqual(price_change_list[1]["price_change"], Decimal("-5"))
+        self.assertEqual(price_change_list[1]["month_count"], 6)
+        self.assertEqual(price_change_list[1]["start_date"], date(2021, 7, 1))
+        self.assertEqual(price_change_list[1]["end_date"], date(2021, 12, 31))
+
 
 class ParkingPermitTestCase(TestCase):
     duplicable_statuses = [
@@ -1113,6 +1298,36 @@ class ParkingPermitTestCase(TestCase):
         self.assertEqual(price_list[1]["unit_price"], Decimal("40.00"))
         self.assertEqual(price_list[1]["net_price"], "31.87")
         self.assertEqual(price_list[1]["vat_price"], "8.13")
+
+    @freeze_time("2024-02-05")
+    def test_get_price_list_for_extended_permit_with_electric_vehicle_discount(self):
+        now = timezone.now()
+
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            vehicle=VehicleFactory(power_type=VehiclePowerTypeFactory(identifier="04")),
+            start_time=now - timedelta(days=23),
+            end_time=now + timedelta(days=7),
+            month_count=1,
+        )
+
+        ProductFactory(
+            zone=permit.parking_zone,
+            type=ProductType.RESIDENT,
+            start_date=(now - timedelta(days=360)).date(),
+            end_date=(now + timedelta(days=365)).date(),
+            unit_price=Decimal("30.00"),
+            low_emission_discount=Decimal("0.25"),
+        )
+
+        price_list = list(permit.get_price_list_for_extended_permit(3))
+
+        self.assertEqual(len(price_list), 1)
+        self.assertEqual(price_list[0]["unit_price"], Decimal("22.50"))
+        self.assertEqual(price_list[0]["price"], Decimal("67.50"))
+        self.assertEqual(price_list[0]["net_price"], "53.78")
+        self.assertEqual(price_list[0]["vat_price"], "13.72")
 
     def test_max_extension_month_count_for_primary_vehicle(self):
         permit = ParkingPermitFactory(
