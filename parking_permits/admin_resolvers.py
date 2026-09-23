@@ -655,11 +655,11 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
                 permit_end_date = active_permit_end_time.date()
 
     return get_permit_prices(
-        parking_zone,
-        is_low_emission,
-        is_secondary,
-        permit_start_date,
-        permit_end_date,
+        parking_zone=parking_zone,
+        is_low_emission_vehicle=is_low_emission,
+        is_secondary_permit=is_secondary,
+        permit_start_date=permit_start_date,
+        permit_end_date=permit_end_date,
     )
 
 
@@ -716,7 +716,9 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
     is_low_emission = vehicle.is_low_emission
     parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
     price_change_list.extend(
-        permit.get_price_change_list(parking_zone, is_low_emission)
+        permit.get_price_change_list(
+            new_zone=parking_zone, is_low_emission=is_low_emission
+        )
     )
     return price_change_list
 
@@ -927,7 +929,9 @@ def calculate_total_price_change(
     )
     vehicle = Vehicle.objects.get(registration_number=registration_number)
     is_low_emission = vehicle.is_low_emission
-    price_change_list = permit.get_price_change_list(new_zone, is_low_emission)
+    price_change_list = permit.get_price_change_list(
+        new_zone=new_zone, is_low_emission=is_low_emission
+    )
     permit_total_price_change = sum(
         [item["price_change"] * item["month_count"] for item in price_change_list]
     )
@@ -943,7 +947,7 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
         permit = ParkingPermit.objects.active().get(pk=permit_id)
     except ParkingPermit.DoesNotExist as e:
         raise ObjectNotFoundError from e
-    return permit.get_price_list_for_extended_permit(month_count)
+    return permit.get_price_list_for_extended_permit(month_count=month_count)
 
 
 @mutation.field("extendPermit")

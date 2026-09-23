@@ -202,7 +202,8 @@ class OrderManager(SerializableMixin.SerializableManager):
             for product, quantity, date_range in products_with_quantity:
                 if quantity > 0:
                     unit_price = product.get_modified_unit_price(
-                        permit.vehicle.is_low_emission, permit.is_secondary_vehicle
+                        is_low_emission=permit.vehicle.is_low_emission,
+                        is_secondary=permit.is_secondary_vehicle,
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
@@ -264,7 +265,9 @@ class OrderManager(SerializableMixin.SerializableManager):
                 start_time=item["start_date"],
                 end_time=item["end_date"],
             )
-            for item in permit.get_price_list_for_extended_permit(month_count)
+            for item in permit.get_price_list_for_extended_permit(
+                month_count=month_count
+            )
         ]
 
         OrderItem.objects.bulk_create(order_items)
@@ -379,7 +382,8 @@ class OrderManager(SerializableMixin.SerializableManager):
 
                 is_low_emission = vehicle.is_low_emission
                 unit_price = product.get_modified_unit_price(
-                    is_low_emission, permit.is_secondary_vehicle
+                    is_low_emission=is_low_emission,
+                    is_secondary=permit.is_secondary_vehicle,
                 )
                 if vehicle._is_low_emission != is_low_emission:
                     vehicle._is_low_emission = is_low_emission
