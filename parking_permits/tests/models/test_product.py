@@ -378,3 +378,35 @@ class TestProduct(TestCase):
             self.product.save()
             self.product.create_talpa_accounting()
             mock_post.assert_called_once()
+
+    def test_get_modified_unit_price_zero_discount_electric_vehicle(self):
+        product = ProductFactory(
+            unit_price=Decimal(10), low_emission_discount=Decimal(0)
+        )
+        price = product.get_modified_unit_price(
+            is_low_emission=True, is_secondary=False
+        )
+        self.assertEqual(price, Decimal(10))
+
+    def test_get_modified_unit_price_full_discount_electric_vehicle(self):
+        product = ProductFactory(
+            unit_price=Decimal(10), low_emission_discount=Decimal("1.0")
+        )
+        price = product.get_modified_unit_price(
+            is_low_emission=True, is_secondary=False
+        )
+        self.assertEqual(price, Decimal(0))
+
+    def test_get_talpa_pricing_full_discount_returns_zero_gross_without_errors(self):
+        product = ProductFactory(
+            unit_price=Decimal(60),
+            low_emission_discount=Decimal("1.0"),
+            vat=Decimal("0.255"),
+        )
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=False)
+        assert pricing == {
+            "price_gross": "0.00",
+            "price_net": "0.00",
+            "price_vat": "0.00",
+            "vat_percentage": "25.50",
+        }
