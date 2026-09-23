@@ -382,12 +382,17 @@ def update_or_create_customer(customer_info):
 
 
 def update_or_create_vehicle(vehicle_info):
-    try:
-        power_type = VehiclePowerType.objects.get(
-            identifier=vehicle_info["power_type"]["identifier"]
+    if vehicle_info["power_type"] is None:
+        power_type = VehiclePowerType.objects.get_or_create(
+            identifier="01", defaults={"name": "Bensin"}
         )
-    except VehiclePowerType.DoesNotExist:
-        raise ObjectNotFoundError(_("Vehicle power type not found"))
+    else:
+        try:
+            power_type = VehiclePowerType.objects.get(
+                identifier=vehicle_info["power_type"]["identifier"]
+            )
+        except VehiclePowerType.DoesNotExist:
+            raise ObjectNotFoundError(_("Vehicle power type not found"))
 
     registration_number = (
         vehicle_info["registration_number"].upper()
@@ -631,7 +636,15 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["zone"])
     vehicle_info = permit["vehicle"]
 
-    power_type = VehiclePowerType.objects.get_or_create(**vehicle_info["power_type"])[0]
+    if vehicle_info["power_type"] is None:
+        power_type = VehiclePowerType.objects.get_or_create(
+            identifier="01", defaults={"name": "Bensin"}
+        )
+    else:
+        power_type = VehiclePowerType.objects.get_or_create(
+            **vehicle_info["power_type"]
+        )[0]
+
     euro_class = vehicle_info["euro_class"]
     emission_type = vehicle_info["emission_type"]
     emission = vehicle_info["emission"]
