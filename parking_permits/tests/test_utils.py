@@ -6,7 +6,13 @@ import pytest
 from django.test import TestCase
 
 from parking_permits.models import Vehicle
-from parking_permits.tests.factories.vehicle import VehicleFactory
+from parking_permits.models.product import ProductType
+from parking_permits.tests.factories.product import ProductFactory
+from parking_permits.tests.factories.vehicle import (
+    VehicleFactory,
+    VehiclePowerTypeFactory,
+)
+from parking_permits.tests.factories.zone import ParkingZoneFactory
 from parking_permits.utils import (
     ModelDiffer,
     calc_net_price,
@@ -18,6 +24,7 @@ from parking_permits.utils import (
     flatten_dict,
     get_last_day_of_month,
     get_model_diff,
+    get_permit_prices,
     increment_end_time,
     none_to_empty_str,
 )
@@ -349,6 +356,35 @@ def test_calc_prices(gross_price, vat, net_price, vat_price):
     delta = Decimal(0.01)
     assert calc_net_price(gross_price, vat) == pytest.approx(Decimal(net_price), delta)
     assert calc_vat_price(gross_price, vat) == pytest.approx(Decimal(vat_price), delta)
+
+
+@pytest.mark.django_db
+def test_get_permit_prices_with_electric_vehicle_discount():
+    zone = ParkingZoneFactory(name="A")
+    ProductFactory(
+        zone=zone,
+        type=ProductType.RESIDENT,
+        start_date=date(2021, 1, 1),
+        end_date=date(2021, 12, 31),
+        unit_price=Decimal("20"),
+        low_emission_discount=Decimal("0.5"),
+    )
+    electric_vehicle = VehicleFactory(
+        power_type=VehiclePowerTypeFactory(identifier="04")
+    )
+
+    prices = get_permit_prices(
+        zone,
+        electric_vehicle.is_low_emission,
+        False,
+        date(2021, 1, 1),
+        date(2021, 12, 31),
+    )
+
+    assert len(prices) == 1
+    assert prices[0]["original_unit_price"] == Decimal("20")
+    assert prices[0]["unit_price"] == Decimal("10")
+    assert prices[0]["quantity"] == 12
 
 
 class DateTimeToHelsinkiTestCase(TestCase):
