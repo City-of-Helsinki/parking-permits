@@ -227,7 +227,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             f"{_('Parking zone')} {self.zone.name}, {self.start_date} - {self.end_date}"
         )
 
-    def get_modified_unit_price(self, is_low_emission, is_secondary):
+    def get_modified_unit_price(self, *, is_low_emission, is_secondary):
         price = self.unit_price
         if is_low_emission:
             price -= price * self.low_emission_discount
@@ -235,7 +235,7 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             price += price * self.secondary_vehicle_increase_rate
         return price
 
-    def get_talpa_pricing(self, is_low_emission, is_secondary):
+    def get_talpa_pricing(self, *, is_low_emission, is_secondary):
         """Returns dict of the following price values for Talpa processing e.g.:
         {
             "price_gross": "20.00",
@@ -244,7 +244,10 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
             "vat_percentage": "25.50",
         }
         """
-        price_gross = self.get_modified_unit_price(is_low_emission, is_secondary)
+        price_gross = self.get_modified_unit_price(
+            is_low_emission=is_low_emission,
+            is_secondary=is_secondary,
+        )
         pricing = Pricing.calculate(price_gross, self.vat)
 
         return {

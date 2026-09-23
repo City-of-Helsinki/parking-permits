@@ -97,14 +97,21 @@ class TestProduct(TestCase):
         product = ProductFactory(
             unit_price=Decimal(10), low_emission_discount=Decimal(0.5)
         )
-        low_emission_price = product.get_modified_unit_price(True, False)
+        low_emission_price = product.get_modified_unit_price(
+            is_low_emission=True,
+            is_secondary=False,
+        )
         self.assertEqual(low_emission_price, Decimal(5))
 
-        secondary_vehicle_price = product.get_modified_unit_price(False, True)
+        secondary_vehicle_price = product.get_modified_unit_price(
+            is_low_emission=False,
+            is_secondary=True,
+        )
         self.assertEqual(secondary_vehicle_price, Decimal(15))
 
         secondary_vehicle_low_emission_price = product.get_modified_unit_price(
-            True, True
+            is_low_emission=True,
+            is_secondary=True,
         )
         self.assertEqual(secondary_vehicle_low_emission_price, Decimal(7.5))
 
@@ -113,7 +120,10 @@ class TestProduct(TestCase):
             unit_price=Decimal(60),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(False, False)
+        pricing = product.get_talpa_pricing(
+            is_low_emission=False,
+            is_secondary=False,
+        )
         assert pricing == {
             "price_gross": "60.00",
             "price_net": "47.81",
@@ -126,7 +136,7 @@ class TestProduct(TestCase):
             unit_price=Decimal(20),
             vat=0.24,
         )
-        pricing = product.get_talpa_pricing(False, False)
+        pricing = product.get_talpa_pricing(is_low_emission=False, is_secondary=False)
         assert pricing == {
             "price_gross": "20.00",
             "price_net": "16.13",
@@ -140,7 +150,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.25),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(True, False)
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=False)
         assert pricing == {
             "price_gross": "45.00",
             "price_net": "35.86",
@@ -154,7 +164,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.25),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(False, True)
+        pricing = product.get_talpa_pricing(is_low_emission=False, is_secondary=True)
         assert pricing == {
             "price_gross": "90.00",
             "price_net": "71.71",
@@ -168,7 +178,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.25),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(True, True)
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=True)
         assert pricing == {
             "price_gross": "67.50",
             "price_net": "53.78",
@@ -182,7 +192,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.2496124031),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(True, False)
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=False)
         assert pricing == {
             "price_gross": "48.40",
             "price_net": "38.57",
@@ -196,7 +206,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.2496124031),
             vat=0.255,
         )
-        pricing = product.get_talpa_pricing(True, True)
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=True)
         assert pricing == {
             "price_gross": "72.60",
             "price_net": "57.85",
@@ -210,7 +220,7 @@ class TestProduct(TestCase):
             low_emission_discount=Decimal(0.5),
             vat=0.24,
         )
-        pricing = product.get_talpa_pricing(True, False)
+        pricing = product.get_talpa_pricing(is_low_emission=True, is_secondary=False)
         assert pricing == {
             "price_gross": "10.00",
             "price_net": "8.06",

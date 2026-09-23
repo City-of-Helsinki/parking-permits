@@ -374,11 +374,11 @@ def test_get_permit_prices_with_electric_vehicle_discount():
     )
 
     prices = get_permit_prices(
-        zone,
-        electric_vehicle.is_low_emission,
-        False,
-        date(2021, 1, 1),
-        date(2021, 12, 31),
+        parking_zone=zone,
+        is_low_emission_vehicle=electric_vehicle.is_low_emission,
+        is_secondary_permit=False,
+        permit_start_date=date(2021, 1, 1),
+        permit_end_date=date(2021, 12, 31),
     )
 
     assert len(prices) == 1
