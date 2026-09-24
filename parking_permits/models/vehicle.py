@@ -61,7 +61,7 @@ def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
 
 
 class VehiclePowerType(models.Model):
-    name = models.CharField(_("Name"), max_length=100, null=True, blank=True)
+    name = models.CharField(_("Name"), max_length=100, blank=True)
     identifier = models.CharField(_("Identifier"), max_length=10)
 
     class Meta:
