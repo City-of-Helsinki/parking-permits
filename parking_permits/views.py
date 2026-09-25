@@ -518,10 +518,9 @@ class PaymentView(APIView):
                     )
 
                 if order.type == OrderType.VEHICLE_CHANGED:
-                    if (
-                        permit.consent_low_emission_accepted
-                        and permit.vehicle.is_low_emission
-                    ):
+                    # TODO: decide what to do with these emails
+                    # as the consent field was removed
+                    if permit.vehicle.is_low_emission:
                         send_vehicle_low_emission_discount_email(
                             PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
                             permit,
@@ -537,14 +536,14 @@ class PaymentView(APIView):
                     )
 
                 if order.type == OrderType.ADDRESS_CHANGED:
-                    if (
-                        permit.consent_low_emission_accepted
-                        and permit.vehicle.is_low_emission
-                    ):
+                    # TODO: decide what to do with these emails
+                    # as the consent field was removed
+                    if permit.vehicle.is_low_emission:
                         send_vehicle_low_emission_discount_email(
                             PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
                             permit,
                         )
+
                     permit.parking_zone = permit.next_parking_zone
                     permit.next_parking_zone = None
                     permit.address = permit.next_address
@@ -561,10 +560,9 @@ class PaymentView(APIView):
                     send_permit_email(PermitEmailType.CREATED, permit)
                     logger.info(f"Permit {permit.pk} created")
 
-                if (
-                    permit.consent_low_emission_accepted
-                    and permit.vehicle.is_low_emission
-                ):
+                # TODO: decide what to do with these emails
+                # as the consent field was removed
+                if permit.vehicle.is_low_emission:
                     send_vehicle_low_emission_discount_email(
                         PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
                     )

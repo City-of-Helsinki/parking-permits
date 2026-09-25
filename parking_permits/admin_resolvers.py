@@ -406,7 +406,6 @@ def update_or_create_vehicle(vehicle_info):
         "registration_number": registration_number,
         "manufacturer": vehicle_info["manufacturer"],
         "model": vehicle_info["model"],
-        "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
         "serial_number": vehicle_info["serial_number"],
         "vehicle_class": vehicle_info["vehicle_class"],
         "euro_class": vehicle_info["euro_class"],
@@ -618,10 +617,9 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
         )
         sync_with_parkkihubi(parking_permit)
         send_permit_email(PermitEmailType.CREATED, parking_permit)
-        if (
-            parking_permit.consent_low_emission_accepted
-            and parking_permit.vehicle.is_low_emission
-        ):
+        # TODO: decide what to do with these emails
+        # as the consent field was removed
+        if parking_permit.vehicle.is_low_emission:
             send_vehicle_low_emission_discount_email(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, parking_permit
             )
@@ -916,7 +914,9 @@ def resolve_update_resident_permit(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
                 previous_permit,
             )
-        if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+        # TODO: decide what to do with these emails
+        # as the consent field was removed
+        if permit.vehicle.is_low_emission:
             send_vehicle_low_emission_discount_email(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
             )

@@ -73,7 +73,6 @@ type VehicleNode {
   manufacturer: String!
   model: String!
   registrationNumber: String!
-  consentLowEmissionAccepted: Boolean!
   serialNumber: String
   isLowEmission: Boolean
   vehicleClass: String
@@ -305,7 +304,6 @@ type PermitDetailNode {
   startTime: String
   endTime: String
   description: String
-  consentLowEmissionAccepted: Boolean
   bypassTraficomValidation: Boolean
   contractType: String
   monthCount: Int
@@ -505,7 +503,6 @@ input VehicleInput {
   model: String!
   registrationNumber: String!
   serialNumber: String!
-  consentLowEmissionAccepted: Boolean!
   vehicleClass: String!
   euroClass: Int!
   emission: Int

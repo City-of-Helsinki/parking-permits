@@ -285,14 +285,6 @@ class CustomerPermit:
                 {"order_id": data["order_id"], "status": PAYMENT_IN_PROGRESS}
             )
 
-        if "consent_low_emission_accepted" in keys:
-            permit, is_primary = self._get_permit(permit_id)
-            permit.vehicle.consent_low_emission_accepted = data.get(
-                "consent_low_emission_accepted", False
-            )
-            permit.vehicle.save(update_fields=["consent_low_emission_accepted"])
-            return [permit]
-
         if "primary_vehicle" in keys:
             return self._toggle_primary_permit()
 
@@ -515,9 +507,15 @@ class CustomerPermit:
         return False
 
     def _get_primary_and_secondary_permit(self):
+        # NOTE: as customer_permit_query allows non-valid statuses,
+        # this may raise MultipleObjectsReturned if there are multiple
+        # primary permits (eg. via test init logic)
         primary = self.customer_permit_query.get(primary_vehicle=True)
         secondary = None
         try:
+            # NOTE: as customer_permit_query allows non-valid statuses,
+            # this may raise MultipleObjectsReturned if there are multiple
+            # secondary permits (eg. via test init logic)
             secondary = self.customer_permit_query.get(primary_vehicle=False)
         except ObjectDoesNotExist:
             pass

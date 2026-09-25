@@ -193,7 +193,9 @@ def end_permit(
             ):
                 order.cancel(cancel_from_talpa=cancel_from_talpa)
 
-    if permit.consent_low_emission_accepted and permit.vehicle.is_low_emission:
+    # TODO: decide what to do with these emails
+    # as the consent field was removed
+    if permit.vehicle.is_low_emission:
         send_vehicle_low_emission_discount_email(
             PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_DEACTIVATED,
             permit,

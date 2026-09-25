@@ -440,7 +440,6 @@ def resolve_update_permit_vehicle(
     info,
     permit_id,
     vehicle_id,
-    consent_low_emission_accepted=False,
     iban=None,
     audit_msg: AuditMsg = None,
 ):
@@ -453,7 +452,6 @@ def resolve_update_permit_vehicle(
     checkout_url = None
     talpa_order_created = False
     new_vehicle = Vehicle.objects.get(id=vehicle_id)
-    new_vehicle.consent_low_emission_accepted = consent_low_emission_accepted
     new_vehicle.save()
 
     price_change_list = permit.get_price_change_list(

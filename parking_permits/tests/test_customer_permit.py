@@ -454,7 +454,10 @@ class UpdateCustomerPermitTestCase(TestCase):
             customer=self.cus_b, status=VALID, parking_zone=zone_b
         )
         self.c_b_preliminary = ParkingPermitFactory(
-            customer=self.cus_b, status=PRELIMINARY
+            customer=self.cus_b,
+            status=PRELIMINARY,
+            # needed to avoid MultipleObjectsReturned in _get_primary_and_secondary_permit():
+            primary_vehicle=False,
         )
         self.c_a_draft_sec = ParkingPermitFactory(
             customer=self.cus_a,
@@ -465,28 +468,21 @@ class UpdateCustomerPermitTestCase(TestCase):
         )
 
     def test_can_not_update_others_permit(self):
-        data = {"consent_low_emission_accepted": True}
+        data = {
+            "month_count": 1,
+            "contract_type": ContractType.FIXED_PERIOD,
+        }
         with self.assertRaises(ObjectDoesNotExist):
             CustomerPermit(self.cus_a.id).update(data, self.c_b_preliminary.id)
 
-    def test_can_update_consent_low_emission_accepted_for_a_permit(self):
-        data = {"consent_low_emission_accepted": True}
-        self.assertEqual(self.c_a_draft.consent_low_emission_accepted, False)
-        res = CustomerPermit(self.cus_a.id).update(data, self.c_a_draft.id)
-        self.assertEqual(res[0].consent_low_emission_accepted, True)
-
-    def test_can_not_update_consent_low_emission_accepted_for_closed(
-        self,
-    ):
-        data = {"consent_low_emission_accepted": True}
-        with self.assertRaises(ObjectDoesNotExist):
-            CustomerPermit(self.cus_a.id).update(data, self.c_a_closed.id)
-
     def test_can_update_preliminary_permit(self):
-        data = {"consent_low_emission_accepted": True}
-        self.assertEqual(self.c_b_preliminary.consent_low_emission_accepted, False)
+        data = {
+            "month_count": 1,
+            "contract_type": ContractType.FIXED_PERIOD,
+        }
+        self.assertEqual(self.c_b_preliminary.month_count, 1)
         res = CustomerPermit(self.cus_b.id).update(data, self.c_b_preliminary.id)
-        self.assertEqual(res[0].consent_low_emission_accepted, True)
+        self.assertEqual(res[0].month_count, 1)
 
     def test_toggle_primary_vehicle_of_customer_a(self):
         data = {"primary_vehicle": True}

@@ -353,7 +353,6 @@ class TestEndPermit:
     ):
         low_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-            consent_low_emission_accepted=True,
         )
 
         permit = ParkingPermitFactory(
@@ -818,7 +817,6 @@ class TestCreateRefund:
 
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-                consent_low_emission_accepted=True,
             )
 
             permit = ParkingPermitFactory(
@@ -875,7 +873,6 @@ class TestCreateRefund:
 
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-                consent_low_emission_accepted=True,
             )
 
             user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
@@ -957,7 +954,6 @@ class TestCreateRefund:
 
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-                consent_low_emission_accepted=True,
             )
 
             user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
@@ -1062,7 +1058,6 @@ class TestCreateRefund:
 
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-                consent_low_emission_accepted=True,
             )
 
             user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"
@@ -1163,7 +1158,6 @@ class TestCreateRefund:
 
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
-                consent_low_emission_accepted=True,
             )
 
             user_id = "d86ca61d-97e9-410a-a1e3-4894873b1b46"

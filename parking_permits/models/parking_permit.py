@@ -305,10 +305,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         )
 
     @property
-    def consent_low_emission_accepted(self):
-        return self.vehicle.consent_low_emission_accepted
-
-    @property
     def latest_order(self):
         """Get the latest order for the permit
 

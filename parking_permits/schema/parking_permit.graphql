@@ -89,7 +89,6 @@ type PermitNode {
   endTime: String
   status: String
   parkingZone: ZoneNode
-  consentLowEmissionAccepted: Boolean
   primaryVehicle: Boolean
   monthsLeft: Int
   currentPeriodEndTime: String
@@ -170,14 +169,13 @@ type Mutation {
   extendParkingPermit(permitId: ID!, monthCount: Int): ExtendParkingPermitResult!
   changeAddress(addressId: ID!, iban: String): ChangeAddressResult!
   getVehicleInformation(registration: String!): VehicleNode!
-  updatePermitVehicle(permitId: ID!, vehicleId: ID!, consentLowEmissionAccepted: Boolean, iban: String): ChangeVehicleResult!
+  updatePermitVehicle(permitId: ID!, vehicleId: ID!, iban: String): ChangeVehicleResult!
   updateLanguage(lang: String!): CustomerNode!
   addTemporaryVehicle(permitId: String!, registration: String!, startTime: String!, endTime: String!): Boolean!
   removeTemporaryVehicle(permitId: String!): Boolean!
 }
 
 input ParkingPermitInput {
-  consentLowEmissionAccepted: Boolean
   primaryVehicle: Boolean
   startTime: String
   endTime: String

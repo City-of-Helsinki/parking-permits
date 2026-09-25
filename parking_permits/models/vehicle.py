@@ -137,7 +137,6 @@ class Vehicle(TimestampedModelMixin):
     weight = models.IntegerField(_("Total weigh of vehicle"), default=0)
     euro_class = models.IntegerField(_("Euro class"), blank=True, null=True)
     emission = models.IntegerField(_("Emission"), blank=True, null=True)
-    consent_low_emission_accepted = models.BooleanField(default=False)
     _is_low_emission = models.BooleanField(default=False, editable=False)
     emission_type = models.CharField(
         _("Emission type"),
