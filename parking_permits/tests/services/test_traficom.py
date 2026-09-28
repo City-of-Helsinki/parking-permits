@@ -7,13 +7,12 @@ from freezegun import freeze_time
 
 from parking_permits.exceptions import TraficomFetchVehicleError
 from parking_permits.models import DrivingClass, DrivingLicence
-from parking_permits.models.vehicle import EmissionType, VehicleClass
+from parking_permits.models.vehicle import VehicleClass
 from parking_permits.services.traficom import (
     POWER_TYPE_FALLBACK_NAME,
     VEHICLE_MAX_WEIGHT_KG,
     Traficom,
 )
-from parking_permits.tests.factories import LowEmissionCriteriaFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
@@ -86,11 +85,6 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
 
-            # Euro-class and emissions
-            assert vehicle.euro_class == 6
-            assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 155
-
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_lower_case(self):
         with mock.patch(
@@ -105,11 +99,6 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details("bci-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
 
-            # Euro-class and emissions
-            assert vehicle.euro_class == 6
-            assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 155
-
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_spaces(self):
         with mock.patch(
@@ -123,11 +112,6 @@ class TestTraficomVehicleFetch(TestTraficom):
         ):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707   ")
             self.assertEqual(vehicle.registration_number, "BCI-707")
-
-            # Euro-class and emissions
-            assert vehicle.euro_class == 6
-            assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 155
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_power_type(self):
@@ -925,18 +909,8 @@ class TestTraficomVehicleFetch(TestTraficom):
                 )
             ),
         ):
-            LowEmissionCriteriaFactory(
-                nedc_max_emission_limit=37,
-                wltp_max_emission_limit=50,
-                start_date=datetime.datetime(2024, 1, 1),
-                end_date=datetime.datetime(2024, 12, 31),
-                euro_min_class_limit=6,
-            )
-
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
-            self.assertEqual(vehicle.emission, 0)
-            self.assertEqual(vehicle.euro_class, 5)
             self.assertEqual(vehicle.is_low_emission, False)
 
     @override_settings(TRAFICOM_MOCK=False)
@@ -953,10 +927,6 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details("BCI-707")
             self.assertEqual(vehicle.registration_number, "BCI-707")
 
-            # Emissions
-            assert vehicle.emission_type == EmissionType.WLTP
-            assert vehicle.emission == 155
-
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_nedc(self):
         with mock.patch(
@@ -971,10 +941,6 @@ class TestTraficomVehicleFetch(TestTraficom):
             vehicle = self.traficom.fetch_vehicle_details("111-500")
             self.assertEqual(vehicle.registration_number, "111-500")
 
-            # Emissions
-            assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 13
-
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_nedc_and_wltp(self):
         with mock.patch(
@@ -986,19 +952,10 @@ class TestTraficomVehicleFetch(TestTraficom):
                 )
             ),
         ):
-            LowEmissionCriteriaFactory(
-                nedc_max_emission_limit=37,
-                wltp_max_emission_limit=50,
-                start_date=datetime.datetime(2024, 1, 1),
-                end_date=datetime.datetime(3000, 12, 31),
-                euro_min_class_limit=6,
-            )
             vehicle = self.traficom.fetch_vehicle_details("111-500")
             self.assertEqual(vehicle.registration_number, "111-500")
 
-            assert vehicle.emission_type == EmissionType.WLTP
-            assert vehicle.emission == 50
-            assert vehicle._is_low_emission
+            self.assertEqual(vehicle.is_low_emission, False)
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_with_nedc_and_wltp_no_criteria(self):
@@ -1013,9 +970,6 @@ class TestTraficomVehicleFetch(TestTraficom):
         ):
             vehicle = self.traficom.fetch_vehicle_details("111-500")
             self.assertEqual(vehicle.registration_number, "111-500")
-
-            assert vehicle.emission_type == EmissionType.NEDC
-            assert vehicle.emission == 53
 
     @override_settings(TRAFICOM_MOCK=False)
     def test_fetch_vehicle_already_exists(self):

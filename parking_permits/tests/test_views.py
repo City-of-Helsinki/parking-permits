@@ -36,7 +36,7 @@ from parking_permits.models.parking_permit import (
 )
 from parking_permits.models.product import ProductType
 from parking_permits.models.refund import Refund, RefundStatus
-from parking_permits.models.vehicle import EmissionType, VehicleUser
+from parking_permits.models.vehicle import VehicleUser
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
     OrderFactory,
@@ -49,7 +49,6 @@ from parking_permits.tests.factories.permit_extension_request import (
 )
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
-    LowEmissionCriteriaFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
@@ -272,28 +271,31 @@ class BaseResolveEndpointTestCase(APITestCase):
 
     def prepare_test_data(
         self,
+        *,
         permit_id,
         unit_price,
         low_emission_discount,
+        use_low_emission_vehicle=True,
         primary_permit=True,
     ):
         now = datetime.date.today()
         start_date = datetime.date(now.year, 1, 1)
         end_date = datetime.date(now.year, 12, 31)
 
+        # NOTE: before the emission-field cleanup, this was a plain diesel-vehicle
+        # which passed a factory-created LowEmissionCriteria, hence low-emission by default.
+        # Noteworthily, some of the tests using this helper refer to normal-emission vehicles
+        # despite using this default as these tests use an explicit low_emission_discount of zero.
+        if use_low_emission_vehicle:
+            vehicle_power_type = VehiclePowerTypeFactory(
+                identifier="04", name="Electric"
+            )
+        else:
+            vehicle_power_type = VehiclePowerTypeFactory(identifier="01", name="Bensin")
         vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=45,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
+            power_type=vehicle_power_type,
         )
-        LowEmissionCriteriaFactory(
-            start_date=start_date,
-            end_date=end_date,
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=50,
-            euro_min_class_limit=6,
-        )
+
         permit_start_time = datetime.datetime(
             now.year, 1, 20, 14, 26, 0, tzinfo=HELSINKI_TZ
         )
@@ -430,7 +432,10 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
+            use_low_emission_vehicle=False,
         )
         url = reverse("parking_permits:talpa-price")
         data = self.prepare_request_data(
@@ -454,7 +459,9 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.25)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
         )
         url = reverse("parking_permits:talpa-price")
         data = self.prepare_request_data(
@@ -478,7 +485,11 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount, primary_permit=False
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
+            primary_permit=False,
+            use_low_emission_vehicle=False,
         )
         url = reverse("parking_permits:talpa-price")
         data = self.prepare_request_data(
@@ -502,7 +513,10 @@ class ResolvePriceViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0.25)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount, primary_permit=False
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
+            primary_permit=False,
         )
         url = reverse("parking_permits:talpa-price")
         data = self.prepare_request_data(
@@ -652,7 +666,9 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
         )
         url = reverse("parking_permits:talpa-product")
         data = self.prepare_request_data(
@@ -684,7 +700,9 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
         )
         url = reverse("parking_permits:talpa-product")
         data = self.prepare_request_data(
@@ -730,7 +748,9 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
         )
         url = reverse("parking_permits:talpa-product")
         data = self.prepare_request_data(
@@ -785,7 +805,10 @@ class ResolveProductViewTestCase(BaseResolveEndpointTestCase):
         unit_price = Decimal(60)
         low_emission_discount = Decimal(0)
         permit, product = self.prepare_test_data(
-            self.permit_id, unit_price, low_emission_discount, primary_permit=False
+            permit_id=self.permit_id,
+            unit_price=unit_price,
+            low_emission_discount=low_emission_discount,
+            primary_permit=False,
         )
         url = reverse("parking_permits:talpa-product")
         data = self.prepare_request_data(
@@ -1840,18 +1863,8 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
-        LowEmissionCriteriaFactory(
-            start_date=datetime.datetime(2024, 1, 1),
-            end_date=datetime.datetime(2024, 12, 31),
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=80,
-            euro_min_class_limit=6,
-        )
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=100,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
         )
         permit_start_time = datetime.datetime(
             2024, 3, 16, 10, 00, 0, tzinfo=datetime.UTC
@@ -1926,18 +1939,8 @@ class SubscriptionViewTestCase(APITestCase):
         talpa_order_item_id = "819daecd-5ebb-4a94-924e-9710069e9285"
         talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
         customer = CustomerFactory()
-        LowEmissionCriteriaFactory(
-            start_date=datetime.datetime(2024, 1, 1),
-            end_date=datetime.datetime(2024, 12, 31),
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=80,
-            euro_min_class_limit=6,
-        )
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=100,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
         )
         permit_start_time = datetime.datetime(
             2023, 3, 16, 10, 00, 0, tzinfo=datetime.UTC

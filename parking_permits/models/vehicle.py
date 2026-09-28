@@ -1,6 +1,5 @@
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import ArrayField
-from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from .mixins import TimestampedModelMixin
@@ -27,37 +26,8 @@ class VehicleClass(models.TextChoices):
     L6eBU = "L6e-BU", _("L6e-BU")
 
 
-class EmissionType(models.TextChoices):
-    NEDC = "NEDC", _("NEDC")
-    WLTP = "WLTP", _("WLTP")
-
-
-def is_low_emission_vehicle(power_type, euro_class, emission_type, emission):
-    if power_type.is_electric:
-        return True
-    try:
-        now = tz.now()
-        le_criteria = LowEmissionCriteria.objects.get(
-            start_date__lte=now,
-            end_date__gte=now,
-        )
-    except LowEmissionCriteria.DoesNotExist:
-        return False
-
-    if (
-        not euro_class
-        or emission in (None, 0)
-        or euro_class < le_criteria.euro_min_class_limit
-    ):
-        return False
-
-    if emission_type == EmissionType.NEDC:
-        return emission <= le_criteria.nedc_max_emission_limit
-
-    if emission_type == EmissionType.WLTP:
-        return emission <= le_criteria.wltp_max_emission_limit
-
-    return False
+def is_low_emission_vehicle(power_type):
+    return power_type.is_electric
 
 
 class VehiclePowerType(models.Model):
@@ -74,31 +44,6 @@ class VehiclePowerType(models.Model):
     @property
     def is_electric(self):
         return self.identifier == "04"
-
-
-class LowEmissionCriteria(TimestampedModelMixin):
-    nedc_max_emission_limit = models.IntegerField(
-        _("NEDC maximum emission limit"), blank=True, null=True
-    )
-    wltp_max_emission_limit = models.IntegerField(
-        _("WLTP maximum emission limit"), blank=True, null=True
-    )
-    euro_min_class_limit = models.IntegerField(
-        _("Euro minimum class limit"), blank=True, null=True
-    )
-    start_date = models.DateField(_("Start date"))
-    end_date = models.DateField(_("End date"), blank=True, null=True)
-
-    class Meta:
-        verbose_name = _("Low-emission criteria")
-        verbose_name_plural = _("Low-emission criterias")
-
-    def __str__(self):
-        return (
-            f"NEDC: {self.nedc_max_emission_limit}, "
-            f"WLTP: {self.wltp_max_emission_limit}, "
-            f"EURO: {self.euro_min_class_limit}"
-        )
 
 
 class VehicleUser(models.Model):
@@ -135,16 +80,7 @@ class Vehicle(TimestampedModelMixin):
         _("Registration number"), max_length=24, unique=True
     )
     weight = models.IntegerField(_("Total weigh of vehicle"), default=0)
-    euro_class = models.IntegerField(_("Euro class"), blank=True, null=True)
-    emission = models.IntegerField(_("Emission"), blank=True, null=True)
     consent_low_emission_accepted = models.BooleanField(default=False)
-    _is_low_emission = models.BooleanField(default=False, editable=False)
-    emission_type = models.CharField(
-        _("Emission type"),
-        max_length=16,
-        choices=EmissionType.choices,
-        default=EmissionType.WLTP,
-    )
     serial_number = models.CharField(_("Serial number"), max_length=100, blank=True)
     last_inspection_date = models.DateField(
         _("Last inspection date"), null=True, blank=True
@@ -166,18 +102,9 @@ class Vehicle(TimestampedModelMixin):
         verbose_name = _("Vehicle")
         verbose_name_plural = _("Vehicles")
 
-    def save(self, *args, **kwargs):
-        self._is_low_emission = self.is_low_emission
-        super().save(*args, **kwargs)
-
     @property
     def is_low_emission(self):
-        return is_low_emission_vehicle(
-            self.power_type,
-            self.euro_class,
-            self.emission_type,
-            self.emission,
-        )
+        return is_low_emission_vehicle(self.power_type)
 
     @property
     def description(self):

@@ -385,9 +385,6 @@ class OrderManager(SerializableMixin.SerializableManager):
                     is_low_emission=is_low_emission,
                     is_secondary=permit.is_secondary_vehicle,
                 )
-                if vehicle._is_low_emission != is_low_emission:
-                    vehicle._is_low_emission = is_low_emission
-                    vehicle.save()
 
                 # the price the customer needs to pay after deducting the price
                 # that the customer has already paid in previous order for this
