@@ -12,7 +12,7 @@ from .product import Product
 from .refund import Refund
 from .reporting import PermitCountSnapshot
 from .temporary_vehicle import TemporaryVehicle
-from .vehicle import LowEmissionCriteria, Vehicle
+from .vehicle import Vehicle
 
 __all__ = [
     "Address",
@@ -21,7 +21,6 @@ __all__ = [
     "Customer",
     "DrivingClass",
     "DrivingLicence",
-    "LowEmissionCriteria",
     "ParkingPermit",
     "ParkingPermitExtensionRequest",
     "ParkingZone",

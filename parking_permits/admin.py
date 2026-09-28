@@ -11,7 +11,6 @@ from parking_permits.models import (
     Customer,
     DrivingClass,
     DrivingLicence,
-    LowEmissionCriteria,
     Order,
     OrderItem,
     ParkingPermit,
@@ -122,19 +121,6 @@ class VehiclePowerTypeAdmin(admin.ModelAdmin):
         "identifier",
         "name",
     )
-
-
-@admin.register(LowEmissionCriteria)
-class LowEmissionCriteriaAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "nedc_max_emission_limit",
-        "wltp_max_emission_limit",
-        "euro_min_class_limit",
-        "start_date",
-        "end_date",
-    )
-    ordering = ("start_date",)
 
 
 @admin.register(ParkingPermit)

@@ -301,9 +301,6 @@ def test_update_or_create_vehicle_should_create_vehicle():
         consent_low_emission_accepted=True,
         serial_number="123",
         vehicle_class="M1",
-        euro_class=1,
-        emission=1,
-        emission_type="WLTP",
         power_type={"identifier": power_type.identifier},
     )
 
@@ -327,20 +324,16 @@ def test_update_or_create_vehicle_emission_none():
         consent_low_emission_accepted=True,
         serial_number="123",
         vehicle_class="M1",
-        euro_class=1,
-        emission=None,
-        emission_type="WLTP",
         power_type={"identifier": power_type.identifier},
     )
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
-    skipped_keys = ["power_type", "emission"]
+    skipped_keys = ["power_type"]
     for k, v in vehicle_info.items():
         if k in skipped_keys:
             continue
         assert getattr(vehicle, k) == v
-    assert vehicle.emission == 0
     assert vehicle.power_type == power_type
 
 
@@ -356,9 +349,6 @@ def test_update_or_create_vehicle_should_update_vehicle():
         consent_low_emission_accepted=False,
         serial_number="khjlkhjhjlk",
         vehicle_class="M2",
-        euro_class=10000,
-        emission=10000,
-        emission_type="NEDC",
     )
     vehicle_info = dict(
         registration_number="ABC-123",
@@ -367,9 +357,6 @@ def test_update_or_create_vehicle_should_update_vehicle():
         consent_low_emission_accepted=True,
         serial_number="123",
         vehicle_class="M1",
-        euro_class=1,
-        emission=1,
-        emission_type="WLTP",
         power_type={"identifier": new_power_type.identifier},
     )
 
@@ -397,9 +384,6 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_identifier_is
         consent_low_emission_accepted=True,
         serial_number="123",
         vehicle_class="M1",
-        euro_class=1,
-        emission=1,
-        emission_type="WLTP",
         power_type={"name": "bar"},
     )
 
@@ -417,9 +401,6 @@ def test_update_or_create_vehicle_should_raise_error_if_power_type_is_not_found(
         consent_low_emission_accepted=True,
         serial_number="123",
         vehicle_class="M1",
-        euro_class=1,
-        emission=1,
-        emission_type="WLTP",
         power_type={"identifier": "banana"},
     )
 

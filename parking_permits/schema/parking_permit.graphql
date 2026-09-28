@@ -41,7 +41,6 @@ type VehicleNode {
   model: String
   productionYear: Int
   registrationNumber: String
-  emission: Int
   isLowEmission: Boolean
   updatedFromTraficomOn: String
   restrictions: [String]

@@ -12,7 +12,6 @@ from parking_permits.models import (
     Address,
     Announcement,
     Customer,
-    LowEmissionCriteria,
     Product,
     TemporaryVehicle,
 )
@@ -350,7 +349,7 @@ class OrderSearchForm(SearchFormBase):
             has_filters = True
 
         if "LOW_EMISSION" in price_discounts:
-            qs = qs.filter(permits__vehicle___is_low_emission=True)
+            qs = qs.filter(permits__vehicle__power_type__identifier="04")
             has_filters = True
 
         if has_filters:
@@ -417,20 +416,6 @@ class AddressSearchForm(SearchFormBase):
             qs = qs.filter(_zone__name=parking_zone)
 
         return qs
-
-
-class LowEmissionCriteriaSearchForm(SearchFormBase):
-    def get_model_class(self):
-        return LowEmissionCriteria
-
-    def get_order_fields_mapping(self):
-        return {
-            "powerType": ["power_type"],
-            "euroMinClassLimit": ["euro_min_class_limit"],
-            "nedcMaxEmissionLimit": ["nedc_max_emission_limit"],
-            "wltpMaxEmissionLimit": ["wltp_max_emission_limit"],
-            "validPeriod": ["start_date"],
-        }
 
 
 class AnnouncementSearchForm(SearchFormBase):

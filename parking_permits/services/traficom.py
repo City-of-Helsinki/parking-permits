@@ -14,8 +14,6 @@ from parking_permits.models.driving_class import DrivingClass
 from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.parking_permit import ParkingPermit
 from parking_permits.models.vehicle import (
-    EmissionType,
-    LowEmissionCriteria,
     Vehicle,
     VehicleClass,
     VehiclePowerType,
@@ -45,8 +43,6 @@ VEHICLE_RESTRICTIONS = (
 # these codes will raise an error and prevent adding a permit
 BLOCKING_VEHICLE_RESTRICTIONS = ("18", "19")
 
-CONSUMPTION_TYPE_NEDC = ("4", "7")
-CONSUMPTION_TYPE_WLTP = ("9", "10")
 VEHICLE_TYPE = 1
 LIGHT_WEIGHT_VEHICLE_TYPE = 2
 VEHICLE_SEARCH_NEW = 811
@@ -60,8 +56,6 @@ DRIVING_LICENSE_SEARCH = 890
 NO_DRIVING_LICENSE_ERROR_CODE = "562"
 NO_VALID_DRIVING_LICENSE_ERROR_CODE = "578"
 VEHICLE_MAX_WEIGHT_KG = 4000
-EURO_CLASS = 6  # Default value for vehicles with emission data
-EURO_CLASS_WITHOUT_EMISSIONS = 5  # Default value for vehicles without emission data
 
 POWER_TYPE_MAPPER = {
     "01": "Bensin",
@@ -161,12 +155,6 @@ class TraficomVehicleDetailsSynchronizer:
         owners_et = et.findall(".//omistajatHaltijat/omistajaHaltija")
         last_inspection_date = vehicle_basic_info.find("mkAjanLoppupvm")
 
-        emissions, emission_type, co2emission = self._get_emission_data(et)
-
-        euro_class = EURO_CLASS
-        if not co2emission:
-            euro_class = EURO_CLASS_WITHOUT_EMISSIONS
-
         weight = self._get_weight(et)
 
         vehicle_power_type = self._get_vehicle_power_type(et)
@@ -178,14 +166,10 @@ class TraficomVehicleDetailsSynchronizer:
 
         return {
             "registration_number": new_registration_number,
-            "emissions": emissions,
             "vehicle_power_type": vehicle_power_type,
             "vehicle_class": vehicle_class,
             "vehicle_manufacturer": vehicle_manufacturer,
             "vehicle_model": vehicle_model,
-            "euro_class": euro_class,
-            "co2emission": co2emission,
-            "emission_type": emission_type,
             "weight": weight,
             "vehicle_serial_number": vehicle_serial_number,
             "last_inspection_date": last_inspection_date,
@@ -200,9 +184,6 @@ class TraficomVehicleDetailsSynchronizer:
         vehicle_class = vehicle_data["vehicle_class"]
         vehicle_manufacturer = vehicle_data["vehicle_manufacturer"]
         vehicle_model = vehicle_data["vehicle_model"]
-        euro_class = vehicle_data["euro_class"]
-        co2emission = vehicle_data["co2emission"]
-        emission_type = vehicle_data["emission_type"]
         weight = vehicle_data["weight"]
         vehicle_serial_number = vehicle_data["vehicle_serial_number"]
         last_inspection_date = vehicle_data["last_inspection_date"]
@@ -232,9 +213,6 @@ class TraficomVehicleDetailsSynchronizer:
             "manufacturer": vehicle_manufacturer.text,
             "model": vehicle_model.text if vehicle_model is not None else "",
             "weight": weight,
-            "euro_class": euro_class,
-            "emission": float(co2emission) if co2emission else 0,
-            "emission_type": emission_type,
             "serial_number": vehicle_serial_number.text,
             "last_inspection_date": (
                 last_inspection_date.text if last_inspection_date is not None else None
@@ -273,62 +251,10 @@ class TraficomVehicleDetailsSynchronizer:
         power = vehicle_basic_info.find(".//suurinNettoteho")
         return power
 
-    def _get_emissions_list(self, et):
-        vehicle_basic_info = et.find(self.vehicle_basic_info_path)
-        emissions = vehicle_basic_info.findall(
-            "tekninen-tieto/kayttovoimat/kayttovoima/kulutukset/kulutus"
-        )
-        return emissions
-
     def _get_vehicle_power_type(self, et):
         vehicle_basic_info = et.find(self.vehicle_basic_info_path)
         vehicle_power_type = vehicle_basic_info.find("tekninen-tieto/kayttovoima")
         return vehicle_power_type
-
-    def _get_emission_data(self, et):
-        emissions = self._get_emissions_list(et)
-        try:
-            now = tz.now()
-            le_criteria = LowEmissionCriteria.objects.get(
-                start_date__lte=now,
-                end_date__gte=now,
-            )
-        except LowEmissionCriteria.DoesNotExist:
-            le_criteria = None
-            logger.warning(
-                "Low emission criteria not found. "
-                "Please update LowEmissionCriteria to contain active criteria"
-            )
-
-        emission_type = EmissionType.NEDC
-        co2emission = None
-        for e in emissions:
-            kulutuslaji = e.find("kulutuslaji").text
-            if kulutuslaji not in CONSUMPTION_TYPE_NEDC + CONSUMPTION_TYPE_WLTP:
-                continue
-            co2emission = e.find("maara").text
-
-            # if emission are under or equal of the max value of
-            # one of the consumption types (WLTP|NEDC) the
-            # emission type and value that makes the vehicle eligible
-            # for low emissions pricing should be saved to db.
-            if kulutuslaji in CONSUMPTION_TYPE_WLTP:
-                emission_type = EmissionType.WLTP
-                if (
-                    le_criteria
-                    and float(co2emission) <= le_criteria.wltp_max_emission_limit
-                ):
-                    break
-
-            elif kulutuslaji in CONSUMPTION_TYPE_NEDC:
-                emission_type = EmissionType.NEDC
-                if (
-                    le_criteria
-                    and float(co2emission) <= le_criteria.nedc_max_emission_limit
-                ):
-                    break
-
-        return emissions, emission_type, co2emission
 
     def _get_user_ssns(self, owners_et):
         user_ssns = [
@@ -413,11 +339,6 @@ class TraficomVehicleDetailsLegacySynchronizer(TraficomVehicleDetailsSynchronize
         motor = et.find(self.motor_path)
         power = motor.find(".//suurinNettoteho")
         return power
-
-    def _get_emissions_list(self, et):
-        motor = et.find(self.motor_path)
-        emissions = motor.findall("kayttovoimat/kayttovoima/kulutukset/kulutus")
-        return emissions
 
     def _get_vehicle_power_type(self, et):
         motor = et.find(self.motor_path)
