@@ -21,7 +21,6 @@ from parking_permits.models.parking_permit import (
     ParkingPermitStatus,
 )
 from parking_permits.models.product import Product, ProductType
-from parking_permits.models.vehicle import EmissionType
 from parking_permits.resolver_utils import (
     create_permit_refunds,
     create_refund,
@@ -38,7 +37,6 @@ from parking_permits.tests.factories.order import (
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
-    LowEmissionCriteriaFactory,
     TemporaryVehicleFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
@@ -865,14 +863,6 @@ class TestCreateRefund:
                 ],
             )
 
-            LowEmissionCriteriaFactory(
-                start_date=start_time.date(),
-                end_date=end_time.date(),
-                nedc_max_emission_limit=None,
-                wltp_max_emission_limit=50,
-                euro_min_class_limit=6,
-            )
-
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
                 consent_low_emission_accepted=True,
@@ -898,9 +888,6 @@ class TestCreateRefund:
 
             high_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-                emission=100,
-                euro_class=6,
-                emission_type=EmissionType.WLTP,
             )
             permit.vehicle = high_emission_vehicle
             permit.save()
@@ -947,14 +934,6 @@ class TestCreateRefund:
                 ],
             )
 
-            LowEmissionCriteriaFactory(
-                start_date=start_time.date(),
-                end_date=end_time.date(),
-                nedc_max_emission_limit=None,
-                wltp_max_emission_limit=50,
-                euro_min_class_limit=6,
-            )
-
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
                 consent_low_emission_accepted=True,
@@ -984,9 +963,6 @@ class TestCreateRefund:
 
             high_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-                emission=100,
-                euro_class=6,
-                emission_type=EmissionType.WLTP,
             )
             permit.vehicle = high_emission_vehicle
             permit.save()
@@ -1052,14 +1028,6 @@ class TestCreateRefund:
                 ],
             )
 
-            LowEmissionCriteriaFactory(
-                start_date=start_time.date(),
-                end_date=end_time.date(),
-                nedc_max_emission_limit=None,
-                wltp_max_emission_limit=50,
-                euro_min_class_limit=6,
-            )
-
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
                 consent_low_emission_accepted=True,
@@ -1085,9 +1053,6 @@ class TestCreateRefund:
 
             high_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-                emission=100,
-                euro_class=6,
-                emission_type=EmissionType.WLTP,
             )
             permit.vehicle = high_emission_vehicle
             permit.save()
@@ -1153,14 +1118,6 @@ class TestCreateRefund:
                 ],
             )
 
-            LowEmissionCriteriaFactory(
-                start_date=start_time.date(),
-                end_date=end_time.date(),
-                nedc_max_emission_limit=None,
-                wltp_max_emission_limit=50,
-                euro_min_class_limit=6,
-            )
-
             low_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
                 consent_low_emission_accepted=True,
@@ -1190,9 +1147,6 @@ class TestCreateRefund:
 
             high_emission_vehicle = VehicleFactory(
                 power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-                emission=100,
-                euro_class=6,
-                emission_type=EmissionType.WLTP,
             )
             permit.vehicle = high_emission_vehicle
             permit.save()

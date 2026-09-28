@@ -25,7 +25,6 @@ from parking_permits.models.parking_permit import (
 )
 from parking_permits.models.product import ProductType
 from parking_permits.tests.factories import (
-    LowEmissionCriteriaFactory,
     ParkingZoneFactory,
 )
 from parking_permits.tests.factories.address import AddressFactory
@@ -236,7 +235,6 @@ class GetCustomerPermitTestCase(TestCase):
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,
@@ -326,7 +324,6 @@ class CreateCustomerPermitTestCase(TestCase):
             start_date=date(2022, 1, 1),
             end_date=date(2022, 12, 31),
         )
-        LowEmissionCriteriaFactory()
         ParkingPermitFactory(
             customer=self.customer_a,
             status=DRAFT,

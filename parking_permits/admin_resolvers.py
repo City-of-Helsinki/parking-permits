@@ -24,7 +24,6 @@ from parking_permits.models import (
     Address,
     Announcement,
     Customer,
-    LowEmissionCriteria,
     Order,
     ParkingPermit,
     ParkingPermitExtensionRequest,
@@ -65,7 +64,6 @@ from .forms import (
     AddressSearchForm,
     AnnouncementSearchForm,
     CustomerSearchForm,
-    LowEmissionCriteriaSearchForm,
     OrderSearchForm,
     PermitSearchForm,
     ProductSearchForm,
@@ -400,8 +398,6 @@ def update_or_create_vehicle(vehicle_info):
         else None
     )
 
-    emission = vehicle_info.get("emission") or 0
-
     vehicle_data = {
         "registration_number": registration_number,
         "manufacturer": vehicle_info["manufacturer"],
@@ -409,9 +405,6 @@ def update_or_create_vehicle(vehicle_info):
         "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
         "serial_number": vehicle_info["serial_number"],
         "vehicle_class": vehicle_info["vehicle_class"],
-        "euro_class": vehicle_info["euro_class"],
-        "emission_type": vehicle_info["emission_type"],
-        "emission": emission,
         "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(
@@ -645,13 +638,7 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
             **vehicle_info["power_type"]
         )[0]
 
-    euro_class = vehicle_info["euro_class"]
-    emission_type = vehicle_info["emission_type"]
-    emission = vehicle_info["emission"]
-
-    is_low_emission = is_low_emission_vehicle(
-        power_type, euro_class, emission_type, emission
-    )
+    is_low_emission = is_low_emission_vehicle(power_type)
 
     start_time = tz.localtime(isoparse(permit["start_time"]))
     permit_start_date = start_time.date()
@@ -1308,63 +1295,6 @@ def resolve_create_address(obj, info, address):
         )
     except IntegrityError:
         raise AddressError(_("This address is already in use"))
-    return {"success": True}
-
-
-@query.field("lowEmissionCriteria")
-@is_super_admin
-def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
-    form_data = {**page_input}
-    if order_by:
-        form_data.update(order_by)
-
-    form = LowEmissionCriteriaSearchForm(form_data)
-    if not form.is_valid():
-        logger.error(f"Low emission criteria Search Error: {form.errors}")
-        raise SearchError("Low emission criteria search error")
-    return form.get_paged_queryset()
-
-
-@query.field("lowEmissionCriterion")
-@is_super_admin
-def resolve_low_emission_criterion(obj, info, criterion_id):
-    return LowEmissionCriteria.objects.get(id=criterion_id)
-
-
-@mutation.field("updateLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
-    _criterion = LowEmissionCriteria.objects.get(id=criterion_id)
-    _criterion.nedc_max_emission_limit = criterion["nedc_max_emission_limit"]
-    _criterion.wltp_max_emission_limit = criterion["wltp_max_emission_limit"]
-    _criterion.euro_min_class_limit = criterion["euro_min_class_limit"]
-    _criterion.start_date = criterion["start_date"]
-    _criterion.end_date = criterion["end_date"]
-    _criterion.save()
-    return {"success": True}
-
-
-@mutation.field("deleteLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_delete_low_emission_criterion(obj, info, criterion_id):
-    criterion = LowEmissionCriteria.objects.get(id=criterion_id)
-    criterion.delete()
-    return {"success": True}
-
-
-@mutation.field("createLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_create_low_emission_criterion(obj, info, criterion):
-    LowEmissionCriteria.objects.create(
-        nedc_max_emission_limit=criterion["nedc_max_emission_limit"],
-        wltp_max_emission_limit=criterion["wltp_max_emission_limit"],
-        euro_min_class_limit=criterion["euro_min_class_limit"],
-        start_date=criterion["start_date"],
-        end_date=criterion["end_date"],
-    )
     return {"success": True}
 
 
