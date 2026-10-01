@@ -27,6 +27,7 @@ from parking_permits.tests.factories.refund import RefundFactory
 from parking_permits.tests.factories.vehicle import (
     TemporaryVehicleFactory,
     VehicleFactory,
+    VehiclePowerTypeFactory,
 )
 from users.models import ParkingPermitGroups
 
@@ -542,6 +543,40 @@ class OrderSearchFormSortTestCase(TestCase):
         self.assertEqual(len(qs), 5)
         for idx, permit_id in enumerate(permit_ids):
             self.assertEqual(permit_id, qs[idx].permits.first().pk)
+
+    def test_search_low_emission_price_discount(self):
+        low_emission_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(name="Electric", identifier="04")
+        )
+        regular_vehicle = VehicleFactory(
+            power_type=VehiclePowerTypeFactory(name="Diesel", identifier="02")
+        )
+
+        address = AddressFactory()
+
+        low_emission_order = OrderFactory()
+        ParkingPermitFactory(
+            orders=[low_emission_order],
+            address=address,
+            customer=low_emission_order.customer,
+            vehicle=low_emission_vehicle,
+        )
+
+        regular_order = OrderFactory()
+        ParkingPermitFactory(
+            orders=[regular_order],
+            address=address,
+            customer=regular_order.customer,
+            vehicle=regular_vehicle,
+        )
+
+        form = OrderSearchForm({"price_discounts": "LOW_EMISSION"})
+
+        self.assertTrue(form.is_valid())
+
+        qs = form.get_queryset()
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(qs.first(), low_emission_order)
 
 
 class OrderSearchFormDateRangeTestCase(TestCase):

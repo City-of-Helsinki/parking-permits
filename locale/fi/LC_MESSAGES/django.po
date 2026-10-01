@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-12 12:04+0200\n"
+"POT-Creation-Date: 2026-10-01 10:13+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -947,32 +947,11 @@ msgstr "L6e-BP"
 msgid "L6e-BU"
 msgstr "L6e-BU"
 
-msgid "NEDC"
-msgstr "NEDC"
-
-msgid "WLTP"
-msgstr "WLTP"
-
 msgid "Vehicle power type"
 msgstr "Ajoneuvon käyttövoima"
 
 msgid "Vehicle power types"
 msgstr "Ajoneuvon käyttövoimat"
-
-msgid "NEDC maximum emission limit"
-msgstr "NEDC maksimipäästöraja"
-
-msgid "WLTP maximum emission limit"
-msgstr "WLTP maksimipäästöraja"
-
-msgid "Euro minimum class limit"
-msgstr "Euro-miniluokitus"
-
-msgid "Low-emission criteria"
-msgstr "Päästökriteeri"
-
-msgid "Low-emission criterias"
-msgstr "Päästökriteerit"
 
 msgid "Vehicle user"
 msgstr "Ajoneuvon käyttäjä"
@@ -994,15 +973,6 @@ msgstr "Malli"
 
 msgid "Total weigh of vehicle"
 msgstr "Kokonaispaino"
-
-msgid "Euro class"
-msgstr "Euro-luokitus"
-
-msgid "Emission"
-msgstr "Päästöt"
-
-msgid "Emission type"
-msgstr "Päästötyyppi"
 
 msgid "Serial number"
 msgstr "Sarjanumero"
@@ -1085,11 +1055,15 @@ msgstr "Tällä henkilöllä on tietojenluovutuskielto"
 
 #, python-format
 msgid "Vehicle %(registration_number)s is decommissioned"
-msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstäpoistettu"
+msgstr "Ajoneuvo %(registration_number)s on liikennekäytöstä poistettu"
 
 #, python-format
-msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
-msgstr "Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan"
+msgid ""
+"Vehicle's %(registration_number)s weight exceeds maximum allowed limit "
+"(%(max_weight)s kg)"
+msgstr ""
+"Ajoneuvon %(registration_number)s paino ylittää sallitun maksimirajan "
+"(%(max_weight)s kg)"
 
 msgid "The person has no driving licence"
 msgstr "Henkilölle ei löydy ajokorttia"

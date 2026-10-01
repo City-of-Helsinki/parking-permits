@@ -77,11 +77,9 @@ type VehicleNode {
   serialNumber: String
   isLowEmission: Boolean
   vehicleClass: String
-  euroClass: Int
-  emission: Int
-  emissionType: String
   powerType: VehiclePowerTypeNode
   restrictions: [String]
+  updatedFromTraficomOn: String
 }
 
 type AnnouncementNode {
@@ -330,20 +328,6 @@ type PermitPriceChange {
   monthCount: Int!
 }
 
-type LowEmissionCriterionNode {
-  id: ID!
-  nedcMaxEmissionLimit: Int
-  wltpMaxEmissionLimit: Int
-  euroMinClassLimit: Int
-  startDate: String
-  endDate: String
-}
-
-type PagedLowEmissionCriteria {
-  objects: [LowEmissionCriterionNode]
-  pageInfo: PageInfo
-}
-
 type PermitPriceNode {
   originalUnitPrice: Float!
   unitPrice: Float!
@@ -447,11 +431,6 @@ type Query {
   ): PagedAddresses!
   addressSearch(searchInput: String!): [AddressNode]
   address(addressId: ID!): AddressNode!
-  lowEmissionCriteria(
-    pageInput: PageInput!
-    orderBy: OrderByInput
-  ): PagedLowEmissionCriteria!
-  lowEmissionCriterion(criterionId: ID!): LowEmissionCriterionNode!
   permitPrices(permit: ResidentPermitInput!, isSecondary: Boolean!): [PermitPriceNode]!
   announcements(
     pageInput: PageInput!
@@ -506,9 +485,6 @@ input VehicleInput {
   serialNumber: String!
   consentLowEmissionAccepted: Boolean!
   vehicleClass: String!
-  euroClass: Int!
-  emission: Int
-  emissionType: String!
   powerType: PowerTypeInput!
 }
 
@@ -542,14 +518,6 @@ input ProductInput {
 input RefundInput {
   name: String!
   iban: String!
-}
-
-input LowEmissionCriterionInput {
-  nedcMaxEmissionLimit: Int
-  wltpMaxEmissionLimit: Int
-  euroMinClassLimit: Int
-  startDate: String
-  endDate: String
 }
 
 input AnnouncementInput {
@@ -589,9 +557,6 @@ type Mutation {
   updateAddress(addressId: ID!, address: AddressInput!): MutationResponse
   deleteAddress(addressId: ID!): MutationResponse
   createAddress(address: AddressInput!): MutationResponse
-  updateLowEmissionCriterion(criterionId: ID!, criterion: LowEmissionCriterionInput!): MutationResponse
-  deleteLowEmissionCriterion(criterionId: ID!): MutationResponse
-  createLowEmissionCriterion(criterion: LowEmissionCriterionInput!): MutationResponse
   requestForApproval(ids: [ID]!): Int
   acceptRefunds(ids: [ID]!): Int
   createAnnouncement(announcement: AnnouncementInput!): MutationResponse

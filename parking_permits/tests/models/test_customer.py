@@ -166,9 +166,6 @@ class AnonymizeAllUserDataTestCase(TestCase):
         "manufacturer",
         "model",
         "registration_number",
-        "emission",
-        "emission_type",
-        "euro_class",
     )
 
     refund_statistic_fields = (
@@ -669,9 +666,6 @@ class AnonymizeAllUserDataTestCase(TestCase):
         self.assertEqual(
             vehicle.registration_number, pre_anon_vehicle_data["registration_number"]
         )
-        self.assertEqual(vehicle.emission, pre_anon_vehicle_data["emission"])
-        self.assertEqual(vehicle.emission_type, pre_anon_vehicle_data["emission_type"])
-        self.assertEqual(vehicle.euro_class, pre_anon_vehicle_data["euro_class"])
 
     def assert_anonymization_preserves_address_statistical_data(
         self, *, address, pre_anon_address_data
