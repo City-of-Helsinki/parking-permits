@@ -221,11 +221,13 @@ class TraficomVehicleDetailsSynchronizer:
         }
         vehicle_users = []
         for user_nin in user_ssns:
-            user = VehicleUser.objects.get_or_create(national_id_number=user_nin)
-            vehicle_users.append(user[0])
-        vehicle = Vehicle.objects.update_or_create(
+            user, _user_created = VehicleUser.objects.get_or_create(
+                national_id_number=user_nin
+            )
+            vehicle_users.append(user)
+        vehicle, _vehicle_updated = Vehicle.objects.update_or_create(
             registration_number=registration_number, defaults=vehicle_details
-        )[0]
+        )
         vehicle.users.set(vehicle_users)
         return vehicle
 
