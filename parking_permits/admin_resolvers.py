@@ -630,13 +630,13 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
     vehicle_info = permit["vehicle"]
 
     if vehicle_info["power_type"] is None:
-        power_type = VehiclePowerType.objects.get_or_create(
+        power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
             identifier="01", defaults={"name": "Bensin"}
         )
     else:
-        power_type = VehiclePowerType.objects.get_or_create(
+        power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
             **vehicle_info["power_type"]
-        )[0]
+        )
 
     is_low_emission = is_low_emission_vehicle(power_type)
 
