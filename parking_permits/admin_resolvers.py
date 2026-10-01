@@ -89,7 +89,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
-from .services.traficom import Traficom
+from .services.traficom import POWER_TYPE_FALLBACK_NAME, Traficom
 from .utils import (
     ModelDiffer,
     get_end_time,
@@ -635,7 +635,11 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
         )
     else:
         power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
-            **vehicle_info["power_type"]
+            identifier=vehicle_info["power_type"]["identifier"],
+            defaults={
+                "name": vehicle_info["power_type"].get("name")
+                or POWER_TYPE_FALLBACK_NAME
+            },
         )
 
     is_low_emission = is_low_emission_vehicle(power_type)
