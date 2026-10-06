@@ -24,7 +24,6 @@ from parking_permits.models import (
     Address,
     Announcement,
     Customer,
-    LowEmissionCriteria,
     Order,
     ParkingPermit,
     ParkingPermitExtensionRequest,
@@ -65,7 +64,6 @@ from .forms import (
     AddressSearchForm,
     AnnouncementSearchForm,
     CustomerSearchForm,
-    LowEmissionCriteriaSearchForm,
     OrderSearchForm,
     PermitSearchForm,
     ProductSearchForm,
@@ -91,7 +89,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
-from .services.traficom import Traficom
+from .services.traficom import POWER_TYPE_FALLBACK_NAME, Traficom
 from .utils import (
     ModelDiffer,
     get_end_time,
@@ -382,20 +380,23 @@ def update_or_create_customer(customer_info):
 
 
 def update_or_create_vehicle(vehicle_info):
-    try:
-        power_type = VehiclePowerType.objects.get(
-            identifier=vehicle_info["power_type"]["identifier"]
+    if vehicle_info["power_type"] is None:
+        power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
+            identifier="01", defaults={"name": "Bensin"}
         )
-    except VehiclePowerType.DoesNotExist:
-        raise ObjectNotFoundError(_("Vehicle power type not found"))
+    else:
+        try:
+            power_type = VehiclePowerType.objects.get(
+                identifier=vehicle_info["power_type"]["identifier"]
+            )
+        except VehiclePowerType.DoesNotExist:
+            raise ObjectNotFoundError(_("Vehicle power type not found"))
 
     registration_number = (
         vehicle_info["registration_number"].upper()
         if vehicle_info["registration_number"]
         else None
     )
-
-    emission = vehicle_info.get("emission") or 0
 
     vehicle_data = {
         "registration_number": registration_number,
@@ -404,9 +405,6 @@ def update_or_create_vehicle(vehicle_info):
         "consent_low_emission_accepted": vehicle_info["consent_low_emission_accepted"],
         "serial_number": vehicle_info["serial_number"],
         "vehicle_class": vehicle_info["vehicle_class"],
-        "euro_class": vehicle_info["euro_class"],
-        "emission_type": vehicle_info["emission_type"],
-        "emission": emission,
         "power_type": power_type,
     }
     return Vehicle.objects.update_or_create(
@@ -631,14 +629,20 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
     parking_zone = ParkingZone.objects.get(name=permit["zone"])
     vehicle_info = permit["vehicle"]
 
-    power_type = VehiclePowerType.objects.get_or_create(**vehicle_info["power_type"])[0]
-    euro_class = vehicle_info["euro_class"]
-    emission_type = vehicle_info["emission_type"]
-    emission = vehicle_info["emission"]
+    if vehicle_info["power_type"] is None:
+        power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
+            identifier="01", defaults={"name": "Bensin"}
+        )
+    else:
+        power_type, _power_type_created = VehiclePowerType.objects.get_or_create(
+            identifier=vehicle_info["power_type"]["identifier"],
+            defaults={
+                "name": vehicle_info["power_type"].get("name")
+                or POWER_TYPE_FALLBACK_NAME
+            },
+        )
 
-    is_low_emission = is_low_emission_vehicle(
-        power_type, euro_class, emission_type, emission
-    )
+    is_low_emission = is_low_emission_vehicle(power_type)
 
     start_time = tz.localtime(isoparse(permit["start_time"]))
     permit_start_date = start_time.date()
@@ -655,11 +659,11 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
                 permit_end_date = active_permit_end_time.date()
 
     return get_permit_prices(
-        parking_zone,
-        is_low_emission,
-        is_secondary,
-        permit_start_date,
-        permit_end_date,
+        parking_zone=parking_zone,
+        is_low_emission_vehicle=is_low_emission,
+        is_secondary_permit=is_secondary,
+        permit_start_date=permit_start_date,
+        permit_end_date=permit_end_date,
     )
 
 
@@ -716,7 +720,9 @@ def update_price_change_list_for_permit(permit, permit_info, price_change_list):
     is_low_emission = vehicle.is_low_emission
     parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
     price_change_list.extend(
-        permit.get_price_change_list(parking_zone, is_low_emission)
+        permit.get_price_change_list(
+            new_zone=parking_zone, is_low_emission=is_low_emission
+        )
     )
     return price_change_list
 
@@ -927,7 +933,9 @@ def calculate_total_price_change(
     )
     vehicle = Vehicle.objects.get(registration_number=registration_number)
     is_low_emission = vehicle.is_low_emission
-    price_change_list = permit.get_price_change_list(new_zone, is_low_emission)
+    price_change_list = permit.get_price_change_list(
+        new_zone=new_zone, is_low_emission=is_low_emission
+    )
     permit_total_price_change = sum(
         [item["price_change"] * item["month_count"] for item in price_change_list]
     )
@@ -943,7 +951,7 @@ def resolve_get_extended_permit_price_list(_obj, info, permit_id, month_count):
         permit = ParkingPermit.objects.active().get(pk=permit_id)
     except ParkingPermit.DoesNotExist as e:
         raise ObjectNotFoundError from e
-    return permit.get_price_list_for_extended_permit(month_count)
+    return permit.get_price_list_for_extended_permit(month_count=month_count)
 
 
 @mutation.field("extendPermit")
@@ -1291,63 +1299,6 @@ def resolve_create_address(obj, info, address):
         )
     except IntegrityError:
         raise AddressError(_("This address is already in use"))
-    return {"success": True}
-
-
-@query.field("lowEmissionCriteria")
-@is_super_admin
-def resolve_low_emission_criteria(obj, info, page_input, order_by=None):
-    form_data = {**page_input}
-    if order_by:
-        form_data.update(order_by)
-
-    form = LowEmissionCriteriaSearchForm(form_data)
-    if not form.is_valid():
-        logger.error(f"Low emission criteria Search Error: {form.errors}")
-        raise SearchError("Low emission criteria search error")
-    return form.get_paged_queryset()
-
-
-@query.field("lowEmissionCriterion")
-@is_super_admin
-def resolve_low_emission_criterion(obj, info, criterion_id):
-    return LowEmissionCriteria.objects.get(id=criterion_id)
-
-
-@mutation.field("updateLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_update_low_emission_criterion(obj, info, criterion_id, criterion):
-    _criterion = LowEmissionCriteria.objects.get(id=criterion_id)
-    _criterion.nedc_max_emission_limit = criterion["nedc_max_emission_limit"]
-    _criterion.wltp_max_emission_limit = criterion["wltp_max_emission_limit"]
-    _criterion.euro_min_class_limit = criterion["euro_min_class_limit"]
-    _criterion.start_date = criterion["start_date"]
-    _criterion.end_date = criterion["end_date"]
-    _criterion.save()
-    return {"success": True}
-
-
-@mutation.field("deleteLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_delete_low_emission_criterion(obj, info, criterion_id):
-    criterion = LowEmissionCriteria.objects.get(id=criterion_id)
-    criterion.delete()
-    return {"success": True}
-
-
-@mutation.field("createLowEmissionCriterion")
-@is_super_admin
-@transaction.atomic
-def resolve_create_low_emission_criterion(obj, info, criterion):
-    LowEmissionCriteria.objects.create(
-        nedc_max_emission_limit=criterion["nedc_max_emission_limit"],
-        wltp_max_emission_limit=criterion["wltp_max_emission_limit"],
-        euro_min_class_limit=criterion["euro_min_class_limit"],
-        start_date=criterion["start_date"],
-        end_date=criterion["end_date"],
-    )
     return {"success": True}
 
 

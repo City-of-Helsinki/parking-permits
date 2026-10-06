@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-12 12:04+0200\n"
+"POT-Creation-Date: 2026-10-01 10:13+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -945,32 +945,11 @@ msgstr "L6e-BP"
 msgid "L6e-BU"
 msgstr "L6e-BU"
 
-msgid "NEDC"
-msgstr "NEDC"
-
-msgid "WLTP"
-msgstr "WLTP"
-
 msgid "Vehicle power type"
 msgstr "Fordonskraftstyp"
 
 msgid "Vehicle power types"
 msgstr "Fordonskraftstyper"
-
-msgid "NEDC maximum emission limit"
-msgstr "NEDC maximera"
-
-msgid "WLTP maximum emission limit"
-msgstr "WLTP maximera"
-
-msgid "Euro minimum class limit"
-msgstr "Euro-minimum"
-
-msgid "Low-emission criteria"
-msgstr "Kriterier för lågemission fordon"
-
-msgid "Low-emission criterias"
-msgstr "Kriterier för lågemission fordonet"
 
 msgid "Vehicle user"
 msgstr "Fordonsanvändare"
@@ -992,15 +971,6 @@ msgstr "Modell"
 
 msgid "Total weigh of vehicle"
 msgstr "Totalvikt"
-
-msgid "Euro class"
-msgstr "Euro klassificering"
-
-msgid "Emission"
-msgstr "Emission"
-
-msgid "Emission type"
-msgstr "Emissionstyp"
 
 msgid "Serial number"
 msgstr "Serienummer"
@@ -1087,9 +1057,12 @@ msgid "Vehicle %(registration_number)s is decommissioned"
 msgstr "Fordonet %(registration_number)s är avställd"
 
 #, python-format
-msgid "Vehicle's %(registration_number)s weight exceeds maximum allowed limit"
+msgid ""
+"Vehicle's %(registration_number)s weight exceeds maximum allowed limit "
+"(%(max_weight)s kg)"
 msgstr ""
-"Fordonets %(registration_number)s vikt överstiger den högsta tillåtna gränsen"
+"Fordonets %(registration_number)s vikt överstiger den högsta tillåtna "
+"gränsen (%(max_weight)s kg)"
 
 msgid "The person has no driving licence"
 msgstr "Personen har inget körkort"

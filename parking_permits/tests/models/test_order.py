@@ -14,13 +14,11 @@ from parking_permits.models.parking_permit import (
     ParkingPermitStatus,
 )
 from parking_permits.models.product import ProductType
-from parking_permits.models.vehicle import EmissionType
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
-    LowEmissionCriteriaFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
@@ -101,9 +99,6 @@ class TestOrderManager(TestCase):
     def test_add_vehicle_and_permit_for_order_in_extended_permit(self):
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=100,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
         )
 
         with freeze_time(date(self.current_year, 3, 5)):
@@ -178,22 +173,9 @@ class TestOrderManager(TestCase):
 
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=100,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
         )
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=70,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
-        )
-        LowEmissionCriteriaFactory(
-            start_date=start_time,
-            end_date=end_time,
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=80,
-            euro_min_class_limit=6,
+            power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
         )
         permit = ParkingPermitFactory(
             parking_zone=self.zone,
@@ -268,22 +250,9 @@ class TestOrderManager(TestCase):
 
         high_emission_vehicle = VehicleFactory(
             power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=100,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
         )
         low_emission_vehicle = VehicleFactory(
-            power_type=VehiclePowerTypeFactory(identifier="01", name="Bensin"),
-            emission=70,
-            euro_class=6,
-            emission_type=EmissionType.WLTP,
-        )
-        LowEmissionCriteriaFactory(
-            start_date=start_time,
-            end_date=end_time,
-            nedc_max_emission_limit=None,
-            wltp_max_emission_limit=80,
-            euro_min_class_limit=6,
+            power_type=VehiclePowerTypeFactory(identifier="04", name="Electric"),
         )
         permit = ParkingPermitFactory(
             parking_zone=self.zone,
