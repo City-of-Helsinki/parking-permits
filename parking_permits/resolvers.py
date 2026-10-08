@@ -134,6 +134,9 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
+    national_id_number = customer.get("national_id_number")
+    if national_id_number:
+        customer["national_id_number"] = national_id_number.upper()
 
     if not settings.DVV_UPDATE_USER_PROFILE_DATA:
         audit_msg.operation = audit.Operation.READ
