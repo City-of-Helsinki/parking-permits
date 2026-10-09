@@ -138,3 +138,7 @@ class DeletionNotAllowedError(ParkingPermitValidationError):
 
 class CustomerCannotBeAnonymizedError(ParkingPermitBaseError):
     pass
+
+
+class UnknownAddressSecurityBanValueError(ParkingPermitBaseError):
+    pass

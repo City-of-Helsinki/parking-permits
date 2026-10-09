@@ -499,6 +499,33 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
             permit_events.update(context={})
 
+    def clear_security_ban_fields(self):
+        # Set the security ban as active and
+        # clear all fields related to security ban.
+        update_fields = [
+            "first_name",
+            "last_name",
+            "phone_number",
+            "primary_address",
+            "primary_address_apartment",
+            "primary_address_apartment_sv",
+            "other_address",
+            "other_address_apartment",
+            "other_address_apartment_sv",
+            "address_security_ban",
+        ]
+        self.first_name = ""
+        self.last_name = ""
+        self.phone_number = ""
+        self.primary_address = None
+        self.primary_address_apartment = ""
+        self.primary_address_apartment_sv = ""
+        self.other_address = None
+        self.other_address_apartment = ""
+        self.other_address_apartment_sv = ""
+        self.address_security_ban = True
+        self.save(update_fields=update_fields)
+
     @property
     def active_permits(self):
         return self.permits.active()

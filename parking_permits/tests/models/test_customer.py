@@ -11,8 +11,9 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from parking_permits.exceptions import CustomerCannotBeAnonymizedError
+from parking_permits.models.common import SourceSystem
 from parking_permits.models.company import Company
-from parking_permits.models.customer import Customer
+from parking_permits.models.customer import Customer, Languages
 from parking_permits.models.driving_class import DrivingClass
 from parking_permits.models.driving_licence import DrivingLicence
 from parking_permits.models.order import Order, SubscriptionStatus
@@ -42,6 +43,8 @@ from parking_permits.tests.factories.vehicle import (
     TemporaryVehicleFactory,
     VehicleFactory,
 )
+from parking_permits.tests.factories.zone import ParkingZoneFactory
+from users.tests.factories.user import UserFactory
 
 User = get_user_model()
 
@@ -115,6 +118,67 @@ class TestCustomer(TestCase):
             )
         with freeze_time(timezone.make_aware(datetime(2022, 12, 31, 0, 0, 1))):
             self.assertTrue(customer.can_be_anonymized)
+
+    def test_clear_security_ban_fields_clears_expected_fields_only(self):
+        user = UserFactory()
+        zone = ParkingZoneFactory()
+        primary_address = AddressFactory(street_name="Known Primary Street")
+        other_address = AddressFactory(street_name="Known Other Street")
+        customer = CustomerFactory(
+            source_system=SourceSystem.HELSINKI_PROFILE,
+            source_id="known-source-id",
+            user=user,
+            first_name="Known First",
+            last_name="Known Last",
+            national_id_number="010199-1234",
+            primary_address=primary_address,
+            primary_address_apartment="A1",
+            primary_address_apartment_sv="A1 sv",
+            other_address=other_address,
+            other_address_apartment="B2",
+            other_address_apartment_sv="B2 sv",
+            email="known@example.com",
+            phone_number="0401234567",
+            address_security_ban=True,
+            driver_license_checked=True,
+            zone=zone,
+            language=Languages.SWEDISH,
+            is_anonymized=True,
+        )
+
+        customer.clear_security_ban_fields()
+        customer.refresh_from_db()
+
+        cleared_fields = {
+            "first_name": "",
+            "last_name": "",
+            "phone_number": "",
+            "primary_address_id": None,
+            "primary_address_apartment": "",
+            "primary_address_apartment_sv": "",
+            "other_address_id": None,
+            "other_address_apartment": "",
+            "other_address_apartment_sv": "",
+        }
+        for field_name, expected_value in cleared_fields.items():
+            with self.subTest(field=field_name):
+                self.assertEqual(getattr(customer, field_name), expected_value)
+
+        retained_fields = {
+            "source_system": SourceSystem.HELSINKI_PROFILE,
+            "source_id": "known-source-id",
+            "user_id": user.id,
+            "national_id_number": "010199-1234",
+            "email": "known@example.com",
+            "address_security_ban": True,
+            "driver_license_checked": True,
+            "zone_id": zone.id,
+            "language": Languages.SWEDISH,
+            "is_anonymized": True,
+        }
+        for field_name, expected_value in retained_fields.items():
+            with self.subTest(field=field_name):
+                self.assertEqual(getattr(customer, field_name), expected_value)
 
 
 class AnonymizeAllUserDataTestCase(TestCase):

@@ -1,4 +1,3 @@
-import base64
 import json
 import logging
 from typing import Any, TypedDict
@@ -7,7 +6,10 @@ import requests
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
-from parking_permits.exceptions import ObjectNotFoundError
+from parking_permits.exceptions import (
+    ObjectNotFoundError,
+    UnknownAddressSecurityBanValueError,
+)
 from parking_permits.models import Customer, ParkingZone
 from parking_permits.services.kami import get_address_details, parse_street_data
 from parking_permits.utils import is_valid_city
@@ -42,15 +44,23 @@ class DvvPersonInfo(TypedDict, total=False):
     driver_license_checked: bool
 
 
-def get_auth_token():
-    auth = f"{settings.DVV_USERNAME}:{settings.DVV_PASSWORD}"
-    return base64.b64encode(auth.encode("utf-8")).decode("utf-8")
+def get_access_token() -> str | None:
+    data = {
+        "grant_type": settings.DVV_TOKEN_GRANT_TYPE,
+        "scope": settings.DVV_TOKEN_SCOPE,
+        "client_id": settings.DVV_CLIENT_ID,
+        "client_secret": settings.DVV_CLIENT_SECRET,
+    }
+    response = requests.post(settings.DVV_AUTH_TOKEN_URL, data=data)
+    if not response.ok:
+        logger.error("Invalid DVV auth token response")
+        return None
+    return response.json().get("access_token")
 
 
-def get_request_headers():
-    token = get_auth_token()
+def get_request_headers(access_token):
     return {
-        "Authorization": f"Basic {token}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
 
@@ -103,6 +113,18 @@ def _extract_address_data(address) -> DvvAddressInfo | None:
     )
 
 
+def _parse_security_ban(*, person_info, customer_id) -> bool:
+    address_security_ban = person_info["Turvakielto"]["TurvakieltoTieto"]
+
+    known_security_ban_values = ("1", None)
+    if address_security_ban not in known_security_ban_values:
+        raise UnknownAddressSecurityBanValueError(
+            f"Unknown address security ban value for customer_id={customer_id}"
+        )
+
+    return bool(address_security_ban)
+
+
 def format_address(address_data) -> DvvAddressInfo:
     # DVV combines the street name, street number and apartment
     # building number together in a single string. We only need
@@ -143,17 +165,32 @@ def is_valid_address(address):
     return address_valid and is_valid_city(address["PostitoimipaikkaS"])
 
 
-def get_person_info(national_id_number) -> DvvPersonInfo | None:
-    customer = Customer.objects.filter(national_id_number=national_id_number).first()
-    customer_id = customer.id if customer else "unknown"
-    logger.info(f"Retrieving person info for customer_id={customer_id}")
-    data = get_request_data(national_id_number)
-    headers = get_request_headers()
+def _request_person_info(*, data, headers):
+    """More or less trivial wrapper for requests.post(), which itself was
+    mocked in tests prior the switch to bearer-token based authentication.
+    As the full auth-flow now needs multiple calls to requests.post(),
+    this wrapper helps to isolate the actual HTTP request for easier testing.
+    """
     response = requests.post(
         settings.DVV_PERSONAL_INFO_URL,
         json.dumps(data, default=str),
         headers=headers,
     )
+    return response
+
+
+def get_person_info(national_id_number) -> DvvPersonInfo | None:
+    customer = Customer.objects.filter(national_id_number=national_id_number).first()
+    customer_id = customer.id if customer else "unknown"
+    logger.info(f"Retrieving person info for customer_id={customer_id}")
+
+    access_token = get_access_token()
+    if not access_token:
+        return None
+
+    data = get_request_data(national_id_number)
+    headers = get_request_headers(access_token)
+    response = _request_person_info(data=data, headers=headers)
     if not response.ok:
         logger.error(f"Invalid DVV response for customer_id={customer_id}")
         return None
@@ -166,6 +203,36 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
     if not person_info:
         logger.error(f"Person info not found for customer_id={customer_id}")
         return None
+
+    active_permits = customer.active_permits if customer else []
+
+    try:
+        address_security_ban = _parse_security_ban(
+            person_info=person_info, customer_id=customer_id
+        )
+    except UnknownAddressSecurityBanValueError:
+        logger.error(
+            f"Unknown address security ban value for customer_id={customer_id}"
+        )
+        return None
+
+    if address_security_ban:
+        if customer:
+            customer.clear_security_ban_fields()
+        return {
+            "national_id_number": national_id_number,
+            "first_name": "",
+            "last_name": "",
+            "primary_address": None,
+            "primary_address_apartment": "",
+            "other_address": None,
+            "other_address_apartment": "",
+            "phone_number": "",
+            "email": "",
+            "address_security_ban": True,
+            "driver_license_checked": False,
+            "active_permits": active_permits,
+        }
 
     last_name = person_info["NykyinenSukunimi"]["Sukunimi"]
     first_name = person_info["NykyisetEtunimet"]["Etunimet"]
@@ -183,8 +250,6 @@ def get_person_info(national_id_number) -> DvvPersonInfo | None:
     if is_valid_address(temporary_address):
         other_address = format_address(temporary_address)
         other_apartment = other_address.get("apartment", "")
-
-    active_permits = customer.active_permits if customer else []
 
     return {
         "national_id_number": national_id_number,
