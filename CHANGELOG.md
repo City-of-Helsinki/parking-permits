@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.17.2](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.17.1...parking-permits-v1.17.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* Fix 'can-extend-permit'-property ([393933a](https://github.com/City-of-Helsinki/parking-permits/commit/393933afc209cd15c1966a5b550277d96f3f41eb))
+
+
+### Dependencies
+
+* Bump urllib3 from 2.7.0 to 2.8.0 ([2665c6f](https://github.com/City-of-Helsinki/parking-permits/commit/2665c6f2231555e5f6a833ddc1732c2a7081504f))
+
 ## [1.17.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.17.0...parking-permits-v1.17.1) (2026-09-03)
 
 
