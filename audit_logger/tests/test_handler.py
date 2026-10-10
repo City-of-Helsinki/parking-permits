@@ -8,6 +8,7 @@ from audit_logger import enums
 from audit_logger.data import AuditMessage
 from audit_logger.db_log_handler import AuditLogHandler
 from audit_logger.tests.utils import make_mock_model, mock_log_record
+from audit_logger.utils import EXCEPTION_SUMMARY_ATTR
 
 Actor = make_mock_model(name="Actor")
 Target = make_mock_model(name="Target")
@@ -77,3 +78,45 @@ def test_should_create_audit_log_from_record(make_audit_msg):
         == created_document
     )
     assert "ZeroDivisionError" in created_document["audit_event"]["extra"]["trace"]
+
+
+@pytest.mark.django_db
+def test_should_create_audit_log_with_exception_summary_as_trace(make_audit_msg):
+    audit_msg = make_audit_msg(status=enums.Status.FAILURE)
+    record = logging.LogRecord(
+        name="audit_logger",
+        level=logging.ERROR,
+        pathname=__file__,
+        lineno=0,
+        msg=audit_msg,
+        args=(),
+        exc_info=None,
+    )
+    setattr(record, EXCEPTION_SUMMARY_ATTR, "AddressError: Invalid address")
+
+    created_audit_log = AuditLogHandler.create_audit_log_from_record(record)
+    created_document = created_audit_log.get_document()
+
+    assert (
+        created_document["audit_event"]["extra"]["trace"]
+        == "AddressError: Invalid address"
+    )
+
+
+@pytest.mark.django_db
+def test_should_create_audit_log_without_trace(make_audit_msg):
+    audit_msg = make_audit_msg()
+    record = logging.LogRecord(
+        name="audit_logger",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=0,
+        msg=audit_msg,
+        args=(),
+        exc_info=None,
+    )
+
+    created_audit_log = AuditLogHandler.create_audit_log_from_record(record)
+    created_document = created_audit_log.get_document()
+
+    assert created_document["audit_event"]["extra"]["trace"] is None

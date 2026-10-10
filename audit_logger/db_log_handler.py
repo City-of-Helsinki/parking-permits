@@ -2,6 +2,7 @@ import copy
 import logging
 
 from audit_logger.data import AuditMessage
+from audit_logger.utils import EXCEPTION_SUMMARY_ATTR
 
 db_default_formatter = logging.Formatter()
 
@@ -30,6 +31,10 @@ class AuditLogHandler(logging.Handler):
 
         if record.exc_info:
             trace = db_default_formatter.formatException(record.exc_info)
+        else:
+            # Expected errors are logged without a traceback,
+            # only with a one-line summary of the exception.
+            trace = getattr(record, EXCEPTION_SUMMARY_ATTR, None)
 
         json = msg.safe_asdict()
 
