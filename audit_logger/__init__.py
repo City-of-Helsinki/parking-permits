@@ -14,6 +14,7 @@ from audit_logger.enums import (  # noqa: F401
     Status,
 )
 from audit_logger.utils import (  # noqa: F401
+    format_exception_summary,
     generate_model_id_string_from_class,
     generate_model_id_string_from_instance,
 )

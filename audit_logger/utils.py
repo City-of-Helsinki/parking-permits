@@ -1,6 +1,29 @@
 from django.db import models
 from django.utils.text import camel_case_to_spaces
 
+# Name of the LogRecord attribute that holds a one-line exception summary
+# for exceptions that are logged without a traceback.
+EXCEPTION_SUMMARY_ATTR = "exception_summary"
+
+
+def format_exception_summary(exc: BaseException) -> str:
+    """
+    Return a one-line summary of the exception without a traceback,
+    e.g. "AddressError: Permit address does not have a valid zone".
+
+    If the exception was explicitly chained (``raise ... from cause``),
+    the cause is appended so that its details are not lost.
+    """
+    name = type(exc).__name__
+    message = str(exc)
+    summary = f"{name}: {message}" if message else name
+
+    cause = exc.__cause__
+    if cause is not None:
+        summary = f"{summary} (caused by {format_exception_summary(cause)})"
+
+    return summary
+
 
 def generate_model_id_string_from_instance(obj: models.Model) -> str:
     if not isinstance(obj, models.Model):

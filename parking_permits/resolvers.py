@@ -23,6 +23,7 @@ from .exceptions import (
     AddressError,
     DuplicatePermitError,
     ObjectNotFoundError,
+    ParkingPermitValidationError,
     ParkingZoneError,
     TraficomFetchVehicleError,
 )
@@ -58,6 +59,7 @@ audit_logger = audit.get_audit_logger_adapter(
         "autoactor": get_user_from_resolver_args,
         "autostatus": True,
         "kwarg_name": "audit_msg",
+        "expected_exceptions": (ParkingPermitValidationError,),
     },
 )
 

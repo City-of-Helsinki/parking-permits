@@ -7,6 +7,7 @@ from django.db import transaction
 from django.test import TestCase
 from django.utils import timezone
 from resilient_logger.models.resilient_log_entry import ResilientLogEntry
+from resilient_logger.sources.resilient_log_source_entry import ResilientLogSourceEntry
 
 from audit_logger import (
     AuditLoggerAdapter,
@@ -22,6 +23,7 @@ from audit_logger import (
     target_return,
 )
 from audit_logger.tests.utils import make_mock_model
+from audit_logger.utils import EXCEPTION_SUMMARY_ATTR
 
 MockModel = make_mock_model()
 
@@ -197,6 +199,97 @@ class AdapterAutologTest(TestCase):
         assert msg.message == "Hello, world!"
         assert record.levelno == logging.ERROR
         assert record.exc_info is not None
+        assert not hasattr(record, EXCEPTION_SUMMARY_ATTR)
+
+    def test_logs_expected_exception_without_traceback(self):
+        class ExpectedError(Exception):
+            pass
+
+        @self.adapter.autolog(
+            AuditMessage("Hello, world!"),
+            autostatus=True,
+            expected_exceptions=(ExpectedError,),
+        )
+        def decorated_func():
+            raise ExpectedError("Invalid input")
+
+        with self.default_cm() as cm:
+            with self.assertRaises(ExpectedError):
+                decorated_func()
+
+        assert len(cm.records) == 1
+        record, msg = self._first(cm)
+        assert msg.message == "Hello, world!"
+        assert msg.status == Status.FAILURE
+        assert record.levelno == logging.ERROR
+        assert record.exc_info is None
+        assert getattr(record, EXCEPTION_SUMMARY_ATTR) == "ExpectedError: Invalid input"
+
+    def test_expected_exceptions_from_autolog_config(self):
+        class ExpectedError(Exception):
+            pass
+
+        adapter = AuditLoggerAdapter(
+            self.logger,
+            dict(),
+            autolog_config={"expected_exceptions": (ExpectedError,)},
+        )
+
+        @adapter.autolog(AuditMessage("Hello, world!"))
+        def decorated_func():
+            raise ExpectedError("Invalid input")
+
+        with self.default_cm() as cm:
+            with self.assertRaises(ExpectedError):
+                decorated_func()
+
+        assert len(cm.records) == 1
+        record, _ = self._first(cm)
+        assert record.exc_info is None
+        assert getattr(record, EXCEPTION_SUMMARY_ATTR) == "ExpectedError: Invalid input"
+
+    def test_logs_unexpected_exception_with_traceback(self):
+        class ExpectedError(Exception):
+            pass
+
+        @self.adapter.autolog(
+            AuditMessage("Hello, world!"),
+            expected_exceptions=(ExpectedError,),
+        )
+        def decorated_func():
+            raise ValueError("Unexpected")
+
+        with self.default_cm() as cm:
+            with self.assertRaises(ValueError):
+                decorated_func()
+
+        assert len(cm.records) == 1
+        record, _ = self._first(cm)
+        assert record.levelno == logging.ERROR
+        assert record.exc_info is not None
+        assert not hasattr(record, EXCEPTION_SUMMARY_ATTR)
+
+    def test_expected_exception_stored_in_audit_log_without_traceback(self):
+        class ExpectedError(Exception):
+            pass
+
+        @self.adapter.autolog(
+            AuditMessage("Hello, world!"),
+            expected_exceptions=(ExpectedError,),
+        )
+        def decorated_func():
+            raise ExpectedError("Invalid input")
+
+        with self.assertRaises(ExpectedError):
+            decorated_func()
+
+        entries = ResilientLogEntry.objects.all()
+        assert entries.exists()
+        for entry in entries:
+            document = ResilientLogSourceEntry(entry).get_document()
+            assert document["audit_event"]["extra"]["trace"] == (
+                "ExpectedError: Invalid input"
+            )
 
     def test_autotarget(self):
         expected_target = MockModel()

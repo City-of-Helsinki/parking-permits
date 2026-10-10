@@ -8,6 +8,8 @@ import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.django import DjangoIntegration
 
+from parking_permits.sentry import before_send as sentry_before_send
+
 GDAL_LIBRARY_PATH = os_environ.get("GDAL_LIBRARY_PATH")
 GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
 
@@ -295,7 +297,10 @@ LOGGING = {
     "filters": {
         "context": {
             "()": "logger_extra.filter.LoggerContextFilter",
-        }
+        },
+        "validation_error_summary": {
+            "()": "parking_permits.log_filters.ValidationErrorSummaryFilter",
+        },
     },
     "formatters": {
         "json": {
@@ -323,6 +328,7 @@ LOGGING = {
         "django": {"handlers": ["console"], "level": "INFO", "propagate": False},
         "helusers": {"handlers": ["console"], "level": "DEBUG", "propagate": False},
         "audit": {"handlers": ["audit_log"], "level": "DEBUG", "propagate": False},
+        "ariadne": {"filters": ["validation_error_summary"]},
     },
 }
 
@@ -372,6 +378,7 @@ sentry_sdk.init(
     traces_sample_rate=1.0,
     send_default_pii=True,
     integrations=[DjangoIntegration()],
+    before_send=sentry_before_send,
 )
 
 # Audit logging through django-resilient-logger
