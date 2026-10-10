@@ -5,6 +5,7 @@ from collections.abc import Callable
 
 from audit_logger.data import AuditMessage
 from audit_logger.enums import Status
+from audit_logger.utils import EXCEPTION_SUMMARY_ATTR, format_exception_summary
 
 
 class MissingType:
@@ -51,6 +52,7 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         add_kwarg: bool | str = MISSING,
         kwarg_name: str = MISSING,
         post_process: Callable = MISSING,
+        expected_exceptions: tuple[type[BaseException], ...] = MISSING,
     ):
         """
         Decorator that automatically creates an audit log record after the wrapped
@@ -73,6 +75,11 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                           processing.
                           Called with audit_msg, func_return_val,
                           *func_args, **func_kwargs.
+        :param expected_exceptions: Tuple of exception classes that are expected
+                          (e.g. validation errors). These are logged without
+                          a traceback; only a one-line summary of the exception
+                          (e.g. "AddressError: Invalid address") is recorded.
+                          Other exceptions are logged with a full traceback.
         :return:
         """
         autoactor = _value_or_missing(
@@ -92,6 +99,12 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
         )
         post_process = _value_or_missing(
             post_process, self.autolog_config.get("post_process", None)
+        )
+        expected_exceptions = tuple(
+            _value_or_missing(
+                expected_exceptions,
+                self.autolog_config.get("expected_exceptions", ()),
+            )
         )
 
         def _autostatus(msg, status: Status):
@@ -136,7 +149,16 @@ class AuditLoggerAdapter(logging.LoggerAdapter):
                     if post_process:
                         post_process(msg, return_value, *args, **kwargs)
 
-                    if exc:
+                    if exc is not None and isinstance(exc, expected_exceptions):
+                        # Expected errors (e.g. validation errors) don't need
+                        # a traceback, a one-line summary is sufficient.
+                        self.error(
+                            msg,
+                            extra={
+                                EXCEPTION_SUMMARY_ATTR: format_exception_summary(exc)
+                            },
+                        )
+                    elif exc is not None:
                         self.exception(msg)
                     elif msg.status == Status.FAILURE:
                         self.error(msg)

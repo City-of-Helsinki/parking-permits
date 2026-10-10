@@ -37,6 +37,7 @@ from .decorators import require_preparators
 from .exceptions import (
     CustomerCannotBeAnonymizedError,
     OrderValidationError,
+    ParkingPermitValidationError,
     SubscriptionValidationError,
 )
 from .exporters import DataExporter, PdfExporter
@@ -106,6 +107,7 @@ audit_logger = audit.get_audit_logger_adapter(
     autolog_config={
         "autostatus": True,
         "kwarg_name": "audit_msg",
+        "expected_exceptions": (ParkingPermitValidationError,),
     },
 )
 

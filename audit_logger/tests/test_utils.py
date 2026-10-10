@@ -2,9 +2,51 @@ import pytest
 
 from audit_logger.tests.utils import make_mock_model
 from audit_logger.utils import (
+    format_exception_summary,
     generate_model_id_string_from_class,
     generate_model_id_string_from_instance,
 )
+
+
+class CustomError(Exception):
+    pass
+
+
+def test_format_exception_summary():
+    assert (
+        format_exception_summary(CustomError("Something is invalid"))
+        == "CustomError: Something is invalid"
+    )
+
+
+def test_format_exception_summary_without_message():
+    assert format_exception_summary(CustomError()) == "CustomError"
+
+
+def test_format_exception_summary_includes_explicit_cause():
+    try:
+        try:
+            raise KeyError("missing")
+        except KeyError as e:
+            raise CustomError from e
+    except CustomError as e:
+        exc = e
+
+    assert (
+        format_exception_summary(exc) == "CustomError (caused by KeyError: 'missing')"
+    )
+
+
+def test_format_exception_summary_has_no_traceback():
+    try:
+        raise CustomError("Something is invalid")
+    except CustomError as e:
+        exc = e
+
+    summary = format_exception_summary(exc)
+
+    assert "Traceback" not in summary
+    assert "\n" not in summary
 
 
 def test_generate_model_instance_id_string():
