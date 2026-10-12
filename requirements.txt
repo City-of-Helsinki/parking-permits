@@ -427,9 +427,9 @@ django-mailer==2.3.2 \
     --hash=sha256:6ea0cbec09f57eb91376780a5f20ab7a834b942435a575e92e8e021f7838d78f \
     --hash=sha256:c7ef5ad63d5484246908bd1ce583c22837c66c1a7b593c9b816f4ead2421c995
     # via -r requirements.in
-django-resilient-logger==2.3.0 \
-    --hash=sha256:4ed7790574964971c0d6300a1dca81f9ec16e5566340047788fb022fc588b13c \
-    --hash=sha256:542d2a83f4e8ecc92555bcac1e5d9a10d257e5ba99338e4553e16fe167c6f91e
+django-resilient-logger==3.1.0 \
+    --hash=sha256:46369fbea1dee66b3a05f29b44a56c7c689654f97feb3b57a1e0a53491c86595 \
+    --hash=sha256:e770d4e58c7db7cda9f6268624069f41ae31bb0487a76cb555584b1246b93044
     # via -r requirements.in
 django-searchable-encrypted-fields==0.2.1 \
     --hash=sha256:c7ece2001644649b3dc40121d934560410a04b4c2c33b5c147ce63d7817228e7
