@@ -144,7 +144,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
         audit_msg.operation = audit.Operation.READ
         audit_msg.message = "User profile was read automatically."
         return Customer.objects.get(
-            national_id_number=customer.get("national_id_number")
+            national_id_number__iexact=customer.get("national_id_number")
         )
 
     primary_address_data, other_address_data = get_addresses(
@@ -162,7 +162,7 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     )
 
     customer_obj, created = Customer.objects.update_or_create(
-        national_id_number=customer.get("national_id_number"),
+        national_id_number__iexact=customer.get("national_id_number"),
         defaults={
             "user": request.user,
             **customer,
