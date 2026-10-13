@@ -161,34 +161,39 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
         else None
     )
 
+    customer_defaults = {
+        "user": request.user,
+        **customer,
+        "primary_address": primary_address,
+        "other_address": other_address,
+        "primary_address_apartment": (
+            primary_address_data.get("apartment")
+            if is_valid_address(primary_address_data)
+            else None
+        ),
+        "primary_address_apartment_sv": (
+            primary_address_data.get("apartment_sv")
+            if is_valid_address(primary_address_data)
+            else None
+        ),
+        "other_address_apartment": (
+            other_address_data.get("apartment")
+            if is_valid_address(other_address_data)
+            else None
+        ),
+        "other_address_apartment_sv": (
+            other_address_data.get("apartment_sv")
+            if is_valid_address(other_address_data)
+            else None
+        ),
+    }
+    customer_create_defaults = customer_defaults.copy()
+    customer_defaults.pop("national_id_number", None)
+
     customer_obj, created = Customer.objects.update_or_create(
         national_id_number__iexact=customer.get("national_id_number"),
-        defaults={
-            "user": request.user,
-            **customer,
-            "primary_address": primary_address,
-            "other_address": other_address,
-            "primary_address_apartment": (
-                primary_address_data.get("apartment")
-                if is_valid_address(primary_address_data)
-                else None
-            ),
-            "primary_address_apartment_sv": (
-                primary_address_data.get("apartment_sv")
-                if is_valid_address(primary_address_data)
-                else None
-            ),
-            "other_address_apartment": (
-                other_address_data.get("apartment")
-                if is_valid_address(other_address_data)
-                else None
-            ),
-            "other_address_apartment_sv": (
-                other_address_data.get("apartment_sv")
-                if is_valid_address(other_address_data)
-                else None
-            ),
-        },
+        defaults=customer_defaults,
+        create_defaults=customer_create_defaults,
     )
 
     if created:
