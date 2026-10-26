@@ -30,50 +30,78 @@ Then you can run docker image with:
 
 - Done!
 
-## Setting up local development environment with PyEnv and VirtualEnvWrapper
+## Setting up local development environment with uv
 
-### required system packages
+### Required system packages
 
 - python3-dev
 - libpq-dev
 
-### required user packages
+### Required user packages
 
-- pyenv
-- virtualenvwrapper
-- pyenv-virtualenvwrapper
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-```
-pyenv install -v 3.12.9
-pyenv virtualenv 3.12.9 parking_permits
-pyenv local parking_permits
-pyenv virtualenvwrapper
-```
+Install Python 3.12 (if not already available) and the project dependencies, including the
+development dependencies, into a local `.venv`:
 
-Install packages
-
-```
-pip install -U pip pip-tools
-pip-compile -U requirements.in
-pip-compile -U requirements-dev.in
-pip-sync requirements.txt requirements-dev.txt
+```bash
+uv python install 3.12
+uv sync
 ```
 
+Run Python commands inside the project environment with `uv run`, e.g.:
+
+```bash
+uv run manage.py migrate
+uv run manage.py runserver
+```
 
 ## Managing project packages
 
-- We use `pip-tools` to manage python packages we need
-- After adding a new package to requirements(-dev).in file, compile it and re-build the Docker image so that the container would have access to the new package
+- We use [uv](https://docs.astral.sh/uv/) to manage Python packages. Dependencies are declared in
+  `pyproject.toml` and locked in `uv.lock`:
+  - Production dependencies are listed in `[project].dependencies`
+  - Development dependencies are listed in `[dependency-groups].dev`
+  - Production-only dependencies (e.g. `gunicorn`) are listed in `[dependency-groups].prod`
+- Add a new package with `uv add <package>` (or `uv add --group dev <package>` for a development dependency)
+- Upgrade all locked packages with `uv lock --upgrade`, or a single package with `uv lock --upgrade-package <package>`
+- For supply chain protection, `[tool.uv] exclude-newer = "P3D"` makes uv only resolve package versions
+  that have been published at least three days ago
+- After changing dependencies, re-build the Docker image so that the container would have access to the new packages
 
   ```bash
   docker-compose up --build
   ```
+
+## Code formatting and linting
+
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting and formatting, and
+[pre-commit](https://pre-commit.com/) to run the checks automatically on commit.
+
+Install pre-commit and enable the hooks:
+
+```bash
+uv tool install pre-commit
+pre-commit install
+```
+
+If you want to use ruff without the pre-commit hooks (e.g. from your editor), install it separately:
+
+```bash
+uv tool install ruff
+ruff check --fix
+ruff format
+```
 
 ## Running tests
 
 - You can run all the tests with:
   ```bash
   docker-compose exec api pytest
+  ```
+  or locally with:
+  ```bash
+  uv run pytest
   ```
 - If you want to run the tests continously while developing:
 
