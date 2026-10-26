@@ -1,3 +1,62 @@
+[project]
+name = "parking-permits"
+version = "1.17.1"
+description = "Backend for the City of Helsinki parking permits service"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "ariadne-django",                      # schema-first graphql server implementation
+    "cryptography",                        # cryptography
+    "dj-database-url",                     # to be able to parse DATABASE_URL
+    "django~=5.2",                         # web framework itself
+    "django-cors-headers",                 # enabling CORS
+    "django-crontab",                      # cron jobs
+    "django-db-logger",                    # logging to database
+    "django-environ",                      # read .env file
+    "django-extensions",                   # useful django extensions
+    "django-helusers",                     # app for City of Helsinki user infrastructure
+    "django-logger-extra",                 # extra logging features
+    "django-mailer",                       # better email backend
+    "django-resilient-logger",             # audit logging
+    "django-searchable-encrypted-fields",  # encrypted fields
+    "djangorestframework",                 # creating rest APIs
+    "djangorestframework-api-key",         # creating and managing API keys
+    "drf-yasg",                            # generating swagger documentation
+    "fpdf",                                # pdf generation
+    "helsinki-profile-gdpr-api",           # app for implementing Helsinki profile GDPR API
+    "numpy",                               # scientific computing
+    "psycopg[c]",                          # postgres database adapter
+    "pycryptodome",                        # cryptographic primitives
+    "python-dateutil",                     # date utilities
+    "requests",                            # http requests
+    "sentry-sdk",                          # error logging
+    "urllib3",                             # http client
+    "whitenoise",                          # enabling Django to serve its own static files
+    "xmltodict",                           # parsing xml to dictionary
+]
+
+[dependency-groups]
+dev = [
+    "factory-boy",
+    "freezegun",
+    "ipython",
+    "pyjwt",
+    "pytest",
+    "pytest-cov",
+    "pytest-django",
+    "pytest-factoryboy",
+    "requests-mock",
+]
+prod = [
+    "gunicorn",                            # application server
+]
+
+[tool.uv]
+package = false
+required-version = ">=0.13.5"
+exclude-newer = "P3D"
+
 [tool.ruff]
 target-version = "py312"
 
