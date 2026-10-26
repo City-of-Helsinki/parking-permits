@@ -19,4 +19,10 @@
 !docker-entrypoint.sh
 !gunicorn.conf.py
 !manage.py
-!requirements*
+!pyproject.toml
+!uv.lock
+
+#################################################
+# Always excluded
+#################################################
+.venv

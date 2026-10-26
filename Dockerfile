@@ -2,13 +2,21 @@
 FROM helsinki.azurecr.io/ubi9/python-312-gdal AS appbase
 # ==============================
 
+COPY --from=ghcr.io/astral-sh/uv:0.13.5@sha256:32a7bb39b496babbd997b0a39a4d66c126bdaf5661b302bf6f06abda8deca6ff /uv /uvx /usr/local/bin/
+
 ENV STATIC_ROOT=/srv/app/static
 ENV TZ="Europe/Helsinki"
+
+ENV UV_PROJECT_ENVIRONMENT=/opt/app-root \
+    UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_NO_CACHE=1 \
+    UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 USER root
 
-COPY requirements.txt .
+COPY pyproject.toml uv.lock ./
 
 RUN dnf install -y \
     nmap-ncat \
@@ -16,8 +24,7 @@ RUN dnf install -y \
     postgresql \
     libpq-devel \
     python3-devel \
-    && pip install -U pip setuptools wheel \
-    && pip install --no-cache-dir -r requirements.txt \
+    && uv sync --locked --no-dev --group prod \
     && mkdir -p /srv/app/static \
     && dnf clean all
 
@@ -30,8 +37,7 @@ FROM appbase AS development
 
 ENV DEV_SERVER=True
 
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
+RUN uv sync --locked --group prod
 
 COPY . .
 
