@@ -3,6 +3,7 @@ import pathlib
 from unittest import mock
 
 from django.test import TestCase, override_settings
+from django.utils import translation
 from freezegun import freeze_time
 
 from parking_permits.exceptions import TraficomFetchVehicleError
@@ -877,6 +878,7 @@ class TestTraficomVehicleFetch(TestTraficom):
             )
 
     @override_settings(TRAFICOM_MOCK=False)
+    @translation.override("en")
     def test_fetch_vehicle_too_heavy(self):
         with mock.patch(
             "requests.Session.post",
@@ -887,7 +889,7 @@ class TestTraficomVehicleFetch(TestTraficom):
                 )
             ),
         ):
-            registration_number = "BCI-707"
+            registration_number = "ELU-660"
             with self.assertRaises(TraficomFetchVehicleError) as context:
                 self.traficom.fetch_vehicle_details(registration_number)
 
