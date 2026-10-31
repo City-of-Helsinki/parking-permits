@@ -1,6 +1,6 @@
 [project]
 name = "parking-permits"
-version = "1.17.1"
+version = "2.0.0"
 description = "Backend for the City of Helsinki parking permits service"
 readme = "README.md"
 license = "MIT"
