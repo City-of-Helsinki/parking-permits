@@ -31,6 +31,7 @@ dependencies = [
     "python-dateutil",                     # date utilities
     "requests",                            # http requests
     "sentry-sdk",                          # error logging
+    "social-auth-app-django",              # centralized Django admin login
     "urllib3",                             # http client
     "whitenoise",                          # enabling Django to serve its own static files
     "xmltodict",                           # parsing xml to dictionary
