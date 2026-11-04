@@ -59,6 +59,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("pysocial/", include("social_django.urls", namespace="social")),
+    path("helauth/", include("helusers.urls")),
     path("", RedirectView.as_view(url="/admin/")),
     path("healthz/", healthz),
     path("readiness/", readiness),

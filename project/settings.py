@@ -4,6 +4,7 @@ from pathlib import Path
 
 import dj_database_url
 import environ
+import helusers.defaults
 import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.django import DjangoIntegration
@@ -50,7 +51,11 @@ env = environ.Env(
     TOKEN_AUTH_REQUIRE_SCOPE_PREFIX=(str, ""),
     TOKEN_AUTH_API_AUTHORIZATION_FIELD=(list, []),
     HELUSERS_BACK_CHANNEL_LOGOUT_ENABLED=(bool, False),
+    HELUSERS_PASSWORD_LOGIN_DISABLED=(bool, False),
     HELUSERS_USER_MIGRATE_ENABLED=(bool, False),
+    SOCIAL_AUTH_TUNNISTAMO_KEY=(str, ""),
+    SOCIAL_AUTH_TUNNISTAMO_OIDC_ENDPOINT=(str, ""),
+    SOCIAL_AUTH_TUNNISTAMO_SECRET=(str, ""),
     GDPR_API_QUERY_SCOPE=(str, ""),
     GDPR_API_DELETE_SCOPE=(str, ""),
     PARKKIHUBI_DOMAIN=(str, ""),
@@ -111,6 +116,17 @@ ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
 AUTH_USER_MODEL = "users.User"
+AUTHENTICATION_BACKENDS = [
+    "helusers.tunnistamo_oidc.TunnistamoOIDCAuth",
+    "helusers.auth.HelusersModelBackend",
+]
+HELUSERS_PASSWORD_LOGIN_DISABLED = env("HELUSERS_PASSWORD_LOGIN_DISABLED")
+LOGOUT_REDIRECT_URL = "/admin/"
+SESSION_SERIALIZER = "helusers.sessions.TunnistamoOIDCSerializer"
+SOCIAL_AUTH_PIPELINE = helusers.defaults.SOCIAL_AUTH_PIPELINE
+SOCIAL_AUTH_TUNNISTAMO_KEY = env("SOCIAL_AUTH_TUNNISTAMO_KEY")
+SOCIAL_AUTH_TUNNISTAMO_OIDC_ENDPOINT = env("SOCIAL_AUTH_TUNNISTAMO_OIDC_ENDPOINT")
+SOCIAL_AUTH_TUNNISTAMO_SECRET = env("SOCIAL_AUTH_TUNNISTAMO_SECRET")
 
 SRID = 4326
 KAMI_URL = env("KAMI_URL")
@@ -128,6 +144,7 @@ INSTALLED_APPS = [
     # so that whitenoise can take over
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "social_django",
     "ariadne_django",
     "django_extensions",
     "corsheaders",
