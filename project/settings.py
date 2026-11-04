@@ -7,6 +7,7 @@ import environ
 import sentry_sdk
 from corsheaders.defaults import default_headers
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.types import SamplingContext
 
 from parking_permits.sentry import before_send as sentry_before_send
 
@@ -93,7 +94,11 @@ env = environ.Env(
     MAILER_EMAIL_THROTTLE=(int, 1),
     FIELD_ENCRYPTION_KEYS=(str, ""),
     SENTRY_DSN=(str, ""),
-    SENTRY_ENVIRONMENT=(str, ""),
+    SENTRY_ENVIRONMENT=(str, "local"),
+    SENTRY_PROFILE_SESSION_SAMPLE_RATE=(float, None),
+    SENTRY_RELEASE=(str, None),
+    SENTRY_TRACES_SAMPLE_RATE=(float, None),
+    SENTRY_TRACES_IGNORE_PATHS=(list, ["/healthz", "/readiness"]),
     AUDIT_LOG_ENV=(str, ""),
     AUDIT_LOG_ES_URL=(str, ""),
     AUDIT_LOG_ES_USERNAME=(str, ""),
@@ -277,6 +282,8 @@ PERMIT_EXTENSIONS_ENABLED = env("PERMIT_EXTENSIONS_ENABLED")
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-authorization",  # for passing Helsinki Profile API token form frontend
+    "baggage",
+    "sentry-trace",
 ]
 
 # OIDC auth
@@ -372,14 +379,33 @@ MAILER_LOCK_PATH = env("MAILER_LOCK_PATH")
 MAILER_EMAIL_MAX_BATCH = env("MAILER_EMAIL_MAX_BATCH")
 MAILER_EMAIL_THROTTLE = env("MAILER_EMAIL_THROTTLE")
 
-sentry_sdk.init(
-    dsn=env.str("SENTRY_DSN"),
-    environment=env.str("SENTRY_ENVIRONMENT"),
-    traces_sample_rate=1.0,
-    send_default_pii=True,
-    integrations=[DjangoIntegration()],
-    before_send=sentry_before_send,
-)
+SENTRY_TRACES_SAMPLE_RATE = env("SENTRY_TRACES_SAMPLE_RATE")
+SENTRY_TRACES_IGNORE_PATHS = env.list("SENTRY_TRACES_IGNORE_PATHS")
+
+
+def sentry_traces_sampler(sampling_context: SamplingContext) -> float:
+    request_path = sampling_context.get("wsgi_environ", {}).get("PATH_INFO", "")
+    if request_path.rstrip("/") in {
+        ignored_path.rstrip("/") for ignored_path in SENTRY_TRACES_IGNORE_PATHS
+    }:
+        return 0.0
+    if (parent_sampled := sampling_context.get("parent_sampled")) is not None:
+        return float(parent_sampled)
+    return SENTRY_TRACES_SAMPLE_RATE or 0.0
+
+
+if env("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=env("SENTRY_DSN"),
+        environment=env("SENTRY_ENVIRONMENT"),
+        release=env("SENTRY_RELEASE"),
+        send_default_pii=True,
+        integrations=[DjangoIntegration()],
+        before_send=sentry_before_send,
+        traces_sampler=sentry_traces_sampler,
+        profile_session_sample_rate=env("SENTRY_PROFILE_SESSION_SAMPLE_RATE"),
+        profile_lifecycle="trace",
+    )
 
 # Audit logging through django-resilient-logger
 RESILIENT_LOGGER = {

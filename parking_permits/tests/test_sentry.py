@@ -1,7 +1,9 @@
 import json
 import logging
+import runpy
 from unittest.mock import patch
 
+import environ
 import pytest
 import sentry_sdk
 from django.test import Client, TestCase
@@ -21,9 +23,98 @@ from parking_permits.exceptions import (
 )
 from parking_permits.models import ParkingPermit
 from parking_permits.sentry import before_send, is_validation_error
+from project import settings as project_settings
+from project.settings import sentry_traces_sampler
 from users.tests.factories.user import GroupFactory, UserFactory
 
 EVENT = {"message": "test"}
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+@pytest.mark.parametrize("configured", [False, True])
+def test_sentry_initialization(monkeypatch, enabled, configured):
+    for variable in (
+        "SENTRY_ENVIRONMENT",
+        "SENTRY_RELEASE",
+        "SENTRY_TRACES_SAMPLE_RATE",
+        "SENTRY_PROFILE_SESSION_SAMPLE_RATE",
+        "SENTRY_TRACES_IGNORE_PATHS",
+    ):
+        monkeypatch.delenv(variable, raising=False)
+    monkeypatch.setenv(
+        "SENTRY_DSN", "https://public@sentry.example.com/1" if enabled else ""
+    )
+    if configured:
+        monkeypatch.setenv("SENTRY_ENVIRONMENT", "testing")
+        monkeypatch.setenv("SENTRY_RELEASE", "parking-permits@1.2.3")
+        monkeypatch.setenv("SENTRY_TRACES_SAMPLE_RATE", "0.25")
+        monkeypatch.setenv("SENTRY_PROFILE_SESSION_SAMPLE_RATE", "0.5")
+        monkeypatch.setenv("SENTRY_TRACES_IGNORE_PATHS", "/status")
+
+    with (
+        patch.object(environ.Env, "read_env"),
+        patch.object(sentry_sdk, "init") as init,
+    ):
+        configuration = runpy.run_path(project_settings.__file__)
+
+    if not enabled:
+        init.assert_not_called()
+        return
+
+    init.assert_called_once()
+    options = init.call_args.kwargs
+    assert options["dsn"] == "https://public@sentry.example.com/1"
+    assert options["environment"] == ("testing" if configured else "local")
+    assert options["release"] == ("parking-permits@1.2.3" if configured else None)
+    assert options["profile_session_sample_rate"] == (0.5 if configured else None)
+    assert options["profile_lifecycle"] == "trace"
+    assert options["before_send"] is before_send
+    assert isinstance(options["integrations"][0], DjangoIntegration)
+    sampler = options["traces_sampler"]
+    assert sampler({}) == (0.25 if configured else 0.0)
+    assert sampler({"wsgi_environ": {"PATH_INFO": "/status"}}) == 0.0
+    assert configuration["SENTRY_TRACES_IGNORE_PATHS"] == (
+        ["/status"] if configured else ["/healthz", "/readiness"]
+    )
+
+
+def test_sentry_cors_headers(settings):
+    assert {"baggage", "sentry-trace", "x-authorization"} <= set(
+        settings.CORS_ALLOW_HEADERS
+    )
+
+
+@pytest.mark.parametrize("sample_rate", [None, 0.0, 0.25, 1.0])
+@pytest.mark.parametrize("parent_sampled", [None, False, True])
+@pytest.mark.parametrize(
+    "request_path",
+    ["/healthz", "/healthz/", "/readiness", "/readiness/", "/graphql/", None],
+)
+def test_sentry_traces_sampler(monkeypatch, sample_rate, parent_sampled, request_path):
+    monkeypatch.setattr("project.settings.SENTRY_TRACES_SAMPLE_RATE", sample_rate)
+    monkeypatch.setattr(
+        "project.settings.SENTRY_TRACES_IGNORE_PATHS", ["/healthz", "/readiness"]
+    )
+    context = {"parent_sampled": parent_sampled}
+    if request_path is not None:
+        context["wsgi_environ"] = {"PATH_INFO": request_path}
+
+    if request_path in ["/healthz", "/healthz/", "/readiness", "/readiness/"]:
+        expected = 0.0
+    elif parent_sampled is not None:
+        expected = float(parent_sampled)
+    else:
+        expected = sample_rate or 0.0
+
+    assert sentry_traces_sampler(context) == expected
+
+
+def test_sentry_traces_sampler_custom_ignore_paths(monkeypatch):
+    monkeypatch.setattr("project.settings.SENTRY_TRACES_SAMPLE_RATE", 1.0)
+    monkeypatch.setattr("project.settings.SENTRY_TRACES_IGNORE_PATHS", ["/status/"])
+
+    assert sentry_traces_sampler({"wsgi_environ": {"PATH_INFO": "/status/"}}) == 0.0
+    assert sentry_traces_sampler({"wsgi_environ": {"PATH_INFO": "/healthz"}}) == 1.0
 
 
 def _exc_info(exc):
