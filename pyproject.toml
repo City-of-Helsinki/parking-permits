@@ -57,6 +57,7 @@ prod = [
 package = false
 required-version = ">=0.13.5"
 exclude-newer = "P3D"
+exclude-newer-package = { django-helusers = "2026-11-06" }
 
 [tool.ruff]
 target-version = "py312"
