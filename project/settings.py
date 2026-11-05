@@ -1,3 +1,4 @@
+import json
 from os import environ as os_environ
 from os import path
 from pathlib import Path
@@ -19,6 +20,7 @@ env = environ.Env(
     SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
+    CORS_ALLOWED_ORIGIN_REGEXES=(json.loads, []),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi", "https://*.hel.ninja"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
     DATABASE_PASSWORD=(str, ""),
@@ -275,6 +277,7 @@ PERMIT_EXTENSIONS_ENABLED = env("PERMIT_EXTENSIONS_ENABLED")
 
 # CORS
 CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+CORS_ALLOWED_ORIGIN_REGEXES = env("CORS_ALLOWED_ORIGIN_REGEXES")
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "x-authorization",  # for passing Helsinki Profile API token form frontend
 ]
