@@ -1,4 +1,5 @@
 import json
+import re
 from os import environ as os_environ
 from os import path
 from pathlib import Path
@@ -16,13 +17,30 @@ from parking_permits.sentry import before_send as sentry_before_send
 GDAL_LIBRARY_PATH = os_environ.get("GDAL_LIBRARY_PATH")
 GEOS_LIBRARY_PATH = os_environ.get("GEOS_LIBRARY_PATH")
 
+
+def parse_cors_allowed_origin_regexes(value):
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        parsed = value
+    if parsed == "":
+        parsed = []
+    elif not isinstance(parsed, list):
+        parsed = [parsed]
+    for pattern in parsed:
+        re.compile(pattern)
+    return parsed
+
+
 env = environ.Env(
     DEBUG=(bool, False),
     DEBUG_MAILPIT=(bool, False),
     SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
-    CORS_ALLOWED_ORIGIN_REGEXES=(json.loads, []),
+    CORS_ALLOWED_ORIGIN_REGEXES=(parse_cors_allowed_origin_regexes, []),
     CSRF_TRUSTED_ORIGINS=(list, ["https://*.hel.fi", "https://*.hel.ninja"]),
     DATABASE_URL=(str, "sqlite:////tmp/my-tmp-sqlite.db"),
     DATABASE_PASSWORD=(str, ""),
