@@ -37,6 +37,7 @@ def parse_cors_allowed_origin_regexes(value):
 env = environ.Env(
     DEBUG=(bool, False),
     DEBUG_MAILPIT=(bool, False),
+    SECURE_PROXY_SSL_HEADER=(tuple, None),
     SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
@@ -264,6 +265,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # SESSIONS/CSRF
 CSRF_USE_SESSIONS = True
 SESSION_COOKIE_SECURE = True
+
+# Specifies a header that is trusted to indicate that the request was using
+# https while traversing over the Internet at large. This is used when
+# a proxy terminates the TLS connection and forwards the request over
+# a secure network. Specified using a tuple.
+# https://docs.djangoproject.com/en/3.0/ref/settings/#secure-proxy-ssl-header
+SECURE_PROXY_SSL_HEADER = env("SECURE_PROXY_SSL_HEADER")
 
 # FOR TALPA
 NAMESPACE = env("TALPA_NAMESPACE")

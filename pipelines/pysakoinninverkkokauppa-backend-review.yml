@@ -37,6 +37,7 @@ resources:
       type: git
       # Azure DevOps project/repository
       name: pysakoinnin-verkkokauppa/pysakoinnin-verkkokauppa-pipelines
+      ref: refs/heads/traficom-test
 
 extends:
   # Filename in Azure DevOps Repository
