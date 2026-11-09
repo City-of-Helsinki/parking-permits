@@ -37,6 +37,7 @@ def parse_cors_allowed_origin_regexes(value):
 env = environ.Env(
     DEBUG=(bool, False),
     DEBUG_MAILPIT=(bool, False),
+    SECURE_PROXY_SSL_HEADER=(tuple, None),
     SECRET_KEY=(str, ""),
     ALLOWED_HOSTS=(list, ["*"]),
     CORS_ALLOWED_ORIGINS=(list, ["http://localhost:3000"]),
@@ -264,6 +265,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # SESSIONS/CSRF
 CSRF_USE_SESSIONS = True
 SESSION_COOKIE_SECURE = True
+
+SECURE_PROXY_SSL_HEADER = env("SECURE_PROXY_SSL_HEADER")
 
 # FOR TALPA
 NAMESPACE = env("TALPA_NAMESPACE")
