@@ -79,6 +79,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
+from .permit_rules import get_secondary_end_time
 from .resolver_utils import create_refund, end_permits
 from .services import kami
 from .services.dvv import get_person_info
@@ -313,19 +314,26 @@ def resolve_vehicle(obj, info, reg_number: str, national_id_number: str):
 def update_or_create_address(address_info):
     if not address_info:
         return None
+    defaults = {
+        "city": address_info.get("city", "") or "",
+        "city_sv": address_info.get("city_sv", "") or "",
+        "postal_code": address_info["postal_code"],
+        "street_name": address_info["street_name"],
+        "street_name_sv": address_info.get("street_name_sv", "") or "",
+        "street_number": address_info["street_number"],
+    }
+    # An omitted location keeps existing coordinates; an explicit None clears them.
+    if "location" in address_info:
+        location = address_info["location"]
+        defaults["location"] = (
+            Point(*location, srid=settings.SRID) if location is not None else None
+        )
     address_obj = Address.objects.update_or_create(
         postal_code=address_info["postal_code"],
         street_name__iexact=address_info["street_name"],
         street_number__iexact=address_info["street_number"],
-        defaults={
-            "city": address_info.get("city", "") or "",
-            "city_sv": address_info.get("city_sv", "") or "",
-            "postal_code": address_info["postal_code"],
-            "street_name": address_info["street_name"],
-            "street_name_sv": address_info.get("street_name_sv", "") or "",
-            "street_number": address_info["street_number"],
-            "location": Point(*address_info["location"], srid=settings.SRID),
-        },
+        defaults=defaults,
+        create_defaults={"location": None, **defaults},
     )
     return address_obj[0]
 
@@ -502,11 +510,15 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     month_count = permit["month_count"]
     end_time = get_end_time(start_time, month_count)
     if active_permits_count > 0:
-        active_permit = active_permits[0]
-        active_permit_end_time = active_permit.end_time
-        if end_time > active_permit_end_time:
-            end_time = active_permit_end_time
-            month_count = active_permit.month_count
+        primary = active_permits.get(primary_vehicle=True)
+        end_time = get_secondary_end_time(start_time, month_count, primary)
+        ParkingPermit(
+            primary_vehicle=False,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=month_count,
+            contract_type=ContractType.FIXED_PERIOD,
+        ).validate_purchase(primary)
 
     vehicle = update_or_create_vehicle(vehicle_info)
 
@@ -654,11 +666,16 @@ def resolve_permit_prices(obj, info, permit, is_secondary):
         active_permits = Customer.objects.get(
             national_id_number=permit.get("customer").get("national_id_number")
         ).active_permits
-        active_permits_count = active_permits.count()
-        if active_permits_count > 0:
-            active_permit_end_time = active_permits[0].end_time
-            if end_time > active_permit_end_time:
-                permit_end_date = active_permit_end_time.date()
+        primary = active_permits.get(primary_vehicle=True)
+        end_time = get_secondary_end_time(start_time, permit["month_count"], primary)
+        permit_end_date = end_time.date()
+        ParkingPermit(
+            primary_vehicle=False,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=permit["month_count"],
+            contract_type=ContractType.FIXED_PERIOD,
+        ).validate_purchase(primary)
 
     return get_permit_prices(
         parking_zone=parking_zone,

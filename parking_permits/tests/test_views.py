@@ -118,6 +118,80 @@ class PaymentViewTestCase(APITestCase):
         ext_request.refresh_from_db()
         self.assertTrue(ext_request.is_approved())
 
+    def test_paid_extension_cannot_exceed_changed_primary_end(self):
+        start = tz.now()
+        primary = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start,
+            end_time=start + relativedelta(months=1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start,
+            end_time=primary.end_time,
+        )
+        extension = ParkingPermitExtensionRequestFactory(
+            permit=secondary,
+            month_count=1,
+            order__talpa_order_id=self.talpa_order_id,
+            order__status=OrderStatus.DRAFT,
+        )
+        response = self.client.post(
+            self.url,
+            {
+                "eventType": "PAYMENT_PAID",
+                "orderId": self.talpa_order_id,
+            },
+        )
+        self.assertEqual(response.status_code, 400)
+        extension.refresh_from_db()
+        secondary.refresh_from_db()
+        extension.order.refresh_from_db()
+        self.assertTrue(extension.is_cancelled())
+        self.assertEqual(secondary.end_time, primary.end_time)
+        self.assertEqual(extension.order.status, OrderStatus.DRAFT)
+        self.assertIsNotNone(extension.order.paid_time)
+        refund = Refund.objects.get(orders=extension.order)
+        self.assertEqual(refund.status, RefundStatus.OPEN)
+        self.assertIn(secondary, refund.permits.all())
+
+    def test_paid_purchase_exceeding_primary_end_requires_refund(self):
+        start = tz.now()
+        primary = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start,
+            end_time=start + relativedelta(months=1),
+        )
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            contract_type=ContractType.FIXED_PERIOD,
+            start_time=start,
+            month_count=2,
+            end_time=start + relativedelta(months=2),
+        )
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id, status=OrderStatus.DRAFT
+        )
+        order.permits.add(secondary)
+        response = self.client.post(
+            self.url,
+            {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id},
+        )
+        self.assertEqual(response.status_code, 400)
+        order.refresh_from_db()
+        secondary.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.DRAFT)
+        self.assertEqual(secondary.status, ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+        refund = Refund.objects.get(orders=order)
+        self.assertEqual(refund.status, RefundStatus.OPEN)
+
     def test_should_not_extend_permit_on_unsuccessful_payment(self):
         ext_request = ParkingPermitExtensionRequestFactory(
             order__talpa_order_id=self.talpa_order_id

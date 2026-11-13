@@ -1,9 +1,11 @@
 import decimal
 import logging
+from copy import copy
 
 from dateutil.parser import isoparse, parse
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
@@ -32,10 +34,11 @@ from .models.parking_permit import (
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
+from .permit_rules import get_secondary_end_time
 from .resolver_utils import end_permits
 from .services.mail import PermitEmailType, send_permit_email
 from .services.parkkihubi import sync_with_parkkihubi
-from .utils import ModelDiffer, diff_months_floor, get_end_time
+from .utils import ModelDiffer, get_end_time
 
 logger = logging.getLogger("db")
 
@@ -84,8 +87,7 @@ class CustomerPermit:
         if not permit.can_extend_permit:
             raise PermitCanNotBeExtendedError(_("You cannot extend this permit."))
 
-        if month_count > permit.max_extension_month_count:
-            raise PermitCanNotBeExtendedError(_("Month count exceeds maximum"))
+        permit.validate_extension(month_count)
 
         order = Order.objects.create_for_extended_permit(
             permit,
@@ -198,6 +200,7 @@ class CustomerPermit:
             permits.append(permit)
         return permits
 
+    @transaction.atomic
     def create(self, address_id, registration):
         if self.customer_permit_query.filter(
             vehicle__registration_number=registration
@@ -207,12 +210,11 @@ class CustomerPermit:
         if self._can_buy_permit_for_address(address.id):
             contract_type = OPEN_ENDED
             primary_vehicle = True
-            primary_end_time = None
+            primary_permit = None
             if self.customer_permit_query.count():
                 primary_permit = self.customer_permit_query.get(primary_vehicle=True)
                 contract_type = primary_permit.contract_type
                 primary_vehicle = not primary_permit.primary_vehicle
-                primary_end_time = primary_permit.end_time
 
             if settings.TRAFICOM_CHECK:
                 self.customer.fetch_driving_licence_detail()
@@ -236,15 +238,15 @@ class CustomerPermit:
                         _("Customer does not have a valid driving licence")
                     )
 
-            start_time = tz.now()
-            end_time = get_end_time(start_time, 1)
-            if primary_end_time:
-                end_time = min(end_time, primary_end_time)
+            start_time = (
+                max(tz.now(), primary_permit.start_time) if primary_permit else tz.now()
+            )
+            end_time = get_secondary_end_time(start_time, 1, primary_permit)
 
             address_apartment, address_apartment_sv = self._get_address_apartments(
                 address
             )
-            permit = ParkingPermit.objects.create(
+            permit = ParkingPermit(
                 customer=self.customer,
                 address=address,
                 address_apartment=address_apartment,
@@ -256,6 +258,9 @@ class CustomerPermit:
                 end_time=end_time,
                 vehicle=vehicle,
             )
+
+            permit.validate_purchase(primary_permit)
+            permit.save()
 
             ParkingPermitEventFactory.make_create_permit_event(
                 permit, created_by=self.customer.user
@@ -276,6 +281,7 @@ class CustomerPermit:
             self._update_permit(other_permit, data)
         return True
 
+    @transaction.atomic
     def update(self, data, permit_id=None):
         keys = data.keys()
         fields_to_update = {}
@@ -306,82 +312,67 @@ class CustomerPermit:
                     }
                 )
 
-        if "start_type" in keys or "start_time" in keys:
-            fields_to_update.update(self._get_start_type_and_start_time(data))
-
-        if "contract_type" in keys or "month_count" in keys:
-            permit_to_update = [permit_id]
-            contract_type = data.get("contract_type", None)
-            month_count = data.get("month_count", 1)
-            primary, secondary = self._get_primary_and_secondary_permit()
-            primary_end_time = get_end_time(primary.start_time, month_count)
-
-            if not contract_type:
-                raise InvalidContractTypeError(_("Contract type is required"))
-
-            # Second permit can not be open ended if
-            # primary permit valid or processing and is fixed period
-            if (
-                primary.status not in [DRAFT, PRELIMINARY]
-                and primary.contract_type == FIXED_PERIOD
-                and contract_type != FIXED_PERIOD
-            ):
-                raise InvalidContractTypeError(
-                    _("Only %(fixed_period)s is allowed")
-                    % {"fixed_period": FIXED_PERIOD}
+        if {"start_type", "start_time", "contract_type", "month_count"} & keys:
+            targets = (
+                [self._get_permit(permit_id)[0]]
+                if permit_id
+                else list(
+                    self.customer_permit_query.filter(status__in=[DRAFT, PRELIMINARY])
                 )
-
-            if permit_id:
-                permit, is_primary = self._get_permit(permit_id)
-
+            )
+            if {"contract_type", "month_count"} & keys and not data.get(
+                "contract_type"
+            ):
+                raise InvalidContractTypeError(_("Contract type is required"))
+            start_changes = (
+                self._get_start_type_and_start_time(data)
+                if "start_type" in keys or "start_time" in keys
+                else {}
+            )
+            candidates = []
+            for permit in targets:
                 if permit.status not in [DRAFT, PRELIMINARY]:
                     raise NonDraftPermitUpdateError(
                         _("This is not a draft permit and can not be edited")
                     )
-
-                if is_primary:
+                candidate = copy(permit)
+                changes = dict(fields_to_update)
+                changes.update(start_changes)
+                contract_type = data.get("contract_type", permit.contract_type)
+                # A new date starts a fresh duration selection. Keep an explicit
+                # duration for callers submitting the entire period together.
+                month_count = data.get(
+                    "month_count", 1 if start_changes else permit.month_count
+                )
+                if candidate.primary_vehicle:
                     month_count = self._get_month_count_for_primary_permit(
                         contract_type, month_count
                     )
-                    if secondary and secondary.month_count > month_count:
-                        permit_to_update.append(secondary.id)
-                else:
-                    month_count = self._get_month_count_for_secondary_permit(
-                        contract_type, month_count
-                    )
-                    secondary_permit_end_time = get_end_time(
-                        secondary.start_time, month_count
-                    )
+                elif contract_type == OPEN_ENDED:
+                    month_count = 1
+                changes.update(contract_type=contract_type, month_count=month_count)
+                for key, value in changes.items():
+                    setattr(candidate, key, value)
+                changes["end_time"] = get_end_time(candidate.start_time, month_count)
+                candidate.end_time = changes["end_time"]
+                candidates.append((permit, candidate, changes))
 
-            end_time = primary_end_time
-            if permit_id and not is_primary:
-                # Cap the end date to the primary permit's end date if it is
-                # earlier than the secondary permit's calculated end date.
-                # Using get_end_time() here is more in line with the pre-bugfix
-                # logic and ensures that we do not have any trouble with any
-                # possible null end dates on the primary permit. Note that
-                # month_count is the form-inputed month count that is used to
-                # calculate the secondary permit's end time and is not
-                # necessarily equal to primary.month_count.
-                secondary_permit_max_end_time = get_end_time(
-                    primary.start_time, primary.month_count
-                )
-                end_time = min(secondary_permit_end_time, secondary_permit_max_end_time)
-
-            fields_to_update.update(
-                {
-                    "contract_type": data["contract_type"],
-                    "month_count": month_count,
-                    "end_time": end_time,
-                }
-            )
-            if permit_id:
-                return [
-                    self._update_permit(
-                        self.customer_permit_query.get(id=id), fields_to_update
+            pair = {p.pk: p for p in self.customer_permit_query.all()}
+            pair.update({candidate.pk: candidate for _, candidate, _ in candidates})
+            primary = next((p for p in pair.values() if p.primary_vehicle), None)
+            for _original, candidate, changes in candidates:
+                if not candidate.primary_vehicle:
+                    candidate.end_time = get_secondary_end_time(
+                        candidate.start_time, candidate.month_count, primary
                     )
-                    for id in permit_to_update
-                ]
+                    changes["end_time"] = candidate.end_time
+            for candidate in pair.values():
+                if not candidate.primary_vehicle:
+                    candidate.validate_purchase(primary)
+            return [
+                self._update_permit(permit, changes)
+                for permit, _, changes in candidates
+            ]
 
         return self._update_fields_to_all_draft(fields_to_update)
 
@@ -533,16 +524,27 @@ class CustomerPermit:
             return [primary]
         primary.primary_vehicle = secondary.primary_vehicle
 
-        update_fields = ["primary_vehicle"]
+        if primary.status not in [DRAFT, PRELIMINARY] or secondary.status not in [
+            DRAFT,
+            PRELIMINARY,
+        ]:
+            raise NonDraftPermitUpdateError(
+                _("This is not a draft permit and can not be edited")
+            )
+        primary.start_time = secondary.start_time = max(
+            primary.start_time, secondary.start_time
+        )
+        update_fields = ["primary_vehicle", "start_time"]
         primary.end_time = get_end_time(primary.start_time, 1)
-        secondary.end_time = get_end_time(primary.start_time, 1)
+        secondary.end_time = get_end_time(secondary.start_time, 1)
         primary.month_count = 1
         secondary.month_count = 1
         update_fields.append("end_time")
         update_fields.append("month_count")
 
-        primary.save(update_fields=update_fields)
         secondary.primary_vehicle = not secondary.primary_vehicle
+        primary.validate_purchase(secondary)
+        primary.save(update_fields=update_fields)
         secondary.save(update_fields=update_fields)
         return [primary, secondary]
 
@@ -580,20 +582,6 @@ class CustomerPermit:
             "start_time": start_time,
             "end_time": get_end_time(start_time, diff_months=month_count),
         }
-
-    def _get_month_count_for_secondary_permit(self, contract_type, count):
-        if contract_type == OPEN_ENDED:
-            return 1
-        primary, secondary = self._get_primary_and_secondary_permit()
-        end_date = primary.end_time
-        if not end_date:
-            return 12 if count > 12 else count
-
-        month_diff = diff_months_floor(next_day(), end_date)
-        dangling_days = (end_date - get_end_time(next_day(), month_diff)).days
-
-        month_count = month_diff + 1 if dangling_days >= 1 else month_diff
-        return month_count if count > month_count else count
 
     def _get_month_count_for_primary_permit(self, contract_type, month_count):
         if contract_type == OPEN_ENDED:

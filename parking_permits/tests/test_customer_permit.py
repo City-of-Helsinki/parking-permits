@@ -13,6 +13,7 @@ from parking_permits.exceptions import (
     InvalidContractTypeError,
     InvalidUserAddressError,
     NonDraftPermitUpdateError,
+    ParkingPermitValidationError,
     PermitCanNotBeDeletedError,
     PermitCanNotBeExtendedError,
     TemporaryVehicleValidationError,
@@ -709,9 +710,10 @@ class UpdateCustomerPermitTestCase(TestCase):
         )
         data = {"month_count": 12, "contract_type": FIXED_PERIOD}
         permit_id = str(secondary.id)
-        CustomerPermit(customer.id).update(data, permit_id=permit_id)
+        with self.assertRaises(ParkingPermitValidationError):
+            CustomerPermit(customer.id).update(data, permit_id=permit_id)
         secondary.refresh_from_db()
-        self.assertEqual(secondary.month_count, 5)
+        self.assertNotEqual(secondary.month_count, 12)
 
     @freeze_time(tz.make_aware(datetime(2026, 7, 11)))
     def test_secondary_permit_end_time_is_based_on_its_own_start_time(self):
@@ -841,6 +843,7 @@ class ExtendCustomerPermitTestCase(TestCase):
         )
         # Verify permit CAN be extended initially (within 14 days)
         self.assertTrue(permit.can_extend_permit)
+        expected_end_time = permit.current_period_end_time
         # Customer manually ends the permit after current period
         CustomerPermit(permit.customer_id).end(
             [permit.id],
@@ -855,9 +858,7 @@ class ExtendCustomerPermitTestCase(TestCase):
         self.assertEqual(permit.end_type, ParkingPermitEndType.AFTER_CURRENT_PERIOD)
         # Verify end_time is still set (to current_period_end_time)
         self.assertIsNotNone(permit.end_time)
-        self.assertEqual(
-            permit.end_time, get_permit_end_time(permit.start_time, permit.month_count)
-        )
+        self.assertEqual(permit.end_time, expected_end_time)
         self.assertFalse(permit.can_extend_permit)
         # Verify exception is raised when trying to create extension request
         with self.assertRaises(PermitCanNotBeExtendedError) as context:

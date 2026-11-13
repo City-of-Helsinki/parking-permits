@@ -43,6 +43,8 @@ type CustomerActivePermit {
   primaryVehicle: Boolean!
   monthCount: Int
   startTime: String
+  endTime: String
+  contractType: String
 }
 
 type CustomerNode {
