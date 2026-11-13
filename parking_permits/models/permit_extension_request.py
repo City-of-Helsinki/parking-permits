@@ -1,6 +1,5 @@
-from dateutil.relativedelta import relativedelta
 from django.core.validators import MaxValueValidator
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -66,19 +65,17 @@ class ParkingPermitExtensionRequest(TimestampedModelMixin):
         return self.status == self.Status.CANCELLED
 
     def get_end_time(self):
-        return (
-            self.permit.end_time + relativedelta(months=self.month_count)
-            if self.permit.end_time
-            else None
-        )
+        return self.permit.extended_end_time(self.month_count)
 
     @property
     def extension_range(self):
         return self.permit.end_time, self.get_end_time()
 
+    @transaction.atomic
     def approve(self):
-        self.set_status(self.Status.APPROVED)
+        self.permit.refresh_from_db()
         self.permit.extend_permit(self.month_count)
+        self.set_status(self.Status.APPROVED)
 
     def cancel(self):
         self.set_status(self.Status.CANCELLED)

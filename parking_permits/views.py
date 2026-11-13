@@ -31,7 +31,7 @@ import audit_logger as audit
 from audit_logger import AuditMsg
 from parking_permits.models.reporting import PermitCountSnapshot
 
-from .constants import Origin
+from .constants import DEFAULT_VAT, Origin
 from .customer_permit import CustomerPermit
 from .decorators import require_preparators
 from .exceptions import (
@@ -66,6 +66,7 @@ from .models.parking_permit import (
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
+from .resolver_utils import create_refund
 from .serializers import (
     MessageResponseSerializer,
     OrderSerializer,
@@ -481,6 +482,30 @@ class PaymentView(APIView):
         },
         tags=["Payment"],
     )
+    @staticmethod
+    def _reconcile_invalid_paid_order(order, pending_extensions, exc):
+        permits = list(order.permits.all())
+        permits += [
+            ext.permit for ext in pending_extensions if ext.permit not in permits
+        ]
+        order.payment_type = OrderPaymentType.ONLINE_PAYMENT
+        order.paid_time = tz.now()
+        order.save(update_fields=["payment_type", "paid_time"])
+        pending_extensions.cancel_pending()
+        if permits:
+            create_refund(
+                user=None,
+                permits=permits,
+                orders=[order],
+                amount=order.total_payment_price,
+                iban="",
+                vat=order.vat or DEFAULT_VAT,
+                description=(
+                    f"Paid order {order.pk} failed validation and requires "
+                    f"refund: {exc}"
+                ),
+            )
+
     @transaction.atomic
     def post(self, request, format=None):
         logger.info(f"Payment received. Data = {json.dumps(request.data, default=str)}")
@@ -498,6 +523,26 @@ class PaymentView(APIView):
                 f"Payment paid event received for order: {talpa_order_id}. "
                 f"Processing payment ..."
             )
+            # A primary permit may have changed while checkout was open. Do not
+            # apply a purchase or extension that is now invalid; record the
+            # payment and open a refund for customer service to reconcile.
+            pending_extensions = order.get_pending_permit_extension_requests()
+            try:
+                for extension in pending_extensions:
+                    extension.permit.validate_extension(extension.month_count)
+                if order.type == OrderType.CREATED:
+                    for permit in order.permits.exclude(
+                        status=ParkingPermitStatus.VALID
+                    ):
+                        permit.validate_purchase()
+            except ParkingPermitValidationError as exc:
+                logger.error(
+                    "Paid order requires reconciliation: order %s: %s",
+                    order.pk,
+                    exc,
+                )
+                self._reconcile_invalid_paid_order(order, pending_extensions, exc)
+                return bad_request_response(str(exc))
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
             order.paid_time = tz.now()

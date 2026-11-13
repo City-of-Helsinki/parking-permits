@@ -183,6 +183,8 @@ class OrderManager(SerializableMixin.SerializableManager):
     @transaction.atomic
     def create_for_permits(self, permits, status=OrderStatus.DRAFT, **kwargs):
         self._validate_permits(permits)
+        for permit in permits:
+            permit.validate_purchase()
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
         first_permit = permits[0]
@@ -240,6 +242,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         status=OrderStatus.CONFIRMED,
         **kwargs,
     ):
+        permit.validate_extension(month_count)
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
 
         order = self.create(

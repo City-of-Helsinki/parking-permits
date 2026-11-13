@@ -84,6 +84,7 @@ type PermitNode {
   contractType: String
   monthCount: Int
   startType: String
+  endType: String
   startTime: String
   endTime: String
   status: String

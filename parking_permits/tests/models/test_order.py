@@ -48,13 +48,13 @@ class TestOrderManager(TestCase):
 
     def test_get_price_list_for_extended_permit(self):
         with freeze_time(date(self.current_year, 3, 5)):
-            now = timezone.now()
+            start = timezone.make_aware(datetime(self.current_year, 2, 13))
 
             permit = ParkingPermitFactory(
                 status=ParkingPermitStatus.VALID,
                 contract_type=ContractType.FIXED_PERIOD,
-                start_time=now - timedelta(days=23),
-                end_time=now + timedelta(days=7),
+                start_time=start,
+                end_time=get_end_time(start, 1),
                 month_count=1,
                 parking_zone=self.zone,
                 customer=self.customer,

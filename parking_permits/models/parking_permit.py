@@ -21,13 +21,18 @@ from helsinki_gdpr.models import SerializableMixin
 from ..exceptions import (
     DuplicatePermitError,
     PermitCanNotBeEndedError,
+    PermitCanNotBeExtendedError,
     TemporaryVehicleValidationError,
+)
+from ..permit_rules import (
+    get_secondary_end_time,
+    primary_end_limit,
+    validate_secondary_permit,
 )
 from ..utils import (
     calc_net_price,
     calc_vat_price,
     diff_months_ceil,
-    diff_months_floor,
     end_date_to_datetime,
     flatten_dict,
     get_end_time,
@@ -514,37 +519,62 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # check if the permit address still belongs to the customer
         return self.address not in customer_addresses
 
-    @property
-    def max_extension_month_count(self):
-        """Returns the maximum number of months you can extend the permit.
-
-        For a primary vehicle, this is up to 12.
-
-        For a secondary vehicle, this is the end date of the primary vehicle,
-        not counting any value less than one month (if month count less than 1,
-        then it should not be logically possible to extend the permit).
-        """
-        if self.primary_vehicle:
-            return MAX_MONTHS
-
-        if (
-            primary_permit := self._meta.default_manager.filter(
-                status=ParkingPermitStatus.VALID,
+    def get_primary_permit(self):
+        return (
+            self._meta.default_manager.filter(
                 customer=self.customer,
                 primary_vehicle=True,
+                status__in=[
+                    ParkingPermitStatus.VALID,
+                    ParkingPermitStatus.DRAFT,
+                    ParkingPermitStatus.PRELIMINARY,
+                    ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+                ],
             )
             .exclude(pk=self.pk)
             .first()
-        ):
-            return max(
-                diff_months_floor(
-                    timezone.localtime(self.current_period_end_time),
-                    timezone.localtime(primary_permit.end_time),
-                ),
-                0,
-            )
+        )
 
-        return MAX_MONTHS
+    def validate_purchase(self, primary=None):
+        if self.primary_vehicle:
+            return
+        validate_secondary_permit(
+            self, primary or self.get_primary_permit(), purchase=True
+        )
+
+    def extended_end_time(self, additional_months, primary=None):
+        month_count = self.month_count + additional_months
+        if self.primary_vehicle:
+            return get_end_time(self.start_time, month_count)
+        return get_secondary_end_time(
+            self.start_time, month_count, primary or self.get_primary_permit()
+        )
+
+    @property
+    def max_extension_month_count(self):
+        if self.primary_vehicle:
+            return MAX_MONTHS
+        primary = self.get_primary_permit()
+        if primary is None:
+            return 0
+        limit = primary_end_limit(primary)
+        if limit is None:
+            return MAX_MONTHS
+        return max(
+            (
+                months
+                for months in range(1, MAX_MONTHS + 1)
+                if self.extended_end_time(months, primary) <= limit
+            ),
+            default=0,
+        )
+
+    def validate_extension(self, additional_months):
+        if (
+            not isinstance(additional_months, int)
+            or not 1 <= additional_months <= self.max_extension_month_count
+        ):
+            raise PermitCanNotBeExtendedError(_("Month count exceeds maximum"))
 
     @property
     def can_extend_permit(self):
@@ -673,6 +703,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         "net_price": net price
         "vat_price": VAT price
         """
+        self.validate_extension(month_count)
         is_secondary = not self.primary_vehicle
         is_low_emission = self.vehicle.is_low_emission
 
@@ -717,7 +748,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         )
 
         start_date = timezone.localdate(from_date)
-        end_date = timezone.localdate(get_end_time(from_date, month_count))
+        end_date = timezone.localdate(self.extended_end_time(month_count))
 
         products = (
             self.parking_zone.products.for_resident()
@@ -732,13 +763,14 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # of whole months within that range
         # add hard limit that more products can't be returned than there is months
         loop_count = 0
-        while product and start_date < end_date and loop_count < month_count:
+        while product and start_date <= end_date and loop_count < month_count:
+            period_end = timezone.localdate(self.extended_end_time(loop_count + 1))
             yield {
                 "product": product,
                 "start_date": start_date,
-                "end_date": start_date + relativedelta(months=1, days=-1),
+                "end_date": period_end,
             }
-            start_date += relativedelta(months=1)
+            start_date = period_end + relativedelta(days=1)
             loop_count += 1
 
             if start_date > product.end_date:
@@ -931,8 +963,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def extend_permit(self, additional_months):
         """Extends the end time of the permit by given months."""
 
+        self.validate_extension(additional_months)
+        self.end_time = self.extended_end_time(additional_months)
         self.month_count += additional_months
-        self.end_time = get_end_time(self.start_time, self.month_count)
         self.save()
 
     def cancel_extension_requests(self):
