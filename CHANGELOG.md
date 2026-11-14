@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.17.1...parking-permits-v2.0.0) (2026-11-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify low-emission-/discount-logic
+
+### Features
+
+* Add migration for field change ([97ceaa6](https://github.com/City-of-Helsinki/parking-permits/commit/97ceaa655da81e9fa26e1155196128ca2f87c314))
+* Add support for CORS_ALLOWED_ORIGIN_REGEXES in settings ([60fc435](https://github.com/City-of-Helsinki/parking-permits/commit/60fc435b3d764054e0049067dc060d6622db0039))
+* Configure SECURE_PROXY_SSL_HEADER for trusted proxies ([64cfe22](https://github.com/City-of-Helsinki/parking-permits/commit/64cfe222f348fd33780fd1270cee6b4979e95d12))
+* Default for missing vehicle power types ([2cc03c5](https://github.com/City-of-Helsinki/parking-permits/commit/2cc03c5eb733d3dc65234f537befb33de012beb0))
+* Enable Helsinki Login for Django admin ([a5bfc60](https://github.com/City-of-Helsinki/parking-permits/commit/a5bfc607078e09acdbd09aefa1241a9f91f5d2ac))
+* Enforce secondary permit rules against primary permit ([347c3aa](https://github.com/City-of-Helsinki/parking-permits/commit/347c3aa459ed50756c75dd1f654f2ccc36a0e767))
+* Increase vehicle max weight limit to 4250kg ([8b711f2](https://github.com/City-of-Helsinki/parking-permits/commit/8b711f27427920b8714bece0c6d7a1b611aeb63c))
+* Prepare backend for Sentry Cloud migration ([ebf0d36](https://github.com/City-of-Helsinki/parking-permits/commit/ebf0d36de1d980a76b75e96faeafc2862c5e0524))
+* Simplify low-emission-/discount-logic ([62ef4ae](https://github.com/City-of-Helsinki/parking-permits/commit/62ef4ae7ae40665250b53776381706129e5f1826))
+* Update traficom field to support datetime ([66bc571](https://github.com/City-of-Helsinki/parking-permits/commit/66bc571ac5819ea007515f43007097b736225813))
+
+
+### Bug Fixes
+
+* Display vehicle max weight in error message ([2989ccd](https://github.com/City-of-Helsinki/parking-permits/commit/2989ccdd24c112b57f91d85a45c64a57baa382ba))
+* Drop tracebacks and Sentry events for validation errors ([bb858c0](https://github.com/City-of-Helsinki/parking-permits/commit/bb858c0ef72b1f100e6490c98b6f4302b68537c7))
+* Fallback for missing vehicle power type name ([34217e8](https://github.com/City-of-Helsinki/parking-permits/commit/34217e86bb589979defbc62b6beb4a7f44b7c3cd))
+* Fix 'can-extend-permit'-property ([393933a](https://github.com/City-of-Helsinki/parking-permits/commit/393933afc209cd15c1966a5b550277d96f3f41eb))
+* Fix typo in translation ([a67d3c2](https://github.com/City-of-Helsinki/parking-permits/commit/a67d3c234ee4c6b508575d731bb9587943404a7f))
+* Improve CORS_ALLOWED_ORIGIN_REGEXES parsing in settings ([2d4bcda](https://github.com/City-of-Helsinki/parking-permits/commit/2d4bcda4cee3c8dac66a9676b8ea97aa3e09bf99))
+* Prevent null vehicle power type names ([0049376](https://github.com/City-of-Helsinki/parking-permits/commit/004937643298beff51e5f1699a8a90f40f4ecdd6))
+* Serialize Decimal values for GraphQL Float fields ([65f365d](https://github.com/City-of-Helsinki/parking-permits/commit/65f365def55bfa60b3365bedc975aa31ed3de6b7))
+* Serialize GraphQL querysets synchronously ([dc8c77b](https://github.com/City-of-Helsinki/parking-permits/commit/dc8c77b49869dc9acec54b3870efc9ddde0e9f45))
+* Use correct defaults when creating power type ([256ed43](https://github.com/City-of-Helsinki/parking-permits/commit/256ed4377ce1cda78befcf7571c7e4e2c8c1db35))
+
+
+### Dependencies
+
+* Bump django-resilient-logger ([cdcdad3](https://github.com/City-of-Helsinki/parking-permits/commit/cdcdad36d530a47ea0ee6539907bc12cfbe1373e))
+* Bump setuptools from 84.0.0 to 84.1.0 ([b81c494](https://github.com/City-of-Helsinki/parking-permits/commit/b81c494b03791a0d87f95640a3ffdfff1c2ec734))
+* Bump urllib3 from 2.7.0 to 2.8.0 ([2665c6f](https://github.com/City-of-Helsinki/parking-permits/commit/2665c6f2231555e5f6a833ddc1732c2a7081504f))
+* Update django-helusers to version 1.3.2 ([ed1c7e5](https://github.com/City-of-Helsinki/parking-permits/commit/ed1c7e52aa23ed6850aa4ad98be511f6b9a30fa3))
+* Update oauthlib to version 4.0.1 ([050008f](https://github.com/City-of-Helsinki/parking-permits/commit/050008f51d4b4af11b5045ecf88c874d5d952424))
+* Update packages ([2e72d7a](https://github.com/City-of-Helsinki/parking-permits/commit/2e72d7a660629d960c321fe8fdc314d9b2d4e607))
+* Update packages within constraints ([265e4eb](https://github.com/City-of-Helsinki/parking-permits/commit/265e4ebef428c8ff8e09c7df99343a1df4ef8188))
+* Update pre-commit tool versions ([066bc60](https://github.com/City-of-Helsinki/parking-permits/commit/066bc60628d0c700726d633ff148834083320a62))
+
 ## [1.17.1](https://github.com/City-of-Helsinki/parking-permits/compare/parking-permits-v1.17.0...parking-permits-v1.17.1) (2026-09-03)
 
 
