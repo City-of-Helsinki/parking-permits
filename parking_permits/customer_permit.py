@@ -34,10 +34,12 @@ from .models.parking_permit import (
     ParkingPermitStartType,
     ParkingPermitStatus,
 )
+from .models.vehicle import VehiclePowerType, VehicleUser
 from .permit_rules import get_secondary_end_time
 from .resolver_utils import end_permits
 from .services.mail import PermitEmailType, send_permit_email
 from .services.parkkihubi import sync_with_parkkihubi
+from .services.traficom import Traficom
 from .utils import ModelDiffer, get_end_time
 
 logger = logging.getLogger("db")
@@ -102,31 +104,86 @@ class CustomerPermit:
             month_count=month_count,
         )
 
-    def add_temporary_vehicle(self, permit_id, registration, start_time, end_time):
+    def add_temporary_vehicle(
+        self,
+        permit_id,
+        registration,
+        start_time,
+        end_time,
+        *,
+        user=None,
+        check_limit=True,
+        check_driving_licence=True,
+        use_placeholder_vehicle_on_fetch_error=False,
+    ):
+        """Add a temporary vehicle to one of the customer's active permits.
+
+        Defaults match the webshop flow. Admin UI disables the limit and driving
+        licence checks and falls back to a placeholder vehicle if Traficom fails.
+        """
         registration = registration.upper().strip()
+        # Only the customer's own active permits block the vehicle; other
+        # customers' permits are allowed.
         has_valid_permit = self.customer_permit_query.filter(
-            vehicle__registration_number__iexact=registration
+            vehicle__registration_number__iexact=registration,
         ).exists()
 
         if has_valid_permit:
             raise TemporaryVehicleValidationError(
-                _("You already have a valid permit for a given vehicle.")
+                _("There's already a valid permit for a given vehicle.")
             )
 
-        permit_details = self._get_permit(permit_id)
-        permit = permit_details[0]
+        permit, _primary_vehicle = self._get_permit(permit_id)
+        start_time, end_time = permit.parse_temporary_vehicle_times(
+            start_time, end_time
+        )
+
+        vehicle = self._fetch_temporary_vehicle(
+            registration,
+            use_placeholder_on_error=use_placeholder_vehicle_on_fetch_error,
+        )
+
+        if (
+            check_driving_licence
+            and not self.customer.has_valid_driving_licence_for_vehicle(vehicle)
+        ):
+            raise TraficomFetchVehicleError(
+                _("Customer does not have a valid driving licence for this vehicle")
+            )
 
         permit.add_temporary_vehicle(
-            self.customer.user,
-            Vehicle.objects.get(registration_number__iexact=registration),
-            *permit.parse_temporary_vehicle_times(start_time, end_time),
-            check_limit=True,
+            user or self.customer.user,
+            vehicle,
+            start_time,
+            end_time,
+            check_limit=check_limit,
         )
 
         sync_with_parkkihubi(permit)
 
         send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
         return True
+
+    def _fetch_temporary_vehicle(self, registration, *, use_placeholder_on_error):
+        try:
+            return Traficom().fetch_vehicle_details(registration_number=registration)
+        except TraficomFetchVehicleError:
+            if not use_placeholder_on_error:
+                raise
+
+        power_type, _created = VehiclePowerType.objects.get_or_create(
+            identifier="01",
+            name="Bensin",
+        )
+        vehicle_user, _created = VehicleUser.objects.get_or_create(
+            national_id_number=self.customer.national_id_number
+        )
+        vehicle, _created = Vehicle.objects.update_or_create(
+            registration_number=registration,
+            defaults={"registration_number": registration, "power_type": power_type},
+        )
+        vehicle.users.set([vehicle_user])
+        return vehicle
 
     def remove_temporary_vehicle(self, permit_id):
         permit_details = self._get_permit(permit_id)

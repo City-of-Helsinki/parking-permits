@@ -165,9 +165,6 @@ msgstr "Kunden har redan ett giltigt tillstånd för ett visst fordon"
 msgid "Month count exceeds maximum"
 msgstr "Antalet månader överstiger gränsen"
 
-msgid "You already have a valid permit for a given vehicle."
-msgstr "Du har redan ett giltigt tillstånd för ett visst fordon"
-
 msgid "Permit for a given vehicle already exist."
 msgstr "Tillstånd för ett givet fordon finns redan."
 

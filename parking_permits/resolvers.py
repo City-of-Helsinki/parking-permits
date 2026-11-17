@@ -589,13 +589,6 @@ def resolve_add_temporary_vehicle(
     # To avoid a database hit, we generate the target manually for the audit message.
     audit_msg.target = audit.ModelWithId(ParkingPermit, permit_id)
     request = info.context["request"]
-    customer = request.user.customer
-    vehicle = Traficom().fetch_vehicle_details(registration_number=registration)
-    has_valid_licence = customer.has_valid_driving_licence_for_vehicle(vehicle)
-    if not has_valid_licence:
-        raise TraficomFetchVehicleError(
-            _("Customer does not have a valid driving licence for this vehicle")
-        )
     CustomerPermit(request.user.customer.id).add_temporary_vehicle(
         permit_id, registration, start_time, end_time
     )

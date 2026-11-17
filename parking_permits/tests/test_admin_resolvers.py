@@ -11,6 +11,7 @@ from django.contrib.auth.models import Group
 from django.test import override_settings
 from django.utils import timezone
 
+from parking_permits import admin_resolvers
 from parking_permits.admin_resolvers import (
     add_temporary_vehicle,
     resolve_create_product,
@@ -35,6 +36,7 @@ from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
+    TemporaryVehicleFactory,
     VehicleFactory,
     VehiclePowerTypeFactory,
 )
@@ -205,6 +207,110 @@ def test_add_temporary_vehicle(info, mock_jwt, settings):
     assert temp_vehicle.vehicle == vehicle
     assert temp_vehicle.start_time == start_time
     assert temp_vehicle.end_time == end_time
+
+
+def _create_temp_vehicle_permit():
+    now = timezone.now()
+    return ParkingPermitFactory(
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.OPEN_ENDED,
+        start_time=now,
+        end_time=now + relativedelta(months=1, days=-1),
+        month_count=1,
+    )
+
+
+@pytest.mark.django_db()
+def test_add_temporary_vehicle_permit_not_found(info, mock_jwt, settings):
+    settings.TRAFICOM_MOCK = True
+    now = timezone.now()
+
+    with mock_jwt, pytest.raises(ObjectNotFoundError):
+        add_temporary_vehicle(
+            None,
+            info,
+            0,
+            VehicleFactory().registration_number,
+            now.isoformat(),
+            (now + relativedelta(days=1)).isoformat(),
+        )
+
+
+@pytest.mark.django_db()
+def test_add_temporary_vehicle_uses_placeholder_vehicle(
+    info, mock_jwt, admin_user, settings
+):
+    settings.TRAFICOM_MOCK = True
+    permit = _create_temp_vehicle_permit()
+    now = timezone.now()
+
+    with mock_jwt:
+        add_temporary_vehicle(
+            None,
+            info,
+            permit.pk,
+            "unknown-1",
+            now.isoformat(),
+            (now + relativedelta(days=1)).isoformat(),
+        )
+
+    temp_vehicle = permit.temp_vehicles.get()
+    assert temp_vehicle.vehicle.registration_number == "UNKNOWN-1"
+    assert temp_vehicle.vehicle.power_type.identifier == "01"
+    assert temp_vehicle.created_by == admin_user
+
+
+@pytest.mark.django_db()
+def test_add_temporary_vehicle_no_limit(info, mock_jwt, settings):
+    settings.TRAFICOM_MOCK = True
+    permit = _create_temp_vehicle_permit()
+    now = timezone.now()
+    permit.temp_vehicles.set(
+        TemporaryVehicleFactory.create_batch(
+            2,
+            start_time=now - relativedelta(days=30),
+            end_time=now - relativedelta(days=29),
+            created_by=permit.customer.user,
+            is_active=False,
+        )
+    )
+
+    with mock_jwt:
+        add_temporary_vehicle(
+            None,
+            info,
+            permit.pk,
+            VehicleFactory().registration_number,
+            now.isoformat(),
+            (now + relativedelta(days=1)).isoformat(),
+        )
+
+    assert permit.temp_vehicles.count() == 3
+
+
+@pytest.mark.django_db()
+def test_add_temporary_vehicle_writes_audit_log(info, mock_jwt, settings):
+    settings.TRAFICOM_MOCK = True
+    permit = _create_temp_vehicle_permit()
+    now = timezone.now()
+
+    with (
+        mock_jwt,
+        mock.patch.object(admin_resolvers.audit_logger, "info") as mock_audit_info,
+    ):
+        add_temporary_vehicle(
+            None,
+            info,
+            permit.pk,
+            VehicleFactory().registration_number,
+            now.isoformat(),
+            (now + relativedelta(days=1)).isoformat(),
+        )
+
+    mock_audit_info.assert_called_once()
+    audit_msg = mock_audit_info.call_args.args[0]
+    assert audit_msg.message == "Admin added a temporary vehicle for a permit."
+    assert audit_msg.target == permit
 
 
 @pytest.mark.django_db()
