@@ -345,6 +345,18 @@ wheels = [
 ]
 
 [[package]]
+name = "django-helsinki-health-endpoints"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8c/66/553765ecc49e70adec29584483b44565149ecdec4355099238e773f98959/django_helsinki_health_endpoints-2.0.1.tar.gz", hash = "sha256:a6c92962467c0718d4a28bf7ac669193fe37274e13d50aed664e2d72267c2562", size = 10678, upload-time = "2026-11-05T12:13:37.925Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/a9/ab1572763c941c4fc568d54a001413269072a05e243f6f24b00bc0673ef3/django_helsinki_health_endpoints-2.0.1-py3-none-any.whl", hash = "sha256:5c295ad8dac58f70d493c7e376ea1035de9852fd5b7d40ec77b27138bec69b2d", size = 7158, upload-time = "2026-11-05T12:13:36.743Z" },
+]
+
+[[package]]
 name = "django-helusers"
 version = "1.3.2"
 source = { registry = "https://pypi.org/simple" }
@@ -770,6 +782,7 @@ dependencies = [
     { name = "django-db-logger" },
     { name = "django-environ" },
     { name = "django-extensions" },
+    { name = "django-helsinki-health-endpoints" },
     { name = "django-helusers" },
     { name = "django-logger-extra" },
     { name = "django-mailer" },
@@ -819,6 +832,7 @@ requires-dist = [
     { name = "django-db-logger" },
     { name = "django-environ" },
     { name = "django-extensions" },
+    { name = "django-helsinki-health-endpoints" },
     { name = "django-helusers" },
     { name = "django-logger-extra" },
     { name = "django-mailer" },

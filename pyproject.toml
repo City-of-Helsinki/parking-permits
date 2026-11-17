@@ -16,6 +16,7 @@ dependencies = [
     "django-environ",                      # read .env file
     "django-extensions",                   # useful django extensions
     "django-helusers",                     # app for City of Helsinki user infrastructure
+    "django-helsinki-health-endpoints",     # liveness and readiness probes
     "django-logger-extra",                 # extra logging features
     "django-mailer",                       # better email backend
     "django-resilient-logger",             # audit logging

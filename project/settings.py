@@ -174,6 +174,7 @@ INSTALLED_APPS = [
     "ariadne_django",
     "django_extensions",
     "corsheaders",
+    "helsinki_health_endpoints",
     "parking_permits",
     "users",
     "rest_framework",
@@ -420,6 +421,7 @@ MAILER_LOCK_PATH = env("MAILER_LOCK_PATH")
 MAILER_EMAIL_MAX_BATCH = env("MAILER_EMAIL_MAX_BATCH")
 MAILER_EMAIL_THROTTLE = env("MAILER_EMAIL_THROTTLE")
 
+SENTRY_RELEASE = env("SENTRY_RELEASE")
 SENTRY_TRACES_SAMPLE_RATE = env("SENTRY_TRACES_SAMPLE_RATE")
 SENTRY_TRACES_IGNORE_PATHS = env.list("SENTRY_TRACES_IGNORE_PATHS")
 
@@ -439,7 +441,7 @@ if env("SENTRY_DSN"):
     sentry_sdk.init(
         dsn=env("SENTRY_DSN"),
         environment=env("SENTRY_ENVIRONMENT"),
-        release=env("SENTRY_RELEASE"),
+        release=SENTRY_RELEASE,
         send_default_pii=True,
         integrations=[DjangoIntegration()],
         before_send=sentry_before_send,

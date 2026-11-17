@@ -1,47 +1,9 @@
 from django.contrib import admin
-from django.http import HttpResponse
 from django.urls import include, path
-from django.views.decorators.http import require_GET
 from django.views.generic import RedirectView
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-
-
-def test_db_connection():
-    """
-    Test that the database connection is working.
-    """
-    from django.db import connections
-
-    for name in connections:
-        cursor = connections[name].cursor()
-        cursor.execute("SELECT 1;")
-        cursor.fetchone()
-
-
-@require_GET
-def healthz(*args, **kwargs):
-    """
-    Returns status code 200 if the server is alive.
-
-    Also connect to database to ensure that the database connection is
-    working.
-    """
-    test_db_connection()
-    return HttpResponse(status=200)
-
-
-@require_GET
-def readiness(*args, **kwargs):
-    """
-    Returns status code 200 if the server is ready to perform its duties.
-
-    Also connect to database to ensure that the database connection is
-    working.
-    """
-    test_db_connection()
-    return HttpResponse(status=200)
-
+from helsinki_health_endpoints.views import healthz, readiness
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -62,6 +24,7 @@ urlpatterns = [
     path("pysocial/", include("social_django.urls", namespace="social")),
     path("helauth/", include("helusers.urls")),
     path("", RedirectView.as_view(url="/admin/")),
+    path("", include("helsinki_health_endpoints.urls")),
     path("healthz/", healthz),
     path("readiness/", readiness),
     path("", include("parking_permits.urls")),
