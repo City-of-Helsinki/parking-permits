@@ -369,6 +369,25 @@ class AddTemporaryVehicleTestCase(TestCase):
             self.permit.customer.national_id_number,
         )
 
+    def test_add_temporary_vehicle_placeholder_keeps_existing_vehicle(self):
+        power_type = VehiclePowerTypeFactory(identifier="04", name="Sähkö")
+        existing = VehicleFactory(
+            registration_number="UNKNOWN-2", power_type=power_type
+        )
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            "UNKNOWN-2",
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+            use_placeholder_vehicle_on_fetch_error=True,
+        )
+
+        vehicle = self.permit.temp_vehicles.get().vehicle
+        self.assertEqual(vehicle.pk, existing.pk)
+        self.assertEqual(vehicle.power_type.identifier, "04")
+        self.assertFalse(vehicle.users.exists())
+
     def test_add_temporary_vehicle_other_customers_permit(self):
         other_customer = CustomerFactory()
 

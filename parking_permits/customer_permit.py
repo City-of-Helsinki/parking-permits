@@ -173,16 +173,17 @@ class CustomerPermit:
 
         power_type, _created = VehiclePowerType.objects.get_or_create(
             identifier="01",
-            name="Bensin",
+            defaults={"name": "Bensin"},
         )
-        vehicle_user, _created = VehicleUser.objects.get_or_create(
-            national_id_number=self.customer.national_id_number
-        )
-        vehicle, _created = Vehicle.objects.update_or_create(
+        vehicle, created = Vehicle.objects.get_or_create(
             registration_number=registration,
-            defaults={"registration_number": registration, "power_type": power_type},
+            defaults={"power_type": power_type},
         )
-        vehicle.users.set([vehicle_user])
+        if created:
+            vehicle_user, _created = VehicleUser.objects.get_or_create(
+                national_id_number=self.customer.national_id_number
+            )
+            vehicle.users.set([vehicle_user])
         return vehicle
 
     def remove_temporary_vehicle(self, permit_id):
