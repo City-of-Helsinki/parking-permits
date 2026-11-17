@@ -34,11 +34,12 @@ from parking_permits.models import (
     Vehicle,
 )
 from parking_permits.models.customer import generate_ssn
-from parking_permits.models.vehicle import VehicleUser, is_low_emission_vehicle
+from parking_permits.models.vehicle import is_low_emission_vehicle
 from parking_permits.services.parkkihubi import sync_with_parkkihubi
 from users.models import ParkingPermitGroups
 
 from .constants import DEFAULT_VAT, EventFields, Origin
+from .customer_permit import CustomerPermit
 from .decorators import (
     is_customer_service,
     is_inspectors,
@@ -57,7 +58,6 @@ from .exceptions import (
     PermitCanNotBeExtendedError,
     PermitLimitExceededError,
     SearchError,
-    TemporaryVehicleValidationError,
     TraficomFetchVehicleError,
     UpdatePermitError,
 )
@@ -91,7 +91,7 @@ from .services.mail import (
     send_refund_email,
     send_vehicle_low_emission_discount_email,
 )
-from .services.traficom import POWER_TYPE_FALLBACK_NAME, Traficom
+from .services.traficom import POWER_TYPE_FALLBACK_NAME
 from .utils import (
     ModelDiffer,
     get_end_time,
@@ -114,6 +114,8 @@ audit_logger = audit.get_audit_logger_adapter(
         "expected_exceptions": (ParkingPermitValidationError,),
     },
 )
+
+PARKING_PERMIT_NOT_FOUND = _("Parking permit not found")
 
 query = QueryType()
 mutation = MutationType()
@@ -693,7 +695,7 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     try:
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
-        raise ObjectNotFoundError(_("Parking permit not found"))
+        raise ObjectNotFoundError(PARKING_PERMIT_NOT_FOUND)
 
     address_changed = False
     previous_address_identifier = None
@@ -762,7 +764,7 @@ def resolve_update_resident_permit(
     try:
         permit = ParkingPermit.objects.get(id=permit_id)
     except ParkingPermit.DoesNotExist:
-        raise ObjectNotFoundError(_("Parking permit not found"))
+        raise ObjectNotFoundError(PARKING_PERMIT_NOT_FOUND)
 
     request = info.context["request"]
     audit_msg.target = permit
@@ -1382,60 +1384,40 @@ def resolve_create_announcement(obj, info, announcement):
 
 @mutation.field("addTemporaryVehicle")
 @is_customer_service
+@audit_logger.autolog(
+    AuditMsg(
+        "Admin added a temporary vehicle for a permit.",
+        operation=audit.Operation.UPDATE,
+    ),
+    add_kwarg=True,
+)
 @transaction.atomic
 def add_temporary_vehicle(
-    obj, info, permit_id, registration_number, start_time, end_time
+    obj,
+    info,
+    permit_id,
+    registration_number,
+    start_time,
+    end_time,
+    audit_msg: AuditMsg = None,
 ):
-    request = info.context["request"]
-    registration_number = registration_number.upper()
-    has_valid_permit = ParkingPermit.objects.filter(
-        vehicle__registration_number=registration_number,
-        status__in=[ParkingPermitStatus.VALID, ParkingPermitStatus.PAYMENT_IN_PROGRESS],
-    ).exists()
-
-    if has_valid_permit:
-        raise TemporaryVehicleValidationError(
-            _("There's already a valid permit for a given vehicle.")
-        )
-
-    permit = ParkingPermit.objects.get(id=permit_id)
-
-    start_time, end_time = permit.parse_temporary_vehicle_times(start_time, end_time)
-
     try:
-        tmp_vehicle = Traficom().fetch_vehicle_details(
-            registration_number=registration_number
-        )
-    except TraficomFetchVehicleError:
-        power_type, power_type_created = VehiclePowerType.objects.get_or_create(
-            identifier="01",
-            name="Bensin",
-        )
-        vehicle_details = {
-            "registration_number": registration_number,
-            "power_type": power_type,
-        }
-        vehicle_users = []
-        user, user_created = VehicleUser.objects.get_or_create(
-            national_id_number=permit.customer.national_id_number
-        )
-        vehicle_users.append(user)
-        tmp_vehicle, vehicle_created = Vehicle.objects.update_or_create(
-            registration_number=registration_number, defaults=vehicle_details
-        )
-        tmp_vehicle.users.set(vehicle_users)
+        permit = ParkingPermit.objects.get(id=permit_id)
+    except ParkingPermit.DoesNotExist as e:
+        raise ObjectNotFoundError(PARKING_PERMIT_NOT_FOUND) from e
 
-    permit.add_temporary_vehicle(
-        request.user,
-        tmp_vehicle,
+    audit_msg.target = permit
+    request = info.context["request"]
+    CustomerPermit(permit.customer_id).add_temporary_vehicle(
+        permit_id,
+        registration_number,
         start_time,
         end_time,
+        user=request.user,
         check_limit=False,
+        check_driving_licence=False,
+        use_placeholder_vehicle_on_fetch_error=True,
     )
-
-    sync_with_parkkihubi(permit)
-
-    send_permit_email(PermitEmailType.TEMP_VEHICLE_ACTIVATED, permit)
     return {"success": True}
 
 

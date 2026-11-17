@@ -1,5 +1,5 @@
 from datetime import UTC, date, datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from dateutil.relativedelta import relativedelta
 from django.core.exceptions import ObjectDoesNotExist
@@ -17,7 +17,9 @@ from parking_permits.exceptions import (
     PermitCanNotBeDeletedError,
     PermitCanNotBeExtendedError,
     TemporaryVehicleValidationError,
+    TraficomFetchVehicleError,
 )
+from parking_permits.models.customer import Customer
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermit,
@@ -39,6 +41,7 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.utils import get_end_time as get_permit_end_time
+from users.tests.factories.user import UserFactory
 
 DRAFT = ParkingPermitStatus.DRAFT
 VALID = ParkingPermitStatus.VALID
@@ -80,7 +83,9 @@ class RemoveTemporaryVehicleTestCase(TestCase):
 
 
 @freeze_time(tz.make_aware(datetime(2024, 1, 7)))
-@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@override_settings(
+    DEBUG_SKIP_PARKKIHUBI_SYNC=True, TRAFICOM_MOCK=True, TRAFICOM_CHECK=False
+)
 class AddTemporaryVehicleTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -138,6 +143,51 @@ class AddTemporaryVehicleTestCase(TestCase):
         )
 
         self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_valid_permit_of_other_customer(self):
+        ParkingPermitFactory(status=VALID, vehicle=self.vehicle)
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.get().vehicle, self.vehicle)
+
+    def test_add_temporary_vehicle_closed_own_permit(self):
+        ParkingPermitFactory(
+            customer=self.permit.customer, status=CLOSED, vehicle=self.vehicle
+        )
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.get().vehicle, self.vehicle)
+
+    def test_add_temporary_vehicle_other_active_own_permit(self):
+        for status in (VALID, PAYMENT_IN_PROGRESS, DRAFT, PRELIMINARY):
+            with self.subTest(status=status):
+                other_permit = ParkingPermitFactory(
+                    customer=self.permit.customer, status=status, vehicle=self.vehicle
+                )
+
+                self.assertRaises(
+                    TemporaryVehicleValidationError,
+                    CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+                    self.permit.pk,
+                    self.vehicle.registration_number,
+                    self.start_time.isoformat(),
+                    self.end_time.isoformat(),
+                )
+
+                self.assertFalse(self.permit.temp_vehicles.exists())
+                other_permit.delete()
 
     def test_add_temporary_vehicle_starts_before_now(self):
         now = tz.now()
@@ -215,6 +265,138 @@ class AddTemporaryVehicleTestCase(TestCase):
         )
 
         self.assertEqual(self.permit.temp_vehicles.count(), 2)
+
+    def test_add_temporary_vehicle_more_than_two_in_a_year_without_limit(self):
+        user = self.permit.customer.user
+        temp_vehicles = TemporaryVehicleFactory.create_batch(
+            2, start_time=self.start_time - timedelta(days=30), created_by=user
+        )
+        self.permit.temp_vehicles.set(temp_vehicles)
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+            check_limit=False,
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.count(), 3)
+
+    def test_add_temporary_vehicle_registration_exists_message(self):
+        self.permit.vehicle = self.vehicle
+        self.permit.save()
+
+        with self.assertRaisesMessage(
+            TemporaryVehicleValidationError,
+            "There's already a valid permit for a given vehicle.",
+        ):
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+                self.permit.pk,
+                self.vehicle.registration_number,
+                self.start_time.isoformat(),
+                self.end_time.isoformat(),
+            )
+
+    def test_add_temporary_vehicle_sets_created_by(self):
+        other_user = UserFactory()
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+            user=other_user,
+        )
+
+        self.assertEqual(self.permit.temp_vehicles.get().created_by, other_user)
+
+    @patch.object(Customer, "has_valid_driving_licence_for_vehicle")
+    def test_add_temporary_vehicle_no_driving_licence(self, mock_licence):
+        mock_licence.return_value = False
+
+        self.assertRaises(
+            TraficomFetchVehicleError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    @patch.object(Customer, "has_valid_driving_licence_for_vehicle")
+    def test_add_temporary_vehicle_skip_driving_licence_check(self, mock_licence):
+        mock_licence.return_value = False
+
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+            check_driving_licence=False,
+        )
+
+        mock_licence.assert_not_called()
+        self.assertTrue(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_unknown_vehicle(self):
+        self.assertRaises(
+            TraficomFetchVehicleError,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            "UNKNOWN-1",
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_unknown_vehicle_uses_placeholder(self):
+        CustomerPermit(self.permit.customer.pk).add_temporary_vehicle(
+            self.permit.pk,
+            " unknown-1 ",
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+            use_placeholder_vehicle_on_fetch_error=True,
+        )
+
+        vehicle = self.permit.temp_vehicles.get().vehicle
+        self.assertEqual(vehicle.registration_number, "UNKNOWN-1")
+        self.assertEqual(vehicle.power_type.identifier, "01")
+        self.assertEqual(
+            vehicle.users.get().national_id_number,
+            self.permit.customer.national_id_number,
+        )
+
+    def test_add_temporary_vehicle_other_customers_permit(self):
+        other_customer = CustomerFactory()
+
+        self.assertRaises(
+            ObjectDoesNotExist,
+            CustomerPermit(other_customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
+
+    def test_add_temporary_vehicle_closed_permit(self):
+        self.permit.status = CLOSED
+        self.permit.save()
+
+        self.assertRaises(
+            ObjectDoesNotExist,
+            CustomerPermit(self.permit.customer.pk).add_temporary_vehicle,
+            self.permit.pk,
+            self.vehicle.registration_number,
+            self.start_time.isoformat(),
+            self.end_time.isoformat(),
+        )
+
+        self.assertFalse(self.permit.temp_vehicles.exists())
 
 
 @freeze_time(tz.make_aware(datetime(2022, 1, 7)))
