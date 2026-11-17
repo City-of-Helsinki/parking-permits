@@ -298,7 +298,8 @@ def test_add_temporary_vehicle_writes_audit_log(info, mock_jwt, settings):
         mock_jwt,
         mock.patch.object(admin_resolvers.audit_logger, "info") as mock_audit_info,
     ):
-        add_temporary_vehicle(
+        # Resolve at call time: other tests may reload admin_resolvers.
+        admin_resolvers.add_temporary_vehicle(
             None,
             info,
             permit.pk,
