@@ -1,5 +1,6 @@
 import datetime
 import json
+import tomllib
 import zoneinfo
 from decimal import Decimal
 from unittest.mock import patch
@@ -9,6 +10,7 @@ import pytest
 import requests_mock
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
+from django.db import OperationalError, connection
 from django.test import override_settings
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone as tz
@@ -63,6 +65,53 @@ from .keys import rsa_key
 
 HELSINKI_TZ = zoneinfo.ZoneInfo("Europe/Helsinki")
 TIME_FORMAT = "%d.%m.%Y %H:%M"
+
+
+@pytest.mark.parametrize("url", ["/healthz", "/healthz/"])
+def test_healthz_without_database(client, url):
+    with patch.object(connection, "cursor", side_effect=OperationalError) as cursor:
+        response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.content == b""
+    cursor.assert_not_called()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("url", ["/readiness", "/readiness/"])
+def test_readiness(client, settings, url):
+    settings.SENTRY_RELEASE = "parking-permits@test-release"
+    with (settings.BASE_DIR / "pyproject.toml").open("rb") as pyproject_file:
+        version = tomllib.load(pyproject_file)["project"]["version"]
+
+    response = client.get(url)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "version": version,
+        "release": "parking-permits@test-release",
+        "database": "ok",
+    }
+
+
+@pytest.mark.parametrize("url", ["/readiness", "/readiness/"])
+def test_readiness_database_unavailable(client, settings, url):
+    settings.SENTRY_RELEASE = None
+    with patch.object(connection, "cursor", side_effect=OperationalError):
+        response = client.get(url)
+
+    assert response.status_code == 503
+    assert response.json()["status"] == "error"
+    assert response.json()["database"] == "error"
+    assert response.json()["release"] == ""
+
+
+@pytest.mark.parametrize("url", ["/healthz", "/healthz/", "/readiness", "/readiness/"])
+def test_health_endpoints_require_get(client, url):
+    response = client.post(url)
+
+    assert response.status_code == 405
 
 
 def get_validated_order_data(talpa_order_id, talpa_order_item_id):
