@@ -9,6 +9,7 @@ import environ
 import helusers.defaults
 import sentry_sdk
 from corsheaders.defaults import default_headers
+from django.core.exceptions import ImproperlyConfigured
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.types import SamplingContext
 
@@ -36,6 +37,8 @@ def parse_cors_allowed_origin_regexes(value):
 
 env = environ.Env(
     DEBUG=(bool, False),
+    DEPLOYMENT_ENVIRONMENT=(str, ""),
+    LOCAL_ADMIN_ROLES_ENABLED=(bool, False),
     DEBUG_MAILPIT=(bool, False),
     SECURE_PROXY_SSL_HEADER=(tuple, None),
     SECRET_KEY=(str, ""),
@@ -137,6 +140,16 @@ if path.exists(".env"):
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = env("DEBUG")
+DEPLOYMENT_ENVIRONMENT = env("DEPLOYMENT_ENVIRONMENT")
+LOCAL_ADMIN_ROLES_ENABLED = env("LOCAL_ADMIN_ROLES_ENABLED")
+if LOCAL_ADMIN_ROLES_ENABLED and DEPLOYMENT_ENVIRONMENT not in {
+    "development",
+    "review",
+}:
+    raise ImproperlyConfigured(
+        "LOCAL_ADMIN_ROLES_ENABLED requires DEPLOYMENT_ENVIRONMENT to be "
+        "'development' or 'review'."
+    )
 SECRET_KEY = env("SECRET_KEY")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
