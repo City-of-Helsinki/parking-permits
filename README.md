@@ -56,6 +56,25 @@ uv run manage.py migrate
 uv run manage.py runserver
 ```
 
+## Testing admin roles locally
+
+Local parking roles are enabled in development/review deployments only. For local Docker,
+set these values in `.env`:
+
+```dotenv
+DEPLOYMENT_ENVIRONMENT=development
+LOCAL_ADMIN_ROLES_ENABLED=True
+```
+
+```bash
+docker compose up -d --force-recreate api
+docker compose exec api python manage.py create_group_mapping
+```
+
+With `LOCAL_ADMIN_ROLES_ENABLED=True`, parking groups such as `inspectors` or
+`customer_service` can be assigned manually in Django admin under **Users > user > Groups**.
+Entra AD groups will not override these assignments during login or API requests.
+
 ## Managing project packages
 
 - We use [uv](https://docs.astral.sh/uv/) to manage Python packages. Dependencies are declared in
