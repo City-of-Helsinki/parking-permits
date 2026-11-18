@@ -41,6 +41,7 @@ from users.models import ParkingPermitGroups
 from .constants import DEFAULT_VAT, EventFields, Origin
 from .customer_permit import CustomerPermit
 from .decorators import (
+    is_authenticated,
     is_customer_service,
     is_inspectors,
     is_preparators,
@@ -192,6 +193,17 @@ def resolve_gfk_type(obj, *_):
     if isinstance(obj, ParkingPermitExtensionRequest):
         return "ParkingPermitExtensionRequestNode"
     return None
+
+
+@query.field("currentUserGroups")
+@is_authenticated
+def resolve_current_user_groups(obj, info):
+    user = info.context["request"].user
+    return list(
+        user.groups.filter(name__in=ParkingPermitGroups.values)
+        .order_by("name")
+        .values_list("name", flat=True)
+    )
 
 
 @query.field("permits")

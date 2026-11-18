@@ -390,6 +390,7 @@ type PermitExtendedPriceResult {
 }
 
 type Query {
+  currentUserGroups: [String!]!
   permits(
     pageInput: PageInput!
     orderBy: OrderByInput

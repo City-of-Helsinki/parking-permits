@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 from django.conf import settings
 from django.contrib.gis.geos import Point
 from django.core.exceptions import PermissionDenied
-from django.test import Client, RequestFactory, TestCase
+from django.test import Client, RequestFactory, TestCase, override_settings
 from django.urls import reverse
 from helusers.authz import UserAuthorization
 from helusers.oidc import AuthenticationError
@@ -26,7 +26,122 @@ from parking_permits.tests.factories.parking_permit import (
     CustomerFactory,
     ParkingPermitFactory,
 )
+from users.models import ParkingPermitGroups
 from users.tests.factories.user import GroupFactory, UserFactory
+
+
+class CurrentUserGroupsQueryTestCase(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = UserFactory()
+        cls.groups = {
+            role: GroupFactory(name=role.value) for role in ParkingPermitGroups
+        }
+
+    def setUp(self):
+        authentication_patch = patch.object(
+            parking_permits.decorators.RequestJWTAuthentication, "authenticate"
+        )
+        self.mock_authenticate = authentication_patch.start()
+        self.addCleanup(authentication_patch.stop)
+        self.mock_authenticate.return_value = UserAuthorization(self.user, {})
+
+    def query_groups(self):
+        return self.client.post(
+            reverse("parking_permits:admin-graphql"),
+            {"query": "{ currentUserGroups }"},
+            content_type="application/json",
+        )
+
+    def test_returns_each_group_in_both_role_modes(self):
+        for enabled in (False, True):
+            for role in ParkingPermitGroups:
+                with (
+                    self.subTest(local_roles=enabled, role=role),
+                    override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+                ):
+                    self.user.groups.set([self.groups[role]])
+
+                    response = self.query_groups()
+
+                    self.assertEqual(response.status_code, 200)
+                    self.assertEqual(
+                        response.json(),
+                        {"data": {"currentUserGroups": [role.value]}},
+                    )
+
+    def test_returns_all_assigned_parking_groups(self):
+        self.user.groups.set(self.groups.values())
+
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(),
+            {"data": {"currentUserGroups": sorted(ParkingPermitGroups.values)}},
+        )
+
+    def test_authenticated_user_without_groups_can_query_own_groups(self):
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"data": {"currentUserGroups": []}})
+
+    def test_excludes_unrelated_groups(self):
+        self.user.groups.add(
+            GroupFactory(), self.groups[ParkingPermitGroups.INSPECTORS]
+        )
+
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json(), {"data": {"currentUserGroups": ["inspectors"]}}
+        )
+
+    def test_django_superuser_status_does_not_add_parking_groups(self):
+        self.user.is_superuser = True
+        self.user.is_staff = True
+        self.user.save()
+
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"data": {"currentUserGroups": []}})
+
+    def test_reflects_group_changes_and_removal(self):
+        assignments = [
+            [ParkingPermitGroups.SUPER_ADMIN],
+            [ParkingPermitGroups.INSPECTORS],
+            [],
+        ]
+        for groups in assignments:
+            with self.subTest(groups=groups):
+                self.user.groups.set([self.groups[group] for group in groups])
+
+                response = self.query_groups()
+
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(
+                    response.json(), {"data": {"currentUserGroups": groups}}
+                )
+
+    def test_rejects_anonymous_requests(self):
+        self.mock_authenticate.return_value = None
+
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["errors"][0]["message"], "Forbidden")
+
+    def test_rejects_failed_authentication(self):
+        self.mock_authenticate.side_effect = AuthenticationError()
+
+        response = self.query_groups()
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["errors"][0]["message"], "Forbidden")
+
 
 permits_query = """
     query GetPermits(
