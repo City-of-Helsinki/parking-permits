@@ -102,6 +102,85 @@ class GroupAdminSecurityTest(TestCase):
                 self.assertFalse(Group.objects.filter(pk=group.pk).exists())
 
 
+class UserAdminPasswordSecurityTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.editor = UserFactory(is_active=True, is_staff=True, is_superuser=False)
+        cls.editor.user_permissions.add(
+            Permission.objects.get(
+                codename="change_user", content_type__app_label="users"
+            )
+        )
+        cls.superuser = UserFactory(is_active=True, is_staff=True, is_superuser=True)
+        cls.target = UserFactory(is_active=True, is_staff=False, is_superuser=False)
+        cls.superuser.set_password(TEST_PASSWORD)
+        cls.superuser.save()
+
+    def test_staff_cannot_view_or_change_superuser_password(self):
+        self.client.force_login(self.editor)
+        url = reverse("admin:auth_user_password_change", args=[self.superuser.pk])
+        original_password = self.superuser.password
+        for enabled, method in product((False, True), ("get", "post")):
+            with (
+                self.subTest(enabled=enabled, method=method),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                response = getattr(self.client, method)(
+                    url,
+                    {
+                        "password1": "unauthorized-password",
+                        "password2": "unauthorized-password",
+                    }
+                    if method == "post"
+                    else {},
+                )
+                self.assertEqual(response.status_code, 403)
+                self.superuser.refresh_from_db()
+                self.assertEqual(self.superuser.password, original_password)
+
+    def test_permitted_password_changes_still_work(self):
+        accounts = (
+            (self.editor, self.target),
+            (self.editor, self.editor),
+            (self.superuser, self.target),
+            (self.superuser, self.superuser),
+        )
+        for enabled, (editor, target) in product((False, True), accounts):
+            with (
+                self.subTest(enabled=enabled, editor=editor.pk, target=target.pk),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                self.client.force_login(editor)
+                url = reverse("admin:auth_user_password_change", args=[target.pk])
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                password = f"changed-admin-password-{enabled}-{editor.pk}-{target.pk}"
+                response = self.client.post(
+                    url,
+                    {
+                        "password1": password,
+                        "password2": password,
+                        "usable_password": "true",
+                    },
+                )
+                self.assertEqual(response.status_code, 302)
+                target.refresh_from_db()
+                self.assertTrue(target.check_password(password))
+
+    def test_missing_account_keeps_django_not_found_response(self):
+        target_pk = self.target.pk
+        self.target.delete()
+        url = reverse("admin:auth_user_password_change", args=[target_pk])
+        for enabled, editor in product((False, True), (self.editor, self.superuser)):
+            with (
+                self.subTest(enabled=enabled, editor=editor.pk),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                self.client.force_login(editor)
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 404)
+
+
 @override_settings(SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies")
 class AdminAuthenticationTest(SimpleTestCase):
     def test_admin_login_offers_central_helsinki_login(self):
