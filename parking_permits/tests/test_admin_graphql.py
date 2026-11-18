@@ -17,7 +17,10 @@ from parking_permits.admin_resolvers import (
 )
 from parking_permits.exceptions import AddressError
 from parking_permits.models import Address
-from parking_permits.models.parking_permit import ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ParkingPermitEndType,
+    ParkingPermitStatus,
+)
 from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.parking_permit import (
     CustomerFactory,
@@ -112,6 +115,68 @@ class PermitsQueryTestCase(TestCase):
         self.assertEqual(response.status_code, 400)
         response_data = json.loads(response.content)
         self.assertEqual(response_data["errors"][0]["message"], "Forbidden")
+
+
+customer_active_permits_query = """
+    query GetPermits(
+        $pageInput: PageInput!
+        $searchParams: PermitSearchParamsInput!
+    ) {
+        permits(
+            pageInput: $pageInput
+            searchParams: $searchParams
+        ) {
+            objects {
+                customer {
+                    activePermits {
+                        primaryVehicle
+                        endTime
+                        endType
+                        contractType
+                    }
+                }
+            }
+        }
+    }
+"""
+
+
+class CustomerActivePermitsQueryTestCase(TestCase):
+    @patch.object(parking_permits.decorators.RequestJWTAuthentication, "authenticate")
+    def test_active_permits_expose_end_type(self, mock_authenticate):
+        customer = CustomerFactory(first_name="John")
+        ParkingPermitFactory(
+            customer=customer,
+            status=ParkingPermitStatus.VALID,
+            end_type=ParkingPermitEndType.AFTER_CURRENT_PERIOD,
+        )
+        group = GroupFactory(name="super_admin")
+        mock_admin = UserFactory()
+        mock_admin.groups.add(group)
+        mock_authenticate.return_value = UserAuthorization(mock_admin, {})
+        data = {
+            "operationName": "GetPermits",
+            "query": customer_active_permits_query,
+            "variables": {
+                "pageInput": {"page": 1},
+                "searchParams": {"q": "John", "status": ParkingPermitStatus.VALID},
+            },
+        }
+        response = self.client.post(
+            reverse("parking_permits:admin-graphql"),
+            data,
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        response_data = json.loads(response.content)
+        self.assertNotIn("errors", response_data)
+        active_permits = response_data["data"]["permits"]["objects"][0]["customer"][
+            "activePermits"
+        ]
+        self.assertEqual(len(active_permits), 1)
+        self.assertEqual(
+            active_permits[0]["endType"], ParkingPermitEndType.AFTER_CURRENT_PERIOD
+        )
 
 
 class ResolveCreateAddressTestCase(TestCase):
