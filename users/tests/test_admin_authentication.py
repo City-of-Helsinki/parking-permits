@@ -1,5 +1,7 @@
+from itertools import product
+
 from django.contrib.auth import SESSION_KEY
-from django.contrib.auth.models import Permission
+from django.contrib.auth.models import Group, Permission
 from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
@@ -7,6 +9,97 @@ from users.models import ParkingPermitGroups
 from users.tests.factories.user import GroupFactory, UserFactory
 
 TEST_PASSWORD = "test-admin-password"
+
+
+class GroupAdminSecurityTest(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.editor = UserFactory(is_active=True, is_staff=True, is_superuser=False)
+        cls.editor.user_permissions.add(
+            *Permission.objects.filter(
+                content_type__app_label="auth", content_type__model="group"
+            )
+        )
+        cls.superuser = UserFactory(is_active=True, is_staff=True, is_superuser=True)
+        cls.group = GroupFactory(name="admin-security-test")
+
+    def test_staff_cannot_mutate_groups_despite_group_permissions(self):
+        self.client.force_login(self.editor)
+        requests = (
+            (reverse("admin:auth_group_add"), {"name": "unauthorized-group"}, 403),
+            (
+                reverse("admin:auth_group_change", args=[self.group.pk]),
+                {"name": "unauthorized-rename"},
+                403,
+            ),
+            (
+                reverse("admin:auth_group_delete", args=[self.group.pk]),
+                {"post": "yes"},
+                403,
+            ),
+            (
+                reverse("admin:auth_group_changelist"),
+                {
+                    "action": "delete_selected",
+                    "_selected_action": [self.group.pk],
+                    "post": "yes",
+                },
+                200,
+            ),
+        )
+        for enabled, (url, data, expected_status) in product((False, True), requests):
+            with (
+                self.subTest(enabled=enabled, url=url),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                response = self.client.post(url, data)
+                self.assertEqual(response.status_code, expected_status)
+                self.group.refresh_from_db()
+                self.assertEqual(self.group.name, "admin-security-test")
+                self.assertFalse(
+                    Group.objects.filter(name="unauthorized-group").exists()
+                )
+
+    def test_staff_can_still_view_groups(self):
+        self.client.force_login(self.editor)
+        urls = (
+            reverse("admin:auth_group_changelist"),
+            reverse("admin:auth_group_change", args=[self.group.pk]),
+        )
+        for enabled, url in product((False, True), urls):
+            with (
+                self.subTest(enabled=enabled, url=url),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                response = self.client.get(url)
+                self.assertNotContains(response, 'name="name"', status_code=200)
+
+    def test_superuser_can_add_change_and_delete_groups(self):
+        self.client.force_login(self.superuser)
+        for enabled in (False, True):
+            with (
+                self.subTest(enabled=enabled),
+                override_settings(LOCAL_ADMIN_ROLES_ENABLED=enabled),
+            ):
+                response = self.client.post(
+                    reverse("admin:auth_group_add"), {"name": "authorized-group"}
+                )
+                self.assertEqual(response.status_code, 302)
+                group = Group.objects.get(name="authorized-group")
+
+                response = self.client.post(
+                    reverse("admin:auth_group_change", args=[group.pk]),
+                    {"name": "authorized-rename"},
+                )
+                self.assertEqual(response.status_code, 302)
+                group.refresh_from_db()
+                self.assertEqual(group.name, "authorized-rename")
+
+                response = self.client.post(
+                    reverse("admin:auth_group_delete", args=[group.pk]), {"post": "yes"}
+                )
+                self.assertEqual(response.status_code, 302)
+                self.assertFalse(Group.objects.filter(pk=group.pk).exists())
 
 
 @override_settings(SESSION_ENGINE="django.contrib.sessions.backends.signed_cookies")
