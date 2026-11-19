@@ -83,7 +83,7 @@ class Customer(SerializableMixin, TimestampedModelMixin):
     other_address_apartment_sv = models.CharField(
         _("Other address apartment (sv)"), max_length=32, blank=True, null=True
     )
-    email = models.CharField(_("Email"), max_length=128, blank=True)
+    email = models.EmailField(_("Email"), max_length=128, blank=True)
     phone_number = models.CharField(
         _("Phone number"), max_length=32, blank=True, null=True
     )

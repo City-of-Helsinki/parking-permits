@@ -9,6 +9,7 @@ from ariadne import (
 )
 from ariadne.contrib.federation import FederatedObjectType
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils.translation import gettext_lazy as _
 
@@ -47,6 +48,7 @@ from .services.parkkihubi import sync_with_parkkihubi
 from .services.traficom import Traficom
 from .talpa.order import TalpaOrderManager
 from .utils import ModelDiffer, get_user_from_resolver_args, is_valid_city
+from .validators import clean_email
 
 logger = logging.getLogger("db")
 audit_logger = audit.get_audit_logger_adapter(
@@ -137,6 +139,16 @@ def resolve_user_profile(_obj, info, *args, audit_msg: AuditMsg = None):
     request = info.context["request"]
     profile = HelsinkiProfile(request)
     customer = profile.get_customer()
+    try:
+        email = clean_email(customer.get("email"))
+    except ValidationError:
+        logger.warning("Ignoring invalid email address from Helsinki profile")
+        email = ""
+    # Keep the stored email if the profile has no (valid) one
+    if email:
+        customer["email"] = email
+    else:
+        customer.pop("email", None)
 
     if not settings.DVV_UPDATE_USER_PROFILE_DATA:
         audit_msg.operation = audit.Operation.READ

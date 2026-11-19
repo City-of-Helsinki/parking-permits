@@ -63,6 +63,9 @@ msgstr "Useita pysäköintialueita löytyi tälle sijainnille"
 msgid "Customer not found"
 msgstr "Asiakasta ei löytynyt"
 
+msgid "Invalid email address"
+msgstr "Virheellinen sähköpostiosoite"
+
 msgid "Customer search error"
 msgstr "Asiakkaan hakuvirhe"
 
