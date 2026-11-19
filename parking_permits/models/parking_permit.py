@@ -12,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import DateTimeRangeField
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import IntegrityError, router, transaction
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -77,6 +78,14 @@ class ParkingPermitStatus(models.TextChoices):
     CANCELLED = "CANCELLED", _("Cancelled")
     CLOSED = "CLOSED", _("Closed")
 
+
+NON_DUPLICABLE_STATUSES = (
+    ParkingPermitStatus.VALID,
+    ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+    ParkingPermitStatus.DRAFT,
+    ParkingPermitStatus.PRELIMINARY,
+)
+ACTIVE_PERMIT_CONSTRAINT = "unique_active_permit_per_vehicle"
 
 MAX_MONTHS = 12
 
@@ -235,6 +244,13 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         ordering = ["-id"]
         verbose_name = _("Parking permit")
         verbose_name_plural = _("Parking permits")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["customer", "vehicle"],
+                condition=Q(status__in=NON_DUPLICABLE_STATUSES),
+                name=ACTIVE_PERMIT_CONSTRAINT,
+            ),
+        ]
 
     def __str__(self):
         return str(self.id)
@@ -625,29 +641,34 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         # Enforce unique customer-vehicle-pair depending on the status,
         # duplicate customer-vehicle-pairs are allowed only for
         # permits with cancelled/closed status
-        non_duplicable_statuses = [
-            ParkingPermitStatus.VALID,
-            ParkingPermitStatus.PAYMENT_IN_PROGRESS,
-            ParkingPermitStatus.DRAFT,
-            ParkingPermitStatus.PRELIMINARY,
-        ]
-
         duplicate_query = ParkingPermit.objects.exclude(id=self.id).filter(
             customer_id=self.customer_id,
             vehicle__registration_number=self.vehicle.registration_number,
             # Pre-existing cancelled/closed permits do not contribute
             # towards potential duplicates
-            status__in=non_duplicable_statuses,
+            status__in=NON_DUPLICABLE_STATUSES,
         )
 
         # If the permit being saved is cancelled/closed, we can
         # short-circuit to avoid db-hit/query-evaluation
         # as those statuses will never break the constraint
-        check_for_duplicates = self.status in non_duplicable_statuses
+        check_for_duplicates = self.status in NON_DUPLICABLE_STATUSES
         if check_for_duplicates and duplicate_query.exists():
             raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
 
-        return super().save(*args, **kwargs)
+        # Roll back the failed write before translating the database error, so
+        # callers may handle DuplicatePermitError inside their own transaction.
+        using = kwargs.get("using") or router.db_for_write(type(self), instance=self)
+        try:
+            with transaction.atomic(using=using):
+                return super().save(*args, **kwargs)
+        except IntegrityError as exc:
+            diagnostic = getattr(exc.__cause__, "diag", None)
+            if getattr(diagnostic, "constraint_name", None) == ACTIVE_PERMIT_CONSTRAINT:
+                raise DuplicatePermitError(
+                    _("Permit for a given vehicle already exist.")
+                ) from exc
+            raise
 
     def _can_extend_parking_permit(self, *, is_date_restriction=True):
         if not all(

@@ -262,7 +262,7 @@ class CustomerPermit:
     def create(self, address_id, registration):
         if self.customer_permit_query.filter(
             vehicle__registration_number=registration
-        ).count():
+        ).exists():
             raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
         address = Address.objects.get(id=address_id)
         if self._can_buy_permit_for_address(address.id):
