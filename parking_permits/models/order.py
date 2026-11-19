@@ -469,6 +469,9 @@ class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
         default=OrderStatus.DRAFT,
     )
     paid_time = models.DateTimeField(_("Paid time"), blank=True, null=True)
+    payment_processed_at = models.DateTimeField(
+        _("Payment notification processed at"), null=True, blank=True, editable=False
+    )
     permits = models.ManyToManyField(
         ParkingPermit, verbose_name=_("permits"), related_name="orders"
     )

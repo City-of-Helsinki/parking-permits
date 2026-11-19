@@ -23,6 +23,7 @@ from .exceptions import (
     AddressError,
     DuplicatePermitError,
     ObjectNotFoundError,
+    OrderCreationFailedError,
     ParkingPermitValidationError,
     ParkingZoneError,
     TraficomFetchVehicleError,
@@ -557,12 +558,20 @@ def resolve_update_permit_vehicle(
 def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     request = info.context["request"]
     customer = request.user.customer
-    permits = ParkingPermit.objects.filter(
-        customer=customer,
-        status__in=[ParkingPermitStatus.DRAFT, ParkingPermitStatus.PRELIMINARY],
+    permits = list(
+        ParkingPermit.objects.select_for_update()
+        .filter(
+            customer=customer,
+            status__in=[ParkingPermitStatus.DRAFT, ParkingPermitStatus.PRELIMINARY],
+        )
+        .order_by("pk")
     )
+    if not permits:
+        raise OrderCreationFailedError(_("No draft permits found to create order"))
     order = Order.objects.create_for_permits(permits, user=request.user)
-    permits.update(status=ParkingPermitStatus.PAYMENT_IN_PROGRESS)
+    ParkingPermit.objects.filter(pk__in=[permit.pk for permit in permits]).update(
+        status=ParkingPermitStatus.PAYMENT_IN_PROGRESS
+    )
     audit_msg.target = order
     return {"checkout_url": TalpaOrderManager.send_to_talpa(order)}
 

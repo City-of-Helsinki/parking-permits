@@ -514,11 +514,27 @@ class PaymentView(APIView):
         if not talpa_order_id:
             return bad_request_response("Talpa order id is missing from request data")
         try:
-            order = Order.objects.get(talpa_order_id=talpa_order_id)
+            order = Order.objects.select_for_update().get(talpa_order_id=talpa_order_id)
         except Order.DoesNotExist:
             return not_found_response(f"Order {talpa_order_id} does not exist")
 
         if event_type == "PAYMENT_PAID":
+            if order.payment_processed_at is not None:
+                return Response({"message": "Payment already processed"}, status=200)
+
+            # Different orders can affect the same permit. Lock all affected
+            # permits in the same order, including extension-only purchases.
+            permit_ids = set(order.permits.values_list("pk", flat=True))
+            permit_ids.update(
+                order.get_pending_permit_extension_requests().values_list(
+                    "permit_id", flat=True
+                )
+            )
+            list(
+                ParkingPermit.objects.select_for_update()
+                .filter(pk__in=permit_ids)
+                .order_by("pk")
+            )
             logger.info(
                 f"Payment paid event received for order: {talpa_order_id}. "
                 f"Processing payment ..."
@@ -542,6 +558,8 @@ class PaymentView(APIView):
                     exc,
                 )
                 self._reconcile_invalid_paid_order(order, pending_extensions, exc)
+                order.payment_processed_at = tz.now()
+                order.save(update_fields=["payment_processed_at"])
                 return bad_request_response(str(exc))
             order.status = OrderStatus.CONFIRMED
             order.payment_type = OrderPaymentType.ONLINE_PAYMENT
@@ -622,6 +640,8 @@ class PaymentView(APIView):
                         and order permits are set to VALID. "
                 f"Permit contract type is {contract_type}"
             )
+            order.payment_processed_at = tz.now()
+            order.save(update_fields=["payment_processed_at"])
             return Response({"message": "Payment received"}, status=200)
         else:
             order.permit_extension_requests.cancel_pending()
