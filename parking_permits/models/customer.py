@@ -230,14 +230,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
     @property
     def full_primary_address_sv(self):
-        return (
-            f"{self.primary_address.street_name_sv} "
-            f"{self.primary_address.street_number} "
-            f"{self.primary_address_apartment_sv}, "
-            f"{self.primary_address.postal_code} "
-            f"{self.primary_address.city_sv}"
-            if self.primary_address
-            else ""
+        if not self.primary_address:
+            return ""
+        return self.primary_address.format_sv(
+            self.primary_address_apartment_sv, self.primary_address_apartment
         )
 
     @property
@@ -252,12 +248,10 @@ class Customer(SerializableMixin, TimestampedModelMixin):
 
     @property
     def full_other_address_sv(self):
-        return (
-            f"{self.other_address.street_name_sv} {self.other_address.street_number} "
-            f"{self.other_address_apartment_sv}, "
-            f"{self.other_address.postal_code} {self.other_address.city_sv}"
-            if self.other_address
-            else ""
+        if not self.other_address:
+            return ""
+        return self.other_address.format_sv(
+            self.other_address_apartment_sv, self.other_address_apartment
         )
 
     @property

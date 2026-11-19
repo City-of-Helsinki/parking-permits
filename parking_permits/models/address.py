@@ -57,6 +57,15 @@ class Address(SerializableMixin, TimestampedModelMixin):
     def __str__(self):
         return f"{self.street_name} {self.street_number}, {self.city}"
 
+    def format_sv(self, apartment_sv=None, apartment=None):
+        # DVV often has no Swedish names, so fall back to the Finnish ones
+        street_name = self.street_name_sv or self.street_name
+        city = self.city_sv or self.city
+        apartment = apartment_sv or apartment or ""
+        return (
+            f"{street_name} {self.street_number} {apartment}, {self.postal_code} {city}"
+        )
+
     @property
     def zone(self):
         if not self.location:

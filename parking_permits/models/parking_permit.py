@@ -267,13 +267,9 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def full_address_sv(self):
-        return (
-            f"{self.address.street_name_sv} {self.address.street_number} "
-            f"{self.address_apartment_sv}, "
-            f"{self.address.postal_code} {self.address.city_sv}"
-            if self.address
-            else ""
-        )
+        if not self.address:
+            return ""
+        return self.address.format_sv(self.address_apartment_sv, self.address_apartment)
 
     @property
     def full_next_address(self):
@@ -287,12 +283,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def full_next_address_sv(self):
-        return (
-            f"{self.next_address.street_name_sv} {self.next_address.street_number} "
-            f"{self.next_address_apartment_sv}, "
-            f"{self.next_address.postal_code} {self.next_address.city_sv}"
-            if self.next_address
-            else ""
+        if not self.next_address:
+            return ""
+        return self.next_address.format_sv(
+            self.next_address_apartment_sv, self.next_address_apartment
         )
 
     @property
