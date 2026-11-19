@@ -218,3 +218,16 @@ class UserModelTestCase(TestCase):
         assert user.is_customer_service is False
         assert user.is_preparators is False
         assert user.is_inspectors is False
+
+
+class ParkingPermitGroupsOrderTestCase(TestCase):
+    # The order is the privilege hierarchy, so a change here is a permission change.
+    def test_groups_are_ordered_from_highest_to_lowest_privilege(self):
+        assert ParkingPermitGroups.values == [
+            "super_admin",
+            "sanctions_and_refunds",
+            "sanctions",
+            "customer_service",
+            "preparators",
+            "inspectors",
+        ]
