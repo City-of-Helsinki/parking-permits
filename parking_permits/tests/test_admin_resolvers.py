@@ -25,11 +25,12 @@ from parking_permits.admin_resolvers import (
 )
 from parking_permits.exceptions import (
     AddressError,
+    InvalidEmailError,
     ObjectNotFoundError,
     PermitCanNotBeExtendedError,
     TraficomFetchVehicleError,
 )
-from parking_permits.models import ParkingPermitExtensionRequest, Product
+from parking_permits.models import Customer, ParkingPermitExtensionRequest, Product
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import Accounting, ProductType
 from parking_permits.tests.factories.customer import CustomerFactory
@@ -175,6 +176,30 @@ def test_update_or_create_existing_customer(customer_info):
     assert customer.national_id_number == "290200A905H"
     assert customer.first_name == "Hessu"
     assert customer.primary_address.street_name == "Mannerheimintie"
+
+
+@pytest.mark.django_db()
+@pytest.mark.parametrize("email", ["hessu@example.com.", "hessu@example", "hessu"])
+def test_update_or_create_customer_invalid_email(customer_info, email):
+    customer_info["email"] = email
+    with pytest.raises(InvalidEmailError):
+        update_or_create_customer(customer_info)
+    assert not Customer.objects.filter(national_id_number="290200A905H").exists()
+
+
+@pytest.mark.django_db()
+def test_update_or_create_customer_strips_email(customer_info):
+    customer_info["email"] = "  hessu@example.com "
+    customer = update_or_create_customer(customer_info)
+    assert customer.email == "hessu@example.com"
+
+
+@pytest.mark.django_db()
+@pytest.mark.parametrize("email", ["", None])
+def test_update_or_create_customer_blank_email(customer_info, email):
+    customer_info["email"] = email
+    customer = update_or_create_customer(customer_info)
+    assert customer.email == ""
 
 
 @pytest.mark.django_db()

@@ -60,6 +60,10 @@ class ObjectNotFoundError(ParkingPermitValidationError):
     pass
 
 
+class InvalidEmailError(ParkingPermitValidationError):
+    pass
+
+
 class CreateTalpaProductError(ParkingPermitBaseError):
     pass
 

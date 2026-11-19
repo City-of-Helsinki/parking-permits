@@ -14,6 +14,7 @@ from ariadne import (
 from dateutil.parser import isoparse
 from django.conf import settings
 from django.contrib.gis.geos import Point
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -53,6 +54,7 @@ from .exceptions import (
     AddressError,
     CreatePermitError,
     EndPermitError,
+    InvalidEmailError,
     ObjectNotFoundError,
     ParkingPermitValidationError,
     ParkingZoneError,
@@ -99,6 +101,7 @@ from .utils import (
     get_permit_prices,
     get_user_from_resolver_args,
 )
+from .validators import clean_email
 
 logger = logging.getLogger("db")
 audit_logger = audit.get_audit_logger_adapter(
@@ -359,10 +362,15 @@ def update_or_create_customer(customer_info):
         customer_info.pop("primary_address", None)
         customer_info.pop("other_address", None)
 
+    try:
+        email = clean_email(customer_info["email"])
+    except ValidationError:
+        raise InvalidEmailError(_("Invalid email address"))
+
     customer_data = {
         "first_name": customer_info.get("first_name", ""),
         "last_name": customer_info.get("last_name", ""),
-        "email": customer_info["email"],
+        "email": email,
         "phone_number": customer_info["phone_number"],
         "address_security_ban": customer_info["address_security_ban"],
         "driver_license_checked": customer_info["driver_license_checked"],

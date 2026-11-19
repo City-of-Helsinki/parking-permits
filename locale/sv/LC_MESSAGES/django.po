@@ -63,6 +63,9 @@ msgstr "Flera parkerings zon till denna plats"
 msgid "Customer not found"
 msgstr "Ingen kund hittas"
 
+msgid "Invalid email address"
+msgstr "Ogiltig e-postadress"
+
 msgid "Customer search error"
 msgstr "Kundsökningsfel"
 

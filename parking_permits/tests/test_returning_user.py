@@ -98,7 +98,7 @@ class ReturningUserAfterAnonymizationTestCase(TestCase):
             "source_id": "src",
             "first_name": "A",
             "last_name": "B",
-            "email": "a@b.c",
+            "email": "a@example.com",
             "phone_number": "1",
             "national_id_number": self.REAL_SSN,
         }
@@ -145,7 +145,7 @@ class ReturningUserAfterAnonymizationTestCase(TestCase):
             "source_id": "src",
             "first_name": "A",
             "last_name": "B",
-            "email": "a@b.c",
+            "email": "a@example.com",
             "phone_number": "1",
             "national_id_number": self.REAL_SSN,
         }
@@ -161,3 +161,50 @@ class ReturningUserAfterAnonymizationTestCase(TestCase):
         self.assertNotEqual(new_customer.pk, old_customer.pk)
         self.assertTrue(old_customer.is_anonymized)
         self.assertFalse(new_customer.is_anonymized)
+
+
+class ProfileEmailValidationTestCase(TestCase):
+    SSN = "010101-123A"
+
+    def _resolve_profile(self, profile_email):
+        user = UserFactory()
+        request = RequestFactory().post("/")
+        request.user = user
+        info = _make_mock_info(request)
+        profile_data = {
+            "source_system": "HELSINKI_PROFILE",
+            "source_id": "src",
+            "first_name": "A",
+            "last_name": "B",
+            "email": profile_email,
+            "phone_number": "1",
+            "national_id_number": self.SSN,
+        }
+        with (
+            patch.object(
+                parking_permits.decorators.RequestJWTAuthentication, "authenticate"
+            ) as mock_authenticate,
+            patch("parking_permits.resolvers.get_addresses", return_value=({}, {})),
+            patch("parking_permits.resolvers.HelsinkiProfile") as mock_profile,
+        ):
+            mock_authenticate.return_value = UserAuthorization(user, {})
+            mock_profile.return_value.get_customer.return_value = profile_data
+            return resolve_user_profile(None, info, audit_msg=AuditMsg("test"))
+
+    def test_valid_profile_email_is_stored(self):
+        customer = self._resolve_profile("a@example.com")
+        self.assertEqual(customer.email, "a@example.com")
+
+    def test_invalid_profile_email_is_not_stored(self):
+        customer = self._resolve_profile("a@example.com.")
+        self.assertEqual(customer.email, "")
+
+    def test_invalid_profile_email_keeps_existing_email(self):
+        CustomerFactory(national_id_number=self.SSN, email="old@example.com")
+        customer = self._resolve_profile("a@example.com.")
+        self.assertEqual(customer.email, "old@example.com")
+
+    def test_missing_profile_email_keeps_existing_email(self):
+        CustomerFactory(national_id_number=self.SSN, email="old@example.com")
+        customer = self._resolve_profile(None)
+        self.assertEqual(customer.email, "old@example.com")
