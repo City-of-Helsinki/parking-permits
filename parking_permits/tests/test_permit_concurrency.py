@@ -344,3 +344,82 @@ def test_migration_refuses_duplicates_without_removing_history():
     assert ParkingPermit.objects.filter(pk__in=[permit.pk, historical.pk]).count() == 2
     with pytest.raises(IntegrityError), transaction.atomic():
         ParkingPermit.objects.filter(pk=historical.pk).update(status="DRAFT")
+
+
+def pending_checkout():
+    customer = CustomerFactory()
+    permit = ParkingPermitFactory(
+        customer=customer,
+        address=customer.primary_address,
+        status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+    )
+    ProductFactory(
+        zone=permit.parking_zone,
+        start_date=timezone.localdate() - relativedelta(years=1),
+        end_date=timezone.localdate() + relativedelta(years=1),
+    )
+    order = OrderFactory(
+        customer=customer,
+        talpa_last_valid_purchase_time=timezone.now() - relativedelta(hours=1),
+    )
+    order.permits.add(permit)
+    return permit, order
+
+
+def test_timeout_does_not_overwrite_concurrent_payment(payment_effects, settings):
+    settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS = 0
+    permit, order = pending_checkout()
+
+    paid, fetched = contend(
+        lambda: notify(order), lambda: CustomerPermit(permit.customer_id).get()
+    )
+
+    assert paid == 200
+    order.refresh_from_db()
+    permit.refresh_from_db()
+    assert order.status == OrderStatus.CONFIRMED
+    assert order.paid_time is not None
+    assert order.payment_processed_at is not None
+    assert permit.status == ParkingPermitStatus.VALID
+    assert fetched[0].status == ParkingPermitStatus.VALID
+    # Cancellation must not erase the replay guard and allow another delivery.
+    assert notify(order) == 200
+    email, sync = payment_effects
+    assert email.call_count == sync.call_count == 1
+
+
+@pytest.mark.parametrize("paid_field", ["paid_time", "payment_processed_at"])
+def test_timeout_preserves_paid_draft_order(paid_field, settings):
+    settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS = 0
+    permit, order = pending_checkout()
+    recorded_at = timezone.now()
+    Order.objects.filter(pk=order.pk).update(**{paid_field: recorded_at})
+
+    fetched = CustomerPermit(permit.customer_id).get()
+
+    order.refresh_from_db()
+    permit.refresh_from_db()
+    assert order.status == OrderStatus.DRAFT
+    assert getattr(order, paid_field) == recorded_at
+    assert permit.status == ParkingPermitStatus.PAYMENT_IN_PROGRESS
+    assert fetched[0].status == ParkingPermitStatus.PAYMENT_IN_PROGRESS
+
+
+@pytest.mark.parametrize("expired", [False, True])
+def test_timeout_cancels_only_expired_unpaid_checkout(expired, settings):
+    settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS = 0 if expired else 120
+    permit, order = pending_checkout()
+
+    fetched = CustomerPermit(permit.customer_id).get()
+
+    order.refresh_from_db()
+    permit.refresh_from_db()
+    assert order.status == (OrderStatus.CANCELLED if expired else OrderStatus.DRAFT)
+    assert permit.status == (
+        ParkingPermitStatus.CANCELLED
+        if expired
+        else ParkingPermitStatus.PAYMENT_IN_PROGRESS
+    )
+    assert fetched[0].status == permit.status
+    assert order.paid_time is None
+    assert order.payment_processed_at is None

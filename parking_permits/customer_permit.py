@@ -205,6 +205,8 @@ class CustomerPermit:
             permit.delete()
 
         for permit in self.customer_permit_query.order_by("start_time"):
+            if permit.status == PAYMENT_IN_PROGRESS:
+                self._cancel_timed_out_payment(permit)
             permit.temporary_vehicles.filter(end_time__lt=tz.now()).update(
                 is_active=False
             )
@@ -243,20 +245,39 @@ class CustomerPermit:
                 permit.address_changed_date = tz.localdate()
                 permit.save()
 
-            # automatically cancel permit and it's latest order if
-            # payment is not completed in configured time
-            # (default 15 minutes)
-            if permit.has_timed_out_payment_in_progress:
-                # NOTE: permit extension orders do NOT set the permit into
-                # PAYMENT_IN_PROGRESS-status, so there are no such permits
-                # which would need to be "returned" to VALID-status.
-                permit.status = CANCELLED
-                latest_order = permit.latest_order
-                latest_order.status = OrderStatus.CANCELLED
-                latest_order.save()
-                permit.save()
             permits.append(permit)
         return permits
+
+    @transaction.atomic
+    def _cancel_timed_out_payment(self, permit):
+        latest_order = permit.latest_order
+        if latest_order is None:
+            return
+
+        # Match PaymentView's lock order, then discard the stale permit state.
+        order = Order.objects.select_for_update().get(pk=latest_order.pk)
+        permit.refresh_from_db(from_queryset=ParkingPermit.objects.select_for_update())
+        if (
+            permit.status != PAYMENT_IN_PROGRESS
+            or permit.latest_order != order
+            or order.status != OrderStatus.DRAFT
+            or order.paid_time is not None
+            or order.payment_processed_at is not None
+            or order.talpa_last_valid_purchase_time is None
+        ):
+            return
+
+        deadline = order.talpa_last_valid_purchase_time + tz.timedelta(
+            minutes=settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
+        )
+        if deadline >= tz.now():
+            return
+
+        # Extension orders never put the permit into PAYMENT_IN_PROGRESS.
+        order.status = OrderStatus.CANCELLED
+        order.save(update_fields=["status", "modified_at"])
+        permit.status = CANCELLED
+        permit.save(update_fields=["status", "modified_at"])
 
     @transaction.atomic
     def create(self, address_id, registration):
