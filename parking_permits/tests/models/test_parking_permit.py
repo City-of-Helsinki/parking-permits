@@ -1692,6 +1692,38 @@ class ParkingPermitTestCase(TestCase):
             "2024-11-09T23:59:59.999999+02:00",
         )
 
+    @freeze_time("2024-10-05")
+    def test_renew_parking_permit_logs_unexpected_extension(self):
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=timezone.make_aware(datetime(2024, 1, 10, 12, 0), pytz.UTC),
+            end_time=timezone.make_aware(datetime(2024, 10, 8, 20, 59), pytz.UTC),
+            month_count=1,
+        )
+
+        with self.assertLogs("db", level="WARNING") as logs:
+            permit.renew_open_ended_permit()
+
+        self.assertIn("changed end time unexpectedly", logs.output[0])
+
+    @freeze_time("2024-01-20")
+    def test_renew_parking_permit_repeatedly_does_not_drift(self):
+        start_time = timezone.make_aware(datetime(2024, 1, 31))
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=start_time,
+            end_time=get_end_time(start_time, 1),
+            month_count=1,
+        )
+
+        with self.assertNoLogs("db", level="WARNING"):
+            for month in range(2, 26):
+                permit.renew_open_ended_permit()
+                permit.refresh_from_db()
+                self.assertEqual(permit.end_time, get_end_time(start_time, month))
+
     @freeze_time("2024-03-15 9:00+02:00")
     @override_settings(TIME_ZONE="Europe/Helsinki")
     def test_parse_temporary_vehicle_times(self):
