@@ -1,7 +1,7 @@
 import itertools
 import logging
 import operator
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 from dateutil.parser import isoparse
@@ -978,8 +978,23 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         if self.contract_type != ContractType.OPEN_ENDED:
             raise ValueError("This permit is not open-ended so cannot be renewed")
+        old_end_time = self.end_time
         self.end_time = increment_end_time(self.start_time, self.end_time, months=1)
+        self._check_renewal_extension(old_end_time)
         self.save()
+
+    def _check_renewal_extension(self, old_end_time):
+        if old_end_time is None:
+            return
+        extension = self.end_time - old_end_time
+        # Consecutive month ends are 28-31 days apart, +-1h for DST changes.
+        if not (
+            timedelta(days=28, hours=-1) <= extension <= timedelta(days=31, hours=1)
+        ):
+            logger.warning(
+                f"Permit {self.pk} renewal changed end time unexpectedly: "
+                f"{old_end_time} -> {self.end_time} ({extension})"
+            )
 
     def extend_permit(self, additional_months):
         """Extends the end time of the permit by given months."""

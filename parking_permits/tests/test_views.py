@@ -55,7 +55,12 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
-from parking_permits.utils import get_meta_item, get_meta_value, to_dict
+from parking_permits.utils import (
+    get_end_time,
+    get_meta_item,
+    get_meta_value,
+    to_dict,
+)
 from users.tests.factories.user import UserFactory
 
 from ..models import Customer
@@ -323,6 +328,36 @@ class PaymentViewTestCase(APITestCase):
             permit.end_time,
             datetime.datetime(2023, 11, 11, 21, 59, 59, 999999, tzinfo=datetime.UTC),
         )
+
+    @patch("parking_permits.views.sync_with_parkkihubi")
+    @patch("parking_permits.views.send_permit_email")
+    def test_payment_view_should_renew_open_ended_permit_once_on_retry(
+        self, mock_email, mock_sync
+    ):
+        start_time = tz.localtime().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        permit = ParkingPermitFactory(
+            status=ParkingPermitStatus.VALID,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=start_time,
+            end_time=get_end_time(start_time, 1),
+            month_count=1,
+        )
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id,
+            status=OrderStatus.DRAFT,
+            type=OrderType.SUBSCRIPTION_RENEWED,
+        )
+        order.permits.add(permit)
+        data = {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+
+        self.assertEqual(self.client.post(self.url, data).status_code, 200)
+        self.assertEqual(self.client.post(self.url, data).status_code, 200)
+
+        permit.refresh_from_db()
+        self.assertEqual(permit.end_time, get_end_time(permit.start_time, 2))
+        self.assertEqual(mock_email.call_count, 1)
 
     @override_settings(DEBUG=True)
     def test_payment_view_should_promote_next_vehicle_on_vehicle_changed_order(self):
