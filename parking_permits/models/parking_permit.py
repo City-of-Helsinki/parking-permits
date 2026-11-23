@@ -21,6 +21,7 @@ from helsinki_gdpr.models import SerializableMixin
 
 from ..exceptions import (
     DuplicatePermitError,
+    OrderCreationFailedError,
     PermitCanNotBeEndedError,
     PermitCanNotBeExtendedError,
     TemporaryVehicleValidationError,
@@ -41,6 +42,7 @@ from ..utils import (
     increment_end_time,
     round_up,
 )
+from .common import OrderStatus, OrderType
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
 from .temporary_vehicle import TemporaryVehicle
@@ -299,10 +301,12 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def is_order_confirmed(self):
-        from .order import OrderStatus
-
         if self.orders:
-            recent_order = self.orders.order_by("-paid_time").first()
+            recent_order = (
+                self.orders.exclude(type=OrderType.PRICE_ADJUSTED)
+                .order_by("-paid_time")
+                .first()
+            )
             return (
                 recent_order.status == OrderStatus.CONFIRMED if recent_order else False
             )
@@ -325,18 +329,25 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def latest_order(self):
-        """Get the latest order for the permit
+        """Get the latest payment order for the permit.
 
         Multiple orders can be created for the same permit
         when, for example, the vehicle or the address of
         the permit is changed.
 
-        If extension request order, returns that order instead
+        A pending extension takes priority while its checkout is open.
         """
-        if order := self.latest_extension_request_order:
-            return order
-
-        return self.orders.latest("id") if self.orders.exists() else None
+        request = self.get_pending_extension_requests().select_related("order").last()
+        if request:
+            return request.order
+        return (
+            self.orders.model.objects.filter(
+                Q(permits=self) | Q(permit_extension_requests__permit=self)
+            )
+            .exclude(type=OrderType.PRICE_ADJUSTED)
+            .order_by("-pk")
+            .first()
+        )
 
     @property
     def talpa_order_id(self):
@@ -607,8 +618,6 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def has_timed_out_payment_in_progress(self):
-        from .order import OrderStatus
-
         payment_wait_time_buffer = settings.TALPA_ORDER_PAYMENT_WEBHOOK_WAIT_BUFFER_MINS
 
         if self.status != ParkingPermitStatus.PAYMENT_IN_PROGRESS:
@@ -846,80 +855,104 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 }
             ]
 
-        if self.is_fixed_period:
-            # price change affected date range and products
-            start_date = self.next_period_start_time
-            end_date = timezone.localdate(self.end_time)
-            previous_product_iter = previous_products.for_date_range(
-                start_date, end_date
-            ).iterator()
-            new_product_iter = new_products.for_date_range(
-                start_date, end_date
-            ).iterator()
+        return self.fixed_period_price_changes(new_zone, is_low_emission)
 
-            # calculate the price change list in the affected date range
-            month_start_date = start_date
-            previous_product = next(previous_product_iter, None)
-            new_product = next(new_product_iter, None)
-            price_change_list = []
-            while month_start_date < end_date and previous_product and new_product:
-                previous_price = previous_product.get_modified_unit_price(
-                    is_low_emission=self.vehicle.is_low_emission,
-                    is_secondary=is_secondary,
+    def fixed_period_price_changes(
+        self, new_zone, is_low_emission, *, use_item_price=False
+    ):
+        """Quote each unused billing month from its most recent confirmed order item."""
+        start = timezone.localdate(self.start_time)
+        end = timezone.localdate(self.end_time)
+        items = list(
+            self.order_items.filter(
+                order__status=OrderStatus.CONFIRMED,
+                is_refunded=False,
+                end_time__date__gte=self.next_period_start_time,
+            )
+            .select_related("product__zone", "order")
+            .order_by("-order_id", "pk")
+        )
+        lines = []
+        for month in range(self.months_used, self.month_count):
+            period_start = start + relativedelta(months=month)
+            period_end = min(end, start + relativedelta(months=month + 1, days=-1))
+            if period_start > period_end:
+                break
+            # Catalogue boundaries can split a prepaid billing month. Its
+            # tariff is the item covering the start of that month.
+            covering = [
+                item
+                for item in items
+                if item.start_time
+                and timezone.localdate(item.start_time) <= period_start
+                and timezone.localdate(item.end_time) >= period_start
+            ]
+            if not covering or (
+                len(covering) > 1 and covering[0].order_id == covering[1].order_id
+            ):
+                raise OrderCreationFailedError(
+                    f"Invalid paid coverage for permit {self.pk} on {period_start}"
                 )
-                new_price = new_product.get_modified_unit_price(
-                    is_low_emission=is_low_emission,
-                    is_secondary=is_secondary,
+            item = covering[0]
+            funding_order = next(
+                i.order for i in covering if i.order.type != OrderType.PRICE_ADJUSTED
+            )
+            product = item.product
+            prices = item.tariff_prices(self.is_secondary_vehicle)
+            previous_price = (
+                item.unit_price
+                if item.regular_unit_price is not None or use_item_price
+                else prices[self.vehicle.is_low_emission]
+            )
+            # Older refund-only zone moves have no destination order item.
+            if (
+                item.regular_unit_price is None
+                and product.zone_id != self.parking_zone_id
+                and not use_item_price
+            ):
+                product = self.parking_zone.products.for_resident().get_for_date(
+                    period_start
                 )
-                diff_price = new_price - previous_price
-                if (
-                    len(price_change_list) > 0
-                    and price_change_list[-1]["product"] == new_product.name
-                    and price_change_list[-1]["price_change"] == diff_price
-                ):
-                    # if it's the same product and diff price is the same as
-                    # previous one, combine the price change by increase the
-                    # quantity by 1
-                    price_change_list[-1]["month_count"] += 1
-                else:
-                    # if the price is decreased, get VAT from the previous permit order
-                    vat = (
-                        self.latest_order.vat
-                        if diff_price < 0 and self.latest_order
-                        else new_product.vat
-                    )
-                    # if the product is different or diff price is different,
-                    # create a new price change item
-                    price_change_vat = calc_vat_price(diff_price, vat).quantize(
+                prices = product.tariff_prices(self.is_secondary_vehicle)
+                previous_price = prices[self.vehicle.is_low_emission]
+            if new_zone.pk != (
+                product.zone_id if use_item_price else self.parking_zone_id
+            ):
+                product = new_zone.products.for_resident().get_for_date(period_start)
+                prices = product.tariff_prices(self.is_secondary_vehicle)
+            new_price = prices[is_low_emission]
+            change = new_price - previous_price
+            vat = item.vat if change < 0 else product.vat
+            if (
+                lines
+                and lines[-1]["source_item"] == item
+                and lines[-1]["funding_order"] == funding_order
+                and lines[-1]["tariff_product"] == product
+                and lines[-1]["previous_price"] == previous_price
+            ):
+                lines[-1]["month_count"] += 1
+                lines[-1]["end_date"] = period_end
+                continue
+            lines.append(
+                {
+                    "product": product.name,
+                    "tariff_product": product,
+                    "tariff_prices": prices,
+                    "source_item": item,
+                    "funding_order": funding_order,
+                    "previous_price": previous_price,
+                    "new_price": new_price,
+                    "price_change": change,
+                    "price_change_vat_percent": vat * 100,
+                    "price_change_vat": calc_vat_price(change, vat).quantize(
                         Decimal("0.0001")
-                    )
-
-                    price_change_list.append(
-                        {
-                            "product": new_product.name,
-                            "previous_price": previous_price,
-                            "new_price": new_price,
-                            "price_change_vat": price_change_vat,
-                            "price_change_vat_percent": vat * 100,
-                            "price_change": diff_price,
-                            "start_date": month_start_date,
-                            "month_count": 1,
-                        }
-                    )
-
-                month_start_date += relativedelta(months=1)
-                if month_start_date > previous_product.end_date:
-                    previous_product = next(previous_product_iter, None)
-                if month_start_date > new_product.end_date:
-                    new_product = next(new_product_iter, None)
-
-            # calculate the end date based on month count in
-            # each price change item
-            for price_change in price_change_list:
-                price_change["end_date"] = price_change["start_date"] + relativedelta(
-                    months=price_change["month_count"], days=-1
-                )
-            return price_change_list
+                    ),
+                    "start_date": period_start,
+                    "end_date": period_end,
+                    "month_count": 1,
+                }
+            )
+        return lines
 
     def end_permit(self, end_type, force_end=False):
         self.end_type = end_type
@@ -1000,6 +1033,30 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     def cancel_extension_requests(self):
         self.permit_extension_requests.cancel_pending()
+
+    @property
+    def ending_refund_lines(self):
+        """Unused prepaid months, including the signed amounts of later adjustments."""
+        if not self.is_fixed_period or not self.can_be_refunded:
+            return []
+        return [
+            {
+                "product": item.product.name,
+                "previous_price": item.payment_unit_price,
+                "new_price": item.payment_unit_price,
+                "price_change": item.payment_unit_price,
+                "price_change_vat": item.payment_unit_price_vat,
+                "price_change_vat_percent": item.vat_percentage,
+                "start_date": start,
+                "end_date": end,
+                "month_count": quantity,
+            }
+            for item, quantity, (
+                start,
+                end,
+            ) in self.get_unused_order_items_for_all_orders()
+            if item.payment_unit_price and quantity
+        ]
 
     def get_vat_based_refund_amounts_for_unused_items(self):
         totals_per_vat = {}
@@ -1160,53 +1217,30 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def get_unused_order_items_for_all_orders(self):
         if self.is_open_ended:
             return self.get_unused_order_items_for_open_ended_permit()
-        unused_order_items = []
-        for order in self.orders.all().order_by("created_at"):
-            unused_order_items.extend(self.get_unused_order_items_for_order(order))
-        # sort by order item start time
-        unused_order_items.sort(key=lambda x: x[0].start_time)
-        return unused_order_items
+        return self._unused_fixed_period_items(
+            self.order_items.filter(order__permits=self)
+        )
 
     def get_unused_order_items_for_order(self, order):
-        from .order import OrderStatus
+        return self._unused_fixed_period_items(self.order_items.filter(order=order))
 
-        unused_start_date = self.next_period_start_time
-
-        order_items = order.order_items.filter(
-            end_time__date__gte=unused_start_date,
-            is_refunded=False,
-            order__status=OrderStatus.CONFIRMED,
-            permit=self,
-        ).order_by("start_time")
-
-        if len(order_items) == 0:
-            return []
-
-        # order items may be partially used, so should calculate
-        # the remaining quantity and date range starting from
-        # unused_start_date
-        return [
-            *[
-                [
-                    item,
-                    diff_months_ceil(
-                        max(
-                            unused_start_date,
-                            timezone.localtime(item.start_time).date(),
-                        ),
-                        timezone.localtime(item.end_time).date(),
-                    ),
-                    (
-                        max(
-                            unused_start_date,
-                            timezone.localtime(item.start_time).date(),
-                        ),
-                        timezone.localtime(item.end_time).date(),
-                    ),
-                ]
-                for item in order_items
-            ],
-        ]
+    def _unused_fixed_period_items(self, items):
+        unused_start = self.next_period_start_time
+        items = (
+            items.filter(
+                end_time__date__gte=unused_start,
+                is_refunded=False,
+                order__status=OrderStatus.CONFIRMED,
+            )
+            .select_related("order", "product__zone")
+            .order_by("start_time", "order_id", "pk")
+        )
+        result = []
+        for item in items:
+            start = max(unused_start, timezone.localdate(item.start_time))
+            end = timezone.localdate(item.end_time)
+            result.append([item, diff_months_ceil(start, end), (start, end)])
+        return result
 
     def get_products_for_resident(self):
         if self.next_parking_zone:

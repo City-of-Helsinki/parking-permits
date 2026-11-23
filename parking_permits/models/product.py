@@ -1,6 +1,6 @@
 import json
 import logging
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 from urllib.parse import urljoin
 
 import requests
@@ -234,6 +234,15 @@ class Product(TimestampedModelMixin, UserStampedModelMixin):
         if is_secondary:
             price += price * self.secondary_vehicle_increase_rate
         return price
+
+    def tariff_prices(self, is_secondary):
+        """Regular and low-emission monthly prices, in order-item precision."""
+        return tuple(
+            self.get_modified_unit_price(
+                is_low_emission=low, is_secondary=is_secondary
+            ).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            for low in (False, True)
+        )
 
     def get_talpa_pricing(self, *, is_low_emission, is_secondary):
         """Returns dict of the following price values for Talpa processing e.g.:

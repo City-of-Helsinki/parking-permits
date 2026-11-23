@@ -1,5 +1,4 @@
 import logging
-from collections import Counter
 from decimal import Decimal
 
 from ariadne import (
@@ -37,7 +36,11 @@ from .models.parking_permit import (
     ParkingPermitEventFactory,
     ParkingPermitStatus,
 )
-from .resolver_utils import create_refund
+from .resolver_utils import (
+    apply_prepaid_price_change,
+    create_refund,
+    price_change_total,
+)
 from .services.dvv import get_addresses
 from .services.hel_profile import HelsinkiProfile
 from .services.mail import (
@@ -258,6 +261,17 @@ def validate_customer_address(customer, address_id):
         raise ObjectNotFoundError(_("Address not found"))
 
 
+@query.field("getVehiclePriceChanges")
+@is_authenticated
+def resolve_get_vehicle_price_changes(_obj, info, permit_id, is_low_emission):
+    permit = ParkingPermit.objects.get(
+        pk=permit_id, customer=info.context["request"].user.customer
+    )
+    return permit.get_price_change_list(
+        new_zone=permit.parking_zone, is_low_emission=is_low_emission
+    )
+
+
 @query.field("getUpdateAddressPriceChanges")
 @is_authenticated
 @transaction.atomic
@@ -461,7 +475,11 @@ def resolve_update_permit_vehicle(
 ):
     request = info.context["request"]
     customer = request.user.customer
-    permit = ParkingPermit.objects.get(id=permit_id, customer=customer)
+    permit = ParkingPermit.objects.select_for_update().get(
+        id=permit_id, customer=customer
+    )
+    if permit.is_fixed_period and not permit.is_valid:
+        raise ParkingPermitValidationError(_("Permit is not valid for a price change"))
     old_registration_number = permit.vehicle.registration_number
 
     audit_msg.target = permit
@@ -502,6 +520,7 @@ def resolve_update_permit_vehicle(
         permit.vehicle = new_vehicle
         permit.save()
 
+    changes = {permit.pk: price_change_list} if permit.is_fixed_period else None
     if permit_total_price_change:
         latest_order = permit.latest_order
         if is_higher_price:
@@ -509,6 +528,7 @@ def resolve_update_permit_vehicle(
             new_order = Order.objects.create_renewal_order(
                 customer,
                 status=OrderStatus.CONFIRMED,
+                price_changes=changes,
                 order_type=OrderType.VEHICLE_CHANGED,
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 user=request.user,
@@ -517,6 +537,14 @@ def resolve_update_permit_vehicle(
             checkout_url = TalpaOrderManager.send_to_talpa(new_order)
             permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
             talpa_order_created = True
+        elif permit.is_fixed_period:
+            apply_prepaid_price_change(
+                customer,
+                changes,
+                request.user,
+                iban,
+                f"Refund for switching permit vehicle to {new_vehicle}",
+            )
         else:
             """New price is lower: generate refunds"""
             refunds = []
@@ -554,7 +582,10 @@ def resolve_update_permit_vehicle(
         sync_with_parkkihubi(permit)
         send_permit_email(PermitEmailType.UPDATED, permit)
 
-    return {"checkout_url": checkout_url}
+    return {
+        "checkout_url": checkout_url,
+        "refund_created": permit_total_price_change < 0,
+    }
 
 
 @mutation.field("createOrder")
@@ -657,7 +688,12 @@ def resolve_change_address(
         address_apartment_sv = customer.other_address_apartment_sv
     new_zone = address.zone
 
-    permits = ParkingPermit.objects.active().filter(customer=customer)
+    permits = (
+        ParkingPermit.objects.select_for_update()
+        .active()
+        .filter(customer=customer)
+        .order_by("pk")
+    )
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
         raise ObjectNotFoundError(_("No active permits for the customer"))
@@ -683,40 +719,17 @@ def resolve_change_address(
 
     fixed_period_permits = permits.fixed_period()
     if len(fixed_period_permits) > 0:
-        # There can be two cases regarding customer's active permits:
-        #
-        # 1. A single permit or two permits are created at the same time.
-        # In this case, there will be a single order for the permit[s],
-        # and the total price changes for multiple permits are combined.
-        # Only a single refund will be created if the price of the permits
-        # goes down.
-        #
-        # 2. Two permits are created at different times.
-        # In this case, permits will have different orders, and the total
-        # price change need to be stored separately. We need to create
-        # separate refunds also if the price of the permits goes down.
-        #
-        # The total_price_change_by_order Counter (with permit order as the key)
-        # serves the purpose to combine the price change for multiple permits
-        # if they belong to the same order and create separate entries otherwise.
-        total_price_change_by_order = Counter()
-        for permit in fixed_period_permits:
-            price_change_list = permit.get_price_change_list(
-                new_zone=new_zone,
-                is_low_emission=permit.vehicle.is_low_emission,
+        if any(not permit.is_valid for permit in fixed_period_permits):
+            raise ParkingPermitValidationError(
+                _("Permit is not valid for a price change")
             )
-            permit_total_price_change = sum(
-                [
-                    item["price_change"] * item["month_count"]
-                    for item in price_change_list
-                ]
+        changes = {
+            permit.pk: permit.get_price_change_list(
+                new_zone=new_zone, is_low_emission=permit.vehicle.is_low_emission
             )
-            total_price_change_by_order.update(
-                {permit.latest_order: permit_total_price_change}
-            )
-
-        # total price changes for customer's all valid permits
-        customer_total_price_change = sum(total_price_change_by_order.values())
+            for permit in fixed_period_permits
+        }
+        customer_total_price_change = price_change_total(changes)
         if customer_total_price_change <= 0:
             old_zone_name = fixed_period_permits[0].parking_zone.name
             fixed_period_permits.update(
@@ -732,23 +745,15 @@ def resolve_change_address(
                     changes={"parking_zone": [old_zone_name, new_zone.name]},
                 )
 
-        if customer_total_price_change < 0:
-            for order, order_total_price_change in total_price_change_by_order.items():
-                # create refund for each order
-                if order_total_price_change < 0:
-                    permits = order.permits.all()
-                    refund = create_refund(
-                        user=request.user,
-                        permits=permits,
-                        orders=[order],
-                        amount=Decimal(abs(order_total_price_change)),
-                        iban=iban if iban else "",
-                        vat=(order.vat if order.vat else DEFAULT_VAT),
-                        description=f"Refund for updating permits zone "
-                        f"(customer switch address to: {address})",
-                    )
-                    logger.info(f"Refund for updating permits zone created: {refund}")
-        elif customer_total_price_change > 0:
+            if old_zone_name != new_zone.name:
+                apply_prepaid_price_change(
+                    customer,
+                    changes,
+                    request.user,
+                    iban,
+                    f"Refund for changing permit address to {address}",
+                )
+        if customer_total_price_change > 0:
             # update permit new zone to next parking zone and
             # use that in price calculation
             fixed_period_permits.update(
@@ -763,6 +768,7 @@ def resolve_change_address(
                 customer,
                 status=OrderStatus.DRAFT,
                 order_type=OrderType.ADDRESS_CHANGED,
+                price_changes=changes,
                 payment_type=OrderPaymentType.ONLINE_PAYMENT,
                 user=request.user,
                 create_renew_order_event=True,

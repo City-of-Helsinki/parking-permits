@@ -103,6 +103,7 @@ type PermitNode {
   vehicleChanged: Boolean
   addressChanged: Boolean
   isOrderConfirmed: Boolean
+  endingRefundLines: [PermitPriceChangeItem!]!
   totalRefundAmount: Float
 }
 
@@ -135,6 +136,7 @@ type PermitExtendedPriceResult {
 type Query {
   profile: CustomerNode!
   getPermits: [PermitNode]
+  getVehiclePriceChanges(permitId: ID!, isLowEmission: Boolean!): [PermitPriceChangeItem!]!
   getUpdateAddressPriceChanges(addressId: ID!): [PermitPriceChangeResult]
   getExtendedPriceList(permitId: ID!, monthCount: Int): [PermitExtendedPriceResult]
 }
@@ -154,6 +156,7 @@ type ChangeAddressResult {
 }
 
 type ChangeVehicleResult {
+  refundCreated: Boolean!
   checkoutUrl: String
 }
 

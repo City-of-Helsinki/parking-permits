@@ -883,6 +883,7 @@ class ParkingZoneTestCase(TestCase):
             end_time=end_time,
             month_count=12,
         )
+        Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
         with freeze_time(datetime(2021, 4, 15)):
             with translation.override("fi"):
                 price_change_list = permit.get_price_change_list(
@@ -944,6 +945,7 @@ class ParkingZoneTestCase(TestCase):
             end_time=end_time,
             month_count=12,
         )
+        Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
         with freeze_time(datetime(CURRENT_YEAR, 4, 15)):
             with translation.override("fi"):
                 price_change_list = permit.get_price_change_list(
@@ -1096,9 +1098,10 @@ class ParkingZoneTestCase(TestCase):
             month_count=12,
         )
 
-        old_order = OrderFactory(customer=self.customer, status=OrderStatus.CONFIRMED)
-        OrderItemFactory(order=old_order, permit=permit, vat=Decimal("0.10"))
-        permit.orders.add(old_order)
+        old_order = Order.objects.create_for_permits(
+            [permit], status=OrderStatus.CONFIRMED
+        )
+        old_order.order_items.update(vat=Decimal("0.10"))
 
         with freeze_time(datetime(2021, 4, 15)):
             price_change_list = permit.get_price_change_list(
@@ -1150,6 +1153,7 @@ class ParkingZoneTestCase(TestCase):
             month_count=12,
         )
 
+        Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
         with freeze_time(datetime(2021, 4, 15)):
             # switching to an electric (low-emission) vehicle, same zone:
             # only the products' own low_emission_discount differs

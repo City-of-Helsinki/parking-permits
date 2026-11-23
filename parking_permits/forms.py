@@ -15,7 +15,7 @@ from parking_permits.models import (
     Product,
     TemporaryVehicle,
 )
-from parking_permits.models.order import Order, OrderPaymentType
+from parking_permits.models.order import Order, OrderPaymentType, OrderType
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermit,
@@ -297,6 +297,7 @@ class OrderSearchForm(SearchFormBase):
         )
 
     def filter_queryset(self, qs):
+        qs = qs.exclude(type=OrderType.PRICE_ADJUSTED)
         has_filters = False
         q = self.cleaned_data.get("q")
         contract_types = self.cleaned_data.get("contract_types")
