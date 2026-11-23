@@ -1,7 +1,13 @@
+from collections import defaultdict
 from decimal import Decimal
 
 from parking_permits.models import ParkingPermit, Refund, Subscription
-from parking_permits.models.order import Order, SubscriptionCancelReason
+from parking_permits.models.order import (
+    Order,
+    OrderStatus,
+    OrderType,
+    SubscriptionCancelReason,
+)
 from users.models import User
 
 from .constants import DEFAULT_VAT
@@ -53,6 +59,56 @@ def end_permits(
         )
 
 
+def price_change_total(changes):
+    return sum(
+        line["price_change"] * line["month_count"]
+        for lines in changes.values()
+        for line in lines
+    )
+
+
+def _net_refund_amounts(credits):
+    """Offset debits before issuing positive refund amounts."""
+    debit = -sum(amount for amount in credits.values() if amount < 0)
+    for key, credit in credits.items():
+        if credit > 0:
+            offset = min(debit, credit)
+            debit -= offset
+            if credit > offset:
+                yield key, credit - offset
+
+
+def apply_prepaid_price_change(customer, changes, user, iban, description):
+    """Record signed changes to prepaid months and refund the net credit."""
+    if not any(changes.values()):
+        return
+    Order.objects.create_renewal_order(
+        customer,
+        status=OrderStatus.CONFIRMED,
+        order_type=OrderType.PRICE_ADJUSTED,
+        price_changes=changes,
+        user=user,
+    )
+    groups = defaultdict(Decimal)
+    permits = defaultdict(set)
+    for lines in changes.values():
+        for line in lines:
+            key = (line["funding_order"], line["price_change_vat_percent"] / 100)
+            groups[key] -= line["price_change"] * line["month_count"]
+            permits[key].add(line["source_item"].permit_id)
+    for key, credit in _net_refund_amounts(groups):
+        order, vat = key
+        create_refund(
+            user=user,
+            permits=list(ParkingPermit.objects.filter(pk__in=permits[key])),
+            orders=[order],
+            amount=credit,
+            vat=vat,
+            iban=iban or "",
+            description=description,
+        )
+
+
 def create_permit_refunds(
     user: User | None,
     *permits: ParkingPermit,
@@ -90,22 +146,20 @@ def create_permit_refunds(
             total_sums_per_vat[vat]["orders"].update(vat_data.get("orders"))
             total_sums_per_vat[vat]["order_items"].update(vat_data.get("order_items"))
 
-    total_sum = sum([vat["total"] for vat in total_sums_per_vat.values()])
-
-    if total_sum > 0:
-        refunds = []
-        for vat, data in total_sums_per_vat.items():
-            refunds.append(
-                create_refund(
-                    user=user,
-                    permits=refundable_permits,
-                    orders=list(data["orders"]),
-                    amount=data["total"],
-                    iban=iban,
-                    vat=vat,
-                )
+    amounts = {vat: data["total"] for vat, data in total_sums_per_vat.items()}
+    for vat, credit in _net_refund_amounts(amounts):
+        refunds.append(
+            create_refund(
+                user=user,
+                permits=refundable_permits,
+                orders=list(total_sums_per_vat[vat]["orders"]),
+                amount=credit,
+                iban=iban,
+                vat=vat,
             )
-            # mark the order items as refunded
+        )
+    if refunds:
+        for data in total_sums_per_vat.values():
             for order_item in data["order_items"]:
                 order_item.is_refunded = True
                 order_item.save()

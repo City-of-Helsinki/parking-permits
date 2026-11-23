@@ -1,8 +1,6 @@
 import logging
 import re
-from collections import Counter
 from copy import deepcopy
-from decimal import Decimal
 
 from ariadne import (
     MutationType,
@@ -83,7 +81,12 @@ from .models.parking_permit import (
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
 from .permit_rules import get_secondary_end_time
-from .resolver_utils import create_refund, end_permits
+from .resolver_utils import (
+    apply_prepaid_price_change,
+    create_refund,
+    end_permits,
+    price_change_total,
+)
 from .services import kami
 from .services.dvv import get_person_info
 from .services.mail import (
@@ -717,55 +720,36 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     except ParkingPermit.DoesNotExist:
         raise ObjectNotFoundError(PARKING_PERMIT_NOT_FOUND)
 
-    address_changed = False
-    previous_address_identifier = None
-    if permit.address:
-        previous_address_identifier = (
-            f"{permit.address.street_name} {permit.address.street_number}"
-        )
-    customer_info = permit_info.get("customer")
-    primary_address_info = customer_info.get("primary_address")
-    if primary_address_info:
-        address_identifier = "{} {}".format(
-            primary_address_info.get("street_name"),
-            primary_address_info.get("street_number"),
-        )
-        if address_identifier != previous_address_identifier:
-            address_changed = True
-    other_address_info = customer_info.get("other_address")
-    if other_address_info:
-        address_identifier = "{} {}".format(
-            other_address_info.get("street_name"),
-            other_address_info.get("street_number"),
-        )
-        if address_identifier != previous_address_identifier:
-            address_changed = True
-
-    price_change_list = []
-    active_permits = permit.customer.active_permits
-    fixed_period_permits = active_permits.fixed_period()
-    if address_changed and fixed_period_permits.count() > 0:
-        for permit in fixed_period_permits:
-            update_price_change_list_for_permit(permit, permit_info, price_change_list)
-    elif permit.is_fixed_period:
-        update_price_change_list_for_permit(permit, permit_info, price_change_list)
-    return price_change_list
-
-
-def update_price_change_list_for_permit(permit, permit_info, price_change_list):
-    customer_info = permit_info["customer"]
-    if permit.customer.national_id_number != customer_info["national_id_number"]:
+    if (
+        permit.customer.national_id_number
+        != permit_info["customer"]["national_id_number"]
+    ):
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
-    vehicle_info = permit_info["vehicle"]
-    vehicle = update_or_create_vehicle(vehicle_info)
-    is_low_emission = vehicle.is_low_emission
-    parking_zone = ParkingZone.objects.get(name=permit_info["zone"])
-    price_change_list.extend(
-        permit.get_price_change_list(
-            new_zone=parking_zone, is_low_emission=is_low_emission
-        )
+    power_type = permit_info["vehicle"].get("power_type") or {}
+    is_low_emission = VehiclePowerType(
+        identifier=power_type.get("identifier")
+    ).is_electric
+    zone = ParkingZone.objects.get(name=permit_info["zone"])
+    changes = resident_price_changes(permit, zone, is_low_emission)
+    return [line for lines in changes.values() for line in lines]
+
+
+def resident_price_changes(permit, zone, is_low_emission):
+    affected = (
+        permit.customer.active_permits.fixed_period()
+        if zone.pk != permit.parking_zone_id
+        else [permit]
     )
-    return price_change_list
+    return {
+        other.pk: other.get_price_change_list(
+            new_zone=zone,
+            is_low_emission=is_low_emission
+            if other.pk == permit.pk
+            else other.vehicle.is_low_emission,
+        )
+        for other in affected
+        if other.is_fixed_period
+    }
 
 
 @mutation.field("updateResidentPermit")
@@ -810,7 +794,11 @@ def resolve_update_resident_permit(
             _("Vehicle registration number is mandatory for the permit")
         )
 
-    active_permits = permit.customer.active_permits
+    active_permits = permit.customer.active_permits.select_for_update().order_by("pk")
+    # Zone edits may reprice both permits. Lock them in the same order as checkout.
+    for active_permit in active_permits:
+        if active_permit.pk == permit.pk:
+            permit = active_permit
     has_valid_permit = (
         active_permits.filter(vehicle__registration_number=registration_number)
         .exclude(id=permit_id)
@@ -860,40 +848,31 @@ def resolve_update_resident_permit(
         permit.address_changed_date = None
         permit.save()
 
-    total_price_change_by_order = Counter()
-    fixed_period_permits = active_permits.fixed_period()
-    if address_changed and fixed_period_permits.count() > 0:
-        for permit in fixed_period_permits:
-            calculate_total_price_change(
-                new_zone, permit, permit_info, total_price_change_by_order
-            )
-    elif vehicle_changed:
-        calculate_total_price_change(
-            new_zone, permit, permit_info, total_price_change_by_order
+    zone_changed = new_zone.pk != permit.parking_zone_id
+    price_changes = {}
+    vehicle = update_or_create_vehicle(vehicle_info)
+    if vehicle_changed or zone_changed:
+        price_changes = resident_price_changes(
+            permit, new_zone, vehicle.is_low_emission
         )
-
-    # total price changes for customer's all valid permits
-    customer_total_price_change = sum(total_price_change_by_order.values())
-
-    customer = update_or_create_customer(customer_info)
-
-    if customer_total_price_change < 0:
-        refunds = []
-        for order, order_total_price_change in total_price_change_by_order.items():
-            logger.info("Creating refund for current order")
-            permits = order.permits.all()
-            refund = create_refund(
+    customer_total_price_change = price_change_total(price_changes)
+    if permit.is_open_ended and vehicle_changed:
+        open_ended_lines = permit.get_price_change_list(
+            new_zone=new_zone, is_low_emission=vehicle.is_low_emission
+        )
+        amount = price_change_total({permit.pk: open_ended_lines})
+        if amount < 0:
+            order = permit.latest_order
+            create_refund(
                 user=request.user,
-                permits=permits,
+                permits=list(order.permits.all()),
                 orders=[order],
-                amount=Decimal(abs(order_total_price_change)),
+                amount=-amount,
                 iban=iban,
-                vat=(order.vat if order.vat else DEFAULT_VAT),
-                description=f"Refund for updating permits: "
-                f"{','.join([str(permit.id) for permit in permits])}",
+                vat=order.vat or DEFAULT_VAT,
+                description=f"Refund for updating permits: {permit.pk}",
             )
-            logger.info(f"Refund for lowered permit price created: {refund}")
-            refunds.append(refund)
+    customer = update_or_create_customer(customer_info)
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
 
@@ -912,7 +891,6 @@ def resolve_update_resident_permit(
         customer,
         fields=EventFields.CUSTOMER,
     )
-    vehicle = update_or_create_vehicle(vehicle_info)
     vehicle_diff = ModelDiffer.get_diff(
         permit.vehicle,
         vehicle,
@@ -958,29 +936,18 @@ def resolve_update_resident_permit(
             customer,
             status=OrderStatus.CONFIRMED,
             payment_type=OrderPaymentType.CASHIER_PAYMENT,
+            price_changes=price_changes,
         )
         logger.info(f"Creating renewal order completed: {new_order.id}")
+    elif customer_total_price_change < 0 or zone_changed:
+        apply_prepaid_price_change(
+            customer,
+            price_changes,
+            request.user,
+            iban,
+            f"Refund for updating permits: {permit_id}",
+        )
     return {"success": True}
-
-
-def calculate_total_price_change(
-    new_zone, permit, permit_info, total_price_change_by_order
-):
-    vehicle_info = permit_info["vehicle"]
-    registration_number = (
-        vehicle_info["registration_number"].upper()
-        if vehicle_info["registration_number"]
-        else None
-    )
-    vehicle = Vehicle.objects.get(registration_number=registration_number)
-    is_low_emission = vehicle.is_low_emission
-    price_change_list = permit.get_price_change_list(
-        new_zone=new_zone, is_low_emission=is_low_emission
-    )
-    permit_total_price_change = sum(
-        [item["price_change"] * item["month_count"] for item in price_change_list]
-    )
-    total_price_change_by_order.update({permit.latest_order: permit_total_price_change})
 
 
 @query.field("getExtendedPriceList")

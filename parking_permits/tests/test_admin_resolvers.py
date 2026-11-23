@@ -707,7 +707,7 @@ def test_create_resident_permit_sets_vehicle(
 
 
 @pytest.mark.django_db()
-@mock.patch("parking_permits.admin_resolvers.calculate_total_price_change")
+@mock.patch("parking_permits.models.ParkingPermit.get_price_change_list")
 @mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
 @mock.patch("parking_permits.admin_resolvers.update_or_create_customer_address")
 def test_update_resident_permit_sets_new_vehicle(
@@ -719,7 +719,7 @@ def test_update_resident_permit_sets_new_vehicle(
 
     mock_vehicle_upsert.return_value = new_vehicle
     # No price delta => no order creation branch.
-    mock_price_change.return_value = None
+    mock_price_change.return_value = []
     mock_customer_address_upsert.return_value = permit.customer.primary_address
 
     permit_info = {

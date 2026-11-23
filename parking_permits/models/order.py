@@ -33,6 +33,7 @@ from ..utils import (
     get_meta_item,
     start_date_to_datetime,
 )
+from .common import OrderStatus, OrderType
 from .customer import Customer
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_permit import (
@@ -157,19 +158,6 @@ class OrderPaymentType(models.TextChoices):
     CASHIER_PAYMENT = "CASHIER_PAYMENT", _("Cashier payment")
 
 
-class OrderStatus(models.TextChoices):
-    DRAFT = "DRAFT", _("Draft")
-    CONFIRMED = "CONFIRMED", _("Confirmed")
-    CANCELLED = "CANCELLED", _("Cancelled")
-
-
-class OrderType(models.TextChoices):
-    CREATED = "CREATED", _("Created")
-    VEHICLE_CHANGED = "VEHICLE_CHANGED", _("Vehicle changed")
-    ADDRESS_CHANGED = "ADDRESS_CHANGED", _("Address changed")
-    SUBSCRIPTION_RENEWED = "SUBSCRIPTION_RENEWED", _("Subscription renewed")
-
-
 class OrderManager(SerializableMixin.SerializableManager):
     def _validate_permits(self, permits):
         if len(permits) > 2:
@@ -203,9 +191,11 @@ class OrderManager(SerializableMixin.SerializableManager):
             products_with_quantity = permit.get_products_with_quantities()
             for product, quantity, date_range in products_with_quantity:
                 if quantity > 0:
-                    unit_price = product.get_modified_unit_price(
-                        is_low_emission=permit.vehicle.is_low_emission,
-                        is_secondary=permit.is_secondary_vehicle,
+                    regular, discounted = product.tariff_prices(
+                        permit.is_secondary_vehicle
+                    )
+                    unit_price = (
+                        discounted if permit.vehicle.is_low_emission else regular
                     )
                     start_date, end_date = date_range
                     if permit.is_open_ended:
@@ -216,6 +206,8 @@ class OrderManager(SerializableMixin.SerializableManager):
                         order=order,
                         product=product,
                         permit=permit,
+                        regular_unit_price=regular,
+                        discounted_unit_price=discounted,
                         unit_price=unit_price,
                         payment_unit_price=unit_price,
                         vat=product.vat,
@@ -256,22 +248,25 @@ class OrderManager(SerializableMixin.SerializableManager):
         )
         order.permits.add(permit)
 
-        order_items = [
-            OrderItem(
-                order=order,
-                permit=permit,
-                quantity=item["month_count"],
-                product=item["product"],
-                unit_price=item["unit_price"],
-                payment_unit_price=item["unit_price"],
-                vat=item["product"].vat,
-                start_time=item["start_date"],
-                end_time=item["end_date"],
+        order_items = []
+        for item in permit.get_price_list_for_extended_permit(month_count=month_count):
+            product = item["product"]
+            regular, discounted = product.tariff_prices(permit.is_secondary_vehicle)
+            order_items.append(
+                OrderItem(
+                    order=order,
+                    permit=permit,
+                    product=product,
+                    quantity=item["month_count"],
+                    regular_unit_price=regular,
+                    discounted_unit_price=discounted,
+                    unit_price=item["unit_price"],
+                    payment_unit_price=item["unit_price"],
+                    vat=product.vat,
+                    start_time=item["start_date"],
+                    end_time=item["end_date"],
+                )
             )
-            for item in permit.get_price_list_for_extended_permit(
-                month_count=month_count
-            )
-        ]
 
         OrderItem.objects.bulk_create(order_items)
 
@@ -317,6 +312,7 @@ class OrderManager(SerializableMixin.SerializableManager):
         order_type=OrderType.CREATED,
         payment_type=OrderPaymentType.ONLINE_PAYMENT,
         create_renew_order_event=True,
+        price_changes=None,
         **kwargs,
     ):
         """
@@ -326,6 +322,12 @@ class OrderManager(SerializableMixin.SerializableManager):
         customer_permits = ParkingPermit.objects.filter(
             customer=customer, status=ParkingPermitStatus.VALID
         )
+        if price_changes is not None:
+            customer_permits = customer_permits.filter(pk__in=price_changes)
+            if len(customer_permits) != len(price_changes):
+                raise OrderCreationFailedError(
+                    "Permit is no longer valid for a price change"
+                )
         self._validate_customer_permits(customer_permits, order_type)
 
         try:
@@ -348,73 +350,32 @@ class OrderManager(SerializableMixin.SerializableManager):
             vehicle = permit.next_vehicle if permit.next_vehicle else permit.vehicle
             new_order.vehicles.append(vehicle.registration_number)
             new_order.save()
-            start_date = permit.next_period_start_time
-            end_date = tz.localdate(permit.end_time)
-            if start_date >= end_date:
-                # permit already ended or will be ended after current month period
-                continue
-
-            order_item_detail_list = permit.get_unused_order_items()
-            product_detail_list = permit.get_products_with_quantities()
-
-            order_item_detail_iter = iter(order_item_detail_list)
-            product_detail_iter = iter(product_detail_list)
-
-            order_item_detail = next(order_item_detail_iter, None)
-            product_detail = next(product_detail_iter, None)
-
-            while order_item_detail and product_detail:
-                product, _, product_date_range = product_detail
-                product_start_date, product_end_date = product_date_range
-                (
-                    order_item,
-                    _,
-                    order_item_date_range,
-                ) = order_item_detail
-                order_item_start_date, order_item_end_date = order_item_date_range
-                product_end_date = product_end_date or order_item_end_date
-                # find the period in which the months have the same payment price
-                period_start_date = max(product_start_date, order_item_start_date)
-                period_end_date = min(product_end_date, order_item_end_date)
-                period_quantity = diff_months_ceil(period_start_date, period_end_date)
-
-                if period_quantity and period_start_date >= period_end_date:
-                    raise ValueError(
-                        "Error on product date ranges or order item date ranges"
+            if permit.is_fixed_period:
+                if price_changes is None:
+                    lines = permit.fixed_period_price_changes(
+                        permit.next_parking_zone or permit.parking_zone,
+                        vehicle.is_low_emission,
+                        use_item_price=True,
                     )
-
-                is_low_emission = vehicle.is_low_emission
-                unit_price = product.get_modified_unit_price(
-                    is_low_emission=is_low_emission,
-                    is_secondary=permit.is_secondary_vehicle,
-                )
-
-                # the price the customer needs to pay after deducting the price
-                # that the customer has already paid in previous order for this
-                # order item
-                payment_unit_price = unit_price - order_item.unit_price
-                OrderItem.objects.create(
-                    order=new_order,
-                    product=product,
-                    permit=permit,
-                    unit_price=unit_price,
-                    payment_unit_price=payment_unit_price,
-                    vat=product.vat,
-                    quantity=period_quantity,
-                    start_time=start_date_to_datetime(period_start_date),
-                    end_time=end_date_to_datetime(period_end_date),
-                )
-
-                if product_end_date < order_item_end_date:
-                    # current product ended but order item is not
-                    product_detail = next(product_detail_iter, None)
-                elif product_end_date > order_item_end_date:
-                    # current order item is ended but product is not
-                    order_item_detail = next(order_item_detail_iter, None)
                 else:
-                    # when the end dates from product and order items are the same
-                    product_detail = next(product_detail_iter, None)
-                    order_item_detail = next(order_item_detail_iter, None)
+                    lines = price_changes[permit.pk]
+                for line in lines:
+                    regular, discounted = line["tariff_prices"]
+                    OrderItem.objects.create(
+                        order=new_order,
+                        permit=permit,
+                        product=line["tariff_product"],
+                        regular_unit_price=regular,
+                        discounted_unit_price=discounted,
+                        unit_price=line["new_price"],
+                        payment_unit_price=line["price_change"],
+                        vat=line["price_change_vat_percent"] / 100,
+                        quantity=line["month_count"],
+                        start_time=start_date_to_datetime(line["start_date"]),
+                        end_time=end_date_to_datetime(line["end_date"]),
+                    )
+            else:
+                self._create_open_ended_renewal_items(new_order, permit, vehicle)
 
             if create_renew_order_event:
                 ParkingPermitEventFactory.make_renew_order_event(
@@ -428,6 +389,27 @@ class OrderManager(SerializableMixin.SerializableManager):
         new_order.permits.add(*customer_permits)
 
         return new_order
+
+    def _create_open_ended_renewal_items(self, order, permit, vehicle):
+        if permit.next_period_start_time >= tz.localdate(permit.end_time):
+            return
+        product, _, _ = permit.get_products_with_quantities()[0]
+        for item, _, (start, end) in permit.get_unused_order_items():
+            price = product.get_modified_unit_price(
+                is_low_emission=vehicle.is_low_emission,
+                is_secondary=permit.is_secondary_vehicle,
+            )
+            OrderItem.objects.create(
+                order=order,
+                permit=permit,
+                product=product,
+                unit_price=price,
+                payment_unit_price=price - item.unit_price,
+                vat=product.vat,
+                quantity=diff_months_ceil(start, end),
+                start_time=start_date_to_datetime(start),
+                end_time=end_date_to_datetime(end),
+            )
 
 
 class Order(SerializableMixin, TimestampedModelMixin, UserStampedModelMixin):
@@ -804,6 +786,11 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
         on_delete=models.PROTECT,
     )
     unit_price = models.DecimalField(_("Unit price"), max_digits=6, decimal_places=2)
+    regular_unit_price = models.DecimalField(max_digits=7, decimal_places=2, null=True)
+    discounted_unit_price = models.DecimalField(
+        max_digits=7, decimal_places=2, null=True
+    )
+
     payment_unit_price = models.DecimalField(
         _("Payment unit price"), max_digits=6, decimal_places=2
     )
@@ -828,6 +815,17 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
 
     def __str__(self):
         return f"Order item: {self.id}"
+
+    def tariff_prices(self, is_secondary):
+        if self.regular_unit_price is None:
+            # Before tariff snapshots, only the paid variant was recorded.
+            prices = self.product.tariff_prices(is_secondary)
+            if self.unit_price not in prices:
+                raise OrderCreationFailedError(
+                    f"Purchased tariff no longer matches order item {self.pk}"
+                )
+            return prices
+        return self.regular_unit_price, self.discounted_unit_price
 
     @property
     def vat_percentage(self):

@@ -30,7 +30,6 @@ from parking_permits.resolver_utils import (
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
-    OrderFactory,
     OrderItemFactory,
     SubscriptionFactory,
 )
@@ -1358,9 +1357,7 @@ def test_create_refund_for_real_price_change_non_electric_to_electric_vehicle():
         end_time=end_time,
         month_count=12,
     )
-    order = OrderFactory(customer=customer, status=OrderStatus.CONFIRMED)
-    OrderItemFactory(order=order, permit=permit, vat=Decimal("0.255"))
-    permit.orders.add(order)
+    order = Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
 
     with freeze_time(datetime(2021, 4, 15)):
         price_change_list = permit.get_price_change_list(
