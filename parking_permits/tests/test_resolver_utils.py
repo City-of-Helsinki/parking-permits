@@ -8,6 +8,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 from parking_permits.cron import automatic_expiration_of_permits
+from parking_permits.customer_permit import CustomerPermit
 from parking_permits.models import Order, Refund
 from parking_permits.models.order import (
     OrderPaymentType,
@@ -18,6 +19,7 @@ from parking_permits.models.order import (
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermitEndType,
+    ParkingPermitEvent,
     ParkingPermitStatus,
 )
 from parking_permits.models.product import Product, ProductType
@@ -27,6 +29,7 @@ from parking_permits.resolver_utils import (
     end_permit,
     end_permits,
 )
+from parking_permits.services.mail import PermitEmailType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
@@ -64,6 +67,78 @@ def zone():
 
 
 class TestEndPermits:
+    @pytest.fixture
+    def permits_with_scheduled_secondary(self, zone):
+        start = timezone.make_aware(datetime(2026, 11, 15))
+        primary = ParkingPermitFactory(
+            primary_vehicle=True,
+            parking_zone=zone,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+            start_time=start,
+            month_count=4,
+            end_time=get_end_time(start, 4),
+        )
+        secondary = ParkingPermitFactory(
+            primary_vehicle=False,
+            customer=primary.customer,
+            parking_zone=zone,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.VALID,
+            start_time=start,
+            month_count=3,
+            end_time=get_end_time(start, 3),
+        )
+        ProductFactory(zone=zone, start_date=start.date(), end_date=date(2027, 3, 31))
+        with freeze_time("2026-11-24"):
+            Order.objects.create_for_permits(
+                [primary, secondary], status=OrderStatus.CONFIRMED
+            )
+            CustomerPermit(primary.customer_id).end(
+                [secondary.pk], ParkingPermitEndType.AFTER_CURRENT_PERIOD, iban=IBAN
+            )
+            yield primary, secondary
+
+    @pytest.mark.django_db
+    def test_bulk_end_skips_already_scheduled_permits(
+        self, permits_with_scheduled_secondary
+    ):
+        primary, secondary = permits_with_scheduled_secondary
+        customer_permits = CustomerPermit(primary.customer_id)
+        ids = [primary.pk, secondary.pk]
+        with patch(MOCK_SEND_PERMIT_EMAIL) as send_email:
+            customer_permits.end(
+                ids, ParkingPermitEndType.AFTER_CURRENT_PERIOD, iban=IBAN
+            )
+            customer_permits.end(
+                ids, ParkingPermitEndType.AFTER_CURRENT_PERIOD, iban=IBAN
+            )
+        send_email.assert_called_once_with(PermitEmailType.ENDED, primary)
+
+        for permit in (primary, secondary):
+            permit.refresh_from_db()
+            assert timezone.localdate(permit.end_time) == date(2026, 12, 14)
+            assert (
+                permit.events.filter(key=ParkingPermitEvent.EventKey.END_PERMIT).count()
+                == 1
+            )
+            assert Refund.objects.filter(permits=permit).count() == 1
+
+    @pytest.mark.django_db
+    def test_bulk_end_can_bring_termination_forward(
+        self, permits_with_scheduled_secondary
+    ):
+        primary, secondary = permits_with_scheduled_secondary
+        with patch(MOCK_SEND_PERMIT_EMAIL) as send_email:
+            CustomerPermit(primary.customer_id).end(
+                [primary.pk, secondary.pk], ParkingPermitEndType.IMMEDIATELY, iban=IBAN
+            )
+        for permit in (primary, secondary):
+            permit.refresh_from_db()
+            assert permit.status == ParkingPermitStatus.CLOSED
+            assert permit.end_time == timezone.now()
+            send_email.assert_any_call(PermitEmailType.ENDED, permit)
+
     @pytest.fixture()
     def current_datetime(self):
         return timezone.make_aware(datetime(2024, 3, 26, 0, 0))
