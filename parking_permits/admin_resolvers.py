@@ -740,8 +740,13 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
 
 
 def resident_price_changes(permit, zone, is_low_emission):
-    """Quote fixed-period edits. Talpa requests subscription prices from this app."""
-    affected = [permit] if permit.is_fixed_period else []
+    """Quote prepaid fixed-period edits. Talpa requests subscription prices."""
+    affected = []
+    if permit.is_fixed_period and permit.status not in (
+        ParkingPermitStatus.DRAFT,
+        ParkingPermitStatus.PRELIMINARY,
+    ):
+        affected.append(permit)
     if zone.pk != permit.parking_zone_id:
         affected.extend(
             permit.customer.active_permits.fixed_period().exclude(pk=permit.pk)
