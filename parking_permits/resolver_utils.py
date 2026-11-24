@@ -1,6 +1,8 @@
 from collections import defaultdict
 from decimal import Decimal
 
+from django.db import transaction
+
 from parking_permits.models import ParkingPermit, Refund, Subscription
 from parking_permits.models.order import (
     Order,
@@ -24,6 +26,7 @@ from .services.mail import (
 from .services.parkkihubi import sync_with_parkkihubi
 
 
+@transaction.atomic
 def end_permits(
     user: User | None,
     *permits: ParkingPermit,
@@ -42,6 +45,24 @@ def end_permits(
     and send relevant customer emails and
     create relevant events.
     """
+
+    permit_ids = [permit.pk for permit in permits]
+    # Ending may cancel orders. Match payment processing's order-before-permit
+    # locks without blocking foreign-key references from a concurrent price change.
+    list(
+        Order.objects.filter(permits__in=permit_ids)
+        .select_for_update(of=("self",), no_key=True)
+        .order_by("pk")
+        .values_list("pk", flat=True)
+    )
+    locked_permits = {
+        permit.pk: permit
+        for permit in ParkingPermit.objects.select_for_update()
+        .filter(pk__in=permit_ids)
+        .order_by("pk")
+    }
+    # The caller can require secondary permits to end before the primary.
+    permits = tuple(locked_permits[pk] for pk in permit_ids)
 
     create_permit_refunds(
         user,
