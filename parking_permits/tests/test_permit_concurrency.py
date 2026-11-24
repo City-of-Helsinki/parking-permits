@@ -112,8 +112,28 @@ def test_concurrent_customer_permit_creation():
 
     assert isinstance(first, ParkingPermit)
     assert isinstance(second, DuplicatePermitError)
-    assert isinstance(second.__cause__, IntegrityError)
     assert ParkingPermit.objects.filter(customer=customer, vehicle=vehicle).count() == 1
+
+
+def test_second_purchase_inherits_concurrent_primary_type_change():
+    customer = CustomerFactory()
+    primary = ParkingPermitFactory(
+        customer=customer,
+        address=customer.primary_address,
+        contract_type=ContractType.OPEN_ENDED,
+        status=ParkingPermitStatus.DRAFT,
+    )
+    vehicle = VehicleFactory()
+    _, secondary = contend(
+        lambda: CustomerPermit(customer.pk).update(
+            {"contract_type": ContractType.FIXED_PERIOD, "month_count": 3}, primary.pk
+        ),
+        lambda: CustomerPermit(customer.pk).create(
+            customer.primary_address_id, vehicle.registration_number
+        ),
+    )
+    primary.refresh_from_db()
+    assert secondary.contract_type == primary.contract_type == ContractType.FIXED_PERIOD
 
 
 def test_constraint_protects_bulk_status_changes():

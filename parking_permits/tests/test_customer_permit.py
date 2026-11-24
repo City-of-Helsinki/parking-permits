@@ -782,64 +782,34 @@ class UpdateCustomerPermitTestCase(TestCase):
                 self.assertEqual(permit.contract_type, contract)
                 self.assertEqual(permit.month_count, 1)
 
-    def test_secondary_permit_can_be_either_open_ended_or_fixed_if_primary_is_open_ended(
-        self,
-    ):
-        customer = CustomerFactory(first_name="Fake", last_name="")
-        primary_start_time = next_day()
-        ParkingPermitFactory(
-            customer=customer,
-            status=VALID,
-            start_time=primary_start_time,
-            end_time=get_end_time(primary_start_time, 12),
-        )
-        secondary_start_time = next_day()
-        secondary = ParkingPermitFactory(
-            customer=customer,
-            primary_vehicle=False,
-            start_time=secondary_start_time,
-            end_time=get_end_time(secondary_start_time, 12),
-        )
-        permit_id = str(secondary.id)
-        data = {"contract_type": OPEN_ENDED}
-        CustomerPermit(customer.id).update(data, permit_id=permit_id)
-        secondary.refresh_from_db()
-        self.assertEqual(secondary.contract_type, OPEN_ENDED)
-
-        data1 = {"contract_type": FIXED_PERIOD}
-        CustomerPermit(customer.id).update(data1, permit_id=permit_id)
-        secondary.refresh_from_db()
-        self.assertEqual(secondary.contract_type, FIXED_PERIOD)
-
-    def test_secondary_permit_can_be_only_fixed_if_primary_is_fixed_period(self):
-        customer = CustomerFactory(first_name="Customer 1", last_name="")
-        primary_start_time = next_day()
-        ParkingPermitFactory(
-            customer=customer,
-            status=VALID,
-            contract_type=FIXED_PERIOD,
-            start_time=primary_start_time,
-            end_time=get_end_time(primary_start_time, 12),
-        )
-        secondary_start_time = next_day()
-        secondary = ParkingPermitFactory(
-            customer=customer,
-            primary_vehicle=False,
-            contract_type=FIXED_PERIOD,
-            start_time=secondary_start_time,
-            end_time=get_end_time(secondary_start_time, 12),
-        )
-
-        permit_id = str(secondary.id)
-        msg = _("Only %(fixed_period)s is allowed") % {"fixed_period": FIXED_PERIOD}
-        with self.assertRaisesMessage(InvalidContractTypeError, msg):
-            data = {"contract_type": OPEN_ENDED}
-            CustomerPermit(customer.id).update(data, permit_id=permit_id)
-
-        data1 = {"contract_type": FIXED_PERIOD}
-        CustomerPermit(customer.id).update(data1, permit_id=permit_id)
-        secondary.refresh_from_db()
-        self.assertEqual(secondary.contract_type, FIXED_PERIOD)
+    def test_secondary_permit_must_match_the_active_primary_contract_type(self):
+        for primary_type, other_type in [
+            (OPEN_ENDED, FIXED_PERIOD),
+            (FIXED_PERIOD, OPEN_ENDED),
+        ]:
+            with self.subTest(primary_type=primary_type):
+                start = next_day()
+                primary = ParkingPermitFactory(
+                    status=VALID,
+                    contract_type=primary_type,
+                    start_time=start,
+                    end_time=get_end_time(start, 12),
+                )
+                secondary = ParkingPermitFactory(
+                    customer=primary.customer,
+                    primary_vehicle=False,
+                    contract_type=primary_type,
+                    start_time=start,
+                    end_time=get_end_time(start, 1),
+                )
+                service = CustomerPermit(primary.customer_id)
+                service.update({"contract_type": primary_type}, permit_id=secondary.pk)
+                with self.assertRaises(InvalidContractTypeError):
+                    service.update(
+                        {"contract_type": other_type}, permit_id=secondary.pk
+                    )
+                secondary.refresh_from_db()
+                self.assertEqual(secondary.contract_type, primary_type)
 
     def test_non_draft_permit_contract_type_can_not_be_edited(self):
         customer = CustomerFactory(first_name="Customer 2", last_name="")
@@ -874,15 +844,18 @@ class UpdateCustomerPermitTestCase(TestCase):
         permit.refresh_from_db()
         self.assertEqual(permit.month_count, 1)
 
-    def test_second_permit_can_have_upto_12_month_if_primary_is_open_ended(self):
+    def test_second_permit_can_have_upto_12_month_if_primary_is_fixed_for_12_months(
+        self,
+    ):
         customer = CustomerFactory()
         primary_start_time = next_day()
         ParkingPermitFactory(
             customer=customer,
+            contract_type=FIXED_PERIOD,
             start_time=primary_start_time,
             end_time=get_end_time(primary_start_time, 12),
         )
-        secondary_start_time = next_day()
+        secondary_start_time = primary_start_time
         secondary = ParkingPermitFactory(
             customer=customer,
             primary_vehicle=False,

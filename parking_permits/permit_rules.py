@@ -6,6 +6,8 @@ from django.utils.translation import gettext_lazy as _
 from .exceptions import InvalidContractTypeError, ParkingPermitValidationError
 from .utils import get_end_time
 
+CONTRACT_TYPE_MISMATCH = _("Both permits must have the same contract type.")
+
 
 def primary_end_limit(primary):
     # An ordinary subscription renewal date is not a contract end date.
@@ -39,13 +41,8 @@ def validate_secondary_permit(permit, primary, *, purchase=False, now=None):
         raise ParkingPermitValidationError(
             _("The second permit cannot start before the first permit.")
         )
-    if (
-        primary.contract_type == "FIXED_PERIOD"
-        and permit.contract_type != "FIXED_PERIOD"
-    ):
-        raise InvalidContractTypeError(
-            _("Only %(fixed_period)s is allowed") % {"fixed_period": "FIXED_PERIOD"}
-        )
+    if permit.contract_type != primary.contract_type:
+        raise InvalidContractTypeError(CONTRACT_TYPE_MISMATCH)
     limit = primary_end_limit(primary)
     if limit is None:
         return

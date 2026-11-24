@@ -35,7 +35,7 @@ from .models.parking_permit import (
     ParkingPermitStatus,
 )
 from .models.vehicle import VehiclePowerType, VehicleUser
-from .permit_rules import get_secondary_end_time
+from .permit_rules import CONTRACT_TYPE_MISMATCH, get_secondary_end_time
 from .resolver_utils import end_permits
 from .services.mail import PermitEmailType, send_permit_email
 from .services.parkkihubi import sync_with_parkkihubi
@@ -69,10 +69,7 @@ class CustomerPermit:
 
     def __init__(self, customer_id):
         self.customer = Customer.objects.get(id=customer_id)
-        self.customer_permit_query = ParkingPermit.objects.filter(
-            customer=self.customer,
-            status__in=[VALID, PAYMENT_IN_PROGRESS, DRAFT, PRELIMINARY],
-        )
+        self.customer_permit_query = self.customer.permits.current()
 
     def create_permit_extension_request(
         self,
@@ -281,6 +278,7 @@ class CustomerPermit:
 
     @transaction.atomic
     def create(self, address_id, registration):
+        Customer.objects.select_for_update(no_key=True).get(pk=self.customer.pk)
         if self.customer_permit_query.filter(
             vehicle__registration_number=registration
         ).exists():
@@ -392,6 +390,7 @@ class CustomerPermit:
                 )
 
         if {"start_type", "start_time", "contract_type", "month_count"} & keys:
+            Customer.objects.select_for_update(no_key=True).get(pk=self.customer.pk)
             targets = (
                 [self._get_permit(permit_id)[0]]
                 if permit_id
@@ -438,6 +437,8 @@ class CustomerPermit:
 
             pair = {p.pk: p for p in self.customer_permit_query.all()}
             pair.update({candidate.pk: candidate for _, candidate, _ in candidates})
+            if len({p.contract_type for p in pair.values()}) > 1:
+                raise InvalidContractTypeError(CONTRACT_TYPE_MISMATCH)
             primary = next((p for p in pair.values() if p.primary_vehicle), None)
             for _original, candidate, changes in candidates:
                 if not candidate.primary_vehicle:
