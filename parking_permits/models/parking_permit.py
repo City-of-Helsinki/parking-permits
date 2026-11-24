@@ -1178,7 +1178,7 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             raise RefundReconciliationRequiredError(refund.pk)
 
         siblings = self.refunds.filter(
-            description=refund.description, created_at__date__lt=first
+            description=refund.description, created_at__date__lte=first
         ).exclude(pk=refund.pk)
         if originally_unused:
             siblings = siblings.filter(
