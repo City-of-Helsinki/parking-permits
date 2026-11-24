@@ -1244,3 +1244,13 @@ msgstr "Det andra tillståndet kan inte sluta efter det första tillståndet."
 #: parking_permits/permit_rules.py
 msgid "The full duration of the second permit must fit before the first permit ends. Select a shorter duration."
 msgstr "Det andra tillståndets hela giltighetstid måste rymmas inom det första tillståndets giltighetstid. Välj en kortare period."
+
+msgid "Resolve the pending checkout and retry the change."
+msgstr "Slutför eller avbryt den pågående betalningen och försök sedan igen."
+
+msgid "Previous refund"
+msgstr "Tidigare återbetalning"
+
+#, python-format
+msgid "Reconcile refund %(id)s before ending this permit."
+msgstr "Stäm av återbetalning %(id)s innan du avslutar tillståndet."

@@ -9,7 +9,9 @@ import pytest
 from dateutil.relativedelta import relativedelta
 from django.contrib.auth.models import Group
 from django.test import override_settings
+from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 
 from parking_permits import admin_resolvers
 from parking_permits.admin_resolvers import (
@@ -40,9 +42,11 @@ from parking_permits.models import (
     Product,
     Refund,
 )
+from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import Accounting, ProductType
 from parking_permits.tests.factories.customer import CustomerFactory
+from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import (
@@ -771,15 +775,51 @@ def test_staff_cannot_quote_or_apply_zone_change_for_mixed_permits(info, mock_jw
 
 
 @pytest.mark.django_db()
+@pytest.mark.parametrize(
+    "edit", ["vehicle", "classification", "metadata", "pending zone"]
+)
 @mock.patch("parking_permits.models.ParkingPermit.get_price_change_list")
 @mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
 @mock.patch("parking_permits.admin_resolvers.update_or_create_customer_address")
 def test_update_resident_permit_sets_new_vehicle(
-    mock_customer_address_upsert, mock_vehicle_upsert, mock_price_change, info, mock_jwt
+    mock_customer_address_upsert,
+    mock_vehicle_upsert,
+    mock_price_change,
+    info,
+    mock_jwt,
+    edit,
 ):
-    old_vehicle = VehicleFactory(registration_number="OLD-111")
-    new_vehicle = VehicleFactory(registration_number="NEW-222")
-    permit = ParkingPermitFactory(vehicle=old_vehicle)
+    old_vehicle = VehicleFactory(
+        registration_number="OLD-111", power_type__identifier="01"
+    )
+    new_vehicle = (
+        VehicleFactory(registration_number="NEW-222")
+        if edit == "vehicle"
+        else old_vehicle
+    )
+    permit = ParkingPermitFactory(
+        vehicle=old_vehicle,
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+    )
+    if edit == "classification":
+
+        def update_vehicle(_):
+            new_vehicle.power_type = VehiclePowerTypeFactory(identifier="04")
+            new_vehicle.save()
+            return new_vehicle
+
+        mock_vehicle_upsert.side_effect = update_vehicle
+    zone = permit.parking_zone
+    if edit == "pending zone":
+        zone = ParkingZoneFactory()
+        ParkingPermitFactory(
+            customer=permit.customer,
+            primary_vehicle=False,
+            parking_zone=permit.parking_zone,
+            contract_type=ContractType.FIXED_PERIOD,
+            status=ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        )
 
     mock_vehicle_upsert.return_value = new_vehicle
     # No price delta => no order creation branch.
@@ -808,8 +848,8 @@ def test_update_resident_permit_sets_new_vehicle(
                 ),
             },
         },
-        "vehicle": {"registration_number": "NEW-222"},
-        "zone": permit.parking_zone.name,
+        "vehicle": {"registration_number": new_vehicle.registration_number},
+        "zone": zone.name,
         "start_time": "2024-01-01T00:00:00+00:00",
         "month_count": 1,
         "description": "",
@@ -819,8 +859,15 @@ def test_update_resident_permit_sets_new_vehicle(
     }
 
     with mock_jwt:
+        if edit == "pending zone":
+            with pytest.raises(UpdatePermitError, match="Resolve the pending checkout"):
+                resolve_update_resident_permit(None, info, permit.id, permit_info)
+            mock_vehicle_upsert.assert_not_called()
+            permit.refresh_from_db()
+            assert permit.parking_zone != zone
+            return
         resolve_update_resident_permit(None, info, permit.id, permit_info)
-
+    assert mock_price_change.call_count == (0 if edit == "metadata" else 1)
     permit.refresh_from_db()
     assert permit.vehicle is not None
     assert permit.vehicle == new_vehicle
@@ -935,3 +982,136 @@ def test_create_product_does_not_overwrite_reused_accounting_stamps(
     # not overwritten with the admin creating the new product
     assert existing_accounting.created_by == original_creator
     assert existing_accounting.modified_by == original_creator
+
+
+@pytest.mark.django_db
+@freeze_time("2026-05-25")
+@pytest.mark.parametrize(
+    "edit, expected_price",
+    [
+        ("replace vehicle", "80.00"),
+        ("correct power type", "40.00"),
+        ("move address", "90.00"),
+    ],
+)
+def test_staff_subscription_edits_take_effect_at_renewal(
+    info, mock_jwt, customer_info, client, edit, expected_price
+):
+    # The next month has already been paid. Saving an edit must leave that payment intact.
+    old_power = "04" if edit == "replace vehicle" else "01"
+    address = customer_info["primary_address"]
+    old_zone = ParkingZoneFactory()
+    address["location"] = old_zone.location.centroid.coords
+    permit = ParkingPermitFactory(
+        parking_zone=old_zone,
+        contract_type=ContractType.OPEN_ENDED,
+        status=ParkingPermitStatus.VALID,
+        vehicle__power_type__identifier=old_power,
+        address=admin_resolvers.update_or_create_address(address),
+        start_time=timezone.now().replace(month=4, day=1),
+        end_time=timezone.now().replace(month=6, day=30, hour=20, minute=59),
+    )
+    customer_info["national_id_number"] = permit.customer.national_id_number
+    old_product = ProductFactory(
+        zone=old_zone,
+        type=ProductType.RESIDENT,
+        start_date=date(2026, 1, 1),
+        end_date=date(2026, 5, 31),
+        unit_price=Decimal("60"),
+    )
+    paid_price = Decimal("30" if old_power == "04" else "60")
+    order = OrderFactory(
+        customer=permit.customer, status=OrderStatus.CONFIRMED, paid_time=timezone.now()
+    )
+    order.permits.add(permit)
+    item = OrderItemFactory(
+        permit=permit,
+        order=order,
+        product=old_product,
+        quantity=1,
+        unit_price=paid_price,
+        payment_unit_price=paid_price,
+        talpa_order_item_id=uuid.uuid4(),
+    )
+    subscription_id = item.subscription_id
+
+    vehicle = permit.vehicle
+    zone = old_zone
+    if edit == "replace vehicle":
+        vehicle = VehicleFactory(power_type__identifier="01")
+    elif edit == "move address":
+        zone = ParkingZoneFactory()
+        customer_info["primary_address"] = {
+            **address,
+            "street_name": "New street",
+            "location": zone.location.centroid.coords,
+        }
+    vehicle_input = {
+        key: getattr(vehicle, key)
+        for key in (
+            "registration_number",
+            "manufacturer",
+            "model",
+            "serial_number",
+            "vehicle_class",
+            "consent_low_emission_accepted",
+        )
+    }
+    power = (
+        VehiclePowerTypeFactory(identifier="04")
+        if edit == "correct power type"
+        else vehicle.power_type
+    )
+    vehicle_input["power_type"] = {"identifier": power.identifier}
+    data = {
+        "customer": customer_info,
+        "address": customer_info["primary_address"],
+        "zone": zone.name,
+        "vehicle": vehicle_input,
+        "status": permit.status,
+        "description": permit.description,
+    }
+
+    with mock_jwt:
+        assert resolve_permit_price_change_list(None, info, permit.pk, data) == []
+        assert resolve_update_resident_permit(None, info, permit.pk, data) == {
+            "success": True
+        }
+
+    permit.refresh_from_db()
+    item.refresh_from_db()
+    assert permit.vehicle.registration_number == vehicle.registration_number
+    assert permit.vehicle.power_type == power
+    assert permit.address.street_name == data["address"]["street_name"]
+    assert permit.parking_zone == zone
+    assert list(Order.objects.all()) == [order]
+    assert list(permit.order_items.all()) == [item]
+    assert item.subscription_id == subscription_id
+    assert item.payment_unit_price == paid_price
+    assert not item.is_refunded
+    assert not Refund.objects.exists()
+
+    # Talpa asks for the price later, after a new tariff has taken effect.
+    ProductFactory(
+        zone=zone,
+        type=ProductType.RESIDENT,
+        start_date=date(2026, 6, 1),
+        end_date=date(2026, 12, 31),
+        unit_price=Decimal("90" if edit == "move address" else "80"),
+        low_emission_discount=Decimal("0.5"),
+    )
+    with freeze_time("2026-06-25"):
+        response = client.post(
+            reverse("parking_permits:talpa-price"),
+            {
+                "userId": str(permit.customer.user.uuid),
+                "subscriptionId": str(item.subscription.talpa_subscription_id),
+                "orderItem": {
+                    "orderItemId": str(item.talpa_order_item_id),
+                    "meta": [{"key": "permitId", "value": str(permit.pk)}],
+                },
+            },
+            content_type="application/json",
+        )
+    assert response.status_code == 200
+    assert response.json()["priceGross"] == expected_price

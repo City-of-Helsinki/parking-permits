@@ -37,7 +37,7 @@ from parking_permits.models.vehicle import is_low_emission_vehicle
 from parking_permits.services.parkkihubi import sync_with_parkkihubi
 from users.models import ParkingPermitGroups
 
-from .constants import DEFAULT_VAT, EventFields, Origin
+from .constants import EventFields, Origin
 from .customer_permit import CustomerPermit
 from .decorators import (
     is_authenticated,
@@ -83,7 +83,6 @@ from .models.vehicle import VehiclePowerType
 from .permit_rules import CONTRACT_TYPE_MISMATCH, get_secondary_end_time
 from .resolver_utils import (
     apply_prepaid_price_change,
-    create_refund,
     end_permits,
     price_change_total,
 )
@@ -737,15 +736,22 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
     ).is_electric
     zone = ParkingZone.objects.get(name=permit_info["zone"])
     changes = resident_price_changes(permit, zone, is_low_emission)
-    return [line for lines in changes.values() for line in lines]
+    return [line for quote in changes.values() for line in quote]
 
 
 def resident_price_changes(permit, zone, is_low_emission):
-    affected = (
-        permit.customer.active_permits.fixed_period()
-        if zone.pk != permit.parking_zone_id
-        else [permit]
-    )
+    """Quote fixed-period edits. Talpa requests subscription prices from this app."""
+    affected = [permit] if permit.is_fixed_period else []
+    if zone.pk != permit.parking_zone_id:
+        affected.extend(
+            permit.customer.active_permits.fixed_period().exclude(pk=permit.pk)
+        )
+    if any(
+        other.status == ParkingPermitStatus.PAYMENT_IN_PROGRESS for other in affected
+    ):
+        raise UpdatePermitError(_("Resolve the pending checkout and retry the change."))
+    if any(not other.is_valid for other in affected):
+        raise UpdatePermitError(_("Permit is not valid for a price change"))
     return {
         other.pk: other.get_price_change_list(
             new_zone=zone,
@@ -754,7 +760,6 @@ def resident_price_changes(permit, zone, is_low_emission):
             else other.vehicle.is_low_emission,
         )
         for other in affected
-        if other.is_fixed_period
     }
 
 
@@ -827,6 +832,11 @@ def resolve_update_resident_permit(
     address_changed = False
     previous_address_id = permit.address.id if permit.address else None
     new_zone = ParkingZone.objects.get(name=permit_info.get("zone"))
+    zone_changed = new_zone.pk != permit.parking_zone_id
+    if zone_changed and any(
+        p.status == ParkingPermitStatus.PAYMENT_IN_PROGRESS for p in active_permits
+    ):
+        raise UpdatePermitError(_("Resolve the pending checkout and retry the change."))
     permit_address = update_or_create_address(permit_info.get("address", None))
     if not security_ban:
         update_or_create_customer_address(customer_info, permit_address=permit_address)
@@ -846,30 +856,22 @@ def resolve_update_resident_permit(
         permit.address_changed_date = None
         permit.save()
 
-    zone_changed = new_zone.pk != permit.parking_zone_id
     price_changes = {}
+    previous_low_emission = permit.vehicle.is_low_emission
     vehicle = update_or_create_vehicle(vehicle_info)
-    if vehicle_changed or zone_changed:
+    vehicle_price_changed = (
+        vehicle_changed or previous_low_emission != vehicle.is_low_emission
+    )
+    if vehicle_price_changed or zone_changed:
         price_changes = resident_price_changes(
             permit, new_zone, vehicle.is_low_emission
         )
+    if (
+        permit.pk in price_changes
+        and permit_info["status"] != ParkingPermitStatus.VALID
+    ):
+        raise UpdatePermitError(_("Permit is not valid for a price change"))
     customer_total_price_change = price_change_total(price_changes)
-    if permit.is_open_ended and vehicle_changed:
-        open_ended_lines = permit.get_price_change_list(
-            new_zone=new_zone, is_low_emission=vehicle.is_low_emission
-        )
-        amount = price_change_total({permit.pk: open_ended_lines})
-        if amount < 0:
-            order = permit.latest_order
-            create_refund(
-                user=request.user,
-                permits=list(order.permits.all()),
-                orders=[order],
-                amount=-amount,
-                iban=iban,
-                vat=order.vat or DEFAULT_VAT,
-                description=f"Refund for updating permits: {permit.pk}",
-            )
     customer = update_or_create_customer(customer_info)
 
     bypass_traficom_validation = permit_info.get("bypass_traficom_validation", False)
@@ -910,6 +912,24 @@ def resolve_update_resident_permit(
     # get updated permit info
     permit = ParkingPermit.objects.get(id=permit_id)
 
+    if customer_total_price_change > 0:
+        logger.info(f"Creating renewal order for permit: {permit.id}")
+        new_order = Order.objects.create_renewal_order(
+            customer,
+            status=OrderStatus.CONFIRMED,
+            payment_type=OrderPaymentType.CASHIER_PAYMENT,
+            price_changes=price_changes,
+        )
+        logger.info(f"Creating renewal order completed: {new_order.id}")
+    elif price_changes and (customer_total_price_change < 0 or zone_changed):
+        apply_prepaid_price_change(
+            customer,
+            price_changes,
+            request.user,
+            iban,
+            f"Refund for prepaid permit update: {permit_id}",
+        )
+
     sync_with_parkkihubi(permit)
 
     if address_changed:
@@ -928,23 +948,6 @@ def resolve_update_resident_permit(
             send_vehicle_low_emission_discount_email(
                 PermitEmailType.VEHICLE_LOW_EMISSION_DISCOUNT_ACTIVATED, permit
             )
-    if permit.is_fixed_period and customer_total_price_change > 0:
-        logger.info(f"Creating renewal order for permit: {permit.id}")
-        new_order = Order.objects.create_renewal_order(
-            customer,
-            status=OrderStatus.CONFIRMED,
-            payment_type=OrderPaymentType.CASHIER_PAYMENT,
-            price_changes=price_changes,
-        )
-        logger.info(f"Creating renewal order completed: {new_order.id}")
-    elif customer_total_price_change < 0 or zone_changed:
-        apply_prepaid_price_change(
-            customer,
-            price_changes,
-            request.user,
-            iban,
-            f"Refund for updating permits: {permit_id}",
-        )
     return {"success": True}
 
 

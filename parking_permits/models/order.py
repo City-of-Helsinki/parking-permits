@@ -819,16 +819,55 @@ class OrderItem(SerializableMixin, TimestampedModelMixin):
     def __str__(self):
         return f"Order item: {self.id}"
 
+    @staticmethod
+    def _vehicle_change_tariff_pair(item, history):
+        if item.order.type != OrderType.VEHICLE_CHANGED or not item.payment_unit_price:
+            return None
+        previous = item.unit_price - item.payment_unit_price
+        has_previous = any(
+            row.order_id < item.order_id
+            and row.unit_price == previous
+            and row.start_time <= item.end_time
+            and row.end_time >= item.start_time
+            for row in history
+        )
+        if not has_previous:
+            return None
+        return tuple(sorted((previous, item.unit_price), reverse=True))
+
+    def _historical_tariff_matches(self):
+        # Only contemporaneous records for this product and permit can
+        # establish the two prices for an already purchased billing period.
+        history = self.permit._confirmed_fixed_period_items().filter(
+            product_id=self.product_id,
+            start_time__lte=self.end_time,
+            end_time__gte=self.start_time,
+        )
+        matches = set()
+        for item in history:
+            if item.regular_unit_price is not None:
+                pair = (item.regular_unit_price, item.discounted_unit_price)
+            else:
+                pair = self._vehicle_change_tariff_pair(item, history)
+            if pair and self.unit_price in pair:
+                matches.add(pair)
+        return matches
+
+    # noinspection unreachable-code
     def tariff_prices(self, is_secondary):
-        if self.regular_unit_price is None:
-            # Before tariff snapshots, only the paid variant was recorded.
-            prices = self.product.tariff_prices(is_secondary)
-            if self.unit_price not in prices:
-                raise OrderCreationFailedError(
-                    f"Purchased tariff no longer matches order item {self.pk}"
-                )
+        if self.regular_unit_price is not None:
+            return self.regular_unit_price, self.discounted_unit_price
+
+        prices = self.product.tariff_prices(is_secondary)
+        if self.product.modified_at <= self.created_at and self.unit_price in prices:
             return prices
-        return self.regular_unit_price, self.discounted_unit_price
+
+        matches = self._historical_tariff_matches()
+        if len(matches) == 1:
+            return matches.pop()
+        if not matches and self.unit_price in prices:
+            return prices
+        return self.unit_price, self.unit_price
 
     @property
     def vat_percentage(self):

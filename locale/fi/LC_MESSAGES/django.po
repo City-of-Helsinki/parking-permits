@@ -1240,3 +1240,13 @@ msgstr "Toinen lupa ei voi päättyä ensimmäisen luvan jälkeen."
 #: parking_permits/permit_rules.py
 msgid "The full duration of the second permit must fit before the first permit ends. Select a shorter duration."
 msgstr "Toisen luvan koko keston on mahduttava ensimmäisen luvan voimassaoloaikaan. Valitse lyhyempi kesto."
+
+msgid "Resolve the pending checkout and retry the change."
+msgstr "Selvitä keskeneräinen maksu ja yritä muutosta uudelleen."
+
+msgid "Previous refund"
+msgstr "Aiempi palautus"
+
+#, python-format
+msgid "Reconcile refund %(id)s before ending this permit."
+msgstr "Täsmäytä palautus %(id)s ennen tunnuksen päättämistä."
