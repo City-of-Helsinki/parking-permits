@@ -346,7 +346,11 @@ class OrderItemAdmin(admin.ModelAdmin):
         "talpa_order_item_id",
     )
     list_select_related = ("order", "subscription", "product", "permit")
-    readonly_fields = ("talpa_order_item_id",)
+    readonly_fields = (
+        "talpa_order_item_id",
+        "regular_unit_price",
+        "discounted_unit_price",
+    )
     ordering = ("-pk",)
 
     @admin.display(description="Vat percent")
