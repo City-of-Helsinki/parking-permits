@@ -776,7 +776,16 @@ def test_staff_cannot_quote_or_apply_zone_change_for_mixed_permits(info, mock_jw
 
 @pytest.mark.django_db()
 @pytest.mark.parametrize(
-    "edit", ["vehicle", "classification", "metadata", "pending zone"]
+    "edit, status",
+    [
+        ("vehicle", ParkingPermitStatus.VALID),
+        ("vehicle", ParkingPermitStatus.DRAFT),
+        ("vehicle", ParkingPermitStatus.PRELIMINARY),
+        ("vehicle", ParkingPermitStatus.PAYMENT_IN_PROGRESS),
+        ("classification", ParkingPermitStatus.VALID),
+        ("metadata", ParkingPermitStatus.VALID),
+        ("pending zone", ParkingPermitStatus.VALID),
+    ],
 )
 @mock.patch("parking_permits.models.ParkingPermit.get_price_change_list")
 @mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
@@ -788,6 +797,7 @@ def test_update_resident_permit_sets_new_vehicle(
     info,
     mock_jwt,
     edit,
+    status,
 ):
     old_vehicle = VehicleFactory(
         registration_number="OLD-111", power_type__identifier="01"
@@ -800,7 +810,7 @@ def test_update_resident_permit_sets_new_vehicle(
     permit = ParkingPermitFactory(
         vehicle=old_vehicle,
         contract_type=ContractType.FIXED_PERIOD,
-        status=ParkingPermitStatus.VALID,
+        status=status,
     )
     if edit == "classification":
 
@@ -859,18 +869,35 @@ def test_update_resident_permit_sets_new_vehicle(
     }
 
     with mock_jwt:
-        if edit == "pending zone":
-            with pytest.raises(UpdatePermitError, match="Resolve the pending checkout"):
-                resolve_update_resident_permit(None, info, permit.id, permit_info)
-            mock_vehicle_upsert.assert_not_called()
+        if edit == "pending zone" or status == ParkingPermitStatus.PAYMENT_IN_PROGRESS:
+            for resolver in (
+                resolve_permit_price_change_list,
+                resolve_update_resident_permit,
+            ):
+                with pytest.raises(
+                    UpdatePermitError, match="Resolve the pending checkout"
+                ):
+                    resolver(None, info, permit.id, permit_info)
+            mock_price_change.assert_not_called()
             permit.refresh_from_db()
-            assert permit.parking_zone != zone
+            assert permit.vehicle == old_vehicle
+            if edit == "pending zone":
+                mock_vehicle_upsert.assert_not_called()
+                assert permit.parking_zone != zone
             return
+        if status != ParkingPermitStatus.VALID:
+            assert (
+                resolve_permit_price_change_list(None, info, permit.id, permit_info)
+                == []
+            )
         resolve_update_resident_permit(None, info, permit.id, permit_info)
-    assert mock_price_change.call_count == (0 if edit == "metadata" else 1)
+    if status == ParkingPermitStatus.VALID and edit != "metadata":
+        mock_price_change.assert_called_once()
+    else:
+        mock_price_change.assert_not_called()
     permit.refresh_from_db()
-    assert permit.vehicle is not None
     assert permit.vehicle == new_vehicle
+    assert permit.status == status
 
 
 class TalpaMockResponse:
