@@ -2,6 +2,7 @@ from collections import defaultdict
 from decimal import Decimal
 
 from django.db import transaction
+from django.utils import timezone
 
 from parking_permits.models import ParkingPermit, Refund, Subscription
 from parking_permits.models.order import (
@@ -63,6 +64,16 @@ def end_permits(
     }
     # The caller can require secondary permits to end before the primary.
     permits = tuple(locked_permits[pk] for pk in permit_ids)
+    if len(permits) > 1 and end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD:
+        # A bulk termination can include a permit already scheduled individually.
+        permits = tuple(
+            permit
+            for permit in permits
+            if permit.end_type != end_type
+            or permit.end_time is None
+            or timezone.localdate(permit.end_time)
+            != timezone.localdate(permit.current_period_end_time)
+        )
 
     create_permit_refunds(
         user,
