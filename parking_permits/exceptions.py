@@ -1,3 +1,6 @@
+from django.utils.translation import gettext_lazy as _
+
+
 class ParkingPermitBaseError(Exception):
     pass
 
@@ -54,6 +57,13 @@ class PermitCanNotBeExtendedError(ParkingPermitValidationError):
 
 class PermitCanNotBeEndedError(ParkingPermitValidationError):
     pass
+
+
+class RefundReconciliationRequiredError(PermitCanNotBeEndedError):
+    def __init__(self, refund_id):
+        super().__init__(
+            _("Reconcile refund %(id)s before ending this permit.") % {"id": refund_id}
+        )
 
 
 class ObjectNotFoundError(ParkingPermitValidationError):

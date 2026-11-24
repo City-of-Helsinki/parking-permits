@@ -25,6 +25,7 @@ from ..exceptions import (
     OrderCreationFailedError,
     PermitCanNotBeEndedError,
     PermitCanNotBeExtendedError,
+    RefundReconciliationRequiredError,
     TemporaryVehicleValidationError,
 )
 from ..permit_rules import (
@@ -47,6 +48,7 @@ from ..utils import (
 from .common import OrderStatus, OrderType
 from .mixins import TimestampedModelMixin, UserStampedModelMixin
 from .parking_zone import ParkingZone
+from .refund import RefundStatus
 from .temporary_vehicle import TemporaryVehicle
 from .vehicle import Vehicle
 
@@ -340,8 +342,16 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         when, for example, the vehicle or the address of
         the permit is changed.
 
-        A pending extension takes priority while its checkout is open.
+        Extensions have their own checkout. While the permit itself is in
+        payment, its non-extension order owns the checkout.
         """
+        if self.status == ParkingPermitStatus.PAYMENT_IN_PROGRESS:
+            return (
+                self.orders.exclude(permit_extension_requests__permit=self)
+                .exclude(type=OrderType.PRICE_ADJUSTED)
+                .order_by("-pk")
+                .first()
+            )
         request = self.get_pending_extension_requests().select_related("order").last()
         if request:
             return request.order
@@ -531,7 +541,10 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
     @property
     def total_refund_amount(self):
-        data_per_vat = self.get_vat_based_refund_amounts_for_unused_items()
+        try:
+            data_per_vat = self.get_vat_based_refund_amounts_for_unused_items()
+        except RefundReconciliationRequiredError:
+            return None
         return sum(vat_data["total"] for vat_data in data_per_vat.values())
 
     @property
@@ -880,82 +893,80 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
 
         return self.fixed_period_price_changes(new_zone, is_low_emission)
 
+    def _resolve_previous_tariff(self, item, period_start, tariffs, *, use_item_price):
+        # Older refund-only zone moves have no destination order item.
+        if (
+            item.regular_unit_price is None
+            and item.product.zone_id != self.parking_zone_id
+            and not use_item_price
+        ):
+            product = self.parking_zone.products.for_resident().get_for_date(
+                period_start
+            )
+            prices = product.tariff_prices(self.is_secondary_vehicle)
+            return product, prices, prices[self.vehicle.is_low_emission]
+
+        if item not in tariffs:
+            tariffs[item] = item.tariff_prices(self.is_secondary_vehicle)
+        prices = tariffs[item]
+        previous_price = (
+            item.unit_price
+            if item.regular_unit_price is not None or use_item_price
+            else prices[self.vehicle.is_low_emission]
+        )
+        return item.product, prices, previous_price
+
+    @staticmethod
+    def _can_merge_price_change_line(
+        line, item, funding_order, product, previous_price
+    ):
+        return (
+            line["source_item"] == item
+            and line["funding_order"] == funding_order
+            and line["tariff_product"] == product
+            and line["previous_price"] == previous_price
+        )
+
     def fixed_period_price_changes(
         self, new_zone, is_low_emission, *, use_item_price=False
     ):
         """Quote each unused billing month from its most recent confirmed order item."""
-        start = timezone.localdate(self.start_time)
-        end = timezone.localdate(self.end_time)
-        items = list(
-            self.order_items.filter(
-                order__status=OrderStatus.CONFIRMED,
-                is_refunded=False,
-                end_time__date__gte=self.next_period_start_time,
-            )
-            .select_related("product__zone", "order")
-            .order_by("-order_id", "pk")
-        )
+        items = self._confirmed_fixed_period_items()
+        tariffs = {}
         lines = []
-        for month in range(self.months_used, self.month_count):
-            period_start = start + relativedelta(months=month)
-            period_end = min(end, start + relativedelta(months=month + 1, days=-1))
-            if period_start > period_end:
-                break
-            # Catalogue boundaries can split a prepaid billing month. Its
-            # tariff is the item covering the start of that month.
-            covering = [
-                item
-                for item in items
-                if item.start_time
-                and timezone.localdate(item.start_time) <= period_start
-                and timezone.localdate(item.end_time) >= period_start
-            ]
-            if not covering or (
-                len(covering) > 1 and covering[0].order_id == covering[1].order_id
-            ):
-                raise OrderCreationFailedError(
-                    f"Invalid paid coverage for permit {self.pk} on {period_start}"
-                )
-            item = covering[0]
+        for period_start, period_end, covering in self._unused_billing_periods(items):
             funding_order = next(
-                i.order for i in covering if i.order.type != OrderType.PRICE_ADJUSTED
+                (i.order for i in covering if i.order.type != OrderType.PRICE_ADJUSTED),
+                None,
             )
-            product = item.product
-            prices = item.tariff_prices(self.is_secondary_vehicle)
-            previous_price = (
-                item.unit_price
-                if item.regular_unit_price is not None or use_item_price
-                else prices[self.vehicle.is_low_emission]
-            )
-            # Older refund-only zone moves have no destination order item.
-            if (
-                item.regular_unit_price is None
-                and product.zone_id != self.parking_zone_id
-                and not use_item_price
-            ):
-                product = self.parking_zone.products.for_resident().get_for_date(
-                    period_start
+            if funding_order is None:
+                raise OrderCreationFailedError(
+                    f"Missing paid coverage for permit {self.pk} on {period_start}"
                 )
-                prices = product.tariff_prices(self.is_secondary_vehicle)
-                previous_price = prices[self.vehicle.is_low_emission]
-            if new_zone.pk != (
+
+            item = covering[0]
+            product, prices, previous_price = self._resolve_previous_tariff(
+                item, period_start, tariffs, use_item_price=use_item_price
+            )
+
+            current_zone_id = (
                 product.zone_id if use_item_price else self.parking_zone_id
-            ):
+            )
+            if new_zone.pk != current_zone_id:
                 product = new_zone.products.for_resident().get_for_date(period_start)
                 prices = product.tariff_prices(self.is_secondary_vehicle)
+
             new_price = prices[is_low_emission]
             change = new_price - previous_price
             vat = item.vat if change < 0 else product.vat
-            if (
-                lines
-                and lines[-1]["source_item"] == item
-                and lines[-1]["funding_order"] == funding_order
-                and lines[-1]["tariff_product"] == product
-                and lines[-1]["previous_price"] == previous_price
+
+            if lines and self._can_merge_price_change_line(
+                lines[-1], item, funding_order, product, previous_price
             ):
                 lines[-1]["month_count"] += 1
                 lines[-1]["end_date"] = period_end
                 continue
+
             lines.append(
                 {
                     "product": product.name,
@@ -1062,7 +1073,8 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         """Unused prepaid months, including the signed amounts of later adjustments."""
         if not self.is_fixed_period or not self.can_be_refunded:
             return []
-        return [
+        unused_items = self.get_unused_order_items_for_all_orders()
+        lines = [
             {
                 "product": item.product.name,
                 "previous_price": item.payment_unit_price,
@@ -1074,12 +1086,175 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
                 "end_date": end,
                 "month_count": quantity,
             }
-            for item, quantity, (
-                start,
-                end,
-            ) in self.get_unused_order_items_for_all_orders()
+            for item, quantity, (start, end) in unused_items
             if item.payment_unit_price and quantity
         ]
+        try:
+            legacy_credits = list(self._unused_legacy_credits(unused_items))
+        except RefundReconciliationRequiredError:
+            return []
+        for refund, amount, first, last in legacy_credits:
+            lines.append(
+                {
+                    "product": _("Previous refund"),
+                    "previous_price": -amount,
+                    "new_price": -amount,
+                    "price_change": -amount,
+                    "price_change_vat": calc_vat_price(-amount, refund.vat),
+                    "price_change_vat_percent": refund.vat_percent,
+                    "start_date": first,
+                    "end_date": last,
+                    "month_count": 1,
+                }
+            )
+        return lines
+
+    def _is_reconciled_legacy_refund(self, refund, orders, event):
+        # Staff can reconcile a historical credit by recording the signed
+        # items and linking their adjustment order to the original refund.
+        adjusted_order_ids = [
+            order.pk for order in orders if order.type == OrderType.PRICE_ADJUSTED
+        ]
+        if self.orders.filter(
+            pk__in=adjusted_order_ids,
+            status=OrderStatus.CONFIRMED,
+            order_items__permit=self,
+        ).exists():
+            return True
+
+        if not event or not refund.description.startswith(
+            "Refund for updating permits:"
+        ):
+            return False
+
+        # The original staff flow and its signed replacement used the
+        # same description. Check the order event for this operation.
+        previous = (
+            self.events.filter(pk__lt=event.pk)
+            .exclude(key=ParkingPermitEvent.EventKey.CREATE_REFUND)
+            .order_by("-pk")
+            .first()
+        )
+        return bool(
+            previous
+            and previous.key == ParkingPermitEvent.EventKey.RENEW_ORDER
+            and self.orders.filter(
+                pk=previous.object_id, type=OrderType.PRICE_ADJUSTED
+            ).exists()
+        )
+
+    def _legacy_refund_period(self, refund, orders, event):
+        if event and event.validity_period:
+            return event.validity_period.lower, event.validity_period.upper
+
+        end = (
+            self.order_items.filter(
+                order__in=orders,
+                order__status=OrderStatus.CONFIRMED,
+                is_refunded=False,
+                end_time__isnull=False,
+            )
+            .order_by("-end_time")
+            .values_list("end_time", flat=True)
+            .first()
+        )
+        if end is None:
+            raise RefundReconciliationRequiredError(refund.pk)
+        return self.start_time, end
+
+    def _legacy_refund_amount(
+        self, refund, start, first, last, remaining, originally_unused
+    ):
+        if remaining == first:
+            # Every month credited at the time is still refundable.
+            return refund.amount
+
+        # The old vehicle flow issued one refund per quoted rate,
+        # including zero-value rows. A lone row for the change covers
+        # the whole remaining term at a uniform monthly rate.
+        if not refund.description.startswith(
+            "Refund for updating permits, customer switched vehicle"
+        ):
+            raise RefundReconciliationRequiredError(refund.pk)
+
+        siblings = self.refunds.filter(
+            description=refund.description, created_at__date__lt=first
+        ).exclude(pk=refund.pk)
+        if originally_unused:
+            siblings = siblings.filter(
+                created_at__date__gte=timezone.localdate(start)
+                + relativedelta(months=originally_unused - 1)
+            )
+        if siblings.exists():
+            raise RefundReconciliationRequiredError(refund.pk)
+
+        scheduled = [
+            timezone.localdate(start) + relativedelta(months=n)
+            for n in range(self.month_count)
+        ]
+        credited_months = [day for day in scheduled if first <= day <= last]
+        if not credited_months:
+            raise RefundReconciliationRequiredError(refund.pk)
+
+        monthly_credit = refund.amount / len(credited_months)
+        if monthly_credit != monthly_credit.quantize(Decimal("0.01")):
+            raise RefundReconciliationRequiredError(refund.pk)
+
+        return monthly_credit * sum(day >= remaining for day in credited_months)
+
+    def _unused_legacy_credits(self, unused_items):
+        """Credits issued by the old change flows had no signed order item."""
+        if not self.is_fixed_period or not unused_items:
+            return
+
+        refunds = (
+            self.refunds.filter(
+                description__startswith="Refund for updating permits", amount__gt=0
+            )
+            .exclude(status=RefundStatus.REJECTED)
+            .prefetch_related("permits", "orders")
+        )
+        remaining_balance = sum(
+            item.payment_unit_price * quantity
+            for item, quantity, _dates in unused_items
+        )
+
+        for refund in refunds:
+            orders = list(refund.orders.all())
+            event = self.events.filter(
+                key=ParkingPermitEvent.EventKey.CREATE_REFUND, object_id=refund.pk
+            ).first()
+            if self._is_reconciled_legacy_refund(refund, orders, event):
+                continue
+
+            source_items = self.order_items.filter(order__in=orders)
+            if (
+                source_items.exists()
+                and not source_items.filter(is_refunded=False).exists()
+            ):
+                continue
+
+            start, end = self._legacy_refund_period(refund, orders, event)
+            originally_unused = diff_months_ceil(start, refund.created_at)
+            first = timezone.localdate(start) + relativedelta(months=originally_unused)
+            last = timezone.localdate(end)
+            remaining = max(first, self.next_period_start_time)
+            if remaining > last:
+                continue
+
+            if (
+                len(refund.permits.all()) != 1
+                or source_items.filter(is_refunded=True).exists()
+            ):
+                raise RefundReconciliationRequiredError(refund.pk)
+
+            amount = self._legacy_refund_amount(
+                refund, start, first, last, remaining, originally_unused
+            )
+            remaining_balance -= amount
+            if remaining_balance < 0:
+                raise RefundReconciliationRequiredError(refund.pk)
+            yield refund, amount, remaining, last
 
     def get_vat_based_refund_amounts_for_unused_items(self):
         totals_per_vat = {}
@@ -1099,18 +1274,17 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             totals_per_vat[vat]["total"] += order_item.payment_unit_price * quantity
             totals_per_vat[vat]["orders"].add(order_item.order)
             totals_per_vat[vat]["order_items"].add(order_item)
+        for refund, amount, _start, _end in self._unused_legacy_credits(
+            unused_order_items
+        ):
+            bucket = totals_per_vat.setdefault(
+                refund.vat, {"total": Decimal(0), "orders": set(), "order_items": set()}
+            )
+            bucket["total"] -= amount
         return totals_per_vat
 
     def get_total_refund_amount_for_unused_items(self):
-        total = Decimal(0)
-        if not self.can_be_refunded:
-            return total
-
-        unused_order_items = self.get_unused_order_items()
-
-        for order_item, quantity, _date_range in unused_order_items:
-            total += order_item.payment_unit_price * quantity
-        return total
+        return self.total_refund_amount
 
     def parse_temporary_vehicle_times(
         self,
@@ -1241,25 +1415,72 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         if self.is_open_ended:
             return self.get_unused_order_items_for_open_ended_permit()
         return self._unused_fixed_period_items(
-            self.order_items.filter(order__permits=self)
+            self._confirmed_fixed_period_items().filter(order__permits=self)
         )
 
     def get_unused_order_items_for_order(self, order):
-        return self._unused_fixed_period_items(self.order_items.filter(order=order))
+        return self._unused_fixed_period_items(
+            self._confirmed_fixed_period_items().filter(order=order)
+        )
+
+    def _confirmed_fixed_period_items(self):
+        return (
+            self.order_items.filter(
+                order__status=OrderStatus.CONFIRMED,
+                is_refunded=False,
+                end_time__date__gte=self.next_period_start_time,
+            )
+            .select_related("order", "product__zone")
+            .order_by("-order_id", "pk")
+        )
+
+    def _select_coverage_item(self, day, candidates):
+        if len(candidates) == 1:
+            return candidates[0]
+
+        # Historical product boundaries can include the first day of
+        # the next item. The new item's period starts on that day.
+        candidates = [
+            item for item in candidates if timezone.localdate(item.end_time) > day
+        ]
+        if len(candidates) != 1 or timezone.localdate(candidates[0].start_time) != day:
+            raise OrderCreationFailedError(
+                f"Ambiguous paid coverage for permit {self.pk} on {day}"
+            )
+        return candidates[0]
+
+    def _unused_billing_periods(self, items):
+        """Assign billed quantities to month starts on the original permit schedule."""
+        start = timezone.localdate(self.start_time)
+        end = timezone.localdate(self.end_time)
+        starts = [start + relativedelta(months=n) for n in range(self.month_count)]
+        coverage = {day: {} for day in starts}
+        for item in items:
+            if not item.start_time:
+                continue
+            first = timezone.localdate(item.start_time)
+            last = timezone.localdate(item.end_time)
+            billed = [day for day in starts if first <= day <= last][: item.quantity]
+            for day in billed:
+                coverage[day].setdefault(item.order_id, []).append(item)
+        for month in range(self.months_used, self.month_count):
+            day = starts[month]
+            if day > end:
+                break
+            items_for_month = [
+                self._select_coverage_item(day, candidates)
+                for candidates in coverage[day].values()
+            ]
+            yield (
+                day,
+                min(end, start + relativedelta(months=month + 1, days=-1)),
+                items_for_month,
+            )
 
     def _unused_fixed_period_items(self, items):
         unused_start = self.next_period_start_time
-        items = (
-            items.filter(
-                end_time__date__gte=unused_start,
-                is_refunded=False,
-                order__status=OrderStatus.CONFIRMED,
-            )
-            .select_related("order", "product__zone")
-            .order_by("start_time", "order_id", "pk")
-        )
         result = []
-        for item in items:
+        for item in items.order_by("start_time", "order_id", "pk"):
             start = max(unused_start, timezone.localdate(item.start_time))
             end = timezone.localdate(item.end_time)
             result.append([item, diff_months_ceil(start, end), (start, end)])

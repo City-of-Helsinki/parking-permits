@@ -264,9 +264,12 @@ def validate_customer_address(customer, address_id):
 @query.field("getVehiclePriceChanges")
 @is_authenticated
 def resolve_get_vehicle_price_changes(_obj, info, permit_id, is_low_emission):
-    permit = ParkingPermit.objects.get(
-        pk=permit_id, customer=info.context["request"].user.customer
-    )
+    try:
+        permit = ParkingPermit.objects.get(
+            pk=permit_id, customer=info.context["request"].user.customer
+        )
+    except ParkingPermit.DoesNotExist as exc:
+        raise ObjectNotFoundError(_("Permit not found")) from exc
     return permit.get_price_change_list(
         new_zone=permit.parking_zone, is_low_emission=is_low_emission
     )

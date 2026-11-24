@@ -9,13 +9,21 @@ from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
 
-from parking_permits.exceptions import DuplicatePermitError, PermitCanNotBeExtendedError
+from parking_permits.exceptions import (
+    DuplicatePermitError,
+    ObjectNotFoundError,
+    OrderCreationFailedError,
+    PermitCanNotBeExtendedError,
+    RefundReconciliationRequiredError,
+)
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
 from parking_permits.models.order import OrderStatus, OrderType
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import ProductType
+from parking_permits.resolver_utils import create_refund
 from parking_permits.resolvers import (
     resolve_change_address,
+    resolve_end_permit,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
     resolve_get_update_address_price_changes,
@@ -801,3 +809,185 @@ def test_vehicle_change_includes_purchase_and_confirmed_extension(prepaid_permit
     assert extension.refunds.get().amount == 105
     # Ending refunds the balance of both purchases after the vehicle discount.
     assert quote_total(permit.ending_refund_lines) == 255
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_vehicle_preview_does_not_disclose_other_customers_permit(prepaid_permit):
+    permit, _ = prepaid_permit()
+    other, info = prepaid_permit()
+    with (
+        _mock_jwt(other.customer.user),
+        pytest.raises(ObjectNotFoundError, match="Permit not found"),
+    ):
+        resolve_get_vehicle_price_changes(None, info, permit.pk, True)
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_checkout_uses_order_that_put_permit_in_payment(prepaid_permit):
+    permit, _ = prepaid_permit(months=9)
+    extension = Order.objects.create_for_extended_permit(
+        permit, 3, status=OrderStatus.DRAFT
+    )
+    extension.talpa_checkout_url = "https://example.org/extension"
+    extension.save()
+    permit.permit_extension_requests.create(order=extension, month_count=3)
+    change = OrderFactory(customer=permit.customer, type=OrderType.VEHICLE_CHANGED)
+    change.permits.add(permit)
+    assert permit.checkout_url == extension.talpa_checkout_url
+    permit.status = ParkingPermitStatus.PAYMENT_IN_PROGRESS
+    assert permit.checkout_url == change.talpa_checkout_url
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+@pytest.mark.parametrize("known_pair", [False, True])
+def test_legacy_tariff_after_in_place_product_edit(prepaid_permit, known_pair):
+    permit, _ = prepaid_permit()
+    purchase = permit.order_items.get()
+    purchase.regular_unit_price = purchase.discounted_unit_price = None
+    purchase.save()
+    purchase.product.unit_price = Decimal("90")
+    purchase.product.save()
+    if known_pair:
+        order = OrderFactory(
+            customer=permit.customer,
+            type=OrderType.VEHICLE_CHANGED,
+            status=OrderStatus.CONFIRMED,
+        )
+        OrderItemFactory(
+            order=order,
+            product=purchase.product,
+            permit=permit,
+            unit_price=30,
+            payment_unit_price=-30,
+            start_time=purchase.start_time,
+            end_time=purchase.end_time,
+        )
+    assert purchase.tariff_prices(False) == (60, 30 if known_pair else 60)
+    if not known_pair:
+        assert (
+            quote_total(permit.fixed_period_price_changes(permit.parking_zone, True))
+            == 0
+        )
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_overlap_respects_billed_quantity_and_rejects_ambiguous_rows(prepaid_permit):
+    permit, _ = prepaid_permit()
+    purchase = permit.order_items.get()
+    purchase.quantity = 6
+    purchase.save()
+    second = OrderItemFactory(
+        order=purchase.order,
+        permit=permit,
+        product=purchase.product,
+        start_time=timezone.make_aware(datetime(2021, 7, 1)),
+        end_time=permit.end_time,
+        quantity=6,
+        regular_unit_price=70,
+        discounted_unit_price=35,
+        unit_price=70,
+        payment_unit_price=70,
+    )
+    lines = permit.fixed_period_price_changes(permit.parking_zone, True)
+    assert [(line["source_item"], line["month_count"]) for line in lines] == [
+        (purchase, 2),
+        (second, 6),
+    ]
+    purchase.quantity = 7
+    purchase.end_time = second.start_time
+    purchase.save()
+    assert (
+        quote_total(permit.fixed_period_price_changes(permit.parking_zone, True))
+        == -270
+    )
+    purchase.quantity = 12
+    purchase.end_time = permit.end_time
+    purchase.save()
+    with pytest.raises(OrderCreationFailedError, match="Ambiguous paid coverage"):
+        permit.fixed_period_price_changes(permit.parking_zone, True)
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_ending_deducts_only_unused_portion_of_legacy_vehicle_credit(prepaid_permit):
+    permit, _ = prepaid_permit()
+    order = permit.latest_order
+    permit.order_items.update(regular_unit_price=None, discounted_unit_price=None)
+    create_refund(
+        permit.customer.user,
+        [permit],
+        [order],
+        Decimal("240"),
+        "",
+        vat=order.vat,
+        description="Refund for updating permits, customer switched vehicle to: EV",
+    )
+    assert permit.total_refund_amount == quote_total(permit.ending_refund_lines) == 240
+    with freeze_time("2021-06-15"):
+        assert (
+            permit.total_refund_amount == quote_total(permit.ending_refund_lines) == 180
+        )
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_shared_legacy_credit_blocks_ending_until_reconciled(prepaid_permit):
+    permit, info = prepaid_permit()
+    other = ParkingPermitFactory(customer=permit.customer, primary_vehicle=False)
+    purchase = permit.latest_order
+    refund = create_refund(
+        permit.customer.user,
+        [permit, other],
+        [purchase],
+        Decimal("240"),
+        "",
+        vat=purchase.vat,
+        description="Refund for updating permits zone (customer switch address)",
+    )
+    assert permit.total_refund_amount is None
+    assert permit.ending_refund_lines == []
+    with (
+        _mock_jwt(permit.customer.user),
+        pytest.raises(RefundReconciliationRequiredError, match=str(refund.pk)),
+    ):
+        resolve_end_permit(None, info, [str(permit.pk)], "IMMEDIATELY", "")
+    permit.refresh_from_db()
+    assert permit.is_valid
+    assert Refund.objects.count() == 1
+
+    changes = permit.fixed_period_price_changes(permit.parking_zone, True)
+    adjustment = Order.objects.create_renewal_order(
+        permit.customer,
+        status=OrderStatus.CONFIRMED,
+        order_type=OrderType.PRICE_ADJUSTED,
+        price_changes={permit.pk: changes},
+    )
+    refund.orders.add(adjustment)
+    assert permit.total_refund_amount == quote_total(permit.ending_refund_lines) == 240
+
+
+@pytest.mark.django_db
+@freeze_time("2021-04-15")
+def test_legacy_vehicle_credits_with_several_rates_need_review_after_a_month(
+    prepaid_permit,
+):
+    permit, _ = prepaid_permit()
+    order = permit.latest_order
+    for amount in (Decimal("150"), Decimal("105")):
+        create_refund(
+            permit.customer.user,
+            [permit],
+            [order],
+            amount,
+            "",
+            vat=order.vat,
+            description="Refund for updating permits, customer switched vehicle to: EV",
+        )
+    assert permit.total_refund_amount == 225
+    with freeze_time("2021-05-15"):
+        assert permit.total_refund_amount is None
+        assert permit.ending_refund_lines == []
