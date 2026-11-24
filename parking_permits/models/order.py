@@ -25,6 +25,7 @@ from ..exceptions import (
     SubscriptionCancelError,
     SubscriptionValidationError,
 )
+from ..permit_rules import CONTRACT_TYPE_MISMATCH
 from ..utils import (
     calc_net_price,
     calc_vat_price,
@@ -171,11 +172,13 @@ class OrderManager(SerializableMixin.SerializableManager):
     @transaction.atomic
     def create_for_permits(self, permits, status=OrderStatus.DRAFT, **kwargs):
         self._validate_permits(permits)
+        first_permit = permits[0]
+        if first_permit.has_conflicting_contract_type():
+            raise OrderCreationFailedError(CONTRACT_TYPE_MISMATCH)
         for permit in permits:
             permit.validate_purchase()
 
         paid_time = tz.now() if status == OrderStatus.CONFIRMED else None
-        first_permit = permits[0]
         order = Order.objects.create(
             customer=first_permit.customer,
             status=status,

@@ -18,6 +18,7 @@ from parking_permits.admin_resolvers import (
     resolve_create_resident_permit,
     resolve_extend_parking_permit,
     resolve_get_extended_permit_price_list,
+    resolve_permit_price_change_list,
     resolve_update_resident_permit,
     resolve_vehicle,
     update_or_create_customer,
@@ -25,12 +26,20 @@ from parking_permits.admin_resolvers import (
 )
 from parking_permits.exceptions import (
     AddressError,
+    CreatePermitError,
     InvalidEmailError,
     ObjectNotFoundError,
     PermitCanNotBeExtendedError,
     TraficomFetchVehicleError,
+    UpdatePermitError,
 )
-from parking_permits.models import Customer, ParkingPermitExtensionRequest, Product
+from parking_permits.models import (
+    Customer,
+    Order,
+    ParkingPermitExtensionRequest,
+    Product,
+    Refund,
+)
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import Accounting, ProductType
 from parking_permits.tests.factories.customer import CustomerFactory
@@ -704,6 +713,61 @@ def test_create_resident_permit_sets_vehicle(
     permit.refresh_from_db()
     assert permit.vehicle is not None
     assert permit.vehicle == vehicle
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "status",
+    [
+        ParkingPermitStatus.DRAFT,
+        ParkingPermitStatus.PRELIMINARY,
+        ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+        ParkingPermitStatus.VALID,
+    ],
+)
+def test_staff_cannot_add_fixed_permit_to_subscription(
+    info, mock_jwt, customer_info, status
+):
+    customer = update_or_create_customer(customer_info)
+    subscription = ParkingPermitFactory(
+        customer=customer, status=status, contract_type=ContractType.OPEN_ENDED
+    )
+    with mock_jwt, pytest.raises(CreatePermitError):
+        resolve_create_resident_permit(None, info, {"customer": customer_info})
+    assert list(customer.permits.all()) == [subscription]
+    assert not Order.objects.exists()
+
+
+@pytest.mark.django_db
+def test_staff_cannot_quote_or_apply_zone_change_for_mixed_permits(info, mock_jwt):
+    permit = ParkingPermitFactory(
+        status=ParkingPermitStatus.VALID, contract_type=ContractType.OPEN_ENDED
+    )
+    other = ParkingPermitFactory(
+        customer=permit.customer,
+        primary_vehicle=False,
+        status=ParkingPermitStatus.VALID,
+        contract_type=ContractType.FIXED_PERIOD,
+        parking_zone=permit.parking_zone,
+    )
+    data = {
+        "customer": {"national_id_number": permit.customer.national_id_number},
+        "vehicle": {"registration_number": permit.vehicle.registration_number},
+        "zone": ParkingZoneFactory().name,
+    }
+    old_zone = permit.parking_zone_id
+    with mock_jwt:
+        for resolver in (
+            resolve_permit_price_change_list,
+            resolve_update_resident_permit,
+        ):
+            with pytest.raises(UpdatePermitError):
+                resolver(None, info, permit.pk, data)
+    for item in (permit, other):
+        item.refresh_from_db()
+        assert item.parking_zone_id == old_zone
+    assert not Order.objects.exists()
+    assert not Refund.objects.exists()
 
 
 @pytest.mark.django_db()

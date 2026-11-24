@@ -600,7 +600,9 @@ def resolve_update_permit_vehicle(
 @transaction.atomic
 def resolve_create_order(_obj, info, audit_msg: AuditMsg = None):
     request = info.context["request"]
-    customer = request.user.customer
+    customer = Customer.objects.select_for_update(no_key=True).get(
+        pk=request.user.customer.pk
+    )
     permits = list(
         ParkingPermit.objects.select_for_update()
         .filter(

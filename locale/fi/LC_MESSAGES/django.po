@@ -191,8 +191,8 @@ msgid "Contract type is required"
 msgstr "Sopimustyyppi on pakollinen"
 
 #, python-format
-msgid "Only %(fixed_period)s is allowed"
-msgstr "Vain %(fixed_period)s on sallittu"
+msgid "Both permits must have the same contract type."
+msgstr "Molempien tunnusten sopimustyypin on oltava sama."
 
 msgid "This is not a draft permit and can not be edited"
 msgstr "Pysäköintitunnushahmotelmaa ei voi muokata"

@@ -8,6 +8,7 @@ from freezegun import freeze_time
 
 from parking_permits.customer_permit import CustomerPermit
 from parking_permits.exceptions import (
+    OrderCreationFailedError,
     ParkingPermitValidationError,
     PermitCanNotBeExtendedError,
 )
@@ -72,6 +73,7 @@ def test_earlier_start_is_rejected_even_for_subscription():
     primary = permit("2026-11-13T12:00")
     primary.contract_type = "OPEN_ENDED"
     secondary = permit("2026-11-12T12:00", primary=False)
+    secondary.contract_type = "OPEN_ENDED"
     with pytest.raises(ParkingPermitValidationError, match="start before"):
         validate_secondary_permit(secondary, primary)
 
@@ -79,11 +81,26 @@ def test_earlier_start_is_rejected_even_for_subscription():
 def test_subscription_renewal_date_is_not_a_limit_but_termination_is():
     primary = permit("2026-11-12T12:00")
     primary.contract_type = "OPEN_ENDED"
-    secondary = permit("2026-11-12T13:00", 3, False)
+    secondary = permit("2026-12-12T13:00", primary=False)
+    secondary.contract_type = "OPEN_ENDED"
     validate_secondary_permit(secondary, primary, purchase=True)
     primary.end_type = "AFTER_CURRENT_PERIOD"
     with pytest.raises(ParkingPermitValidationError):
         validate_secondary_permit(secondary, primary, purchase=True)
+
+
+@pytest.mark.django_db
+def test_checkout_rejects_existing_mixed_permits_before_creating_an_order():
+    primary = ParkingPermitFactory(status="VALID", contract_type="OPEN_ENDED")
+    secondary = ParkingPermitFactory(
+        customer=primary.customer,
+        primary_vehicle=False,
+        status="DRAFT",
+        contract_type="FIXED_PERIOD",
+    )
+    with pytest.raises(OrderCreationFailedError):
+        Order.objects.create_for_permits([secondary])
+    assert not Order.objects.filter(customer=primary.customer).exists()
 
 
 @pytest.mark.django_db
@@ -271,6 +288,7 @@ def test_subscription_primary_does_not_remove_purchase_month_bounds(months):
     primary = permit("2026-11-12T12:00")
     primary.contract_type = "OPEN_ENDED"
     secondary = permit("2026-11-12T13:00", primary=False)
+    secondary.contract_type = "OPEN_ENDED"
     secondary.month_count = months
     with pytest.raises(ParkingPermitValidationError):
         validate_secondary_permit(secondary, primary, purchase=True)

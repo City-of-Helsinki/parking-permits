@@ -188,8 +188,8 @@ msgid "Contract type is required"
 msgstr "Kontraktstyp krävs"
 
 #, python-format
-msgid "Only %(fixed_period)s is allowed"
-msgstr "Endast %(fixed_period)s är tillåtet"
+msgid "Both permits must have the same contract type."
+msgstr "Båda tillstånden måste ha samma avtalstyp."
 
 msgid "This is not a draft permit and can not be edited"
 msgstr "Detta är inte ett utkast till tillstånd och kan inte redigeras"

@@ -11,6 +11,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
 from django.contrib.postgres.fields import DateTimeRangeField
+from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import IntegrityError, router, transaction
 from django.db.models import Q
@@ -27,6 +28,7 @@ from ..exceptions import (
     TemporaryVehicleValidationError,
 )
 from ..permit_rules import (
+    CONTRACT_TYPE_MISMATCH,
     get_secondary_end_time,
     primary_end_limit,
     validate_secondary_permit,
@@ -93,6 +95,9 @@ MAX_MONTHS = 12
 
 
 class ParkingPermitQuerySet(models.QuerySet):
+    def current(self):
+        return self.filter(status__in=NON_DUPLICABLE_STATUSES)
+
     def fixed_period(self):
         return self.filter(contract_type=ContractType.FIXED_PERIOD)
 
@@ -555,6 +560,24 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
             .exclude(pk=self.pk)
             .first()
         )
+
+    def has_conflicting_contract_type(self):
+        return (
+            ParkingPermit.objects.current()
+            .filter(customer_id=self.customer_id)
+            .exclude(pk=self.pk)
+            .exclude(contract_type=self.contract_type)
+            .exists()
+        )
+
+    def clean(self):
+        super().clean()
+        if (
+            self.customer_id
+            and self.status in NON_DUPLICABLE_STATUSES
+            and self.has_conflicting_contract_type()
+        ):
+            raise ValidationError({"contract_type": CONTRACT_TYPE_MISMATCH})
 
     def validate_purchase(self, primary=None):
         if self.primary_vehicle:

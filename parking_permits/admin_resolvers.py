@@ -80,7 +80,7 @@ from .models.parking_permit import (
 )
 from .models.refund import RefundStatus
 from .models.vehicle import VehiclePowerType
-from .permit_rules import get_secondary_end_time
+from .permit_rules import CONTRACT_TYPE_MISMATCH, get_secondary_end_time
 from .resolver_utils import (
     apply_prepaid_price_change,
     create_refund,
@@ -498,13 +498,17 @@ def resolve_create_resident_permit(obj, info, permit, audit_msg: AuditMsg = None
     if not national_id_number:
         customer_info["national_id_number"] = generate_ssn()
 
+    # Match customer checkout's lock order before updating any shared addresses.
+    Customer.objects.select_for_update(no_key=True).filter(
+        national_id_number=customer_info["national_id_number"].upper()
+    ).only("pk").first()
     customer = update_or_create_customer(customer_info)
     active_permits = customer.active_permits
     active_permits_count = active_permits.count()
     if active_permits_count >= 2:
         raise PermitLimitExceededError(_("Cannot create more than 2 permits"))
 
-    if active_permits_count == 1 and active_permits.first().is_open_ended:
+    if customer.permits.current().open_ended().exists():
         raise CreatePermitError(
             _(
                 "Creating a fixed-period permit is not allowed "
@@ -725,6 +729,8 @@ def resolve_permit_price_change_list(obj, info, permit_id, permit_info):
         != permit_info["customer"]["national_id_number"]
     ):
         raise UpdatePermitError(_("Cannot change the customer of the permit"))
+    if permit.has_conflicting_contract_type():
+        raise UpdatePermitError(CONTRACT_TYPE_MISMATCH)
     power_type = permit_info["vehicle"].get("power_type") or {}
     is_low_emission = VehiclePowerType(
         identifier=power_type.get("identifier")
@@ -794,6 +800,9 @@ def resolve_update_resident_permit(
             _("Vehicle registration number is mandatory for the permit")
         )
 
+    Customer.objects.select_for_update(no_key=True).get(pk=permit.customer_id)
+    if permit.has_conflicting_contract_type():
+        raise UpdatePermitError(CONTRACT_TYPE_MISMATCH)
     active_permits = permit.customer.active_permits.select_for_update().order_by("pk")
     # Zone edits may reprice both permits. Lock them in the same order as checkout.
     for active_permit in active_permits:
@@ -825,17 +834,6 @@ def resolve_update_resident_permit(
         permit_address and permit_address.id != previous_address_id
     ):
         address_changed = True
-
-    if address_changed and active_permits.count() == 2:
-        first_permit = active_permits[0]
-        second_permit = active_permits[1]
-        if first_permit.contract_type != second_permit.contract_type:
-            raise UpdatePermitError(
-                _(
-                    "Changing address for different type "
-                    "(fixed-period / open-ended) permits is not allowed"
-                )
-            )
 
     # clear vehicle_changed and address_changed flags
     if vehicle_changed:
