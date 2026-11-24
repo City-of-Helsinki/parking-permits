@@ -972,22 +972,33 @@ def test_shared_legacy_credit_blocks_ending_until_reconciled(prepaid_permit):
 
 @pytest.mark.django_db
 @freeze_time("2021-04-15")
+@pytest.mark.parametrize("refund_date", ["2021-04-15", "2021-05-01T00:00:00+03:00"])
 def test_legacy_vehicle_credits_with_several_rates_need_review_after_a_month(
-    prepaid_permit,
+    prepaid_permit, refund_date
 ):
-    permit, _ = prepaid_permit()
+    permit, info = prepaid_permit()
     order = permit.latest_order
-    for amount in (Decimal("150"), Decimal("105")):
-        create_refund(
-            permit.customer.user,
-            [permit],
-            [order],
-            amount,
-            "",
-            vat=order.vat,
-            description="Refund for updating permits, customer switched vehicle to: EV",
-        )
-    assert permit.total_refund_amount == 225
+    with freeze_time(refund_date):
+        # Both amounts divide evenly across the eight months, so only the
+        # sibling check can rule out prorating each row as a uniform credit.
+        for amount in (Decimal("120"), Decimal("136")):
+            create_refund(
+                permit.customer.user,
+                [permit],
+                [order],
+                amount,
+                "",
+                vat=order.vat,
+                description="Refund for updating permits, customer switched vehicle to: EV",
+            )
+        assert permit.next_period_start_time == date(2021, 5, 1)
+        assert permit.total_refund_amount == 224
     with freeze_time("2021-05-15"):
         assert permit.total_refund_amount is None
         assert permit.ending_refund_lines == []
+        with (
+            _mock_jwt(permit.customer.user),
+            pytest.raises(RefundReconciliationRequiredError),
+        ):
+            resolve_end_permit(None, info, [str(permit.pk)], "IMMEDIATELY", "")
+        assert Refund.objects.count() == 2
