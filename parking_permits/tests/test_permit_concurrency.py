@@ -1,6 +1,7 @@
 """Exercise real PostgreSQL lock waits with independent committed connections."""
 
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from queue import Queue
 from threading import Event
 from time import monotonic, sleep
@@ -19,7 +20,11 @@ from parking_permits.customer_permit import CustomerPermit
 from parking_permits.exceptions import DuplicatePermitError, OrderCreationFailedError
 from parking_permits.models import Customer, Order, ParkingPermit, Refund
 from parking_permits.models.order import OrderStatus, OrderType
-from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
+from parking_permits.models.parking_permit import (
+    ContractType,
+    ParkingPermitEndType,
+    ParkingPermitStatus,
+)
 from parking_permits.resolvers import resolve_create_order
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory
@@ -134,6 +139,38 @@ def test_second_purchase_inherits_concurrent_primary_type_change():
     )
     primary.refresh_from_db()
     assert secondary.contract_type == primary.contract_type == ContractType.FIXED_PERIOD
+
+
+def test_ending_waits_for_prepaid_balance_change():
+    start = timezone.now() + relativedelta(days=1)
+    permit = ParkingPermitFactory(
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        start_time=start,
+        end_time=get_end_time(start, 2),
+        month_count=2,
+    )
+    ProductFactory(
+        zone=permit.parking_zone,
+        start_date=timezone.localdate(start),
+        end_date=timezone.localdate(permit.end_time),
+        unit_price=Decimal("60"),
+    )
+    order = Order.objects.create_for_permits([permit], status=OrderStatus.CONFIRMED)
+
+    def adjust_balance():
+        ParkingPermit.objects.select_for_update(no_key=True).get(pk=permit.pk)
+        order.order_items.update(payment_unit_price=Decimal("30"))
+
+    def end():
+        return CustomerPermit(permit.customer_id).end(
+            [permit.pk], ParkingPermitEndType.IMMEDIATELY, iban=""
+        )
+
+    _, ended = contend(adjust_balance, end)
+
+    assert ended is True
+    assert permit.refunds.get().amount == Decimal("60")
 
 
 def test_constraint_protects_bulk_status_changes():
