@@ -26,9 +26,11 @@ from parking_permits.admin_resolvers import (
     update_or_create_customer,
     update_or_create_vehicle,
 )
+from parking_permits.cron import automatic_expiration_of_permits
 from parking_permits.exceptions import (
     AddressError,
     CreatePermitError,
+    EndPermitError,
     InvalidEmailError,
     ObjectNotFoundError,
     PermitCanNotBeExtendedError,
@@ -55,6 +57,7 @@ from parking_permits.tests.factories.vehicle import (
     VehiclePowerTypeFactory,
 )
 from parking_permits.tests.factories.zone import ParkingZoneFactory
+from parking_permits.utils import get_end_time
 from users.models import ParkingPermitGroups, User
 from users.tests.factories.user import UserFactory
 
@@ -97,6 +100,132 @@ def mock_jwt(admin_user):
         "helusers.oidc.RequestJWTAuthentication.authenticate",
         return_value=Auth(user=admin_user),
     )
+
+
+@pytest.mark.django_db
+@freeze_time("2026-11-28")
+@pytest.mark.parametrize(
+    "end_type, prepaid",
+    [("IMMEDIATELY", False), ("AFTER_CURRENT_PERIOD", False), ("IMMEDIATELY", True)],
+)
+def test_admin_end_recurring_primary(info, mock_jwt, client, end_type, prepaid):
+    primary_start = timezone.now().replace(day=1)
+    secondary_start = primary_start + relativedelta(weeks=1)
+    primary = ParkingPermitFactory(
+        status="VALID",
+        contract_type="OPEN_ENDED",
+        start_time=primary_start,
+        end_time=get_end_time(primary_start, 2 if prepaid else 1),
+    )
+    secondary = ParkingPermitFactory(
+        customer=primary.customer,
+        primary_vehicle=False,
+        status="VALID",
+        contract_type="OPEN_ENDED",
+        parking_zone=primary.parking_zone,
+        start_time=secondary_start,
+        end_time=get_end_time(secondary_start, 1),
+    )
+    product = ProductFactory(
+        zone=primary.parking_zone,
+        start_date=date(2026, 11, 1),
+        end_date=date(2027, 1, 31),
+    )
+    for permit in (primary, secondary):
+        order = OrderFactory(
+            customer=primary.customer,
+            status=OrderStatus.CONFIRMED,
+            paid_time=timezone.now(),
+        )
+        order.permits.add(permit)
+        OrderItemFactory(
+            order=order,
+            permit=permit,
+            product=product,
+            quantity=1,
+            start_time=permit.start_time,
+            end_time=permit.end_time,
+        )
+    if prepaid:
+        renewal = OrderFactory(
+            customer=primary.customer,
+            status=OrderStatus.CONFIRMED,
+            type="SUBSCRIPTION_RENEWED",
+            paid_time=timezone.now() + relativedelta(seconds=1),
+        )
+        renewal.permits.add(primary)
+        OrderItemFactory(
+            order=renewal,
+            permit=primary,
+            product=product,
+            quantity=1,
+            subscription=primary.order_items.get().subscription,
+            start_time=primary_start + relativedelta(months=1),
+            end_time=primary.end_time,
+        )
+    order_count = Order.objects.count()
+    subscription = secondary.order_items.get().subscription
+    with (
+        mock_jwt,
+        mock.patch("parking_permits.models.order.OrderValidator.validate_order"),
+        mock.patch(
+            "parking_permits.models.order.Subscription._cancel_talpa_subcription"
+        ) as cancel,
+        mock.patch("parking_permits.models.order.Order._cancel_talpa_order"),
+    ):
+        assert admin_resolvers.resolve_end_permit(None, info, primary.pk, end_type) == {
+            "success": True
+        }
+        primary.refresh_from_db()
+        secondary.refresh_from_db()
+        cancel.assert_called_once()
+        if end_type == "AFTER_CURRENT_PERIOD":
+            assert primary.status == "VALID"
+            assert not secondary.primary_vehicle
+            with freeze_time("2026-12-01"):
+                automatic_expiration_of_permits()
+        primary.refresh_from_db()
+        secondary.refresh_from_db()
+        assert primary.is_closed
+        assert secondary.is_valid and secondary.primary_vehicle
+        assert secondary.end_time == get_end_time(secondary_start, 1)
+        subscription.refresh_from_db()
+        assert subscription.status == "CONFIRMED"
+    assert Order.objects.count() == order_count
+    assert not secondary.refunds.exists()
+    if prepaid:
+        assert primary.refunds.get().amount == Decimal("30")
+    else:
+        assert not Refund.objects.exists()
+    response = client.post(
+        reverse("parking_permits:talpa-price"),
+        {
+            "subscriptionId": str(subscription.talpa_subscription_id),
+            "userId": str(secondary.customer.user.uuid),
+            "orderItem": {
+                "orderItemId": "item",
+                "meta": [{"key": "permitId", "value": secondary.pk}],
+            },
+        },
+        content_type="application/json",
+    )
+    expected = product.get_talpa_pricing(
+        is_low_emission=secondary.vehicle.is_low_emission, is_secondary=False
+    )
+    assert response.json()["priceGross"] == expected["price_gross"]
+
+
+@pytest.mark.django_db
+def test_admin_cannot_end_fixed_primary_with_active_secondary(info, mock_jwt):
+    primary = ParkingPermitFactory(status="VALID", contract_type="FIXED_PERIOD")
+    ParkingPermitFactory(
+        customer=primary.customer,
+        primary_vehicle=False,
+        status="VALID",
+        contract_type="FIXED_PERIOD",
+    )
+    with mock_jwt, pytest.raises(EndPermitError):
+        admin_resolvers.resolve_end_permit(None, info, primary.pk, "IMMEDIATELY")
 
 
 @pytest.fixture()
@@ -1142,3 +1271,4 @@ def test_staff_subscription_edits_take_effect_at_renewal(
         )
     assert response.status_code == 200
     assert response.json()["priceGross"] == expected_price
+

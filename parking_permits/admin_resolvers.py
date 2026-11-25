@@ -74,6 +74,7 @@ from .forms import (
 from .models.order import OrderPaymentType, OrderStatus, OrderType
 from .models.parking_permit import (
     ContractType,
+    ParkingPermitEndType,
     ParkingPermitEvent,
     ParkingPermitEventFactory,
     ParkingPermitStatus,
@@ -1021,6 +1022,23 @@ def resolve_extend_parking_permit(
     return {"success": True}
 
 
+def _get_primary_permit_successor(customer, permit):
+    successor = None
+    if permit.is_open_ended:
+        others = list(customer.permits.current().exclude(pk=permit.pk))
+        if (
+            len(others) == 1
+            and others[0].is_open_ended
+            and not others[0].primary_vehicle
+        ):
+            successor = others[0]
+    if successor is None and customer.active_permits.count() > 1:
+        raise EndPermitError(
+            _("Primary permit cannot be ended if customer has two permits")
+        )
+    return successor
+
+
 @mutation.field("endPermit")
 @is_customer_service
 @audit_logger.autolog(
@@ -1035,20 +1053,41 @@ def resolve_end_permit(
     obj, info, permit_id, end_type, iban=None, audit_msg: AuditMsg = None
 ):
     request = info.context["request"]
-    permit = ParkingPermit.objects.get(id=permit_id)
+    # Serialize role changes with purchases and other terminations.
+    customer = Customer.objects.select_for_update(of=("self",), no_key=True).get(
+        permits__pk=permit_id
+    )
+    permit = customer.permits.get(pk=permit_id)
     audit_msg.target = permit
 
-    if permit.customer.active_permits.count() > 1 and permit.primary_vehicle:
-        raise EndPermitError(
-            _("Primary permit cannot be ended if customer has two permits")
+    successor = None
+    if permit.is_open_ended and (
+        permit.is_closed
+        or (
+            end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD
+            and permit.end_type == end_type
+            and permit.end_time == permit.current_period_end_time
         )
+    ):
+        return {"success": True}
+    if permit.primary_vehicle:
+        successor = _get_primary_permit_successor(customer, permit)
 
     end_permits(
         request.user,
         permit,
         end_type=end_type,
-        iban=iban,
+        iban=iban or "",
+        force_end=successor is not None,
     )
+    if successor and end_type == ParkingPermitEndType.IMMEDIATELY:
+        successor.primary_vehicle = True
+        successor.save(update_fields=["primary_vehicle", "modified_at"])
+        ParkingPermitEventFactory.make_update_permit_event(
+            successor,
+            created_by=request.user,
+            changes={"primary_vehicle": [False, True]},
+        )
     return {"success": True}
 
 
