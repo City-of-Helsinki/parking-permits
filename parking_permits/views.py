@@ -471,17 +471,6 @@ class TalpaResolveRightOfPurchase(APIView):
 
 
 class PaymentView(APIView):
-    @swagger_auto_schema(
-        operation_description="Process payment notifications.",
-        request_body=PaymentSerializer,
-        security=[],
-        responses={
-            200: openapi.Response(
-                "Payment received response", MessageResponseSerializer
-            )
-        },
-        tags=["Payment"],
-    )
     @staticmethod
     def _reconcile_invalid_paid_order(order, pending_extensions, exc):
         permits = list(order.permits.all())
@@ -506,6 +495,17 @@ class PaymentView(APIView):
                 ),
             )
 
+    @swagger_auto_schema(
+        operation_description="Process payment notifications.",
+        request_body=PaymentSerializer,
+        security=[],
+        responses={
+            200: openapi.Response(
+                "Payment received response", MessageResponseSerializer
+            )
+        },
+        tags=["Payment"],
+    )
     @transaction.atomic
     def post(self, request, format=None):
         logger.info(f"Payment received. Data = {json.dumps(request.data, default=str)}")
