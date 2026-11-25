@@ -246,6 +246,63 @@ class PaymentViewTestCase(APITestCase):
         refund = Refund.objects.get(orders=order)
         self.assertEqual(refund.status, RefundStatus.OPEN)
 
+    def _create_paid_renewal_order(self, permit_status, subscription_status):
+        end_time = tz.now() + relativedelta(days=2)
+        permit = ParkingPermitFactory(
+            status=permit_status,
+            contract_type=ContractType.OPEN_ENDED,
+            start_time=end_time - relativedelta(months=1),
+            end_time=end_time,
+        )
+        order = OrderFactory(
+            talpa_order_id=self.talpa_order_id,
+            customer=permit.customer,
+            status=OrderStatus.DRAFT,
+            type=OrderType.SUBSCRIPTION_RENEWED,
+        )
+        order.permits.add(permit)
+        OrderItemFactory(
+            order=order,
+            permit=permit,
+            product=ProductFactory(unit_price=Decimal(30)),
+            subscription=SubscriptionFactory(status=subscription_status),
+        )
+        return order, permit
+
+    def _assert_paid_renewal_rejected(self, order, permit):
+        end_time = permit.end_time
+        response = self.client.post(
+            self.url, {"eventType": "PAYMENT_PAID", "orderId": self.talpa_order_id}
+        )
+        self.assertEqual(response.status_code, 400)
+        order.refresh_from_db()
+        permit.refresh_from_db()
+        self.assertEqual(order.status, OrderStatus.DRAFT)
+        self.assertIsNotNone(order.paid_time)
+        self.assertIsNotNone(order.payment_processed_at)
+        self.assertEqual(permit.end_time, end_time)
+        refund = Refund.objects.get(orders=order)
+        self.assertEqual(refund.status, RefundStatus.OPEN)
+        self.assertIn(permit, refund.permits.all())
+        return permit
+
+    @patch("parking_permits.views.send_permit_email")
+    def test_paid_renewal_for_closed_permit_requires_refund(self, mock_email):
+        order, permit = self._create_paid_renewal_order(
+            ParkingPermitStatus.CLOSED, SubscriptionStatus.CONFIRMED
+        )
+        permit = self._assert_paid_renewal_rejected(order, permit)
+        self.assertEqual(permit.status, ParkingPermitStatus.CLOSED)
+        mock_email.assert_not_called()
+
+    @patch("parking_permits.views.send_permit_email")
+    def test_paid_renewal_for_cancelled_subscription_requires_refund(self, mock_email):
+        order, permit = self._create_paid_renewal_order(
+            ParkingPermitStatus.VALID, SubscriptionStatus.CANCELLED
+        )
+        self._assert_paid_renewal_rejected(order, permit)
+        mock_email.assert_not_called()
+
     def test_should_not_extend_permit_on_unsuccessful_payment(self):
         ext_request = ParkingPermitExtensionRequestFactory(
             order__talpa_order_id=self.talpa_order_id
@@ -1775,6 +1832,52 @@ class OrderViewTestCase(APITestCase):
         self.assertEqual(
             permit.end_time,
             datetime.datetime(2023, 5, 29, 23, 59, 0, tzinfo=datetime.UTC),
+        )
+
+    @patch.object(OrderValidator, "validate_order")
+    def _assert_renewal_rejected(
+        self, permit_status, subscription_status, mock_validate_order
+    ):
+        talpa_new_order_id = "c6f70a98-23d1-46f0-b9cd-c01c6f78e075"
+        talpa_subscription_id = "f769b803-0bd0-489d-aa81-b35af391f391"
+        permit = ParkingPermitFactory(
+            status=permit_status, contract_type=ContractType.OPEN_ENDED
+        )
+        order = OrderFactory(
+            talpa_order_id="d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            customer=permit.customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        order.permits.add(permit)
+        subscription = SubscriptionFactory(
+            talpa_subscription_id=talpa_subscription_id,
+            status=subscription_status,
+        )
+        OrderItemFactory(order=order, permit=permit, subscription=subscription)
+
+        response = self.client.post(
+            reverse("parking_permits:order-notify"),
+            {
+                "eventType": "SUBSCRIPTION_RENEWAL_ORDER_CREATED",
+                "subscriptionId": talpa_subscription_id,
+                "orderId": talpa_new_order_id,
+            },
+        )
+
+        self.assertEqual(response.status_code, 400)
+        mock_validate_order.assert_not_called()
+        self.assertFalse(
+            Order.objects.filter(talpa_order_id=talpa_new_order_id).exists()
+        )
+
+    def test_subscription_renewal_rejected_for_cancelled_subscription(self):
+        self._assert_renewal_rejected(
+            ParkingPermitStatus.VALID, SubscriptionStatus.CANCELLED
+        )
+
+    def test_subscription_renewal_rejected_for_closed_permit(self):
+        self._assert_renewal_rejected(
+            ParkingPermitStatus.CLOSED, SubscriptionStatus.CONFIRMED
         )
 
 
