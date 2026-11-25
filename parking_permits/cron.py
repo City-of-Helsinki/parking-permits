@@ -1,6 +1,7 @@
 import logging
 
 from dateutil.relativedelta import relativedelta
+from django.db import transaction
 from django.db.models import Exists, Max, OuterRef, Q
 from django.utils import timezone as tz
 
@@ -55,20 +56,26 @@ def automatic_expiration_of_permits():
         status=ParkingPermitStatus.VALID,
     )
     for permit in ending_permits:
-        CustomerPermit(permit.customer_id).end(
-            [permit.id],
-            ParkingPermitEndType.PREVIOUS_DAY_END,
-            iban="",
-            subscription_cancel_reason=SubscriptionCancelReason.PERMIT_EXPIRED,
-            cancel_from_talpa=True,
-            force_end=True,
-        )
-        # If the customer has only one permit left, make it primary
-        active_permits = permit.customer.permits.active()
-        if active_permits.count() == 1:
-            active_permit = active_permits.first()
-            active_permit.primary_vehicle = True
-            active_permit.save()
+        try:
+            with transaction.atomic():
+                CustomerPermit(permit.customer_id).end(
+                    [permit.id],
+                    ParkingPermitEndType.PREVIOUS_DAY_END,
+                    iban="",
+                    subscription_cancel_reason=SubscriptionCancelReason.PERMIT_EXPIRED,
+                    cancel_from_talpa=True,
+                    # An expired permit must end even if Talpa is unavailable.
+                    ignore_talpa_errors=True,
+                    force_end=True,
+                )
+                active_permits = permit.customer.permits.active()
+                if active_permits.count() == 1:
+                    active_permits.filter(primary_vehicle=False).update(
+                        primary_vehicle=True, modified_at=tz.now()
+                    )
+        except Exception:
+            logger.exception(f"Automatically ending permit {permit.pk} failed")
+            continue
         logger.info(f"Permit {permit.pk} ended")
 
     logger.info("Automatically ending permits completed.")
