@@ -17,8 +17,13 @@ from parking_permits.cron import (
     handle_announcement_emails,
 )
 from parking_permits.customer_permit import CustomerPermit
+from parking_permits.exceptions import SubscriptionCancelError
 from parking_permits.models import Customer, Refund, TemporaryVehicle
-from parking_permits.models.order import OrderStatus
+from parking_permits.models.order import (
+    OrderStatus,
+    SubscriptionCancelReason,
+    SubscriptionStatus,
+)
 from parking_permits.models.parking_permit import (
     ContractType,
     ParkingPermit,
@@ -29,7 +34,11 @@ from parking_permits.models.product import ProductType
 from parking_permits.tests.factories import ParkingZoneFactory
 from parking_permits.tests.factories.announcement import AnnouncementFactory
 from parking_permits.tests.factories.customer import CustomerFactory
-from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
+from parking_permits.tests.factories.order import (
+    OrderFactory,
+    OrderItemFactory,
+    SubscriptionFactory,
+)
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
 from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import TemporaryVehicleFactory
@@ -225,6 +234,73 @@ class CronTestCase(TestCase):
         )
         # Make sure that no refunds were created for these cases
         self.assertEqual(Refund.objects.count(), 0)
+
+    @freeze_time(tz.make_aware(datetime(2024, 11, 30, 0, 22)))
+    @patch("parking_permits.resolver_utils.sync_with_parkkihubi")
+    def test_automatic_expiration_continues_after_failing_permit(self, mock_sync):
+        failing_permit, closable_permit = (
+            ParkingPermitFactory(
+                customer=CustomerFactory(),
+                start_time=tz.make_aware(datetime(2024, 10, 29, 10, 0, 0)),
+                end_time=tz.make_aware(datetime(2024, 11, 28, 23, 59, 59)),
+                month_count=1,
+                contract_type=ContractType.FIXED_PERIOD,
+                status=ParkingPermitStatus.VALID,
+            )
+            for _ in range(2)
+        )
+        original_end = CustomerPermit.end
+
+        def end(customer_permit, permit_ids, *args, **kwargs):
+            if failing_permit.pk in permit_ids:
+                raise RuntimeError("boom")
+            return original_end(customer_permit, permit_ids, *args, **kwargs)
+
+        with patch.object(CustomerPermit, "end", autospec=True, side_effect=end):
+            automatic_expiration_of_permits()
+
+        failing_permit.refresh_from_db()
+        closable_permit.refresh_from_db()
+        self.assertEqual(failing_permit.status, ParkingPermitStatus.VALID)
+        self.assertEqual(closable_permit.status, ParkingPermitStatus.CLOSED)
+
+    @freeze_time(tz.make_aware(datetime(2024, 11, 30, 0, 22)))
+    @patch("parking_permits.resolver_utils.sync_with_parkkihubi")
+    @patch("parking_permits.models.order.Order._cancel_talpa_order")
+    @patch(
+        "parking_permits.models.order.Subscription._cancel_talpa_subcription",
+        side_effect=SubscriptionCancelError("Talpa unavailable"),
+    )
+    @patch("parking_permits.models.order.OrderValidator.validate_order")
+    def test_automatic_expiration_ignores_talpa_subscription_cancel_error(
+        self, mock_validate, mock_cancel_subscription, mock_cancel_order, mock_sync
+    ):
+        permit = ParkingPermitFactory(
+            customer=self.customer,
+            start_time=tz.make_aware(datetime(2024, 10, 30, 10, 0, 0)),
+            end_time=tz.make_aware(datetime(2024, 11, 29, 23, 59, 59)),
+            month_count=1,
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+        )
+        order = OrderFactory(
+            talpa_order_id="d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            customer=self.customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        subscription = SubscriptionFactory()
+        OrderItemFactory(order=order, permit=permit, subscription=subscription)
+
+        automatic_expiration_of_permits()
+
+        mock_cancel_subscription.assert_called_once()
+        permit.refresh_from_db()
+        subscription.refresh_from_db()
+        self.assertEqual(permit.status, ParkingPermitStatus.CLOSED)
+        self.assertEqual(subscription.status, SubscriptionStatus.CANCELLED)
+        self.assertEqual(
+            subscription.cancel_reason, SubscriptionCancelReason.PERMIT_EXPIRED
+        )
 
     @override_settings(PERMIT_EXTENSIONS_ENABLED=True)
     def test_automatic_expiration_permits_with_pending_extension_request(self):
