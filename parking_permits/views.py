@@ -472,6 +472,17 @@ class TalpaResolveRightOfPurchase(APIView):
 
 class PaymentView(APIView):
     @staticmethod
+    def _validate_subscription_renewal(order):
+        for order_item in order.order_items.select_related("permit", "subscription"):
+            if order_item.permit.status == ParkingPermitStatus.CLOSED or (
+                order_item.subscription
+                and order_item.subscription.status == SubscriptionStatus.CANCELLED
+            ):
+                raise ParkingPermitValidationError(
+                    f"Permit {order_item.permit_id} has ended and cannot be renewed."
+                )
+
+    @staticmethod
     def _reconcile_invalid_paid_order(order, pending_extensions, exc):
         permits = list(order.permits.all())
         permits += [
@@ -551,6 +562,8 @@ class PaymentView(APIView):
                         status=ParkingPermitStatus.VALID
                     ):
                         permit.validate_purchase()
+                if order.type == OrderType.SUBSCRIPTION_RENEWED:
+                    self._validate_subscription_renewal(order)
             except ParkingPermitValidationError as exc:
                 logger.error(
                     "Paid order requires reconciliation: order %s: %s",
@@ -649,6 +662,155 @@ class PaymentView(APIView):
 
 
 class OrderView(APIView):
+    @staticmethod
+    def _handle_order_cancelled(talpa_order_id):
+        try:
+            order = Order.objects.get(talpa_order_id=talpa_order_id)
+            order_permits = order.permits.filter(
+                status__in=[
+                    ParkingPermitStatus.DRAFT,
+                    ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+                    ParkingPermitStatus.VALID,
+                ],
+                end_type=ParkingPermitEndType.IMMEDIATELY,
+            )
+            if order_permits:
+                logger.info(f"Cancelling order: {talpa_order_id}")
+                order.status = OrderStatus.CANCELLED
+                order.save()
+                order_permits.update(
+                    status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
+                )
+                logger.info(
+                    f"{order} is cancelled and order permits "
+                    f"are set to CANCELLED-status"
+                )
+            elif ext_requests := order.get_pending_permit_extension_requests():
+                for ext_request in ext_requests:
+                    ext_request.cancel()
+                    ParkingPermitEventFactory.make_cancel_ext_request_event(ext_request)
+                logger.info(f"Cancelling order: {talpa_order_id}")
+                order.status = OrderStatus.CANCELLED
+                order.save()
+                logger.info(
+                    f"{order} is cancelled and permit extensions "
+                    f"set to CANCELLED-status"
+                )
+
+        except Order.DoesNotExist:
+            return not_found_response(f"Order {talpa_order_id} does not exist")
+        return Response({"message": "Order cancel event processed"}, status=200)
+
+    @staticmethod
+    def _create_subscription_renewal_order(talpa_order_id, talpa_subscription_id):
+        logger.info(f"Renewing subscription: {talpa_subscription_id}")
+        try:
+            subscription = Subscription.objects.get(
+                talpa_subscription_id=talpa_subscription_id
+            )
+        except Subscription.DoesNotExist:
+            return not_found_response(
+                f"Subscription {talpa_subscription_id} does not exist"
+            )
+        if Order.objects.filter(talpa_order_id=talpa_order_id).exists():
+            return ok_response(
+                f"Subscription {talpa_subscription_id} already "
+                f"renewed with order {talpa_order_id}"
+            )
+        order_item = subscription.order_items.first()
+        permit = order_item.permit
+
+        if not permit or not permit.customer or not permit.customer.user:
+            return bad_request_response(
+                f"Permit {permit} or customer {permit.customer} or "
+                f"user {permit.customer.user} is missing"
+            )
+
+        if permit.contract_type != ContractType.OPEN_ENDED:
+            return bad_request_response("Permit contract type differs from open ended.")
+
+        # Ending locks the permit before cancelling its subscription.
+        permit = ParkingPermit.objects.select_for_update().get(pk=permit.pk)
+        subscription.refresh_from_db()
+        if (
+            permit.status == ParkingPermitStatus.CLOSED
+            or subscription.status == SubscriptionStatus.CANCELLED
+        ):
+            logger.error(
+                f"Renewal order {talpa_order_id} rejected: permit {permit.pk} "
+                f"is {permit.status} and subscription {talpa_subscription_id} "
+                f"is {subscription.status}"
+            )
+            return bad_request_response(
+                "Ended permit or cancelled subscription cannot be renewed."
+            )
+
+        try:
+            validated_order_data = OrderValidator.validate_order(
+                talpa_order_id, permit.customer.user.uuid
+            )
+        except OrderValidationError as e:
+            return bad_request_response(f"Order validation failed. Error = {str(e)}")
+
+        order = Order.objects.create(
+            talpa_order_id=validated_order_data.get("orderId"),
+            talpa_checkout_url=validated_order_data.get("checkoutUrl"),
+            talpa_logged_in_checkout_url=validated_order_data.get(
+                "loggedInCheckoutUrl"
+            ),
+            talpa_receipt_url=validated_order_data.get("receiptUrl"),
+            talpa_update_card_url=validated_order_data.get("updateCardUrl", ""),
+            payment_type=OrderPaymentType.ONLINE_PAYMENT,
+            customer=permit.customer,
+            status=OrderStatus.DRAFT,
+            address_text=str(permit.full_address),
+            parking_zone_name=permit.parking_zone.name,
+            vehicles=[permit.vehicle.registration_number],
+            type=OrderType.SUBSCRIPTION_RENEWED,
+        )
+        order.permits.add(permit)
+        order.save()
+
+        validated_order_item_data = (
+            validated_order_data.get("items") and validated_order_data.get("items")[0]
+        )
+
+        product = Product.objects.get(
+            talpa_product_id=validated_order_item_data.get("productId")
+        )
+
+        start_time = tz.make_aware(
+            datetime.datetime.strptime(
+                validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S.%f"
+            )
+        )
+        end_time = get_end_time(start_time, 1)
+
+        vat_percentage = (
+            Decimal(0)
+            if not validated_order_item_data.get("vatPercentage")
+            else Decimal(validated_order_item_data.get("vatPercentage"))
+        )
+
+        OrderItem.objects.create(
+            talpa_order_item_id=validated_order_item_data.get("orderItemId"),
+            order=order,
+            subscription=subscription,
+            product=product,
+            permit=permit,
+            unit_price=validated_order_item_data.get("priceGross"),
+            payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
+            vat=vat_percentage / 100,
+            quantity=validated_order_item_data.get("quantity"),
+            start_time=start_time,
+            end_time=end_time,
+        )
+        logger.info(
+            f"{subscription} is renewed and new order {order} "
+            f"is created with order item {order_item}"
+        )
+        return Response({"message": "Subscription renewal completed"}, status=200)
+
     @swagger_auto_schema(
         operation_description="Process order notifications.",
         request_body=OrderSerializer,
@@ -669,150 +831,18 @@ class OrderView(APIView):
             return bad_request_response("Talpa order id is missing from request data")
 
         if event_type == "ORDER_CANCELLED":
-            try:
-                order = Order.objects.get(talpa_order_id=talpa_order_id)
-                order_permits = order.permits.filter(
-                    status__in=[
-                        ParkingPermitStatus.DRAFT,
-                        ParkingPermitStatus.PAYMENT_IN_PROGRESS,
-                        ParkingPermitStatus.VALID,
-                    ],
-                    end_type=ParkingPermitEndType.IMMEDIATELY,
-                )
-                if order_permits:
-                    logger.info(f"Cancelling order: {talpa_order_id}")
-                    order.status = OrderStatus.CANCELLED
-                    order.save()
-                    order_permits.update(
-                        status=ParkingPermitStatus.CANCELLED, modified_at=tz.now()
-                    )
-                    logger.info(
-                        f"{order} is cancelled and order permits "
-                        f"are set to CANCELLED-status"
-                    )
-                elif ext_requests := order.get_pending_permit_extension_requests():
-                    for ext_request in ext_requests:
-                        ext_request.cancel()
-                        ParkingPermitEventFactory.make_cancel_ext_request_event(
-                            ext_request
-                        )
-                    logger.info(f"Cancelling order: {talpa_order_id}")
-                    order.status = OrderStatus.CANCELLED
-                    order.save()
-                    logger.info(
-                        f"{order} is cancelled and permit extensions "
-                        f"set to CANCELLED-status"
-                    )
-
-            except Order.DoesNotExist:
-                return not_found_response(f"Order {talpa_order_id} does not exist")
-            return Response({"message": "Order cancel event processed"}, status=200)
+            return self._handle_order_cancelled(talpa_order_id)
 
         if not talpa_subscription_id:
             return bad_request_response(
                 "Talpa subscription id is missing from request data"
             )
 
-        # Subscriptipn renewal process
         if event_type == "SUBSCRIPTION_RENEWAL_ORDER_CREATED":
-            logger.info(f"Renewing subscription: {talpa_subscription_id}")
-            try:
-                subscription = Subscription.objects.get(
-                    talpa_subscription_id=talpa_subscription_id
-                )
-            except Subscription.DoesNotExist:
-                return not_found_response(
-                    f"Subscription {talpa_subscription_id} does not exist"
-                )
-            if Order.objects.filter(talpa_order_id=talpa_order_id).exists():
-                return ok_response(
-                    f"Subscription {talpa_subscription_id} already "
-                    f"renewed with order {talpa_order_id}"
-                )
-            order_item = subscription.order_items.first()
-            permit = order_item.permit
-
-            if not permit or not permit.customer or not permit.customer.user:
-                return bad_request_response(
-                    f"Permit {permit} or customer {permit.customer} or "
-                    f"user {permit.customer.user} is missing"
-                )
-
-            if permit.contract_type != ContractType.OPEN_ENDED:
-                return bad_request_response(
-                    "Permit contract type differs from open ended."
-                )
-
-            try:
-                validated_order_data = OrderValidator.validate_order(
-                    talpa_order_id, permit.customer.user.uuid
-                )
-            except OrderValidationError as e:
-                return bad_request_response(
-                    f"Order validation failed. Error = {str(e)}"
-                )
-
-            order = Order.objects.create(
-                talpa_order_id=validated_order_data.get("orderId"),
-                talpa_checkout_url=validated_order_data.get("checkoutUrl"),
-                talpa_logged_in_checkout_url=validated_order_data.get(
-                    "loggedInCheckoutUrl"
-                ),
-                talpa_receipt_url=validated_order_data.get("receiptUrl"),
-                talpa_update_card_url=validated_order_data.get("updateCardUrl", ""),
-                payment_type=OrderPaymentType.ONLINE_PAYMENT,
-                customer=permit.customer,
-                status=OrderStatus.DRAFT,
-                address_text=str(permit.full_address),
-                parking_zone_name=permit.parking_zone.name,
-                vehicles=[permit.vehicle.registration_number],
-                type=OrderType.SUBSCRIPTION_RENEWED,
+            return self._create_subscription_renewal_order(
+                talpa_order_id, talpa_subscription_id
             )
-            order.permits.add(permit)
-            order.save()
-
-            validated_order_item_data = (
-                validated_order_data.get("items")
-                and validated_order_data.get("items")[0]
-            )
-
-            product = Product.objects.get(
-                talpa_product_id=validated_order_item_data.get("productId")
-            )
-
-            start_time = tz.make_aware(
-                datetime.datetime.strptime(
-                    validated_order_item_data.get("startDate"), "%Y-%m-%dT%H:%M:%S.%f"
-                )
-            )
-            end_time = get_end_time(start_time, 1)
-
-            vat_percentage = (
-                Decimal(0)
-                if not validated_order_item_data.get("vatPercentage")
-                else Decimal(validated_order_item_data.get("vatPercentage"))
-            )
-
-            OrderItem.objects.create(
-                talpa_order_item_id=validated_order_item_data.get("orderItemId"),
-                order=order,
-                subscription=subscription,
-                product=product,
-                permit=permit,
-                unit_price=validated_order_item_data.get("priceGross"),
-                payment_unit_price=validated_order_item_data.get("rowPriceTotal"),
-                vat=vat_percentage / 100,
-                quantity=validated_order_item_data.get("quantity"),
-                start_time=start_time,
-                end_time=end_time,
-            )
-            logger.info(
-                f"{subscription} is renewed and new order {order} "
-                f"is created with order item {order_item}"
-            )
-            return Response({"message": "Subscription renewal completed"}, status=200)
-        else:
-            return bad_request_response(f"Unknown order event type {event_type}")
+        return bad_request_response(f"Unknown order event type {event_type}")
 
 
 class SubscriptionView(APIView):
