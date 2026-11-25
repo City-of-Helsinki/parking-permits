@@ -35,6 +35,7 @@ from .models.parking_permit import (
     ParkingPermit,
     ParkingPermitEventFactory,
     ParkingPermitStatus,
+    ensure_not_in_renewal_period,
 )
 from .resolver_utils import (
     apply_prepaid_price_change,
@@ -270,6 +271,7 @@ def resolve_get_vehicle_price_changes(_obj, info, permit_id, is_low_emission):
         )
     except ParkingPermit.DoesNotExist as exc:
         raise ObjectNotFoundError(_("Permit not found")) from exc
+    ensure_not_in_renewal_period([permit])
     return permit.get_price_change_list(
         new_zone=permit.parking_zone, is_low_emission=is_low_emission
     )
@@ -287,6 +289,7 @@ def resolve_get_update_address_price_changes(_obj, info, address_id):
     if len(permits) == 0:
         logger.error(f"No active permits for the customer: {customer}")
         raise ObjectNotFoundError(_("No active permits for the customer"))
+    ensure_not_in_renewal_period(permits)
 
     permit_price_changes = []
     for permit in permits:
@@ -483,6 +486,7 @@ def resolve_update_permit_vehicle(
     )
     if permit.is_fixed_period and not permit.is_valid:
         raise ParkingPermitValidationError(_("Permit is not valid for a price change"))
+    ensure_not_in_renewal_period([permit])
     old_registration_number = permit.vehicle.registration_number
 
     audit_msg.target = permit
@@ -713,6 +717,9 @@ def resolve_change_address(
             f"parking zones. Customer: {customer}"
         )
         raise ParkingZoneError(_("Conflict parking zones for active permits"))
+
+    # Shared address: blocked if any of the customer's permits is being renewed
+    ensure_not_in_renewal_period(permits)
 
     response = {"success": True}
 

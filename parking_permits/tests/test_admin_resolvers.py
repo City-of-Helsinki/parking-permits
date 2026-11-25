@@ -1,7 +1,7 @@
 import dataclasses
 import unittest
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from unittest import mock
 
@@ -47,6 +47,7 @@ from parking_permits.models import (
 from parking_permits.models.order import OrderStatus
 from parking_permits.models.parking_permit import ContractType, ParkingPermitStatus
 from parking_permits.models.product import Accounting, ProductType
+from parking_permits.tests.factories.address import AddressFactory
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import OrderFactory, OrderItemFactory
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
@@ -1272,3 +1273,109 @@ def test_staff_subscription_edits_take_effect_at_renewal(
     assert response.status_code == 200
     assert response.json()["priceGross"] == expected_price
 
+
+@pytest.mark.django_db
+@freeze_time(timezone.make_aware(datetime(2024, 4, 29, 12, 0)))
+@pytest.mark.parametrize(
+    "edit, renewing",
+    [
+        ("vehicle", "edited"),
+        ("vehicle", "other"),
+        ("address", "edited"),
+        ("address", "other"),
+        ("zone", "edited"),
+        ("zone", "other"),
+        ("power_type", "edited"),
+        ("metadata", "edited"),
+    ],
+)
+@mock.patch("parking_permits.models.ParkingPermit.get_price_change_list")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_vehicle")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_customer_address")
+@mock.patch("parking_permits.admin_resolvers.update_or_create_address")
+def test_staff_can_change_vehicle_or_address_during_renewal_period(
+    mock_address_upsert,
+    mock_customer_address_upsert,
+    mock_vehicle_upsert,
+    mock_price_change,
+    info,
+    mock_jwt,
+    edit,
+    renewing,
+):
+    renewal_end = timezone.make_aware(datetime(2024, 4, 30, 23, 59, 59))
+    normal_end = timezone.make_aware(datetime(2024, 5, 14, 23, 59, 59))
+    zone = ParkingZoneFactory()
+
+    def open_ended(customer=None, end_time=normal_end, **kwargs):
+        if customer:
+            kwargs["customer"] = customer
+        return ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            parking_zone=zone,
+            start_time=end_time - relativedelta(days=30),
+            end_time=end_time,
+            month_count=1,
+            **kwargs,
+        )
+
+    permit = open_ended(end_time=renewal_end if renewing == "edited" else normal_end)
+    other = open_ended(
+        customer=permit.customer,
+        primary_vehicle=False,
+        end_time=renewal_end if renewing == "other" else normal_end,
+    )
+    old_vehicle, old_address = permit.vehicle, permit.address
+    new_vehicle = VehicleFactory() if edit == "vehicle" else old_vehicle
+    new_address = AddressFactory() if edit == "address" else old_address
+    new_zone = ParkingZoneFactory() if edit == "zone" else zone
+    mock_vehicle_upsert.return_value = new_vehicle
+    mock_address_upsert.return_value = new_address
+    mock_customer_address_upsert.return_value = new_address
+    mock_price_change.return_value = []
+
+    customer = permit.customer
+    data = {
+        "customer": {
+            "address_security_ban": False,
+            "national_id_number": customer.national_id_number,
+            "first_name": customer.first_name,
+            "last_name": customer.last_name,
+            "email": customer.email,
+            "phone_number": customer.phone_number,
+            "driver_license_checked": customer.driver_license_checked,
+            "primary_address": {"street_name": new_address.street_name},
+        },
+        "vehicle": {
+            "registration_number": new_vehicle.registration_number,
+            "manufacturer": "Updated"
+            if edit == "metadata"
+            else old_vehicle.manufacturer,
+            "power_type": {
+                "identifier": (
+                    "04" if edit == "power_type" else old_vehicle.power_type.identifier
+                )
+            },
+        },
+        "zone": new_zone.name,
+        "status": permit.status,
+        "description": "updated" if edit == "metadata" else permit.description,
+    }
+
+    order_count = Order.objects.count()
+    refund_count = Refund.objects.count()
+
+    with mock_jwt:
+        assert resolve_update_resident_permit(None, info, permit.pk, data) == {
+            "success": True
+        }
+
+    permit.refresh_from_db()
+    other.refresh_from_db()
+    assert permit.vehicle == new_vehicle
+    assert permit.address == other.address == new_address
+    assert permit.parking_zone == other.parking_zone == new_zone
+    # The next period already charged by Talpa keeps its original price.
+    assert Order.objects.count() == order_count
+    assert Refund.objects.count() == refund_count

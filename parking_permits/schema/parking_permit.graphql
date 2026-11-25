@@ -95,6 +95,8 @@ type PermitNode {
   currentPeriodEndTime: String
   canBeRefunded: Boolean
   canEndImmediately: Boolean
+  isInRenewalPeriod: Boolean
+  changesAvailableFrom: String
   canEndAfterCurrentPeriod: Boolean
   canExtendPermit: Boolean
   maxExtensionMonthCount: Int

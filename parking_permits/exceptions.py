@@ -66,6 +66,21 @@ class RefundReconciliationRequiredError(PermitCanNotBeEndedError):
         )
 
 
+class PermitRenewalPeriodError(ParkingPermitValidationError):
+    def __init__(self, available_from):
+        super().__init__(
+            _(
+                "Vehicle and address cannot be changed while the permit is being "
+                "renewed. Changes are possible again from %(date)s."
+            )
+            % {
+                "date": f"{available_from.day}.{available_from.month}."
+                f"{available_from.year}"
+            }
+        )
+        self.available_from = available_from
+
+
 class ObjectNotFoundError(ParkingPermitValidationError):
     pass
 

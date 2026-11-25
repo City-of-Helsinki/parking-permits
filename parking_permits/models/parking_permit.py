@@ -25,6 +25,7 @@ from ..exceptions import (
     OrderCreationFailedError,
     PermitCanNotBeEndedError,
     PermitCanNotBeExtendedError,
+    PermitRenewalPeriodError,
     RefundReconciliationRequiredError,
     TemporaryVehicleValidationError,
 )
@@ -94,6 +95,19 @@ NON_DUPLICABLE_STATUSES = (
 ACTIVE_PERMIT_CONSTRAINT = "unique_active_permit_per_vehicle"
 
 MAX_MONTHS = 12
+RENEWAL_PERIOD_DAYS = 3
+
+
+def renewal_period_changes_available_from(permits):
+    """Latest date when changes are possible for all the given permits."""
+    dates = [permit.changes_available_from for permit in permits]
+    return max((date for date in dates if date), default=None)
+
+
+def ensure_not_in_renewal_period(permits):
+    available_from = renewal_period_changes_available_from(permits)
+    if available_from:
+        raise PermitRenewalPeriodError(available_from)
 
 
 class ParkingPermitQuerySet(models.QuerySet):
@@ -454,6 +468,31 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
         )
 
     @property
+    def changes_available_from(self):
+        """First date when vehicle and address can be changed again.
+
+        Talpa renews open-ended subscriptions during the last
+        RENEWAL_PERIOD_DAYS days of the period with the prices of the
+        permit at that moment, so changes are blocked until the period ends.
+        Returns None when the permit is not in its renewal period.
+        """
+        if not (self.is_valid and self.is_open_ended and self.end_time):
+            return None
+        now = timezone.now()
+        period_end_time = self.current_period_end_time
+        if now > period_end_time:
+            return None
+        period_end_date = timezone.localdate(period_end_time)
+        renewal_start_date = period_end_date - timedelta(days=RENEWAL_PERIOD_DAYS)
+        if timezone.localdate(now) < renewal_start_date:
+            return None
+        return period_end_date + timedelta(days=1)
+
+    @property
+    def is_in_renewal_period(self):
+        return self.changes_available_from is not None
+
+    @property
     def months_used(self):
         now = timezone.now()
         diff_months = diff_months_ceil(self.start_time, now)
@@ -480,10 +519,15 @@ class ParkingPermit(SerializableMixin, TimestampedModelMixin):
     def current_period_end_time(self):
         if self.is_open_ended:
             # If open-ended permit is already renewed for the new period,
-            # then use previous period end time
-            now = timezone.now()
-            if self.end_time and self.end_time - relativedelta(months=1) > now:
-                return self.end_time - relativedelta(months=1)
+            # then use previous period end time. Derive it from the start
+            # time schedule, as end_time - 1 month can fall short of the
+            # previous period end (e.g. Jun 30 -> May 30 instead of May 31).
+            if self.end_time:
+                previous_end_time = increment_end_time(
+                    self.start_time, self.end_time, months=-1
+                )
+                if previous_end_time >= timezone.now():
+                    return previous_end_time
             return self.end_time
         return self.current_period_end_time_with_fixed_months(self.months_used)
 

@@ -14,6 +14,7 @@ from parking_permits.exceptions import (
     ObjectNotFoundError,
     OrderCreationFailedError,
     PermitCanNotBeExtendedError,
+    PermitRenewalPeriodError,
     RefundReconciliationRequiredError,
 )
 from parking_permits.models import Order, ParkingPermitExtensionRequest, Refund
@@ -1002,3 +1003,99 @@ def test_legacy_vehicle_credits_with_several_rates_need_review_after_a_month(
         ):
             resolve_end_permit(None, info, [str(permit.pk)], "IMMEDIATELY", "")
         assert Refund.objects.count() == 2
+
+
+RENEWAL_NOW = timezone.make_aware(datetime(2024, 4, 29, 12, 0))
+RENEWAL_PERIOD_END = timezone.make_aware(datetime(2024, 4, 30, 23, 59, 59))
+NORMAL_PERIOD_END = timezone.make_aware(datetime(2024, 5, 14, 23, 59, 59))
+
+
+def _open_ended_permit(customer, end_time, **kwargs):
+    return ParkingPermitFactory(
+        customer=customer,
+        contract_type=ContractType.OPEN_ENDED,
+        status=ParkingPermitStatus.VALID,
+        start_time=end_time - timedelta(days=30),
+        end_time=end_time,
+        month_count=1,
+        **kwargs,
+    )
+
+
+def _customer_info(rf, customer):
+    request = rf.post("/")
+    request.user = customer.user
+    return Info(context={"request": request})
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+@freeze_time(RENEWAL_NOW)
+def test_vehicle_change_blocked_for_permit_in_renewal_period(rf):
+    customer = CustomerFactory()
+    info = _customer_info(rf, customer)
+    old_vehicle = VehicleFactory()
+    permit = _open_ended_permit(customer, RENEWAL_PERIOD_END, vehicle=old_vehicle)
+    new_vehicle = VehicleFactory()
+
+    with _mock_jwt(info.context["request"].user):
+        with pytest.raises(PermitRenewalPeriodError):
+            resolve_get_vehicle_price_changes(None, info, permit.pk, True)
+        with pytest.raises(PermitRenewalPeriodError):
+            resolve_update_permit_vehicle(
+                None, info, str(permit.pk), str(new_vehicle.pk)
+            )
+
+    permit.refresh_from_db()
+    assert permit.vehicle == old_vehicle
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+@freeze_time(RENEWAL_NOW)
+def test_vehicle_change_allowed_when_only_other_permit_in_renewal_period(rf):
+    customer = CustomerFactory()
+    info = _customer_info(rf, customer)
+    _open_ended_permit(customer, RENEWAL_PERIOD_END)
+    permit = _open_ended_permit(customer, NORMAL_PERIOD_END)
+    new_vehicle = VehicleFactory(power_type__identifier="04")
+    no_price_change = [
+        {
+            "new_price": 50.00,
+            "price_change_vat": 0,
+            "price_change": Decimal("0"),
+            "month_count": 0,
+        },
+    ]
+
+    with (
+        _mock_jwt(info.context["request"].user),
+        _mock_price_change_list(no_price_change),
+        _mock_talpa(),
+    ):
+        resolve_update_permit_vehicle(None, info, str(permit.pk), str(new_vehicle.pk))
+
+    permit.refresh_from_db()
+    assert permit.vehicle == new_vehicle
+
+
+@override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
+@pytest.mark.django_db()
+@freeze_time(RENEWAL_NOW)
+def test_address_change_blocked_when_any_permit_in_renewal_period(rf):
+    customer = CustomerFactory()
+    info = _customer_info(rf, customer)
+    zone = ParkingZoneFactory()
+    _open_ended_permit(customer, NORMAL_PERIOD_END, parking_zone=zone)
+    _open_ended_permit(customer, RENEWAL_PERIOD_END, parking_zone=zone)
+    address = AddressFactory()
+    customer.primary_address = address
+    customer.save()
+
+    with _mock_jwt(info.context["request"].user):
+        with pytest.raises(PermitRenewalPeriodError):
+            resolve_get_update_address_price_changes(None, info, str(address.pk))
+        with pytest.raises(PermitRenewalPeriodError):
+            resolve_change_address(None, info, str(address.pk))
+
+    assert Order.objects.count() == 0
