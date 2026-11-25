@@ -68,6 +68,33 @@ def zone():
 
 
 class TestEndPermits:
+    @pytest.mark.django_db
+    @freeze_time("2026-11-25")
+    def test_bulk_end_keeps_each_subscriptions_billing_date(self):
+        start = timezone.now() - relativedelta(weeks=2)
+        primary = ParkingPermitFactory(
+            status="VALID",
+            contract_type="OPEN_ENDED",
+            start_time=start,
+            end_time=get_end_time(start, 1),
+        )
+        secondary_start = start + relativedelta(weeks=1)
+        secondary = ParkingPermitFactory(
+            customer=primary.customer,
+            primary_vehicle=False,
+            status="VALID",
+            contract_type="OPEN_ENDED",
+            start_time=secondary_start,
+            end_time=get_end_time(secondary_start, 1),
+        )
+        CustomerPermit(primary.customer_id).end(
+            [primary.pk, secondary.pk], ParkingPermitEndType.AFTER_CURRENT_PERIOD
+        )
+        for permit in (primary, secondary):
+            permit.refresh_from_db()
+            assert permit.end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD
+            assert permit.end_time == get_end_time(permit.start_time, 1)
+
     @pytest.fixture
     def permits_with_scheduled_secondary(self, zone):
         start = timezone.make_aware(datetime(2026, 11, 15))

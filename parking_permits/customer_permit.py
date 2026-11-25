@@ -30,6 +30,7 @@ from .models.order import (
 )
 from .models.parking_permit import (
     ContractType,
+    ParkingPermitEndType,
     ParkingPermitEventFactory,
     ParkingPermitStartType,
     ParkingPermitStatus,
@@ -477,6 +478,13 @@ class CustomerPermit:
                 "primary_vehicle"
             )
         )
+        # Each subscription ends on its own billing date in a joint cancellation.
+        ending_both_subscriptions = (
+            end_type == ParkingPermitEndType.AFTER_CURRENT_PERIOD
+            and len(permits) == 2
+            and all(permit.is_open_ended for permit in permits)
+            and not self.customer.active_permits.exclude(id__in=permit_ids).exists()
+        )
 
         end_permits(
             user,
@@ -486,7 +494,7 @@ class CustomerPermit:
             subscription_cancel_reason=subscription_cancel_reason,
             cancel_from_talpa=cancel_from_talpa,
             ignore_talpa_errors=ignore_talpa_errors,
-            force_end=force_end,
+            force_end=force_end or ending_both_subscriptions,
         )
 
         # Delete all the draft permit while ending the customer valid permits
