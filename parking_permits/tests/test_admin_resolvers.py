@@ -484,8 +484,8 @@ def test_update_or_create_vehicle_emission_none():
 
 @pytest.mark.django_db
 def test_update_or_create_vehicle_should_update_vehicle():
-    old_power_type = VehiclePowerTypeFactory()
-    new_power_type = VehiclePowerTypeFactory()
+    old_power_type = VehiclePowerTypeFactory(identifier="01")
+    new_power_type = VehiclePowerTypeFactory(identifier="04")
     old_vehicle = VehicleFactory(
         registration_number="ABC-123",
         power_type=old_power_type,
