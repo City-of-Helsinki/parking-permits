@@ -3,6 +3,7 @@ from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
+from django.urls import reverse
 from django.utils import timezone
 from freezegun import freeze_time
 
@@ -15,6 +16,7 @@ from parking_permits.exceptions import (
 from parking_permits.models import Order, ParkingPermit
 from parking_permits.permit_rules import validate_secondary_permit
 from parking_permits.tests.factories.parking_permit import ParkingPermitFactory
+from parking_permits.tests.factories.product import ProductFactory
 from parking_permits.tests.factories.vehicle import VehicleFactory
 from parking_permits.utils import get_end_time
 
@@ -101,6 +103,65 @@ def test_checkout_rejects_existing_mixed_permits_before_creating_an_order():
     with pytest.raises(OrderCreationFailedError):
         Order.objects.create_for_permits([secondary])
     assert not Order.objects.filter(customer=primary.customer).exists()
+
+
+@pytest.mark.django_db
+@freeze_time("2026-11-25")
+@pytest.mark.parametrize("scheduled", [False, True])
+def test_buy_recurring_secondary_one_week_later(client, settings, scheduled):
+    settings.TRAFICOM_CHECK = False
+    start = timezone.now() - timedelta(weeks=1)
+    primary = ParkingPermitFactory(
+        status="VALID",
+        contract_type="OPEN_ENDED",
+        start_time=start,
+        end_time=get_end_time(start, 1),
+        end_type="AFTER_CURRENT_PERIOD" if scheduled else "IMMEDIATELY",
+    )
+    customer = primary.customer
+    primary.address = customer.primary_address
+    primary.parking_zone = primary.address.zone
+    primary.save()
+    product = ProductFactory(
+        zone=primary.parking_zone,
+        start_date=start.date(),
+        end_date=primary.end_time.date() + timedelta(weeks=2),
+    )
+    vehicle = VehicleFactory()
+    with patch.object(type(customer), "fetch_vehicle_detail", return_value=vehicle):
+        secondary = CustomerPermit(customer.pk).create(
+            primary.address_id, vehicle.registration_number
+        )
+    with (
+        patch(
+            "helusers.oidc.RequestJWTAuthentication.authenticate",
+            return_value=Mock(user=customer.user),
+        ),
+        patch(
+            "parking_permits.talpa.order.TalpaOrderManager.send_to_talpa",
+            return_value="https://checkout.example/",
+        ) as checkout,
+    ):
+        result = client.post(
+            reverse("parking_permits:graphql"),
+            {"query": "mutation { createOrder { checkoutUrl } }"},
+            content_type="application/json",
+        ).json()
+    assert result == {
+        "data": {"createOrder": {"checkoutUrl": "https://checkout.example/"}}
+    }
+    order = checkout.call_args.args[0]
+    item = order.order_items.get()
+    assert item.permit == secondary
+    assert item.payment_unit_price == product.get_modified_unit_price(
+        is_low_emission=vehicle.is_low_emission, is_secondary=True
+    )
+    assert secondary.contract_type == "OPEN_ENDED"
+    assert secondary.start_time == timezone.now()
+    assert secondary.end_time == get_end_time(timezone.now(), 1)
+    primary.refresh_from_db()
+    assert primary.end_time == get_end_time(start, 1)
+    assert not primary.orders.exists()
 
 
 @pytest.mark.django_db
