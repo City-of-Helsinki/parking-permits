@@ -1248,5 +1248,13 @@ msgid "Previous refund"
 msgstr "Aiempi palautus"
 
 #, python-format
+msgid ""
+"Vehicle and address cannot be changed while the permit is being renewed. "
+"Changes are possible again from %(date)s."
+msgstr ""
+"Ajoneuvoa ja osoitetta ei voi muuttaa tunnuksen uusinnan aikana. Muutos on "
+"taas mahdollinen %(date)s alkaen."
+
+#, python-format
 msgid "Reconcile refund %(id)s before ending this permit."
 msgstr "Täsmäytä palautus %(id)s ennen tunnuksen päättämistä."

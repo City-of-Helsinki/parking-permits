@@ -12,6 +12,7 @@ from freezegun import freeze_time
 from parking_permits.exceptions import (
     DuplicatePermitError,
     PermitCanNotBeEndedError,
+    PermitRenewalPeriodError,
     ProductCatalogError,
     TemporaryVehicleValidationError,
 )
@@ -22,6 +23,7 @@ from parking_permits.models.parking_permit import (
     ParkingPermitEndType,
     ParkingPermitEvent,
     ParkingPermitStatus,
+    ensure_not_in_renewal_period,
 )
 from parking_permits.models.product import ProductType
 from parking_permits.tests.factories import ParkingZoneFactory
@@ -2127,3 +2129,100 @@ class HasTimedOutPaymentInProgressTestCase(TestCase, InitOrderForPermitMixin):
             # Cleanup before next status
             order.delete()
             permit.delete()
+
+
+class ParkingPermitRenewalPeriodTestCase(TestCase):
+    period_end_time = timezone.make_aware(datetime(2024, 4, 30, 23, 59, 59))
+
+    def _create_permit(self, **kwargs):
+        defaults = {
+            "status": ParkingPermitStatus.VALID,
+            "contract_type": ContractType.OPEN_ENDED,
+            "start_time": timezone.make_aware(datetime(2024, 4, 1)),
+            "end_time": self.period_end_time,
+            "month_count": 1,
+        }
+        defaults.update(kwargs)
+        return ParkingPermitFactory(**defaults)
+
+    def _assert_blocked_until(self, permit, available_from):
+        self.assertTrue(permit.is_in_renewal_period)
+        self.assertEqual(permit.changes_available_from, available_from)
+
+    def _assert_not_blocked(self, permit):
+        self.assertFalse(permit.is_in_renewal_period)
+        self.assertIsNone(permit.changes_available_from)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 26, 23, 59)))
+    def test_not_blocked_before_renewal_period(self):
+        self._assert_not_blocked(self._create_permit())
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 27, 0, 0)))
+    def test_blocked_from_three_days_before_period_end(self):
+        self._assert_blocked_until(self._create_permit(), date(2024, 5, 1))
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 30, 23, 0)))
+    def test_blocked_on_last_day_of_period(self):
+        self._assert_blocked_until(self._create_permit(), date(2024, 5, 1))
+
+    @freeze_time(timezone.make_aware(datetime(2024, 5, 1, 0, 0)))
+    def test_not_blocked_after_period_end(self):
+        self._assert_not_blocked(self._create_permit())
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 29, 12, 0)))
+    def test_blocked_after_renewal_until_previous_period_end(self):
+        permit = self._create_permit(
+            end_time=timezone.make_aware(datetime(2024, 5, 31, 23, 59, 59))
+        )
+        self._assert_blocked_until(permit, date(2024, 5, 1))
+
+    @freeze_time(timezone.make_aware(datetime(2024, 5, 1, 12, 0)))
+    def test_not_blocked_in_new_period_after_renewal(self):
+        permit = self._create_permit(
+            end_time=timezone.make_aware(datetime(2024, 5, 31, 23, 59, 59))
+        )
+        self._assert_not_blocked(permit)
+
+    def test_renewed_permit_blocked_through_previous_month_end(self):
+        permit = self._create_permit(
+            start_time=timezone.make_aware(datetime(2024, 5, 1)),
+            end_time=timezone.make_aware(datetime(2024, 6, 30, 23, 59, 59)),
+        )
+        with freeze_time(timezone.make_aware(datetime(2024, 5, 31, 12, 0))):
+            self._assert_blocked_until(permit, date(2024, 6, 1))
+        with freeze_time(timezone.make_aware(datetime(2024, 6, 1, 0, 0))):
+            self._assert_not_blocked(permit)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 29, 12, 0)))
+    def test_not_blocked_for_fixed_period_permit(self):
+        permit = self._create_permit(contract_type=ContractType.FIXED_PERIOD)
+        self._assert_not_blocked(permit)
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 29, 12, 0)))
+    def test_not_blocked_for_non_valid_permit(self):
+        for status in (
+            ParkingPermitStatus.DRAFT,
+            ParkingPermitStatus.PAYMENT_IN_PROGRESS,
+            ParkingPermitStatus.CLOSED,
+        ):
+            with self.subTest(status=status):
+                self._assert_not_blocked(self._create_permit(status=status))
+
+    @freeze_time(timezone.make_aware(datetime(2024, 4, 29, 12, 0)))
+    def test_ensure_not_in_renewal_period_uses_latest_date(self):
+        customer = CustomerFactory()
+        first = self._create_permit(customer=customer)
+        second = self._create_permit(
+            customer=customer,
+            end_time=timezone.make_aware(datetime(2024, 5, 1, 23, 59, 59)),
+        )
+        not_blocked = self._create_permit(
+            customer=customer,
+            end_time=timezone.make_aware(datetime(2024, 5, 20, 23, 59, 59)),
+        )
+        ensure_not_in_renewal_period([not_blocked])
+        with translation.override("en"):
+            with self.assertRaisesMessage(
+                PermitRenewalPeriodError, "Changes are possible again from 2.5.2024."
+            ):
+                ensure_not_in_renewal_period([first, second, not_blocked])

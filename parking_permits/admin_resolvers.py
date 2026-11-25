@@ -851,6 +851,10 @@ def resolve_update_resident_permit(
     ):
         address_changed = True
 
+    # Staff may change the vehicle and address also during the renewal period
+    # of open-ended permits. The next period already charged by Talpa keeps
+    # the price based on the details valid before the change.
+
     # clear vehicle_changed and address_changed flags
     if vehicle_changed:
         permit.vehicle_changed = False
