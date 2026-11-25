@@ -3,21 +3,27 @@ from decimal import Decimal
 from unittest.mock import patch
 
 import pytest
+import requests
 from dateutil.relativedelta import relativedelta
 from django.test import TestCase
 from django.urls import reverse, reverse_lazy
 from freezegun import freeze_time
 
+from parking_permits.exceptions import OrderValidationError, SubscriptionCancelError
 from parking_permits.models.order import (
     Order,
+    OrderStatus,
+    SubscriptionCancelReason,
     SubscriptionStatus,
 )
 from parking_permits.models.parking_permit import (
+    ContractType,
     ParkingPermitStatus,
 )
 from parking_permits.models.refund import Refund
 from parking_permits.tests.factories.customer import CustomerFactory
 from parking_permits.tests.factories.order import (
+    OrderFactory,
     OrderItemFactory,
     SubscriptionFactory,
 )
@@ -191,3 +197,93 @@ class TestSubscriptionTestCase(TestCase):
         mock_validate_order.assert_called()
         mock_send_permit_email.assert_called()
         mock_send_vehicle_discount_email.assert_not_called()
+
+
+MOCK_CANCEL_TALPA_SUBSCRIPTION = (
+    "parking_permits.models.order.Subscription._cancel_talpa_subcription"
+)
+
+MOCK_CANCEL_TALPA_ORDER = "parking_permits.models.order.Order._cancel_talpa_order"
+
+
+class SubscriptionCancelTalpaErrorTestCase(TestCase):
+    def setUp(self):
+        self.permit = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+        )
+        self.order = OrderFactory(
+            talpa_order_id="d86ca61d-97e9-410a-a1e3-4894873b1b35",
+            customer=self.permit.customer,
+            status=OrderStatus.CONFIRMED,
+        )
+        self.subscription = SubscriptionFactory()
+        OrderItemFactory(
+            order=self.order, permit=self.permit, subscription=self.subscription
+        )
+
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION)
+    @patch(MOCK_VALIDATE_ORDER, side_effect=OrderValidationError("invalid"))
+    def test_validation_error_raises_and_keeps_subscription(
+        self, mock_validate_order, mock_cancel_subscription
+    ):
+        with self.assertRaises(SubscriptionCancelError):
+            self.subscription.cancel(SubscriptionCancelReason.USER_CANCELLED)
+
+        mock_cancel_subscription.assert_not_called()
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status, SubscriptionStatus.CONFIRMED)
+
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION, side_effect=requests.ConnectionError)
+    @patch(MOCK_VALIDATE_ORDER)
+    def test_talpa_connection_error_raises_and_keeps_subscription(
+        self, mock_validate_order, mock_cancel_subscription
+    ):
+        with self.assertRaises(SubscriptionCancelError):
+            self.subscription.cancel(SubscriptionCancelReason.USER_CANCELLED)
+
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status, SubscriptionStatus.CONFIRMED)
+
+    @patch(MOCK_CANCEL_TALPA_ORDER)
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION, side_effect=SubscriptionCancelError("x"))
+    @patch(MOCK_VALIDATE_ORDER)
+    def test_ignore_talpa_errors_cancels_locally(
+        self, mock_validate_order, mock_cancel_subscription, mock_cancel_order
+    ):
+        self.assertTrue(
+            self.subscription.cancel(
+                SubscriptionCancelReason.PERMIT_EXPIRED, ignore_talpa_errors=True
+            )
+        )
+
+        self.subscription.refresh_from_db()
+        self.order.refresh_from_db()
+        self.assertEqual(self.subscription.status, SubscriptionStatus.CANCELLED)
+        self.assertEqual(
+            self.subscription.cancel_reason, SubscriptionCancelReason.PERMIT_EXPIRED
+        )
+        self.assertEqual(self.order.status, OrderStatus.CANCELLED)
+
+    @patch(MOCK_CANCEL_TALPA_ORDER, side_effect=requests.ConnectionError)
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION)
+    @patch(MOCK_VALIDATE_ORDER)
+    def test_order_cancel_connection_error_raises(
+        self, mock_validate_order, mock_cancel_subscription, mock_cancel_order
+    ):
+        with self.assertRaises(SubscriptionCancelError):
+            self.subscription.cancel(SubscriptionCancelReason.USER_CANCELLED)
+
+    @patch(MOCK_CANCEL_TALPA_ORDER, side_effect=requests.ConnectionError)
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION)
+    @patch(MOCK_VALIDATE_ORDER)
+    def test_order_cancel_connection_error_ignored(
+        self, mock_validate_order, mock_cancel_subscription, mock_cancel_order
+    ):
+        self.assertTrue(
+            self.subscription.cancel(
+                SubscriptionCancelReason.PERMIT_EXPIRED, ignore_talpa_errors=True
+            )
+        )
+        self.subscription.refresh_from_db()
+        self.assertEqual(self.subscription.status, SubscriptionStatus.CANCELLED)

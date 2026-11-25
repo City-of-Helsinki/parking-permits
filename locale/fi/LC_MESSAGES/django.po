@@ -1258,3 +1258,6 @@ msgstr ""
 #, python-format
 msgid "Reconcile refund %(id)s before ending this permit."
 msgstr "Täsmäytä palautus %(id)s ennen tunnuksen päättämistä."
+
+msgid "Subscription could not be cancelled. Please try again later."
+msgstr "Tilauksen peruminen epäonnistui. Yritä myöhemmin uudelleen."

@@ -456,6 +456,7 @@ class CustomerPermit:
 
         return self._update_fields_to_all_draft(fields_to_update)
 
+    @transaction.atomic
     def end(
         self,
         permit_ids,
@@ -464,13 +465,17 @@ class CustomerPermit:
         user=None,
         subscription_cancel_reason=SubscriptionCancelReason.USER_CANCELLED,
         cancel_from_talpa=True,
+        ignore_talpa_errors=False,
         force_end=False,
     ):
         logger.info(
             f"Ending permits: {','.join([str(permit_id) for permit_id in permit_ids])}"
         )
-        permits = self.customer_permit_query.filter(id__in=permit_ids).order_by(
-            "primary_vehicle"
+        Customer.objects.select_for_update(no_key=True).get(pk=self.customer.pk)
+        permits = list(
+            self.customer_permit_query.filter(id__in=permit_ids).order_by(
+                "primary_vehicle"
+            )
         )
 
         end_permits(
@@ -480,6 +485,7 @@ class CustomerPermit:
             iban=iban,
             subscription_cancel_reason=subscription_cancel_reason,
             cancel_from_talpa=cancel_from_talpa,
+            ignore_talpa_errors=ignore_talpa_errors,
             force_end=force_end,
         )
 
