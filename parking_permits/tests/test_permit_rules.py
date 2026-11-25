@@ -12,6 +12,7 @@ from parking_permits.exceptions import (
     OrderCreationFailedError,
     ParkingPermitValidationError,
     PermitCanNotBeExtendedError,
+    PermitLimitExceededError,
 )
 from parking_permits.models import Order, ParkingPermit
 from parking_permits.permit_rules import validate_secondary_permit
@@ -162,6 +163,8 @@ def test_buy_recurring_secondary_one_week_later(client, settings, scheduled):
     primary.refresh_from_db()
     assert primary.end_time == get_end_time(start, 1)
     assert not primary.orders.exists()
+    with pytest.raises(PermitLimitExceededError):
+        CustomerPermit(customer.pk).create(primary.address_id, "ABC-9999")
 
 
 @pytest.mark.django_db
