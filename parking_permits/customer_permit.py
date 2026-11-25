@@ -284,7 +284,7 @@ class CustomerPermit:
         ).exists():
             raise DuplicatePermitError(_("Permit for a given vehicle already exist."))
         address = Address.objects.get(id=address_id)
-        if self._can_buy_permit_for_address(address.id):
+        if self._can_buy_permit_for_address(address.id, creating=True):
             contract_type = OPEN_ENDED
             primary_vehicle = True
             primary_permit = None
@@ -548,23 +548,26 @@ class CustomerPermit:
 
         return product
 
-    def _can_buy_permit_for_address(self, address_id):
+    def _can_buy_permit_for_address(self, address_id, *, creating=False):
         if not self._is_valid_user_address(address_id):
             raise InvalidUserAddressError(_("Invalid user address."))
 
-        max_allowed_permit = settings.MAX_ALLOWED_USER_PERMIT
-
-        # User can not exceed max allowed permit per user
-        if self.customer_permit_query.count() > max_allowed_permit:
+        count = self.customer_permit_query.count()
+        limit = settings.MAX_ALLOWED_USER_PERMIT
+        if count > limit or (
+            creating
+            and count == limit
+            and self.customer_permit_query.open_ended().exists()
+        ):
             raise PermitLimitExceededError(
                 _("You can have a max of %(max_allowed_permit)s permits.")
-                % {"max_allowed_permit": max_allowed_permit}
+                % {"max_allowed_permit": limit}
             )
 
         # If user has existing permit that is in valid or processing state then
         # the zone id from it should be used as he can have multiple permit for
         # multiple zone.
-        if self.customer_permit_query.count():
+        if count:
             primary, secondary = self._get_primary_and_secondary_permit()
             if primary.address_id != address_id and primary.status != DRAFT:
                 raise InvalidUserAddressError(
