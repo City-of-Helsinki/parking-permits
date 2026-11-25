@@ -10,6 +10,7 @@ from parking_permits.models.order import (
     OrderStatus,
     OrderType,
     SubscriptionCancelReason,
+    SubscriptionStatus,
 )
 from users.models import User
 
@@ -38,7 +39,8 @@ def end_permits(
     """
     Ends all permits.
 
-    Will first issue refunds for fixed period permits, then end each permit.
+    Will first issue refunds for refundable permits (fixed period and
+    open-ended), then end each permit.
 
     Any refunds should be created for the permits if applicable.
 
@@ -148,12 +150,15 @@ def create_permit_refunds(
 ) -> list[Refund]:
     """Creates VAT-based summary refunds from the permits provided.
 
-    If refunds are created, then will send refund receipt email to customer
-    and create the relevant events.
+    Only permits with `can_be_refunded` are included. For each VAT rate,
+    unused order items (`is_refunded=False`) are summed into one refund.
+    Those order items are then marked refunded, and a refund event is
+    created for each permit. No email is sent.
 
-    If OPEN ENDED permits, the Refund will always be None:
-       refunds are issued for open-ended
-    permits when cancelling the subscription (see `end_permit()`).
+    Open-ended permits are refunded here as well. A permit qualifies only
+    if it has not started, or if Talpa has already renewed the next month;
+    the current month is never refunded. `Subscription.cancel()` does not
+    create refunds.
 
     Returns the created refund instances, or empty list if not available.
     """
@@ -244,12 +249,14 @@ def end_permit(
     iban: str | None = None,
     subscription_cancel_reason: SubscriptionCancelReason = SubscriptionCancelReason.USER_CANCELLED,  # noqa: E501
     cancel_from_talpa: bool = True,
+    ignore_talpa_errors: bool = False,
     force_end: bool = False,
 ) -> None:
     """
     Handles ending permit functionality.
 
-    Ends Subscription for open ended permit and issues refund if applicable.
+    Ends Subscription for open ended permit. Refunds are created beforehand
+    in end_permits().
 
     Parkkihubi is updated with new status.
 
@@ -258,14 +265,16 @@ def end_permit(
     """
     if permit.is_open_ended:
         if subscription := (
-            Subscription.objects.filter(order_items__permit__pk=permit.pk)
+            Subscription.objects.filter(
+                order_items__permit=permit, status=SubscriptionStatus.CONFIRMED
+            )
             .distinct()
             .first()
         ):
             subscription.cancel(
                 cancel_reason=subscription_cancel_reason,
                 cancel_from_talpa=cancel_from_talpa,
-                iban=iban or "",
+                ignore_talpa_errors=ignore_talpa_errors,
             )
     else:
         # Cancel fixed period permit order when this

@@ -17,7 +17,6 @@ from parking_permits.services.mail import (
 )
 from parking_permits.services.parkkihubi import sync_with_parkkihubi
 
-from ..constants import DEFAULT_VAT
 from ..exceptions import (
     OrderCancelError,
     OrderCreationFailedError,
@@ -697,7 +696,15 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
                 f"Error: {response.status_code} {response.reason}."
             )
 
-    def cancel(self, cancel_reason, cancel_from_talpa=True, iban=""):
+    def cancel(self, cancel_reason, cancel_from_talpa=True, ignore_talpa_errors=False):
+        """
+        Cancel the subscription locally and, if `cancel_from_talpa`, in Talpa.
+
+        Talpa errors raise `SubscriptionCancelError` so that the caller's
+        transaction rolls back. With `ignore_talpa_errors` they are only
+        logged, e.g. so that expired permits still end in the daily cron.
+        Refunds are not handled here; see `resolver_utils.end_permits`.
+        """
         logger.info(
             f"Subscription cancel process started: {self.talpa_subscription_id}"
         )
@@ -708,46 +715,32 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         permit = order_item.permit
         customer_id = permit.customer.user.uuid
 
-        if talpa_order_id and customer_id:
+        # Without cancel_from_talpa, Talpa has already cancelled the subscription.
+        if cancel_from_talpa:
             try:
-                OrderValidator.validate_order(talpa_order_id, customer_id)
-            except OrderValidationError as e:
-                logger.error(f"Order validation failed. Error = {e}")
-                return False
+                if talpa_order_id and customer_id:
+                    OrderValidator.validate_order(talpa_order_id, customer_id)
+                self._cancel_talpa_subcription(customer_id)
+            except (
+                OrderValidationError,
+                SubscriptionCancelError,
+                requests.RequestException,
+            ) as e:
+                logger.exception(
+                    "Talpa subscription %s cancelling failed.",
+                    self.talpa_subscription_id,
+                )
+                if not ignore_talpa_errors:
+                    raise SubscriptionCancelError(
+                        _(
+                            "Subscription could not be cancelled. "
+                            "Please try again later."
+                        )
+                    ) from e
 
         self.status = SubscriptionStatus.CANCELLED
         self.cancel_reason = cancel_reason
         self.save()
-
-        if permit.can_be_refunded:
-            total_refund_amount = permit.total_refund_amount
-            if total_refund_amount > 0:
-                logger.info(f"Creating Refund for permit {str(permit.id)}")
-                from ..resolver_utils import create_refund
-
-                create_refund(
-                    user=permit.customer.user,
-                    permits=[permit],
-                    orders=[order],
-                    amount=total_refund_amount,
-                    iban=iban,
-                    vat=(order.vat if order.vat else DEFAULT_VAT),
-                    description=f"Refund for ending permit {str(permit.id)}",
-                )
-                # Mark the order item as refunded
-                order_item.is_refunded = True
-                order_item.save()
-                logger.info(f"Refund for permit {str(permit.id)} created successfully")
-
-        # Try to cancel subscription from Talpa as well
-        if cancel_from_talpa:
-            try:
-                self._cancel_talpa_subcription(customer_id)
-            except SubscriptionCancelError:
-                logger.warning(
-                    "Talpa subscription cancelling failed. "
-                    "Continuing the cancel process.."
-                )
 
         remaining_valid_order_subscriptions = Subscription.objects.filter(
             order_items__order__talpa_order_id__exact=talpa_order_id,
@@ -755,7 +748,17 @@ class Subscription(SerializableMixin, TimestampedModelMixin, UserStampedModelMix
         )
         # Mark the order as cancelled if it has no active subscriptions left
         if not remaining_valid_order_subscriptions.exists():
-            order.cancel(cancel_from_talpa=cancel_from_talpa)
+            try:
+                order.cancel(cancel_from_talpa=cancel_from_talpa)
+            except requests.RequestException as e:
+                logger.exception("Order %s cancelling failed.", talpa_order_id)
+                if not ignore_talpa_errors:
+                    raise SubscriptionCancelError(
+                        _(
+                            "Subscription could not be cancelled. "
+                            "Please try again later."
+                        )
+                    ) from e
 
         logger.info(f"Subscription {self.talpa_subscription_id} cancel process done")
         return True

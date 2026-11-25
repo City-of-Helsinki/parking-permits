@@ -192,6 +192,7 @@ def test_admin_end_recurring_primary(info, mock_jwt, client, end_type, prepaid):
         assert secondary.end_time == get_end_time(secondary_start, 1)
         subscription.refresh_from_db()
         assert subscription.status == "CONFIRMED"
+        cancel.assert_called_once()
     assert Order.objects.count() == order_count
     assert not secondary.refunds.exists()
     if prepaid:

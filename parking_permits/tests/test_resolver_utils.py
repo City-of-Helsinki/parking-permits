@@ -9,6 +9,7 @@ from freezegun import freeze_time
 
 from parking_permits.cron import automatic_expiration_of_permits
 from parking_permits.customer_permit import CustomerPermit
+from parking_permits.exceptions import SubscriptionCancelError
 from parking_permits.models import Order, Refund
 from parking_permits.models.order import (
     OrderPaymentType,
@@ -1484,3 +1485,98 @@ def _create_zone_products(zone, product_detail_list):
         )
         products.append(product)
     return products
+
+
+MOCK_CANCEL_TALPA_SUBSCRIPTION = (
+    "parking_permits.models.order.Subscription._cancel_talpa_subcription"
+)
+
+
+class TestEndOpenEndedPermitRefund:
+    @pytest.fixture
+    def unstarted_open_ended_permit(self, zone):
+        start_time = timezone.make_aware(datetime(2025, 6, 29))
+        end_time = get_end_time(start_time, 1)
+        _create_zone_products(
+            zone, [[(start_time.date(), end_time.date()), Decimal("60")]]
+        )
+        permit = ParkingPermitFactory(
+            contract_type=ContractType.OPEN_ENDED,
+            status=ParkingPermitStatus.VALID,
+            start_time=start_time,
+            end_time=end_time,
+            month_count=1,
+            parking_zone=zone,
+        )
+        order = Order.objects.create_for_permits([permit])
+        order.status = OrderStatus.CONFIRMED
+        order.talpa_order_id = "d86ca61d-97e9-410a-a1e3-4894873b1b35"
+        order.save()
+        subscription = SubscriptionFactory()
+        order.order_items.update(subscription=subscription)
+        return permit, subscription
+
+    @pytest.mark.django_db()
+    @freeze_time("2025-6-28")
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION)
+    @patch("parking_permits.models.order.Order._cancel_talpa_order")
+    @patch(MOCK_VALIDATE_ORDER)
+    @patch(MOCK_SYNC_WITH_PARKKIHUBI)
+    @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
+    def test_end_permits_creates_single_refund(
+        self,
+        _discount_email,
+        _sync,
+        _validate,
+        _cancel_order,
+        _cancel_subscription,
+        unstarted_open_ended_permit,
+    ):
+        permit, subscription = unstarted_open_ended_permit
+
+        end_permits(
+            permit.customer.user,
+            permit,
+            end_type=ParkingPermitEndType.IMMEDIATELY,
+            iban=IBAN,
+        )
+
+        refunds = Refund.objects.filter(permits=permit)
+        assert refunds.count() == 1
+        assert refunds.get().amount == 60
+        subscription.refresh_from_db()
+        assert subscription.status == SubscriptionStatus.CANCELLED
+        permit.refresh_from_db()
+        assert permit.status == ParkingPermitStatus.CLOSED
+
+    @pytest.mark.django_db()
+    @freeze_time("2025-6-28")
+    @patch(MOCK_CANCEL_TALPA_SUBSCRIPTION, side_effect=SubscriptionCancelError("x"))
+    @patch(MOCK_VALIDATE_ORDER)
+    @patch(MOCK_SYNC_WITH_PARKKIHUBI)
+    @patch(MOCK_SEND_VEHICLE_DISCOUNT_EMAIL)
+    def test_talpa_cancel_error_rolls_back_refund_and_ending(
+        self,
+        _discount_email,
+        mock_sync,
+        _validate,
+        _cancel_subscription,
+        unstarted_open_ended_permit,
+    ):
+        permit, subscription = unstarted_open_ended_permit
+
+        with pytest.raises(SubscriptionCancelError):
+            end_permits(
+                permit.customer.user,
+                permit,
+                end_type=ParkingPermitEndType.IMMEDIATELY,
+                iban=IBAN,
+            )
+
+        assert not Refund.objects.filter(permits=permit).exists()
+        assert not permit.order_items.filter(is_refunded=True).exists()
+        subscription.refresh_from_db()
+        assert subscription.status == SubscriptionStatus.CONFIRMED
+        permit.refresh_from_db()
+        assert permit.status == ParkingPermitStatus.VALID
+        mock_sync.assert_not_called()
