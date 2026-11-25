@@ -28,9 +28,7 @@ def get_secondary_end_time(start_time, month_count, primary):
     return end_time
 
 
-def validate_secondary_permit(permit, primary, *, purchase=False, now=None):
-    if permit.primary_vehicle:
-        return
+def _validate_secondary_basics(permit, primary, purchase):
     if purchase and (
         not isinstance(permit.month_count, int) or not 1 <= permit.month_count <= 12
     ):
@@ -43,19 +41,43 @@ def validate_secondary_permit(permit, primary, *, purchase=False, now=None):
         )
     if permit.contract_type != primary.contract_type:
         raise InvalidContractTypeError(CONTRACT_TYPE_MISMATCH)
-    limit = primary_end_limit(primary)
-    if limit is None:
-        return
+
+
+def _validate_open_ended_secondary_purchase(permit, limit, now):
+    # Subscriptions have independent billing periods. They only need
+    # to overlap when the secondary starts.
+    if max(permit.start_time, now or timezone.now()) > limit:
+        raise ParkingPermitValidationError(_("A primary permit is required."))
+
+
+def _validate_secondary_end_time(permit, limit):
     if permit.end_time is None or permit.end_time > limit:
         raise ParkingPermitValidationError(
             _("The second permit cannot end after the first permit.")
         )
-    if purchase and primary.contract_type == "FIXED_PERIOD":
-        start = max(permit.start_time, now or timezone.now())
-        if get_secondary_end_time(start, permit.month_count, primary) > limit:
-            raise ParkingPermitValidationError(
-                _(
-                    "The full duration of the second permit must fit before "
-                    "the first permit ends. Select a shorter duration."
-                )
+
+
+def _validate_fixed_period_secondary_purchase(permit, primary, limit, now):
+    start = max(permit.start_time, now or timezone.now())
+    if get_secondary_end_time(start, permit.month_count, primary) > limit:
+        raise ParkingPermitValidationError(
+            _(
+                "The full duration of the second permit must fit before "
+                "the first permit ends. Select a shorter duration."
             )
+        )
+
+
+def validate_secondary_permit(permit, primary, *, purchase=False, now=None):
+    if permit.primary_vehicle:
+        return
+    _validate_secondary_basics(permit, primary, purchase)
+    limit = primary_end_limit(primary)
+    if limit is None:
+        return
+    if purchase and primary.contract_type == "OPEN_ENDED":
+        _validate_open_ended_secondary_purchase(permit, limit, now)
+        return
+    _validate_secondary_end_time(permit, limit)
+    if purchase and primary.contract_type == "FIXED_PERIOD":
+        _validate_fixed_period_secondary_purchase(permit, primary, limit, now)
