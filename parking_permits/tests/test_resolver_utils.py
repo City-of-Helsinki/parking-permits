@@ -376,7 +376,6 @@ class TestEndPermit:
             permit.customer.user,
             permit,
             ParkingPermitEndType.IMMEDIATELY,
-            iban=IBAN,
             cancel_from_talpa=False,
         )
 
@@ -422,7 +421,6 @@ class TestEndPermit:
             permit.customer.user,
             permit,
             ParkingPermitEndType.IMMEDIATELY,
-            iban=IBAN,
             cancel_from_talpa=False,
         )
 
@@ -469,7 +467,6 @@ class TestEndPermit:
             permit.customer.user,
             permit,
             ParkingPermitEndType.IMMEDIATELY,
-            iban=IBAN,
             cancel_from_talpa=False,
         )
 

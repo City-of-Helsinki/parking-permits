@@ -88,7 +88,6 @@ def end_permits(
             user,
             permit,
             end_type,
-            iban=iban,
             **kwargs,
         )
 
@@ -246,7 +245,6 @@ def end_permit(
     permit: ParkingPermit,
     end_type: ParkingPermitEndType,
     *,
-    iban: str | None = None,
     subscription_cancel_reason: SubscriptionCancelReason = SubscriptionCancelReason.USER_CANCELLED,  # noqa: E501
     cancel_from_talpa: bool = True,
     ignore_talpa_errors: bool = False,
