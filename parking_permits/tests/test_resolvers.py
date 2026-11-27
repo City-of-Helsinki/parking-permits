@@ -786,6 +786,226 @@ def test_address_preview_prices_destination_zone(prepaid_permit, destination_rat
             )
 
 
+def make_low_emission_secondary_permit(primary, start, months):
+    return ParkingPermitFactory(
+        customer=primary.customer,
+        parking_zone=primary.parking_zone,
+        address=primary.address,
+        primary_vehicle=False,
+        vehicle=VehicleFactory(power_type__identifier="04"),
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        start_time=start,
+        end_time=get_end_time(start, months),
+        month_count=months,
+    )
+
+
+@freeze_time("2026-06-10")
+def purchase_permit_for_address_change(
+    rf, current_rate, future_rate, *, with_secondary=False
+):
+    start = timezone.make_aware(datetime(2026, 6, 10))
+    permit = ParkingPermitFactory(
+        contract_type=ContractType.FIXED_PERIOD,
+        status=ParkingPermitStatus.VALID,
+        vehicle=VehicleFactory(power_type__identifier="00"),
+        start_time=start,
+        end_time=get_end_time(start, 6),
+        month_count=6,
+    )
+    address = AddressFactory()
+    for zone, first_day, last_day, rate in [
+        (permit.parking_zone, date(2026, 6, 1), date(2026, 12, 31), 60),
+        (address.zone, date(2026, 6, 1), date(2026, 10, 31), current_rate),
+        (address.zone, date(2026, 11, 1), date(2026, 12, 31), future_rate),
+    ]:
+        ProductFactory(
+            zone=zone,
+            type=ProductType.RESIDENT,
+            start_date=first_day,
+            end_date=last_day,
+            unit_price=Decimal(rate),
+            low_emission_discount=Decimal("0.50"),
+        )
+    permits = [permit]
+    if with_secondary:
+        permits.append(make_low_emission_secondary_permit(permit, start, 6))
+    Order.objects.create_for_permits(permits, status=OrderStatus.CONFIRMED)
+    permit.customer.primary_address = address
+    permit.customer.save()
+    request = rf.post("/")
+    request.user = permit.customer.user
+    return permit, address, Info(context={"request": request})
+
+
+@pytest.mark.django_db
+@freeze_time("2026-07-15")
+@pytest.mark.parametrize(
+    "current_rate, future_rate, expected_total",
+    [pytest.param(70, 80, 50, id="surcharge"), pytest.param(50, 40, -50, id="refund")],
+)
+def test_address_change_includes_future_destination_price(
+    rf, current_rate, future_rate, expected_total
+):
+    permit, address, info = purchase_permit_for_address_change(
+        rf, current_rate, future_rate
+    )
+    with _mock_jwt(permit.customer.user), _mock_talpa() as checkout:
+        preview = resolve_get_update_address_price_changes(None, info, str(address.pk))
+        resolve_change_address(None, info, str(address.pk))
+
+    lines = preview[0]["price_changes"]
+    assert [
+        (
+            line["start_date"],
+            line["end_date"],
+            line["month_count"],
+            line["price_change"],
+        )
+        for line in lines
+    ] == [
+        (date(2026, 8, 10), date(2026, 11, 9), 3, current_rate - 60),
+        (date(2026, 11, 10), date(2026, 12, 9), 1, future_rate - 60),
+    ]
+    assert quote_total(lines) == expected_total
+    if expected_total < 0:
+        checkout.assert_not_called()
+        assert Refund.objects.get().amount == -expected_total
+    else:
+        checkout.assert_called_once()
+        order = checkout.call_args.args[0]
+        assert order.total_payment_price == expected_total
+        assert TalpaOrderManager.create_order_data(order)["priceTotal"] == "50.00"
+
+
+@pytest.mark.django_db
+@freeze_time("2026-07-15")
+@pytest.mark.parametrize(
+    "current_rate, future_rate, primary_change, secondary_change",
+    [
+        pytest.param(70, 80, 50, Decimal("22.50"), id="surcharge"),
+        pytest.param(50, 40, -50, Decimal("-22.50"), id="refund"),
+    ],
+)
+def test_address_change_with_later_low_emission_secondary_permit(
+    rf, current_rate, future_rate, primary_change, secondary_change
+):
+    primary, address, info = purchase_permit_for_address_change(
+        rf, current_rate, future_rate
+    )
+    primary_order = primary.latest_order
+    with freeze_time("2026-06-12"):
+        start = primary.start_time + timedelta(days=2)
+        secondary = make_low_emission_secondary_permit(primary, start, 5)
+        secondary_order = Order.objects.create_for_permits(
+            [secondary], status=OrderStatus.CONFIRMED
+        )
+
+    with _mock_jwt(primary.customer.user), _mock_talpa() as checkout:
+        preview = resolve_get_update_address_price_changes(None, info, str(address.pk))
+        resolve_change_address(None, info, str(address.pk))
+
+    lines = {entry["permit"].pk: entry["price_changes"] for entry in preview}
+    assert quote_total(lines[primary.pk]) == primary_change
+    assert quote_total(lines[secondary.pk]) == secondary_change
+    [line] = lines[secondary.pk]
+    assert (line["start_date"], line["end_date"], line["month_count"]) == (
+        date(2026, 8, 12),
+        date(2026, 11, 11),
+        3,
+    )
+    if primary_change < 0:
+        checkout.assert_not_called()
+        assert primary_order.refunds.get().amount == -primary_change
+        assert secondary_order.refunds.get().amount == -secondary_change
+    else:
+        checkout.assert_called_once()
+        order = checkout.call_args.args[0]
+        assert order.total_payment_price == Decimal("72.50")
+        assert TalpaOrderManager.create_order_data(order)["priceTotal"] == "72.50"
+
+
+@pytest.mark.django_db
+@freeze_time("2026-07-15")
+@pytest.mark.parametrize(
+    "current_rate, future_rate, primary_change, secondary_change",
+    [
+        pytest.param(70, 80, 50, Decimal("37.50"), id="surcharge"),
+        pytest.param(50, 40, -50, Decimal("-37.50"), id="refund"),
+    ],
+)
+def test_address_change_for_permits_purchased_together(
+    rf, current_rate, future_rate, primary_change, secondary_change
+):
+    primary, address, info = purchase_permit_for_address_change(
+        rf, current_rate, future_rate, with_secondary=True
+    )
+    purchase = primary.latest_order
+    secondary = purchase.permits.get(primary_vehicle=False)
+    with _mock_jwt(primary.customer.user), _mock_talpa() as checkout:
+        preview = resolve_get_update_address_price_changes(None, info, str(address.pk))
+        resolve_change_address(None, info, str(address.pk))
+
+    changes = {
+        entry["permit"].pk: quote_total(entry["price_changes"]) for entry in preview
+    }
+    assert changes == {primary.pk: primary_change, secondary.pk: secondary_change}
+    if primary_change < 0:
+        checkout.assert_not_called()
+        refund = Refund.objects.get()
+        assert refund.amount == Decimal("87.50")
+        assert refund.orders.get() == purchase
+        assert set(refund.permits.all()) == {primary, secondary}
+    else:
+        checkout.assert_called_once()
+        order = checkout.call_args.args[0]
+        assert set(order.permits.all()) == {primary, secondary}
+        assert order.total_payment_price == Decimal("87.50")
+        assert TalpaOrderManager.create_order_data(order)["priceTotal"] == "87.50"
+
+
+@pytest.mark.django_db
+@freeze_time("2026-07-15")
+def test_address_change_offsets_future_credit_for_permits_purchased_together(rf):
+    primary, address, info = purchase_permit_for_address_change(
+        rf, current_rate=70, future_rate=40, with_secondary=True
+    )
+    secondary = primary.latest_order.permits.get(primary_vehicle=False)
+    with _mock_jwt(primary.customer.user), _mock_talpa() as checkout:
+        preview = resolve_get_update_address_price_changes(None, info, str(address.pk))
+        resolve_change_address(None, info, str(address.pk))
+
+    expected_lines = {
+        primary.pk: [(3, 10), (1, -20)],
+        secondary.pk: [(3, Decimal("7.50")), (1, -15)],
+    }
+    assert {
+        entry["permit"].pk: [
+            (line["month_count"], line["price_change"])
+            for line in entry["price_changes"]
+        ]
+        for entry in preview
+    } == expected_lines
+    assert sum(quote_total(entry["price_changes"]) for entry in preview) == Decimal(
+        "17.50"
+    )
+
+    checkout.assert_called_once()
+    order = checkout.call_args.args[0]
+    assert {
+        permit.pk: list(
+            order.order_items.filter(permit=permit)
+            .order_by("start_time")
+            .values_list("quantity", "payment_unit_price")
+        )
+        for permit in order.permits.all()
+    } == expected_lines
+    assert order.total_payment_price == Decimal("17.50")
+    assert TalpaOrderManager.create_order_data(order)["priceTotal"] == "17.50"
+    assert not Refund.objects.exists()
+
+
 @pytest.mark.django_db
 @override_settings(DEBUG_SKIP_PARKKIHUBI_SYNC=True)
 @freeze_time("2021-04-15")
